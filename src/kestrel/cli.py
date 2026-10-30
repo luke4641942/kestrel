@@ -71,5 +71,24 @@ def list_months(
     typer.echo("\n".join(months) if months else "(no data)")
 
 
+@app.command()
+def serve(
+    data_dir: DataDir = Path("data"),
+    host: Annotated[
+        str, typer.Option(help="Bind address. Keep local unless you know why.")
+    ] = "127.0.0.1",
+    port: Annotated[int, typer.Option()] = 8000,
+    reload: Annotated[bool, typer.Option(help="Auto-reload on code changes (dev).")] = False,
+) -> None:
+    """Run the API and dashboard at http://HOST:PORT."""
+    import os
+
+    import uvicorn
+
+    os.environ["KESTREL_DATA"] = str(data_dir)
+    typer.echo(f"Kestrel dashboard: http://{host}:{port}   API docs: http://{host}:{port}/api/docs")
+    uvicorn.run("kestrel.api.server:app", host=host, port=port, reload=reload, factory=False)
+
+
 if __name__ == "__main__":
     app()

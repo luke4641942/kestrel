@@ -14,3 +14,7 @@ htmlcov/
 # Local market data and downloads are never committed
 data/
 .cache/
+
+# Built dashboard (produced by `npm run build` in frontend/)
+src/kestrel/api/static/
+frontend/node_modules/

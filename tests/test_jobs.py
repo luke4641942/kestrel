@@ -1,0 +1,78 @@
+from __future__ import annotations
+
+import threading
+import time
+
+from kestrel.api.jobs import Job, JobContext, JobManager, JobStatus
+
+
+def _wait(manager: JobManager, job: Job, timeout: float = 5.0) -> Job:
+    deadline = time.monotonic() + timeout
+    while time.monotonic() < deadline:
+        current = manager.get(job.id)
+        assert current is not None
+        if current.status.finished:
+            return current
+        time.sleep(0.01)
+    raise AssertionError("job did not finish")
+
+
+def test_success_records_result_and_progress() -> None:
+    manager = JobManager()
+
+    def fn(ctx: JobContext) -> dict[str, int]:
+        ctx.progress(0.5, "halfway")
+        ctx.log("hello")
+        return {"answer": 42}
+
+    job = _wait(manager, manager.submit("t", {}, fn))
+    assert job.status is JobStatus.SUCCEEDED
+    assert job.result == {"answer": 42}
+    assert job.progress == 1.0
+    assert job.logs[0].endswith("hello")
+    assert job.started_at is not None
+    assert job.finished_at is not None
+
+
+def test_failure_records_error() -> None:
+    manager = JobManager()
+
+    def fn(_: JobContext) -> dict[str, int]:
+        raise RuntimeError("boom")
+
+    job = _wait(manager, manager.submit("t", {}, fn))
+    assert job.status is JobStatus.FAILED
+    assert job.error == "boom"
+
+
+def test_cooperative_cancellation() -> None:
+    manager = JobManager()
+    started = threading.Event()
+
+    def fn(ctx: JobContext) -> dict[str, int]:
+        started.set()
+        while True:
+            ctx.check_cancelled()
+            time.sleep(0.01)
+
+    job = manager.submit("t", {}, fn)
+    assert started.wait(2)
+    manager.cancel(job.id)
+    assert _wait(manager, job).status is JobStatus.CANCELLED
+
+
+def test_progress_is_clamped() -> None:
+    job = Job(id="x", kind="t", params={})
+    ctx = JobContext(job, threading.Lock())
+    ctx.progress(7.0)
+    assert job.progress == 1.0
+    ctx.progress(-1.0)
+    assert job.progress == 0.0
+
+
+def test_list_is_newest_first() -> None:
+    manager = JobManager()
+    a = manager.submit("a", {}, lambda _: {})
+    time.sleep(0.01)
+    b = manager.submit("b", {}, lambda _: {})
+    assert [j.id for j in manager.list()][:2] == [b.id, a.id]
