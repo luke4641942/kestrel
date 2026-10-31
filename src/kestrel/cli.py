@@ -86,6 +86,9 @@ def serve(
     ] = "127.0.0.1",
     port: Annotated[int, typer.Option()] = 8000,
     reload: Annotated[bool, typer.Option(help="Auto-reload on code changes (dev).")] = False,
+    config: Annotated[
+        Path, typer.Option("--config", envvar="KESTREL_CONFIG", help="Config file.")
+    ] = Path("kestrel.toml"),
 ) -> None:
     """Run the API and dashboard at http://HOST:PORT."""
     import os
@@ -93,6 +96,7 @@ def serve(
     import uvicorn
 
     os.environ["KESTREL_DATA"] = str(data_dir)
+    os.environ["KESTREL_CONFIG"] = str(config)
     typer.echo(f"Kestrel dashboard: http://{host}:{port}   API docs: http://{host}:{port}/api/docs")
     uvicorn.run("kestrel.api.server:app", host=host, port=port, reload=reload, factory=False)
 

@@ -20,6 +20,11 @@
   --focus: #2f5bd3;
   --on-primary: #ffffff;
   --shadow: 0 8px 28px rgba(20, 22, 26, 0.12), 0 1px 3px rgba(20, 22, 26, 0.08);
+  /* Cost components: categorical, validated for colour-vision deficiency in both themes. */
+  --cost-fee: #2a78d6;
+  --cost-spread: #eb6834;
+  --cost-impact: #1baf7a;
+  --cost-hatch: rgba(20, 22, 26, 0.06);
   color-scheme: light;
 }
 
@@ -39,6 +44,10 @@
   --focus: #7a9cf2;
   --on-primary: #16181c;
   --shadow: 0 8px 28px rgba(0, 0, 0, 0.45), 0 1px 3px rgba(0, 0, 0, 0.3);
+  --cost-fee: #3987e5;
+  --cost-spread: #d95926;
+  --cost-impact: #199e70;
+  --cost-hatch: rgba(255, 255, 255, 0.05);
   color-scheme: dark;
 }
 
@@ -701,6 +710,320 @@ p {
   padding: 20px 16px;
 }
 
+/* ---------- what a trade costs ---------- */
+
+.cost-hero {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 24px 48px;
+  margin-bottom: 40px;
+}
+
+.cost-hero-num {
+  font-size: 60px;
+  font-weight: 500;
+  line-height: 1;
+  letter-spacing: -0.03em;
+  margin-bottom: 8px;
+}
+
+.cost-hero-num small {
+  font-size: 20px;
+  color: var(--text-2);
+  margin-left: 6px;
+  letter-spacing: 0;
+}
+
+.cost-hero .cost-split {
+  flex: 1;
+  min-width: 260px;
+}
+
+.cost-split {
+  display: grid;
+  gap: 8px;
+}
+
+.cost-bar {
+  display: flex;
+  gap: 2px;
+  height: 12px;
+}
+
+.cost-bar span {
+  flex-basis: 0;
+  min-width: 2px;
+  border-radius: 2px;
+}
+
+.cost-key {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 18px;
+  font-size: 12px;
+  color: var(--text-2);
+}
+
+.cost-key b {
+  color: var(--text);
+  font-weight: 500;
+  font-family: var(--mono);
+}
+
+.swatch {
+  display: inline-block;
+  width: 9px;
+  height: 9px;
+  border-radius: 2px;
+  margin-right: 6px;
+}
+
+.cost-calc {
+  display: grid;
+  grid-template-columns: minmax(0, 300px) minmax(0, 1fr);
+}
+
+.cost-controls {
+  display: grid;
+  align-content: start;
+  gap: 20px;
+  padding: 20px;
+  background: var(--surface);
+  border-right: 1px solid var(--line);
+}
+
+.cost-controls .field {
+  display: grid;
+  gap: 6px;
+}
+
+.cost-label,
+.cost-controls .field label {
+  margin: 0;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text-2);
+}
+
+.cost-controls input[type="range"] {
+  height: auto;
+  padding: 0;
+  border: 0;
+  background: none;
+  accent-color: var(--text);
+}
+
+.cost-controls .select {
+  width: 100%;
+  height: 34px;
+}
+
+.cost-controls .form-hint {
+  margin: 0;
+  font-size: 12px;
+}
+
+.seg {
+  display: inline-flex;
+  width: max-content;
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+}
+
+.seg button {
+  padding: 5px 16px;
+  border: 0;
+  background: var(--bg);
+  color: var(--text-2);
+  font: inherit;
+  font-weight: 500;
+  cursor: pointer;
+}
+
+.seg button + button {
+  border-left: 1px solid var(--line-strong);
+}
+
+.seg button[aria-pressed="true"] {
+  background: var(--text);
+  color: var(--on-primary);
+}
+
+.cost-result {
+  display: grid;
+  align-content: start;
+  gap: 18px;
+  padding: 20px 24px;
+}
+
+.cost-result-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.cost-result-meta {
+  text-align: right;
+}
+
+.cost-total {
+  font-size: 28px;
+  font-weight: 500;
+  letter-spacing: -0.01em;
+}
+
+.cost-result .dl dd {
+  font-size: 13px;
+}
+
+.dl .cost-strong {
+  font-weight: 600;
+  color: var(--text);
+}
+
+.cost-reject {
+  display: grid;
+  gap: 4px;
+  padding: 14px 16px;
+  border: 1px solid var(--down);
+  border-radius: var(--radius);
+}
+
+.cost-reject strong {
+  color: var(--down);
+}
+
+.chart-box {
+  position: relative;
+}
+
+.chart-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 8px 16px;
+  margin-bottom: 8px;
+}
+
+.chart-scroll {
+  overflow-x: auto;
+}
+
+.cost-chart {
+  display: block;
+  width: 100%;
+  min-width: 560px;
+  height: auto;
+}
+
+.cost-chart text {
+  font: 11px var(--mono);
+  fill: var(--text-3);
+}
+
+.cost-chart .lab,
+.cost-chart .lab text {
+  font: 500 12px var(--sans);
+  fill: var(--text);
+}
+
+.cost-chart .lab2 {
+  font: 12px var(--sans);
+  fill: var(--text-2);
+}
+
+.chart-tip {
+  position: absolute;
+  z-index: 5;
+  display: grid;
+  gap: 2px;
+  min-width: 180px;
+  padding: 8px 10px;
+  font-size: 12px;
+  background: var(--bg);
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radius-sm);
+  box-shadow: var(--shadow);
+  pointer-events: none;
+}
+
+.chart-tip-head {
+  font-weight: 600;
+  margin-bottom: 2px;
+}
+
+.chart-tip-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 14px;
+}
+
+.chart-tip-total {
+  margin-top: 3px;
+  padding-top: 3px;
+  border-top: 1px solid var(--line);
+}
+
+.decisions {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.decisions li {
+  display: grid;
+  grid-template-columns: 110px minmax(0, 1fr);
+  gap: 4px 20px;
+  padding: 14px 18px;
+  border-bottom: 1px solid var(--line);
+}
+
+.decisions li:last-child {
+  border-bottom: 0;
+}
+
+.decisions h3 {
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.decisions p {
+  font-size: 13px;
+  color: var(--text-2);
+  max-width: 68ch;
+}
+
+.chip {
+  justify-self: start;
+  align-self: start;
+  margin-top: 1px;
+  padding: 1px 8px;
+  font-size: 11.5px;
+  font-weight: 500;
+  white-space: nowrap;
+  color: var(--text-2);
+  border: 1px solid var(--line-strong);
+  border-radius: 10px;
+}
+
+.chip.assumption {
+  border-style: dashed;
+}
+
+.chip.verify {
+  color: var(--warn);
+  border-color: var(--warn);
+}
+
+.chip.verify::before {
+  content: "! ";
+}
+
 /* ---------- misc ---------- */
 
 .progress {
@@ -906,6 +1229,16 @@ p {
   }
   .data-line {
     grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .cost-calc {
+    grid-template-columns: 1fr;
+  }
+  .cost-controls {
+    border-right: 0;
+    border-bottom: 1px solid var(--line);
+  }
+  .decisions li {
+    grid-template-columns: 1fr;
   }
   .data-line > div:nth-child(3) {
     border-left: 0;

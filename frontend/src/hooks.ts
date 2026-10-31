@@ -41,3 +41,13 @@ export function useResource<T>(
   const reload = useCallback(() => setTick((t) => t + 1), []);
   return { data, error, loading, reload };
 }
+
+/** `value`, but only after it has stopped changing for `ms` (e.g. while a slider drags). */
+export function useDebounced<T>(value: T, ms: number): T {
+  const [settled, setSettled] = useState(value);
+  useEffect(() => {
+    const timer = window.setTimeout(() => setSettled(value), ms);
+    return () => window.clearTimeout(timer);
+  }, [value, ms]);
+  return settled;
+}

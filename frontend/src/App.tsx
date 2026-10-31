@@ -4,16 +4,18 @@ import { JobsDock } from "./components/JobsDock";
 import { ErrorBanner, Status } from "./components/ui";
 import { isActive } from "./format";
 import { useResource } from "./hooks";
+import { Costs } from "./pages/Costs";
 import { Data } from "./pages/Data";
 import { Overview } from "./pages/Overview";
 import { Backtests, Trading } from "./pages/Placeholders";
 import { useTheme } from "./theme";
 
-export type Route = "overview" | "data" | "backtests" | "trading";
+export type Route = "overview" | "data" | "costs" | "backtests" | "trading";
 
 const NAV: { route: Route; label: string; later?: string }[] = [
   { route: "overview", label: "Overview" },
   { route: "data", label: "Data" },
+  { route: "costs", label: "What a trade costs" },
   { route: "backtests", label: "Backtests", later: "P2" },
   { route: "trading", label: "Trading", later: "P4" },
 ];
@@ -62,6 +64,12 @@ export function App() {
     return () => window.removeEventListener("hashchange", onHash);
   }, []);
 
+  // Browser tab title follows the page, e.g. "What a trade costs · Kestrel".
+  useEffect(() => {
+    const label = NAV.find((n) => n.route === route)?.label;
+    document.title = label && route !== "overview" ? `${label} · Kestrel` : "Kestrel";
+  }, [route]);
+
   // Poll jobs quickly while any are active, slowly otherwise.
   const [fast, setFast] = useState(false);
   const jobs = useResource(api.jobs, [], fast ? 1000 : 5000);
@@ -85,6 +93,9 @@ export function App() {
       break;
     case "data":
       page = <Data jobs={jobList} onJobStarted={onJobStarted} />;
+      break;
+    case "costs":
+      page = <Costs />;
       break;
     case "backtests":
       page = <Backtests />;

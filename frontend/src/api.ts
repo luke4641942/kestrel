@@ -72,6 +72,57 @@ export interface Job {
   finished_at: string | null;
 }
 
+export type Side = "buy" | "sell";
+
+export interface CostConfig {
+  account_currency: string;
+  fingerprint: string;
+  costs: {
+    taker_fee_bps: number;
+    half_spread_bps: number;
+    impact_coef_bps: number;
+    max_participation: number;
+  };
+  instruments: { symbol: string; step_size: number; min_qty: number; min_notional: number }[];
+}
+
+/** One simulated market order. Cost fields are null when `filled` is false. */
+export interface Quote {
+  symbol: string;
+  side: Side;
+  filled: boolean;
+  reason: string | null;
+  reference_price: number;
+  bar_volume: number;
+  quantity: number | null;
+  price: number | null;
+  notional: number | null;
+  participation: number | null;
+  fee: number | null;
+  spread_cost: number | null;
+  impact_cost: number | null;
+  total_cost: number | null;
+  cash_flow: number | null;
+}
+
+export interface CostCurve {
+  symbol: string;
+  side: Side;
+  reference_price: number;
+  bar_volume: number;
+  min_notional: number;
+  max_notional: number;
+  points: { notional: number; fee_bps: number; spread_bps: number; impact_bps: number; total_bps: number }[];
+}
+
+export interface QuoteParams {
+  notional: number;
+  price: number;
+  bar_volume: number;
+  side: Side;
+  symbol?: string;
+}
+
 export interface IngestRequest {
   symbol: string;
   interval: Interval;
@@ -114,6 +165,8 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
 }
 
 const enc = encodeURIComponent;
+const query = (p: object) =>
+  new URLSearchParams(Object.entries(p).map(([k, v]) => [k, String(v)])).toString();
 
 export const api = {
   health: () => request<Health>("/health"),
@@ -126,4 +179,7 @@ export const api = {
   ingest: (body: IngestRequest) =>
     request<Job>("/jobs/ingest", { method: "POST", body: JSON.stringify(body) }),
   cancelJob: (id: string) => request<Job>(`/jobs/${enc(id)}/cancel`, { method: "POST" }),
+  costs: () => request<CostConfig>("/costs"),
+  quote: (p: QuoteParams) => request<Quote>(`/costs/quote?${query(p)}`),
+  curve: (p: Omit<QuoteParams, "notional">) => request<CostCurve>(`/costs/curve?${query(p)}`),
 };

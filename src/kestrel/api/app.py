@@ -10,6 +10,7 @@ from __future__ import annotations
 from collections.abc import AsyncIterator, Callable
 from contextlib import asynccontextmanager
 from datetime import UTC, datetime
+from decimal import Decimal
 from pathlib import Path
 from typing import Any
 
@@ -19,7 +20,20 @@ from fastapi.staticfiles import StaticFiles
 
 from kestrel import __version__
 from kestrel.api.jobs import JobContext, JobError, JobManager
-from kestrel.api.models import Bars, Dataset, Health, IngestRequest, JobOut, QualityOut
+from kestrel.api.models import (
+    Bars,
+    CostConfigOut,
+    CostCurve,
+    CurvePoint,
+    Dataset,
+    Health,
+    IngestRequest,
+    JobOut,
+    QualityOut,
+    Quote,
+)
+from kestrel.backtest.costs import CostModel, Fill, Side
+from kestrel.config import Config, ConfigError, InstrumentRules, load_config
 from kestrel.data.binance_vision import BinanceVisionClient, Month, last_complete_month
 from kestrel.data.quality import check_klines
 from kestrel.data.schema import Interval
@@ -35,6 +49,7 @@ def create_app(
     data_dir: Path | str = "data",
     client_factory: ClientFactory = BinanceVisionClient,
     static_dir: Path | None = STATIC_DIR,
+    config_path: Path | str = "kestrel.toml",
 ) -> FastAPI:
     store = ParquetStore(data_dir)
     jobs = JobManager()
@@ -120,6 +135,85 @@ def create_app(
         symbol = _require(symbol, interval)
         report = check_klines(store.read(symbol, interval), interval)
         return QualityOut.from_report(symbol, interval, report)
+
+    # ---------- costs ----------
+    # Read-only views of the backtester's cost model. The config is re-read per request,
+    # so edits to kestrel.toml show up without a restart and a broken file is a clear 503.
+
+    def _config() -> Config:
+        try:
+            return load_config(config_path)
+        except ConfigError as e:
+            raise HTTPException(status.HTTP_503_SERVICE_UNAVAILABLE, str(e)) from None
+
+    def _rules(config: Config, symbol: str) -> InstrumentRules:
+        try:
+            return config.instrument(symbol)
+        except ConfigError as e:
+            raise HTTPException(status.HTTP_404_NOT_FOUND, str(e)) from None
+
+    @api.get("/costs")
+    def get_costs() -> CostConfigOut:
+        return CostConfigOut.from_config(_config())
+
+    @api.get("/costs/quote")
+    def quote_order(
+        notional: float = Query(gt=0, description="Order size in the account currency"),
+        price: float = Query(gt=0, description="Reference price before costs"),
+        bar_volume: float = Query(ge=0, description="Quote volume of the last closed bar"),
+        symbol: str = "BTCUSDT",
+        side: Side = Side.BUY,
+    ) -> Quote:
+        """Simulate one market order through the backtester's cost model."""
+        config = _config()
+        rules = _rules(config, symbol)
+        px, vol = Decimal(str(price)), Decimal(str(bar_volume))
+        result = CostModel(config.costs).fill_market(
+            side, Decimal(str(notional)) / px, px, vol, rules
+        )
+        return Quote.from_result(result, px, vol)
+
+    @api.get("/costs/curve")
+    def cost_curve(
+        price: float = Query(gt=0),
+        bar_volume: float = Query(gt=0),
+        symbol: str = "BTCUSDT",
+        side: Side = Side.BUY,
+        points: int = Query(default=160, ge=2, le=1000),
+    ) -> CostCurve:
+        """Cost in bps across the order sizes the simulator would fill, log-spaced."""
+        config = _config()
+        rules = _rules(config, symbol)
+        model = CostModel(config.costs)
+        px, vol = Decimal(str(price)), Decimal(str(bar_volume))
+        lo = float(rules.min_notional) or 1.0
+        hi = float(config.costs.max_participation * vol)
+        out: list[CurvePoint] = []
+        for i in range(points):
+            target = lo * (hi / lo) ** (i / (points - 1)) if hi > lo else lo
+            fill = model.fill_market(side, Decimal(f"{target:.10g}") / px, px, vol, rules)
+            if not isinstance(fill, Fill):
+                continue  # e.g. rounding down to the step pushed it under the minimum
+            n = fill.quantity * fill.reference_price
+            per_bps = Decimal(10_000) / n
+            out.append(
+                CurvePoint(
+                    notional=float(n),
+                    fee_bps=float(fill.fee * per_bps),
+                    spread_bps=float(fill.spread_cost * per_bps),
+                    impact_bps=float(fill.impact_cost * per_bps),
+                    total_bps=float(fill.total_cost * per_bps),
+                )
+            )
+        return CostCurve(
+            symbol=rules.symbol,
+            side=side,
+            reference_price=price,
+            bar_volume=bar_volume,
+            min_notional=float(rules.min_notional),
+            max_notional=hi,
+            points=out,
+        )
 
     # ---------- jobs ----------
 
