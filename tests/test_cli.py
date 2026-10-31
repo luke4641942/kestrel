@@ -85,6 +85,26 @@ def test_ingest_stores_fetched_months_and_reports_missing(tmp_path: Path) -> Non
 
 
 @pytest.mark.usefixtures("offline_binance")
+def test_ingest_fails_when_nothing_is_published(tmp_path: Path) -> None:
+    result = runner.invoke(
+        app,
+        [
+            "ingest",
+            "BTCUSDT",
+            "--start",
+            "2023-01",
+            "--end",
+            "2023-02",
+            "--data-dir",
+            str(tmp_path),
+        ],
+    )
+    assert result.exit_code == 1
+    assert "Binance publishes no BTCUSDT 1h data for 2023-01..2023-02" in result.output
+    assert ParquetStore(tmp_path).datasets() == []
+
+
+@pytest.mark.usefixtures("offline_binance")
 def test_ingest_then_check_is_clean(tmp_path: Path) -> None:
     args = ["--data-dir", str(tmp_path)]
     runner.invoke(app, ["ingest", "BTCUSDT", "--start", "2024-01", "--end", "2024-01", *args])

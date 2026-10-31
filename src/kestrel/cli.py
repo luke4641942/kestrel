@@ -43,6 +43,13 @@ def ingest(
     with BinanceVisionClient() as client:
         result = client.fetch_range(symbol, interval, first, last)
 
+    if not result.fetched:
+        typer.echo(
+            f"Binance publishes no {symbol.upper()} {interval.value} data for {first}..{last}. "
+            "Check the pair code and that it was listed in that period.",
+            err=True,
+        )
+        raise typer.Exit(code=1)
     if result.frames:
         store.write(symbol, interval, pl.concat(result.frames))
     typer.echo(f"fetched {len(result.fetched)} month(s) of {symbol.upper()} {interval.value}")
