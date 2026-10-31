@@ -67,9 +67,24 @@ Agreed with Luke; don't re-litigate without a reason.
   with 365 days; risk-free rate 0; returns measured daily at 00:00 UTC for every
   strategy; each run stores config fingerprint, git commit and dirty flag; engine
   parity is tested on a large account (the vectorised engine can't model minimums).
-- **Metrics:** CAGR, vol, Sharpe, Sortino, max drawdown + duration, Calmar, turnover,
-  cost drag (per year and as a share of gross), exposure, trade count, vs benchmark;
-  also skew and kurtosis, which P3's deflated Sharpe needs.
+- **Metrics.** Headline row on every backtest, in this order:
+  return vs BTC buy-and-hold · Sharpe with 95% CI and probabilistic Sharpe (P(true
+  SR > 0)) · max drawdown + longest time underwater · break-even cost vs actual cost
+  (bps per trade) · number of trades (with a warning when it is too few to trust).
+  Detail view:
+  - Returns: CAGR, vol, Sortino, Calmar (de-emphasised), calendar-year table, A$ P&L
+    alongside %.
+  - Market exposure: beta and correlation to BTC, exposure (% time invested), and a
+    comparison against BTC held at the same average exposure.
+  - Costs: turnover, cost drag (per year and share of gross), gross edge per trade vs
+    cost per trade, break-even cost (cost at which net return reaches zero).
+  - Tails: worst day, worst month, expected shortfall (95%, daily), skew, kurtosis
+    (skew/kurtosis also feed P3's deflated Sharpe).
+  - Trades: count, average holding period, win rate only beside average win/loss.
+  - Simulator effects: orders rejected (with reasons), trades the no-trade band skipped.
+  - Tax (AU, information only): holding-period distribution and share of gains from
+    positions held > 12 months (CGT discount). Not modelled in the engine.
+  Treat max drawdown as a floor, not a forecast. Capacity metrics are out of scope.
 - **Remaining P2 order:** trading core (`ExecutionVenue`, sim venue, target
   positions) -> vectorised engine -> event-driven engine -> metrics -> Backtests page.
 - **Config lives in `kestrel.toml`**, version-controlled. Every backtest run stores the
