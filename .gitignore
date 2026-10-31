@@ -11,10 +11,12 @@ build/
 .coverage
 htmlcov/
 
-# Local market data and downloads are never committed
-data/
-.cache/
+# Local market data and downloads are never committed. Anchored to the repo root:
+# an unanchored `data/` also matches src/kestrel/data/ and tests/data/.
+/data/
+/.cache/
 
 # Built dashboard (produced by `npm run build` in frontend/)
 src/kestrel/api/static/
 frontend/node_modules/
+*.tsbuildinfo

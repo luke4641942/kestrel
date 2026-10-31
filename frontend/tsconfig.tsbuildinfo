@@ -1,1 +1,0 @@
-{"root":["./src/App.tsx","./src/api.ts","./src/format.ts","./src/hooks.ts","./src/main.tsx","./src/theme.tsx","./src/components/CandleChart.tsx","./src/components/IngestForm.tsx","./src/components/JobsTable.tsx","./src/components/ui.tsx","./src/pages/Data.tsx","./src/pages/Overview.tsx","./src/pages/Placeholders.tsx","./vite.config.ts"],"version":"5.9.3"}
