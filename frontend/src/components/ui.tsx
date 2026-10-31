@@ -1,44 +1,63 @@
 import type { ReactNode } from "react";
 import type { JobStatus } from "../api";
 
-export function Card({
-  title,
-  actions,
-  children,
-  flush,
-}: {
-  title?: ReactNode;
-  actions?: ReactNode;
-  children: ReactNode;
-  flush?: boolean;
-}) {
+export function PageHeader({ title, subtitle, actions }: { title: string; subtitle?: string; actions?: ReactNode }) {
   return (
-    <section className="card">
-      {(title || actions) && (
-        <header className="card-header">
-          <h2>{title}</h2>
-          {actions && <div className="row">{actions}</div>}
-        </header>
-      )}
-      {flush ? children : <div className="card-body">{children}</div>}
-    </section>
-  );
-}
-
-export function Stat({ label, value, sub }: { label: string; value: ReactNode; sub?: ReactNode }) {
-  return (
-    <div className="card stat">
-      <div className="stat-label">{label}</div>
-      <div className="stat-value">{value}</div>
-      {sub && <div className="stat-sub">{sub}</div>}
+    <div className="page-header">
+      <div>
+        <h1>{title}</h1>
+        {subtitle && <p>{subtitle}</p>}
+      </div>
+      {actions && <div className="row">{actions}</div>}
     </div>
   );
 }
 
-type Tone = "ok" | "bad" | "warn" | "info" | "neutral";
+export function Section({
+  title,
+  description,
+  actions,
+  children,
+}: {
+  title?: ReactNode;
+  description?: ReactNode;
+  actions?: ReactNode;
+  children: ReactNode;
+}) {
+  return (
+    <section className="section">
+      {(title || actions) && (
+        <div className="section-header">
+          <div>
+            {title && <h2>{title}</h2>}
+            {description && <p>{description}</p>}
+          </div>
+          {actions && <div className="row">{actions}</div>}
+        </div>
+      )}
+      {children}
+    </section>
+  );
+}
 
-export function Pill({ tone = "neutral", pulse, children }: { tone?: Tone; pulse?: boolean; children: ReactNode }) {
-  return <span className={`pill ${tone}${pulse ? " running" : ""}`}>{children}</span>;
+export function Panel({ children, pad }: { children: ReactNode; pad?: boolean }) {
+  return <div className={`panel${pad ? " panel-pad" : ""}`}>{children}</div>;
+}
+
+export function Stat({ label, value, note }: { label: string; value: ReactNode; note?: ReactNode }) {
+  return (
+    <div className="stat">
+      <div className="stat-label">{label}</div>
+      <div className="stat-value">{value}</div>
+      {note && <div className="stat-note">{note}</div>}
+    </div>
+  );
+}
+
+export type Tone = "ok" | "bad" | "warn" | "info" | "neutral";
+
+export function Status({ tone = "neutral", pulse, children }: { tone?: Tone; pulse?: boolean; children: ReactNode }) {
+  return <span className={`status ${tone}${pulse ? " pulse" : ""}`}>{children}</span>;
 }
 
 const JOB_TONE: Record<JobStatus, Tone> = {
@@ -49,11 +68,19 @@ const JOB_TONE: Record<JobStatus, Tone> = {
   cancelled: "warn",
 };
 
-export function JobStatusPill({ status }: { status: JobStatus }) {
+const JOB_LABEL: Record<JobStatus, string> = {
+  queued: "Queued",
+  running: "Running",
+  succeeded: "Succeeded",
+  failed: "Failed",
+  cancelled: "Cancelled",
+};
+
+export function JobStatus({ status }: { status: JobStatus }) {
   return (
-    <Pill tone={JOB_TONE[status]} pulse={status === "running"}>
-      {status}
-    </Pill>
+    <Status tone={JOB_TONE[status]} pulse={status === "running"}>
+      {JOB_LABEL[status]}
+    </Status>
   );
 }
 
@@ -75,19 +102,11 @@ export function Empty({ title, children }: { title: string; children?: ReactNode
   );
 }
 
-export function PageHeader({ title, subtitle, actions }: { title: string; subtitle?: string; actions?: ReactNode }) {
-  return (
-    <div className="page-header">
-      <div>
-        <h1>{title}</h1>
-        {subtitle && <p>{subtitle}</p>}
-      </div>
-      {actions && <div className="row">{actions}</div>}
-    </div>
-  );
-}
-
 export function ErrorBanner({ error }: { error?: string }) {
   if (!error) return null;
-  return <div className="banner">Couldn't reach the Kestrel API: {error}</div>;
+  return (
+    <div className="banner">
+      Can't reach the Kestrel API ({error}). Start it with <span className="mono">kestrel serve</span>.
+    </div>
+  );
 }

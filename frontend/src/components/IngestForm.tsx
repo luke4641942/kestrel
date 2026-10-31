@@ -27,7 +27,7 @@ export function IngestForm({ onStarted }: { onStarted: (job: Job) => void }) {
     <form onSubmit={submit}>
       <div className="form">
         <div className="field">
-          <label htmlFor="sym">Symbol</label>
+          <label htmlFor="sym">Pair</label>
           <input id="sym" value={symbol} onChange={(e) => setSymbol(e.target.value)} spellCheck={false} />
         </div>
         <div className="field">
@@ -39,18 +39,25 @@ export function IngestForm({ onStarted }: { onStarted: (job: Job) => void }) {
           </select>
         </div>
         <div className="field">
-          <label htmlFor="start">From</label>
+          <label htmlFor="start">From month</label>
           <input id="start" type="month" value={start} onChange={(e) => setStart(e.target.value)} />
         </div>
         <div className="field">
-          <label htmlFor="end">To</label>
+          <label htmlFor="end">To month</label>
           <input id="end" type="month" value={end} max={lastCompleteMonth()} onChange={(e) => setEnd(e.target.value)} />
         </div>
         <button className="btn btn-primary" disabled={busy || !symbol || !start}>
-          {busy ? "Starting…" : "Ingest"}
+          {busy ? "Starting" : "Start ingest"}
         </button>
       </div>
-      {error && <div className="form-error">{error}</div>}
+      {error ? (
+        <div className="form-error">{error}</div>
+      ) : (
+        <p className="form-hint">
+          Downloads monthly archives from data.binance.vision, verifies each checksum and runs a quality audit.
+          Re-ingesting a month replaces it.
+        </p>
+      )}
     </form>
   );
 }

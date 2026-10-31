@@ -3,7 +3,7 @@ from __future__ import annotations
 import threading
 import time
 
-from kestrel.api.jobs import Job, JobContext, JobManager, JobStatus
+from kestrel.api.jobs import Job, JobContext, JobError, JobManager, JobStatus
 
 
 def _wait(manager: JobManager, job: Job, timeout: float = 5.0) -> Job:
@@ -76,3 +76,25 @@ def test_list_is_newest_first() -> None:
     time.sleep(0.01)
     b = manager.submit("b", {}, lambda _: {})
     assert [j.id for j in manager.list()][:2] == [b.id, a.id]
+
+
+def test_expected_failure_logs_message_without_traceback() -> None:
+    manager = JobManager()
+
+    def fn(_: JobContext) -> dict[str, int]:
+        raise JobError("nothing to ingest")
+
+    job = _wait(manager, manager.submit("t", {}, fn))
+    assert job.status is JobStatus.FAILED
+    assert job.error == "nothing to ingest"
+    assert not any("Traceback" in line for line in job.logs)
+
+
+def test_unexpected_failure_keeps_traceback() -> None:
+    manager = JobManager()
+
+    def fn(_: JobContext) -> dict[str, int]:
+        raise RuntimeError("bug")
+
+    job = _wait(manager, manager.submit("t", {}, fn))
+    assert any("Traceback" in line for line in job.logs)

@@ -1,18 +1,26 @@
 import { api, type Job } from "../api";
-import { Card, PageHeader, Pill, Stat } from "../components/ui";
+import type { Route } from "../App";
 import { JobsTable } from "../components/JobsTable";
+import { PageHeader, Panel, Section, Stat, Status } from "../components/ui";
 import { date, num } from "../format";
 import { useResource } from "../hooks";
-import type { Route } from "../App";
 
-const ROADMAP: { phase: string; name: string; status: "done" | "active" | "planned" }[] = [
-  { phase: "P1", name: "Data infrastructure", status: "done" },
-  { phase: "P1.5", name: "API & dashboard", status: "active" },
-  { phase: "P2", name: "Backtester & cost model", status: "planned" },
-  { phase: "P3", name: "Validation (walk-forward, trial log)", status: "planned" },
-  { phase: "P4", name: "Execution, paper & live trading", status: "planned" },
-  { phase: "P5", name: "Perpetuals", status: "planned" },
+type PhaseState = "done" | "active" | "planned";
+
+const PHASES: { id: string; name: string; state: PhaseState }[] = [
+  { id: "P1", name: "Data infrastructure", state: "done" },
+  { id: "P1.5", name: "API and dashboard", state: "done" },
+  { id: "P2", name: "Backtester and cost model", state: "active" },
+  { id: "P3", name: "Validation", state: "planned" },
+  { id: "P4", name: "Paper and live execution", state: "planned" },
+  { id: "P5", name: "Perpetuals", state: "planned" },
 ];
+
+const PHASE_STATUS: Record<PhaseState, { tone: "ok" | "info" | "neutral"; label: string }> = {
+  done: { tone: "ok", label: "Done" },
+  active: { tone: "info", label: "Next" },
+  planned: { tone: "neutral", label: "Planned" },
+};
 
 export function Overview({ jobs, reloadJobs, go }: { jobs: Job[]; reloadJobs: () => void; go: (r: Route) => void }) {
   const datasets = useResource(api.datasets, [], 10_000);
@@ -28,7 +36,7 @@ export function Overview({ jobs, reloadJobs, go }: { jobs: Job[]; reloadJobs: ()
     <>
       <PageHeader
         title="Overview"
-        subtitle="Platform status at a glance."
+        subtitle="Stored data, running jobs and build progress."
         actions={
           <button className="btn btn-primary" onClick={() => go("data")}>
             Ingest data
@@ -36,43 +44,52 @@ export function Overview({ jobs, reloadJobs, go }: { jobs: Job[]; reloadJobs: ()
         }
       />
 
-      <div className="grid stats">
-        <Stat label="Datasets" value={num(ds.length)} sub={`${symbols} symbol${symbols === 1 ? "" : "s"}`} />
-        <Stat label="Bars stored" value={num(totalBars)} sub={earliest ? `${date(earliest)} → ${date(latest)}` : "No data yet"} />
-        <Stat label="Active jobs" value={num(running)} sub={failed ? `${failed} failed recently` : "No failures"} />
-        <Stat label="Strategies live" value="0" sub="Execution arrives in P4" />
-      </div>
+      <Panel>
+        <div className="stats">
+          <Stat label="Datasets" value={num(ds.length)} note={`${symbols} symbol${symbols === 1 ? "" : "s"}`} />
+          <Stat label="Bars stored" value={num(totalBars)} note="Across all datasets" />
+          <Stat
+            label="Coverage"
+            value={earliest ? date(earliest).slice(0, 7) : "None"}
+            note={earliest ? `to ${date(latest)}` : "Ingest a dataset to begin"}
+          />
+          <Stat
+            label="Jobs running"
+            value={num(running)}
+            note={failed ? `${failed} failed in this session` : "No failures"}
+          />
+        </div>
+      </Panel>
 
-      <div className="spacer" />
-
-      <div className="grid two-col">
-        <Card
+      <div className="split" style={{ marginTop: 40 }}>
+        <Section
           title="Recent jobs"
-          flush
           actions={
-            <button className="btn btn-sm" onClick={() => go("jobs")}>
-              View all
+            <button className="link-btn" onClick={() => go("jobs")}>
+              View all jobs
             </button>
           }
         >
-          <JobsTable jobs={jobs} onChange={reloadJobs} limit={5} />
-        </Card>
+          <Panel>
+            <JobsTable jobs={jobs} onChange={reloadJobs} limit={6} />
+          </Panel>
+        </Section>
 
-        <Card title="Roadmap" flush>
-          <ul className="roadmap">
-            {ROADMAP.map((r) => (
-              <li key={r.phase}>
-                <span>
-                  <span className="phase">{r.phase}</span>
-                  {r.name}
-                </span>
-                <Pill tone={r.status === "done" ? "ok" : r.status === "active" ? "warn" : "neutral"}>
-                  {r.status === "done" ? "done" : r.status === "active" ? "in progress" : "planned"}
-                </Pill>
-              </li>
-            ))}
-          </ul>
-        </Card>
+        <Section title="Build progress">
+          <Panel>
+            <ol className="phases">
+              {PHASES.map((p) => (
+                <li key={p.id} className={p.state}>
+                  <span className="id">{p.id}</span>
+                  <span className="name">{p.name}</span>
+                  <Status tone={PHASE_STATUS[p.state].tone}>
+                    <span className="small secondary">{PHASE_STATUS[p.state].label}</span>
+                  </Status>
+                </li>
+              ))}
+            </ol>
+          </Panel>
+        </Section>
       </div>
     </>
   );

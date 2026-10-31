@@ -1,68 +1,73 @@
-import { Card, Empty, PageHeader, Pill } from "../components/ui";
+import { PageHeader, Panel } from "../components/ui";
 
-function Planned({ items }: { items: { title: string; body: string }[] }) {
+function Scope({ items }: { items: [string, string][] }) {
   return (
-    <div className="planned">
-      {items.map((i) => (
-        <div key={i.title} className="card">
-          <h4>{i.title}</h4>
-          <p>{i.body}</p>
-        </div>
+    <ul className="scope">
+      {items.map(([name, body]) => (
+        <li key={name}>
+          <strong>{name}</strong>
+          <span>{body}</span>
+        </li>
       ))}
-    </div>
+    </ul>
   );
 }
 
 export function Backtests() {
   return (
     <>
-      <PageHeader title="Backtests" subtitle="Run, inspect and compare strategy backtests." actions={<Pill>Phase 2</Pill>} />
-      <Card>
-        <Empty title="The backtester is the next build">
+      <PageHeader title="Backtests" subtitle="Run, inspect and compare strategy backtests." />
+      <Panel pad>
+        <div className="empty" style={{ padding: 8 }}>
+          <h3>Not built yet. This is phase 2.</h3>
           <p>
-            Backtests will run as jobs from here, exactly like ingestion does now, and every run is kept so results can be
-            compared side by side.
+            Backtests will run as jobs, the same way ingests do, and every run is kept so results can be compared
+            side by side.
           </p>
-          <Planned
+          <Scope
             items={[
-              { title: "Equity & drawdown", body: "Net equity curve against buy-and-hold, with underwater drawdown." },
-              { title: "Cost attribution", body: "Gross vs net PnL, so you can see how much fees and slippage ate." },
-              { title: "Trade blotter", body: "Every simulated fill with price, size, fee and reason for entry or exit." },
-              { title: "Metrics", body: "Sharpe, Sortino, max drawdown, turnover, exposure and hit rate." },
-              { title: "Run comparison", body: "Overlay runs and diff their parameters." },
-              { title: "Trial log", body: "Every variant ever tried, so the Sharpe can be deflated honestly (P3)." },
+              ["Equity and drawdown", "Net equity against buy-and-hold, with the drawdown underneath."],
+              ["Cost attribution", "Gross and net PnL, showing what fees and slippage cost."],
+              ["Trade blotter", "Every simulated fill with price, size, fee and the reason for it."],
+              ["Metrics", "Sharpe, Sortino, max drawdown, turnover, exposure and hit rate."],
+              ["Run comparison", "Overlay runs and compare their parameters."],
+              ["Trial log", "Every variant tried, so results can be deflated for multiple testing."],
             ]}
           />
-        </Empty>
-      </Card>
+        </div>
+      </Panel>
     </>
   );
 }
 
-export function Live() {
+export function Trading() {
   return (
     <>
-      <PageHeader title="Trading" subtitle="Paper and live strategy control." actions={<Pill>Phase 4</Pill>} />
-      <Card>
-        <Empty title="No strategies deployed">
+      <PageHeader
+        title="Trading"
+        subtitle="Paper and live strategy control."
+        actions={
+          <button className="btn btn-danger" disabled title="Available once execution is built">
+            Flatten all positions
+          </button>
+        }
+      />
+      <Panel pad>
+        <div className="empty" style={{ padding: 8 }}>
+          <h3>No strategies deployed</h3>
           <p>
-            Execution comes after the backtester and validation are proven. Strategies will run through the same code path
-            here as in backtests, against Binance Spot Testnet first.
+            Execution comes after the backtester and validation are proven. Strategies will run through the same code
+            path here as in backtests, on Binance Spot Testnet first.
           </p>
-          <div className="row" style={{ justifyContent: "center" }}>
-            <button className="btn btn-danger" disabled title="Available once execution is built">
-              Kill switch: flatten all
-            </button>
-          </div>
-          <Planned
+          <Scope
             items={[
-              { title: "Positions & orders", body: "Live state, reconciled against the exchange on every cycle." },
-              { title: "Live vs backtest", body: "Real fills against what the backtest expected; drift is flagged." },
-              { title: "Risk limits", body: "Max position, daily loss stop and drawdown halt, set before go-live." },
+              ["Positions and orders", "Live state, reconciled against the exchange every cycle."],
+              ["Live against backtest", "Real fills compared with what the backtest expected, with drift flagged."],
+              ["Risk limits", "Maximum position, daily loss stop and drawdown halt, set before going live."],
             ]}
           />
-        </Empty>
-      </Card>
+        </div>
+      </Panel>
     </>
   );
 }

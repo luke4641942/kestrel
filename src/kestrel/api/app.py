@@ -18,7 +18,7 @@ from fastapi import APIRouter, FastAPI, HTTPException, Query, status
 from fastapi.staticfiles import StaticFiles
 
 from kestrel import __version__
-from kestrel.api.jobs import JobContext, JobManager
+from kestrel.api.jobs import JobContext, JobError, JobManager
 from kestrel.api.models import Bars, Dataset, Health, IngestRequest, JobOut, QualityOut
 from kestrel.data.binance_vision import BinanceVisionClient, Month, last_complete_month
 from kestrel.data.quality import check_klines
@@ -139,7 +139,7 @@ def create_app(
                 result = client.fetch_range(symbol, req.interval, first, last, on_month)
 
             if not result.fetched:
-                raise ValueError(
+                raise JobError(
                     f"Binance publishes no {symbol} {req.interval.value} data for {first}..{last}. "
                     "Check the pair code and that it was listed in that period."
                 )

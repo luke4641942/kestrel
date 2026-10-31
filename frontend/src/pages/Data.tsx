@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { api, type Dataset, type Job } from "../api";
 import { CandleChart } from "../components/CandleChart";
 import { IngestForm } from "../components/IngestForm";
-import { Card, Empty, PageHeader, Pill } from "../components/ui";
+import { Empty, PageHeader, Panel, Section, Status } from "../components/ui";
 import { date, dateTime, num } from "../format";
 import { useResource } from "../hooks";
 
@@ -21,142 +21,173 @@ export function Data({ jobs, onJobStarted }: { jobs: Job[]; onJobStarted: (job: 
 
   return (
     <>
-      <PageHeader title="Data" subtitle="Historical market data from Binance: ingest, inspect and audit." />
+      <PageHeader title="Data" subtitle="Historical Binance spot data: ingest, inspect and audit." />
 
-      <Card title="Ingest from data.binance.vision">
-        <IngestForm onStarted={onJobStarted} />
-        <p className="muted" style={{ margin: "12px 0 0", fontSize: 12 }}>
-          Downloads monthly archives, verifies each against Binance's SHA-256 checksum, stores them as Parquet and runs
-          a quality audit. Re-ingesting a month replaces it, so it's always safe to re-run.
-        </p>
-      </Card>
+      <Section title="Ingest">
+        <Panel pad>
+          <IngestForm onStarted={onJobStarted} />
+        </Panel>
+      </Section>
 
-      <div className="spacer" />
-
-      <Card title="Datasets" flush>
-        {list.length === 0 ? (
-          <Empty title={datasets.loading ? "Loading…" : "No data stored yet"}>
-            {!datasets.loading && <p>Start an ingest above. BTCUSDT 1h from 2020 is a good first dataset.</p>}
-          </Empty>
-        ) : (
-          <table className="table">
-            <thead>
-              <tr>
-                <th>Symbol</th>
-                <th>Interval</th>
-                <th>Venue</th>
-                <th className="num">Months</th>
-                <th className="num">Bars</th>
-                <th className="num">From</th>
-                <th className="num">To</th>
-              </tr>
-            </thead>
-            <tbody>
-              {list.map((d) => (
-                <tr
-                  key={key(d)}
-                  className={`clickable${current && key(current) === key(d) ? " selected" : ""}`}
-                  onClick={() => setSelected(key(d))}
-                >
-                  <td className="mono">{d.symbol}</td>
-                  <td className="mono">{d.interval}</td>
-                  <td className="muted">{d.venue}</td>
-                  <td className="num mono">{d.months}</td>
-                  <td className="num mono">{num(d.rows)}</td>
-                  <td className="num mono">{date(d.first)}</td>
-                  <td className="num mono">{date(d.last)}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        )}
-      </Card>
+      <Section title="Datasets">
+        <Panel>
+          {list.length === 0 ? (
+            <Empty title={datasets.loading ? "Loading datasets" : "No data stored yet"}>
+              {!datasets.loading && <p>Ingest a dataset above. BTCUSDT 1h from 2020 is a good starting point.</p>}
+            </Empty>
+          ) : (
+            <div className="table-wrap">
+              <table className="table nowrap">
+                <thead>
+                  <tr>
+                    <th>Symbol</th>
+                    <th>Interval</th>
+                    <th>Venue</th>
+                    <th className="num">Months</th>
+                    <th className="num">Bars</th>
+                    <th className="num">First bar</th>
+                    <th className="num">Last bar</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {list.map((d) => (
+                    <tr
+                      key={key(d)}
+                      className={`clickable${current && key(current) === key(d) ? " selected" : ""}`}
+                      onClick={() => setSelected(key(d))}
+                    >
+                      <td style={{ fontWeight: 500 }}>{d.symbol}</td>
+                      <td>{d.interval}</td>
+                      <td className="secondary">Binance spot</td>
+                      <td className="num">{d.months}</td>
+                      <td className="num">{num(d.rows)}</td>
+                      <td className="num">{date(d.first)}</td>
+                      <td className="num">{date(d.last)}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </Panel>
+      </Section>
 
       {current && <DatasetDetail ds={current} />}
     </>
   );
 }
 
+const RANGES = [
+  { bars: 250, label: "250 bars" },
+  { bars: 1000, label: "1,000 bars" },
+  { bars: 5000, label: "5,000 bars" },
+  { bars: 20000, label: "20,000 bars" },
+];
+
 function DatasetDetail({ ds }: { ds: Dataset }) {
   const [limit, setLimit] = useState(1000);
   const bars = useResource(() => api.bars(ds.symbol, ds.interval, limit), [ds.symbol, ds.interval, ds.rows, limit]);
   const quality = useResource(() => api.quality(ds.symbol, ds.interval), [ds.symbol, ds.interval, ds.rows]);
   const q = quality.data;
+  const b = bars.data;
+
+  const lastClose = b?.close.at(-1);
+  const firstOpen = b?.open[0];
+  const change = lastClose !== undefined && firstOpen ? lastClose / firstOpen - 1 : undefined;
+
+  const checks = q
+    ? [
+        { label: "Duplicate bars", value: q.duplicates },
+        { label: "Misaligned timestamps", value: q.misaligned },
+        { label: "OHLC violations", value: q.ohlc_violations },
+        { label: "Non-positive prices", value: q.non_positive_prices },
+        { label: "Negative volumes", value: q.negative_volumes },
+        { label: "Null values", value: q.nulls },
+      ]
+    : [];
 
   return (
-    <>
-      <div className="spacer" />
-      <div className="grid two-col">
-        <Card
-          title={
-            <>
-              {ds.symbol} <span className="muted mono">· {ds.interval}</span>
-            </>
-          }
-          actions={
-            <div className="field">
-              <select value={limit} onChange={(e) => setLimit(Number(e.target.value))} aria-label="Bars to show">
-                {[250, 1000, 5000, 20000].map((n) => (
-                  <option key={n} value={n}>
-                    Last {num(n)} bars
-                  </option>
-                ))}
-              </select>
+    <Section title={`${ds.symbol} ${ds.interval}`}>
+      <div className="split">
+        <Panel>
+          <div className="chart-meta">
+            <div className="last">
+              {lastClose !== undefined ? (
+                <>
+                  <strong>{lastClose.toLocaleString("en-AU", { maximumFractionDigits: 2 })}</strong>
+                  {change !== undefined && (
+                    <span className={change >= 0 ? "up" : "down"}>
+                      {change >= 0 ? "+" : ""}
+                      {(change * 100).toFixed(2)}%
+                    </span>
+                  )}{" "}
+                  over the window shown
+                </>
+              ) : (
+                "Loading bars"
+              )}
             </div>
-          }
-        >
-          {bars.data ? <CandleChart bars={bars.data} /> : <div className="chart" />}
-        </Card>
+            <select
+              className="select"
+              value={limit}
+              onChange={(e) => setLimit(Number(e.target.value))}
+              aria-label="Bars to show"
+            >
+              {RANGES.map((r) => (
+                <option key={r.bars} value={r.bars}>
+                  Last {r.label}
+                </option>
+              ))}
+            </select>
+          </div>
+          {b ? <CandleChart bars={b} /> : <div className="chart" />}
+        </Panel>
 
-        <Card
-          title="Data quality"
-          actions={q && <Pill tone={q.is_clean ? "ok" : "bad"}>{q.is_clean ? "clean" : "failed"}</Pill>}
-        >
+        <Panel pad>
+          <div className="row" style={{ justifyContent: "space-between", marginBottom: 8 }}>
+            <h2>Quality audit</h2>
+            {q && <Status tone={q.is_clean ? "ok" : "bad"}>{q.is_clean ? "Clean" : "Failed"}</Status>}
+          </div>
           {!q ? (
-            <div className="muted">{quality.error ?? "Auditing…"}</div>
+            <p className="secondary">{quality.error ?? "Auditing"}</p>
           ) : (
             <>
-              <dl className="kv">
-                <dt>Bars</dt>
+              <dl className="dl">
+                <dt>Bars checked</dt>
                 <dd>{num(q.rows)}</dd>
-                <dt>Duplicates</dt>
-                <dd className={q.duplicates ? "bad" : ""}>{q.duplicates}</dd>
-                <dt>Misaligned timestamps</dt>
-                <dd className={q.misaligned ? "bad" : ""}>{q.misaligned}</dd>
-                <dt>OHLC violations</dt>
-                <dd className={q.ohlc_violations ? "bad" : ""}>{q.ohlc_violations}</dd>
-                <dt>Non-positive prices</dt>
-                <dd className={q.non_positive_prices ? "bad" : ""}>{q.non_positive_prices}</dd>
-                <dt>Negative volumes</dt>
-                <dd className={q.negative_volumes ? "bad" : ""}>{q.negative_volumes}</dd>
-                <dt>Nulls</dt>
-                <dd className={q.nulls ? "bad" : ""}>{q.nulls}</dd>
+                {checks.map((c) => (
+                  <FragmentRow key={c.label} label={c.label} value={c.value} />
+                ))}
                 <dt>Gaps</dt>
-                <dd>
-                  {q.gaps.length} ({num(q.missing_bars)} bars)
-                </dd>
+                <dd>{q.gaps.length ? `${q.gaps.length} (${num(q.missing_bars)} bars)` : "None"}</dd>
               </dl>
               {q.gaps.length > 0 && (
-                <>
-                  <div className="spacer" />
-                  <div className="muted" style={{ fontSize: 12, marginBottom: 6 }}>
-                    Gaps are reported, not filled. Small ones usually match real exchange outages.
-                  </div>
-                  <dl className="kv" style={{ fontSize: 12 }}>
-                    {q.gaps.slice(0, 8).map((g) => (
-                      <div key={g.after} style={{ display: "contents" }}>
-                        <dt className="mono">{dateTime(g.after)}</dt>
-                        <dd>{g.missing_bars} bars</dd>
-                      </div>
+                <div style={{ marginTop: 20 }}>
+                  <p className="small secondary" style={{ marginBottom: 8 }}>
+                    Gaps are reported, not filled. Short ones usually match real exchange outages.
+                  </p>
+                  <dl className="dl small">
+                    {q.gaps.slice(0, 6).map((g) => (
+                      <FragmentRow key={g.after} label={dateTime(g.after)} value={`${g.missing_bars} missing`} />
                     ))}
                   </dl>
-                  {q.gaps.length > 8 && <div className="muted" style={{ fontSize: 12 }}>+{q.gaps.length - 8} more</div>}
-                </>
+                  {q.gaps.length > 6 && <p className="small tertiary">and {q.gaps.length - 6} more</p>}
+                </div>
               )}
             </>
           )}
-        </Card>
+        </Panel>
       </div>
+    </Section>
+  );
+}
+
+function FragmentRow({ label, value }: { label: string; value: number | string }) {
+  const bad = typeof value === "number" && value > 0;
+  return (
+    <>
+      <dt>{label}</dt>
+      <dd className={bad ? "bad" : ""}>{typeof value === "number" ? num(value) : value}</dd>
     </>
   );
 }

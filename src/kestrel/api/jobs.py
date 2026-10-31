@@ -39,6 +39,14 @@ class JobCancelledError(Exception):
     """Raised inside a job when cancellation has been requested."""
 
 
+class JobError(Exception):
+    """An expected failure with a user-facing message (bad input, nothing to do).
+
+    Logged as a single line. Any other exception is treated as a bug and its
+    traceback is kept in the job log.
+    """
+
+
 def _now() -> datetime:
     return datetime.now(UTC)
 
@@ -112,6 +120,10 @@ class JobManager:
         except JobCancelledError:
             with self._lock:
                 job.status, job.message = JobStatus.CANCELLED, "Cancelled"
+        except JobError as exc:
+            with self._lock:
+                job.status, job.message, job.error = JobStatus.FAILED, "Failed", str(exc)
+                job.logs.append(f"{_now():%H:%M:%S} Failed: {exc}")
         except Exception as exc:
             with self._lock:
                 job.status, job.message, job.error = JobStatus.FAILED, "Failed", str(exc)

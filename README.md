@@ -75,6 +75,10 @@ duckdb.sql("""
 
 ## Dashboard
 
+![Kestrel dashboard, Data page](docs/dashboard-light.png)
+
+<sub>Screenshot uses synthetic test data. Light and dark themes; toggle in the top bar.</sub>
+
 One place to run every operation. Long-running work (ingestion now, backtests and
 validation runs later) executes as a **job** with live progress, logs and
 cancellation, so nothing blocks and every run leaves a record.
@@ -125,7 +129,7 @@ data.binance.vision ──► BinanceVisionClient ──► parse_archive ──
 | `kestrel.api.app` | REST endpoints for datasets, bars, quality and jobs |
 | `kestrel.api.jobs` | Thread-pool job runner: progress, logs, cooperative cancellation |
 | `kestrel.cli` | `ingest`, `check`, `list`, `serve` commands |
-| `frontend/` | React + TypeScript dashboard, typed API client, TradingView Lightweight Charts |
+| `frontend/` | React + TypeScript dashboard, typed API client, light/dark theme tokens, TradingView Lightweight Charts |
 
 ### Notable details
 
