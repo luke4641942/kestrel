@@ -87,7 +87,7 @@ cancellation, so nothing blocks and every run leaves a record.
 |---|---|
 | Overview | Platform health, data coverage, active and recent jobs, roadmap |
 | Data | Ingest from Binance, browse datasets, candlestick + volume chart, quality audit with gap list |
-| Jobs | Every operation with status, progress, duration, logs and cancel |
+| Jobs dock | Floating tray on every page: live progress when collapsed; expands to every job with logs and cancel |
 | Backtests | *Phase 2:* equity and drawdown, cost attribution, trade blotter, run comparison |
 | Trading | *Phase 4:* positions, live vs backtest drift, risk limits, kill switch |
 

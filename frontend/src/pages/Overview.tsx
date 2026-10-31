@@ -1,8 +1,7 @@
 import { api, type Job } from "../api";
 import type { Route } from "../App";
-import { JobsTable } from "../components/JobsTable";
-import { PageHeader, Panel, Section, Stat, Status } from "../components/ui";
-import { date, num } from "../format";
+import { Empty, PageHeader, Panel, Section, Stat, Status } from "../components/ui";
+import { ago, date, num } from "../format";
 import { useResource } from "../hooks";
 
 type PhaseState = "done" | "active" | "planned";
@@ -22,21 +21,34 @@ const PHASE_STATUS: Record<PhaseState, { tone: "ok" | "info" | "neutral"; label:
   planned: { tone: "neutral", label: "Planned" },
 };
 
-export function Overview({ jobs, reloadJobs, go }: { jobs: Job[]; reloadJobs: () => void; go: (r: Route) => void }) {
-  const datasets = useResource(api.datasets, [], 10_000);
-  const ds = datasets.data ?? [];
-  const totalBars = ds.reduce((s, d) => s + d.rows, 0);
-  const symbols = new Set(ds.map((d) => d.symbol)).size;
-  const running = jobs.filter((j) => j.status === "running" || j.status === "queued").length;
-  const failed = jobs.filter((j) => j.status === "failed").length;
-  const earliest = ds.map((d) => d.first).filter(Boolean).sort()[0];
-  const latest = ds.map((d) => d.last).filter(Boolean).sort().at(-1);
+/**
+ * Strategy board columns. The ranking is deliberately out-of-sample, after costs and
+ * deflated for the number of variants tried: ranking by raw backtest return would
+ * reward whichever of many variants got lucky.
+ */
+const STRATEGY_COLUMNS: { label: string; title: string; num?: boolean }[] = [
+  { label: "Strategy", title: "Name, market and bar interval" },
+  { label: "Stage", title: "Backtest, validated, paper or live" },
+  { label: "OOS Sharpe", title: "Sharpe ratio on data the strategy was not tuned on, after all costs", num: true },
+  {
+    label: "Deflated",
+    title: "Deflated Sharpe ratio: probability the true Sharpe is above zero given how many variants were tried",
+    num: true,
+  },
+  { label: "Trials", title: "Variants logged in the trial log for this hypothesis", num: true },
+  { label: "Cost drag", title: "Annual return lost to fees, spread and slippage", num: true },
+  { label: "Drift", title: "Paper or live return minus the backtest on the same bars", num: true },
+  { label: "90 days", title: "Recent equity curve" },
+];
 
+const Pending = () => <span className="tertiary">—</span>;
+
+export function Overview({ jobs, go, openJobs }: { jobs: Job[]; go: (r: Route) => void; openJobs: () => void }) {
   return (
     <>
       <PageHeader
         title="Overview"
-        subtitle="Stored data, running jobs and build progress."
+        subtitle="Which strategies are earning their place, and whether paper trading matches the backtest."
         actions={
           <button className="btn btn-primary" onClick={() => go("data")}>
             Ingest data
@@ -44,35 +56,94 @@ export function Overview({ jobs, reloadJobs, go }: { jobs: Job[]; reloadJobs: ()
         }
       />
 
-      <Panel>
-        <div className="stats">
-          <Stat label="Datasets" value={num(ds.length)} note={`${symbols} symbol${symbols === 1 ? "" : "s"}`} />
-          <Stat label="Bars stored" value={num(totalBars)} note="Across all datasets" />
-          <Stat
-            label="Coverage"
-            value={earliest ? date(earliest).slice(0, 7) : "None"}
-            note={earliest ? `to ${date(latest)}` : "Ingest a dataset to begin"}
-          />
-          <Stat
-            label="Jobs running"
-            value={num(running)}
-            note={failed ? `${failed} failed in this session` : "No failures"}
-          />
-        </div>
-      </Panel>
+      <Section
+        title="Portfolio"
+        description="All figures after fees, spread and slippage."
+        actions={<span className="small tertiary">From P4</span>}
+      >
+        <Panel>
+          <div className="stats">
+            <Stat label="Equity" value={<Pending />} note="Paper account opens in P4" />
+            <Stat label="Return, 30 days" value={<Pending />} note="Shown against the backtest's expectation" />
+            <Stat label="Drawdown from peak" value={<Pending />} note="Shown against its risk limit" />
+            <Stat label="Costs, 30 days" value={<Pending />} note="Fees, spread and slippage paid" />
+          </div>
+        </Panel>
+      </Section>
 
-      <div className="split" style={{ marginTop: 40 }}>
-        <Section
-          title="Recent jobs"
-          actions={
-            <button className="link-btn" onClick={() => go("jobs")}>
-              View all jobs
-            </button>
-          }
-        >
+      <div className="split">
+        <Section title="Paper equity against the backtest" actions={<span className="small tertiary">From P4</span>}>
           <Panel>
-            <JobsTable jobs={jobs} onChange={reloadJobs} limit={6} />
+            <Empty title="No paper trading yet">
+              <p>
+                Paper equity will be drawn over the backtest run on the same bars, with its expected range. If the two
+                drift apart, the backtest is missing something.
+              </p>
+            </Empty>
           </Panel>
+        </Section>
+
+        <Section title="Risk" actions={<span className="small tertiary">From P4</span>}>
+          <Panel pad>
+            <dl className="dl">
+              <dt>Kill switch</dt>
+              <dd>
+                <Status>
+                  <span className="secondary">Not built</span>
+                </Status>
+              </dd>
+              <dt>Daily loss limit</dt>
+              <dd className="secondary">Not set</dd>
+              <dt>Largest position</dt>
+              <dd className="secondary">No positions</dd>
+              <dt>Exchange vs ledger</dt>
+              <dd className="secondary">Not connected</dd>
+            </dl>
+          </Panel>
+        </Section>
+      </div>
+
+      <Section
+        title="Strategies"
+        description="Ranked by out-of-sample Sharpe after costs, adjusted for how many variants were tried."
+        actions={<span className="small tertiary">From P2</span>}
+      >
+        <Panel>
+          <div className="table-wrap">
+            <table className="table">
+              <thead>
+                <tr>
+                  {STRATEGY_COLUMNS.map((c) => (
+                    <th key={c.label} className={c.num ? "num" : undefined}>
+                      <abbr title={c.title}>{c.label}</abbr>
+                    </th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td colSpan={STRATEGY_COLUMNS.length} style={{ padding: 0 }}>
+                    <Empty title="No strategies yet">
+                      <p>
+                        Strategy research starts once the backtester is validated. Each strategy appears here after its
+                        first out-of-sample run, with every variant tried counted against it.
+                      </p>
+                    </Empty>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+          <div className="board-foot">
+            <span>In-sample results never appear on this page.</span>
+            <span>The holdout period stays untouched until a strategy is final.</span>
+          </div>
+        </Panel>
+      </Section>
+
+      <div className="split">
+        <Section title="Data">
+          <DataSummary jobs={jobs} openJobs={openJobs} />
         </Section>
 
         <Section title="Build progress">
@@ -92,5 +163,47 @@ export function Overview({ jobs, reloadJobs, go }: { jobs: Job[]; reloadJobs: ()
         </Section>
       </div>
     </>
+  );
+}
+
+function DataSummary({ jobs, openJobs }: { jobs: Job[]; openJobs: () => void }) {
+  const datasets = useResource(api.datasets, [], 10_000);
+  const ds = datasets.data ?? [];
+  const symbols = [...new Set(ds.map((d) => d.symbol))];
+  const intervals = [...new Set(ds.map((d) => d.interval))];
+  const totalBars = ds.reduce((s, d) => s + d.rows, 0);
+  const earliest = ds.map((d) => d.first).filter(Boolean).sort()[0];
+  const latest = ds.map((d) => d.last).filter(Boolean).sort().at(-1);
+  const lastIngest = jobs.find((j) => j.kind === "ingest" && j.status === "succeeded");
+
+  return (
+    <Panel>
+      <div className="data-line">
+        <div>
+          <span className="small secondary">Datasets</span>
+          <b>{num(ds.length)}</b>
+          <span className="small tertiary">
+            {ds.length ? `${symbols.join(", ")} at ${intervals.join(", ")}` : "Ingest a dataset to begin"}
+          </span>
+        </div>
+        <div>
+          <span className="small secondary">Bars stored</span>
+          <b>{num(totalBars)}</b>
+          <span className="small tertiary">Audited on the Data page</span>
+        </div>
+        <div>
+          <span className="small secondary">Coverage</span>
+          <b>{earliest ? date(earliest).slice(0, 7) : "None"}</b>
+          <span className="small tertiary">{latest ? `to ${date(latest)}` : "No bars stored"}</span>
+        </div>
+        <div>
+          <span className="small secondary">Last ingest</span>
+          <b>{lastIngest ? ago(lastIngest.finished_at) : "None"}</b>
+          <button className="link-btn small" onClick={openJobs}>
+            {lastIngest ? "View jobs" : "None since the server started"}
+          </button>
+        </div>
+      </div>
+    </Panel>
   );
 }

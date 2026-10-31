@@ -19,6 +19,7 @@
   --info: #2f5bd3;
   --focus: #2f5bd3;
   --on-primary: #ffffff;
+  --shadow: 0 8px 28px rgba(20, 22, 26, 0.12), 0 1px 3px rgba(20, 22, 26, 0.08);
   color-scheme: light;
 }
 
@@ -37,6 +38,7 @@
   --info: #7a9cf2;
   --focus: #7a9cf2;
   --on-primary: #16181c;
+  --shadow: 0 8px 28px rgba(0, 0, 0, 0.45), 0 1px 3px rgba(0, 0, 0, 0.3);
   color-scheme: dark;
 }
 
@@ -168,19 +170,6 @@ p {
   border-bottom-color: var(--text);
 }
 
-.nav .count {
-  font-size: 11px;
-  min-width: 18px;
-  height: 18px;
-  padding: 0 5px;
-  border-radius: 9px;
-  background: var(--text);
-  color: var(--on-primary);
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-}
-
 .nav .later {
   font-size: 11px;
   color: var(--text-3);
@@ -233,7 +222,10 @@ p {
   color: var(--text-2);
 }
 
-.section + .section {
+.section + .section,
+.section + .split,
+.split + .section,
+.split + .split {
   margin-top: 40px;
 }
 
@@ -450,6 +442,50 @@ p {
   white-space: nowrap;
 }
 
+.table th abbr {
+  text-decoration: none;
+  border-bottom: 1px dotted var(--text-3);
+  cursor: help;
+}
+
+.board-foot {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 20px;
+  padding: 12px 16px;
+  border-top: 1px solid var(--line);
+  font-size: 12px;
+  color: var(--text-2);
+}
+
+/* ---------- overview data row ---------- */
+
+.data-line {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+.data-line > div {
+  display: grid;
+  align-content: start;
+  gap: 2px;
+  padding: 14px 18px;
+}
+
+.data-line > div + div {
+  border-left: 1px solid var(--line);
+}
+
+.data-line b {
+  font-size: 15px;
+  font-weight: 500;
+}
+
+.data-line .link-btn {
+  justify-self: start;
+  font-size: 12px;
+}
+
 .table tbody tr.clickable {
   cursor: pointer;
 }
@@ -539,6 +575,130 @@ p {
   margin-top: 12px;
   font-size: 13px;
   color: var(--down);
+}
+
+/* ---------- jobs dock ---------- */
+
+.dock-pill,
+.dock {
+  position: fixed;
+  right: 20px;
+  bottom: 20px;
+  z-index: 20;
+  background: var(--bg);
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+}
+
+.dock-pill {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  max-width: min(380px, calc(100vw - 40px));
+  height: 38px;
+  padding: 0 14px;
+  overflow: hidden;
+  font: inherit;
+  color: var(--text);
+  cursor: pointer;
+}
+
+.dock-pill:hover {
+  background: var(--surface);
+}
+
+.dock-pill.compact {
+  height: 32px;
+  padding: 0 12px;
+  font-size: 13px;
+}
+
+.dock-pill-text {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Thin progress line along the pill's bottom edge. */
+.dock-pill-bar {
+  position: absolute;
+  left: 0;
+  bottom: 0;
+  height: 2px;
+  background: var(--info);
+  transition: width 0.3s ease;
+}
+
+.dock {
+  width: min(460px, calc(100vw - 40px));
+  max-height: min(560px, calc(100vh - 100px));
+  display: flex;
+  flex-direction: column;
+  animation: dock-in 0.14s ease-out;
+}
+
+@keyframes dock-in {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+}
+
+.dock-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 8px 8px 16px;
+  border-bottom: 1px solid var(--line);
+}
+
+.dock-header .icon-btn {
+  margin-left: auto;
+}
+
+.dock-body {
+  overflow-y: auto;
+}
+
+.dock-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.dock-item + .dock-item {
+  border-top: 1px solid var(--line);
+}
+
+.dock-item-main {
+  display: grid;
+  gap: 4px;
+  padding: 12px 16px;
+  cursor: pointer;
+}
+
+.dock-item-main:hover {
+  background: var(--surface);
+}
+
+.dock-item-top {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.dock-item-top .btn {
+  margin-left: auto;
+}
+
+.dock-item .progress {
+  margin-top: 4px;
+}
+
+.dock-empty {
+  padding: 20px 16px;
 }
 
 /* ---------- misc ---------- */
@@ -734,6 +894,15 @@ p {
   }
   .split {
     grid-template-columns: 1fr;
+  }
+  .data-line {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .data-line > div:nth-child(3) {
+    border-left: 0;
+  }
+  .data-line > div:nth-child(n + 3) {
+    border-top: 1px solid var(--line);
   }
   .form {
     grid-template-columns: repeat(2, minmax(0, 1fr));

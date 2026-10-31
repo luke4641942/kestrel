@@ -1,19 +1,19 @@
 import { useEffect, useState, type ReactNode } from "react";
 import { api, type Job } from "./api";
-import { JobsTable } from "./components/JobsTable";
-import { ErrorBanner, PageHeader, Panel, Status } from "./components/ui";
+import { JobsDock } from "./components/JobsDock";
+import { ErrorBanner, Status } from "./components/ui";
+import { isActive } from "./format";
 import { useResource } from "./hooks";
 import { Data } from "./pages/Data";
 import { Overview } from "./pages/Overview";
 import { Backtests, Trading } from "./pages/Placeholders";
 import { useTheme } from "./theme";
 
-export type Route = "overview" | "data" | "jobs" | "backtests" | "trading";
+export type Route = "overview" | "data" | "backtests" | "trading";
 
 const NAV: { route: Route; label: string; later?: string }[] = [
   { route: "overview", label: "Overview" },
   { route: "data", label: "Data" },
-  { route: "jobs", label: "Jobs" },
   { route: "backtests", label: "Backtests", later: "P2" },
   { route: "trading", label: "Trading", later: "P4" },
 ];
@@ -66,8 +66,9 @@ export function App() {
   const [fast, setFast] = useState(false);
   const jobs = useResource(api.jobs, [], fast ? 1000 : 5000);
   const jobList = jobs.data ?? [];
-  const active = jobList.filter((j) => j.status === "running" || j.status === "queued").length;
+  const active = jobList.filter(isActive).length;
   useEffect(() => setFast(active > 0), [active]);
+  const [dockOpen, setDockOpen] = useState(false);
 
   const go = (r: Route) => {
     window.location.hash = `/${r}`;
@@ -80,20 +81,10 @@ export function App() {
   let page: ReactNode;
   switch (route) {
     case "overview":
-      page = <Overview jobs={jobList} reloadJobs={jobs.reload} go={go} />;
+      page = <Overview jobs={jobList} go={go} openJobs={() => setDockOpen(true)} />;
       break;
     case "data":
       page = <Data jobs={jobList} onJobStarted={onJobStarted} />;
-      break;
-    case "jobs":
-      page = (
-        <>
-          <PageHeader title="Jobs" subtitle="Every operation run on the platform, with progress and logs." />
-          <Panel>
-            <JobsTable jobs={jobList} onChange={jobs.reload} />
-          </Panel>
-        </>
-      );
       break;
     case "backtests":
       page = <Backtests />;
@@ -118,13 +109,7 @@ export function App() {
             {NAV.map((n) => (
               <a key={n.route} href={`#/${n.route}`} aria-current={route === n.route ? "page" : undefined}>
                 {n.label}
-                {n.route === "jobs" && active > 0 ? (
-                  <span className="count" aria-label={`${active} running`}>
-                    {active}
-                  </span>
-                ) : (
-                  n.later && <span className="later">{n.later}</span>
-                )}
+                {n.later && <span className="later">{n.later}</span>}
               </a>
             ))}
           </nav>
@@ -146,6 +131,7 @@ export function App() {
         <ErrorBanner error={health.error} />
         {page}
       </main>
+      <JobsDock jobs={jobList} open={dockOpen} setOpen={setDockOpen} onChange={jobs.reload} />
     </>
   );
 }

@@ -1,4 +1,16 @@
+import type { Job } from "./api";
+
 const nf = new Intl.NumberFormat("en-AU");
+
+export function describeJob(job: Job): string {
+  const p = job.params as Record<string, string | null>;
+  if (job.kind === "ingest") {
+    return `Ingest ${p.symbol?.toUpperCase()} ${p.interval}, ${p.start} to ${p.end ?? "latest"}`;
+  }
+  return job.kind;
+}
+
+export const isActive = (job: Job) => job.status === "running" || job.status === "queued";
 
 export const num = (n: number) => nf.format(n);
 
