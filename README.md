@@ -127,6 +127,8 @@ data.binance.vision ──► BinanceVisionClient ──► parse_archive ──
 | `kestrel.data.binance_vision` | Download, checksum verification, parsing of Binance bulk archives |
 | `kestrel.data.store` | Idempotent, atomic, month-partitioned Parquet storage |
 | `kestrel.data.quality` | Integrity audit that reports rather than repairs |
+| `kestrel.config` | Strict loader for `kestrel.toml`: no defaults in code, exact decimals, fingerprint per config |
+| `kestrel.backtest.costs` | Fee, spread and square-root impact model; simulated market fills with exchange order rules |
 | `kestrel.api.app` | REST endpoints for datasets, bars, quality and jobs |
 | `kestrel.api.jobs` | Thread-pool job runner: progress, logs, cooperative cancellation |
 | `kestrel.cli` | `ingest`, `check`, `list`, `serve` commands |
@@ -141,9 +143,17 @@ data.binance.vision ──► BinanceVisionClient ──► parse_archive ──
   cannot leave a half-written partition.
 - **Offline tests.** HTTP is injected, so the suite runs against byte-compatible
   fixture archives with no network. A `network`-marked test checks the real site.
-
 - **Jobs never fake success.** An ingest that finds nothing to download fails
   with a clear reason instead of reporting success with zero data.
+- **Costs, attributed.** Every simulated fill splits its cost into fee, spread and
+  market impact. As configured, a round trip in liquid BTC costs about 22 bps, so a
+  strategy needs more than that per trade just to break even. Impact is sized from the
+  last *closed* bar's volume, so a fill never uses information from its own bar.
+- **One cost formula, two engines.** The per-order fill (event-driven engine) and the
+  cost rate (vectorised engine) share a formula, and a test asserts they agree.
+- **Config is versioned, not a settings page.** `kestrel.toml` has no defaults in
+  code and rejects unknown keys. Each run will store the config and its fingerprint,
+  so changing a fee never silently changes what an old result meant.
 
 ## Development
 

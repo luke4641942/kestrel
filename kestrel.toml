@@ -1,0 +1,39 @@
+# Kestrel configuration. Version-controlled on purpose: every backtest run stores a
+# copy of the config it used (and its fingerprint), so old results keep their meaning
+# when these values change. There are no defaults in code; every key is required.
+
+# Currency all cash, P&L and costs are accounted in. Only instruments quoted in this
+# currency can be traded (no FX conversion in the engine). The dashboard converts to
+# A$ for display only.
+account_currency = "USDT"
+
+[costs]
+# All costs in basis points (1 bp = 0.01%).
+
+# Binance spot taker fee at the base (VIP 0) tier, paying fees without BNB.
+taker_fee_bps = 10
+
+# Half the bid-ask spread, paid on every market order. An assumption: we have no
+# order-book history yet. Majors like BTCUSDT usually quote far tighter than this.
+half_spread_bps = 1
+
+# Market impact follows the square-root law: impact = coef * sqrt(participation),
+# where participation = order notional / quote volume of the last closed bar.
+# 100 bps means an order of 1% of a bar's volume moves the price 10 bps against us.
+impact_coef_bps = 100
+
+# Orders above this fraction of the last closed bar's quote volume are rejected
+# rather than filled at a price the market could not have offered.
+max_participation = 0.01
+
+# Exchange order rules (Binance LOT_SIZE and NOTIONAL filters). Verify against
+# GET /api/v3/exchangeInfo before any live use; P4 will refresh these from the API.
+[instruments.BTCUSDT]
+step_size = "0.00001"
+min_qty = "0.00001"
+min_notional = "5"
+
+[instruments.ETHUSDT]
+step_size = "0.0001"
+min_qty = "0.0001"
+min_notional = "5"

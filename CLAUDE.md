@@ -39,7 +39,8 @@ cd frontend && npm run build
 ## Roadmap
 - [x] P1 Data: Binance bulk ingestion, Parquet store, quality checks
 - [x] P1.5 Platform: API, job runner, dashboard
-- [ ] P2 Backtester: cost model (fees, spread, slippage), simulated fills,
+- [ ] P2 Backtester: ~~cost model (fees, spread, slippage), simulated fills~~ (done:
+      `kestrel.config`, `kestrel.backtest.costs`),
       vectorised research engine, event-driven validation engine, metrics,
       Backtests page (equity, drawdown, cost attribution, blotter, run comparison)
 - [ ] P3 Validation: walk-forward, parameter robustness, trial log, deflated Sharpe
