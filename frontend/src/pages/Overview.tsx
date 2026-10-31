@@ -4,8 +4,9 @@ import { Empty, PageHeader, Panel, Section, Stat, Status } from "../components/u
 import { ago, date, num } from "../format";
 import { useResource } from "../hooks";
 
-type PhaseState = "done" | "active" | "planned";
+type PhaseState = "done" | "active" | "planned" | "parked";
 
+// Parked items are agreed ideas waiting on an earlier phase; `id` says which.
 const PHASES: { id: string; name: string; state: PhaseState }[] = [
   { id: "P1", name: "Data infrastructure", state: "done" },
   { id: "P1.5", name: "API and dashboard", state: "done" },
@@ -13,12 +14,15 @@ const PHASES: { id: string; name: string; state: PhaseState }[] = [
   { id: "P3", name: "Validation", state: "planned" },
   { id: "P4", name: "Paper and live execution", state: "planned" },
   { id: "P5", name: "Perpetuals", state: "planned" },
+  { id: "P3+", name: "Multi-strategy portfolios", state: "parked" },
+  { id: "P4+", name: "Settings: risk limits, exchange", state: "parked" },
 ];
 
 const PHASE_STATUS: Record<PhaseState, { tone: "ok" | "info" | "neutral"; label: string }> = {
   done: { tone: "ok", label: "Done" },
-  active: { tone: "info", label: "Next" },
+  active: { tone: "info", label: "In progress" },
   planned: { tone: "neutral", label: "Planned" },
+  parked: { tone: "neutral", label: "Parked" },
 };
 
 /**
@@ -198,10 +202,19 @@ function DataSummary({ jobs, openJobs }: { jobs: Job[]; openJobs: () => void }) 
         </div>
         <div>
           <span className="small secondary">Last ingest</span>
-          <b>{lastIngest ? ago(lastIngest.finished_at) : "None"}</b>
-          <button className="link-btn small" onClick={openJobs}>
-            {lastIngest ? "View jobs" : "None since the server started"}
-          </button>
+          {lastIngest ? (
+            <>
+              <b>{ago(lastIngest.finished_at)}</b>
+              <button className="link-btn small" onClick={openJobs}>
+                View jobs
+              </button>
+            </>
+          ) : (
+            <>
+              <b>None</b>
+              <span className="small tertiary">Since the server started</span>
+            </>
+          )}
         </div>
       </div>
     </Panel>

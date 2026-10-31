@@ -4,7 +4,7 @@ A research-to-production platform for systematic crypto trading, built so that a
 strategy behaves the same way in research, backtest, paper trading and live
 trading.
 
-> **Status:** Data infrastructure, API and dashboard are built. Backtester is next.
+> **Status:** Data infrastructure, API and dashboard are built. Backtester in progress.
 > No strategies yet, by design.
 
 ## Why this exists
@@ -32,10 +32,11 @@ bias, unrealistic fills, ignored costs, and research code that is rewritten
 |---|---|---|
 | 1. Data | Binance bulk ingestion, canonical schema, Parquet store, quality checks | Done |
 | 1.5 Platform | FastAPI service, job runner, React dashboard | Done |
-| 2. Backtester | Vectorised research engine, event-driven validation engine, cost model, metrics | Planned |
+| 2. Backtester | Vectorised research engine, event-driven validation engine, cost model, metrics | In progress |
 | 3. Validation | Walk-forward, parameter robustness, trial log, deflated Sharpe | Planned |
 | 4. Execution | `ExecutionVenue` adapters (sim, Binance testnet, live), reconciliation, kill switch, alerting | Planned |
 | 5. Perps | Funding, basis, margin model | Planned |
+| Parked | Multi-strategy portfolios on one wallet (after P3); settings for risk limits and exchange status (after P4) | Parked |
 
 ## Quick start
 

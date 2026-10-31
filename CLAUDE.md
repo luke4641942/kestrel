@@ -47,6 +47,21 @@ cd frontend && npm run build
       reconciliation, risk limits, kill switch, alerting, parity tests
 - [ ] P5 Perps: funding, basis, margin
 
+## Decisions and parked ideas
+Agreed with Luke; don't re-litigate without a reason.
+- **Engine currency is USDT** (Binance spot quote). The dashboard converts to A$ for
+  display only.
+- **Config lives in `kestrel.toml`**, version-controlled. Every backtest run stores the
+  full config it used, so old results keep their meaning. No global settings UI.
+- **Parked, P3+: multi-strategy portfolios.** Strategies emit *target positions*, never
+  orders; an allocator owns the wallet, resolves conflicts and nets orders before the
+  `ExecutionVenue`. Build P2 around this so single-strategy is a portfolio of one.
+  Open questions: fixed sleeves vs shared pool; Backtests mode vs separate tab.
+  Every strategy/weight combination tried counts as a trial; weights come from a rule.
+- **Parked, P4+: Settings page.** Only risk limits (audited edits) and exchange
+  connection status. Live balances are read from the exchange, never typed in.
+  API keys stay in env vars or the keychain, never in the UI.
+
 ## Working with Luke
 - Be direct. Push back on ideas that would overfit or fool us.
 - Explain design decisions briefly when making them. He needs to be able to
