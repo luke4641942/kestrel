@@ -52,6 +52,26 @@ cd frontend && npm run build
 Agreed with Luke; don't re-litigate without a reason.
 - **Engine currency is USDT** (Binance spot quote). The dashboard converts to A$ for
   display only.
+- **Holdout starts 2025-11-01 00:00 UTC (fixed, pre-registered 2026-10-31).** All
+  research, tuning and validation use data before it. The engine must refuse to run on
+  holdout data without an explicit flag and log every such run. It is used once, for a
+  final verdict on a finished strategy. Never move this date after seeing results.
+- **Long-only for now.** Strategies output target weights in [0, 1] per symbol (sum
+  <= 1, rest is cash). Luke is open to shorting; it arrives with perps in P5.
+- **No-trade band: 2% of equity** (to live in `kestrel.toml`). Only rebalance when a
+  target differs from the current position by more than the band, so tiny weight
+  changes don't pay fees. Report how often the band suppressed a trade.
+- **Benchmark: BTC buy-and-hold** over the same period, paying one entry's costs.
+  Every result is shown against it and against cash.
+- **Backtest conventions:** decide at bar t's close, fill at bar t+1's open; annualise
+  with 365 days; risk-free rate 0; returns measured daily at 00:00 UTC for every
+  strategy; each run stores config fingerprint, git commit and dirty flag; engine
+  parity is tested on a large account (the vectorised engine can't model minimums).
+- **Metrics:** CAGR, vol, Sharpe, Sortino, max drawdown + duration, Calmar, turnover,
+  cost drag (per year and as a share of gross), exposure, trade count, vs benchmark;
+  also skew and kurtosis, which P3's deflated Sharpe needs.
+- **Remaining P2 order:** trading core (`ExecutionVenue`, sim venue, target
+  positions) -> vectorised engine -> event-driven engine -> metrics -> Backtests page.
 - **Config lives in `kestrel.toml`**, version-controlled. Every backtest run stores the
   full config it used, so old results keep their meaning. No global settings UI.
 - **Parked, P3+: multi-strategy portfolios.** Strategies emit *target positions*, never
