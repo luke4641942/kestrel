@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState, type FormEvent, type ReactNode } from "react";
 import { api, type Dataset, type Job, type Metrics, type RunDetail, type RunSummary } from "../api";
-import { EquityChart } from "../components/EquityChart";
+import { EquityChart, type TradeMarker } from "../components/EquityChart";
 import { ParamInputs, defaultParams } from "../components/ParamInputs";
 import { Empty, PageHeader, Panel, Section, Stat, Status } from "../components/ui";
 import { ago, dateTime, lastResearchMonth, num } from "../format";
@@ -225,8 +225,8 @@ function RunsTable({
             <th>Strategy</th>
             <th>Market</th>
             <th>Period</th>
-            <th className="num">Return</th>
-            <th className="num">vs BTC</th>
+            <th className="num">Net profit</th>
+            <th className="num">vs holding BTC</th>
             <th className="num">Sharpe</th>
             <th className="num">Max drawdown</th>
             <th className="num">Trades</th>
@@ -236,7 +236,9 @@ function RunsTable({
         <tbody>
           {runs.map((r) => {
             const m = r.metrics;
-            const edge = m.total_return - r.benchmark_metrics.total_return;
+            const start = Number(r.initial_cash);
+            const profit = m.final_equity - start;
+            const edge = profit - (r.benchmark_metrics.final_equity - start);
             return (
               <tr
                 key={r.id}
@@ -262,9 +264,12 @@ function RunsTable({
                 <td className="secondary">
                   {r.start} to {r.end}
                 </td>
-                <td className="num">{pct(m.total_return)}</td>
+                <td className={`num ${profit > 0 ? "up" : profit < 0 ? "down" : ""}`}>
+                  {money(profit)}
+                  <div className="cell-sub">{pct(m.total_return)}</div>
+                </td>
                 <td className={`num ${edge > 0 ? "up" : edge < 0 ? "down" : "secondary"}`}>
-                  {Math.abs(edge) < 5e-5 ? "same" : pct(edge)}
+                  {Math.abs(edge) < 0.005 ? "same" : money(edge)}
                 </td>
                 <td className="num">{plain(m.sharpe)}</td>
                 <td className="num">{pct(m.max_drawdown)}</td>
@@ -300,6 +305,7 @@ function RunView({ id }: { id: string }) {
       description={`${r.symbol} ${r.interval} · started with ${usdt(Number(r.initial_cash))} ${r.account_currency} · decisions at each bar close, filled at the next open`}
     >
       <div className="run-stack">
+        <Verdict run={r} />
         <Headline run={r} />
         <Panel pad>
           <div className="chart-top">
@@ -315,7 +321,16 @@ function RunView({ id }: { id: string }) {
               </span>
             </span>
           </div>
-          <EquityChart equity={r.equity} benchmark={r.benchmark} />
+          <EquityChart equity={r.equity} benchmark={r.benchmark} trades={tradeMarkers(r)} />
+          <p className="small tertiary chart-foot">
+            Arrows mark trades on the equity line: up for buys, down for sells
+            {r.style === "brackets"
+              ? `; exits are green for a win and red for a loss${
+                  r.trades.length <= MAX_LABELLED_TRADES ? ", labelled in R" : ". Every result is in the trade table below"
+                }`
+              : ""}
+            .
+          </p>
         </Panel>
         <div className="run-grid">
           <Panel pad>
@@ -456,6 +471,127 @@ function TradesPanel({ run }: { run: RunDetail }) {
   );
 }
 
+/** Labels beyond this many trades overlap into noise; colour still shows each result. */
+const MAX_LABELLED_TRADES = 20;
+
+/** Exits coloured (and, when few, labelled) by result for bracket runs; buys and sells
+ * for weight runs. */
+function tradeMarkers(r: RunDetail): TradeMarker[] {
+  const epoch = (iso: string) => Math.floor(new Date(iso).getTime() / 1000);
+  if (r.style === "brackets") {
+    const labelled = r.trades.length <= MAX_LABELLED_TRADES;
+    return r.trades.flatMap((t): TradeMarker[] => [
+      { time: epoch(t.entry_time), side: "buy" },
+      {
+        time: epoch(t.exit_time),
+        side: "sell",
+        good: t.r_multiple > 0,
+        label: labelled ? `${t.r_multiple >= 0 ? "+" : ""}${t.r_multiple.toFixed(1)}R` : undefined,
+      },
+    ]);
+  }
+  return r.fills.map((f) => ({ time: epoch(f.time), side: f.side }));
+}
+
+/** "3 years 10 months", "7 months", "12 days". */
+function span(startIso: string, endIso: string): string {
+  const days = (new Date(endIso).getTime() - new Date(startIso).getTime()) / 86_400_000;
+  if (days < 60) return `${Math.round(days)} days`;
+  const years = Math.floor(days / 365.25);
+  const months = Math.round((days - years * 365.25) / 30.44);
+  const parts = [years && `${years} year${years === 1 ? "" : "s"}`, months && `${months} month${months === 1 ? "" : "s"}`];
+  return parts.filter(Boolean).join(" ") || "under a month";
+}
+
+const money = (x: number) => `${x >= 0 ? "+" : "−"}${usdt(Math.abs(x))}`;
+
+/** The plain-English answer: did it make money, did it beat holding BTC, can we trust it? */
+function Verdict({ run: r }: { run: RunDetail }) {
+  const m = r.metrics;
+  const start = Number(r.initial_cash);
+  const profit = m.final_equity - start;
+  const btcProfit = r.benchmark_metrics.final_equity - start;
+  const vsBtc = profit - btcProfit;
+  const isBenchmark = r.strategy === "buy-and-hold";
+  const cur = r.account_currency;
+  const trades = r.style === "brackets" ? (m.round_trips ?? 0) : m.trades;
+  const wins = r.trades.filter((t) => t.r_multiple > 0).length;
+
+  let tone: "ok" | "warn" | "bad" | "neutral";
+  let headline: string;
+  if (isBenchmark) {
+    tone = "neutral";
+    headline = `The benchmark: simply holding BTC ${profit >= 0 ? "made" : "lost"} ${usdt(Math.abs(profit))} ${cur}.`;
+  } else if (profit <= 0) {
+    tone = "bad";
+    headline = `Lost money: ${usdt(Math.abs(profit))} ${cur} down after costs.`;
+  } else if (vsBtc < 0) {
+    tone = "warn";
+    headline = `Made money, but less than just holding BTC (${usdt(btcProfit)} ${cur}).`;
+  } else {
+    tone = "ok";
+    headline = `Beat holding BTC by ${usdt(vsBtc)} ${cur} after costs.`;
+  }
+
+  let trust: string;
+  if (m.few_trades) {
+    trust = `Only ${trades} trade${trades === 1 ? "" : "s"}: too few to tell skill from luck. Aim for 30 or more.`;
+  } else if (m.psr === null) {
+    trust = "Equity never moved, so there's nothing to measure.";
+  } else if (m.psr >= 0.95) {
+    trust = `Statistically convincing: ${Math.round(m.psr * 100)}% chance the edge is real (before correcting for variants tried).`;
+  } else if (m.psr >= 0.8) {
+    trust = `Promising but not proven: ${Math.round(m.psr * 100)}% chance the edge is real.`;
+  } else {
+    trust = `Not convincing: only a ${Math.round(m.psr * 100)}% chance the edge is real. This could easily be luck.`;
+  }
+
+  return (
+    <Panel>
+      <div className={`verdict verdict-${tone}`}>
+        <h3>{headline}</h3>
+        <p className="secondary">{trust}</p>
+      </div>
+      <div className="stats stats-5">
+        <Stat
+          label="Net profit"
+          value={<span className={profit > 0 ? "up" : profit < 0 ? "down" : undefined}>{money(profit)} {cur}</span>}
+          note={`${pct(m.total_return)} on ${usdt(start)} ${cur}, after all costs`}
+        />
+        <Stat
+          label="Compared with holding BTC"
+          value={
+            isBenchmark ? (
+              "—"
+            ) : (
+              <span className={vsBtc > 0 ? "up" : vsBtc < 0 ? "down" : undefined}>
+                {money(vsBtc)} {cur}
+              </span>
+            )
+          }
+          note={`Holding BTC: ${money(btcProfit)} ${cur}`}
+        />
+        <Stat label="Test period" value={span(m.start, m.end)} note={`${m.start.slice(0, 10)} to ${m.end.slice(0, 10)}`} />
+        <Stat
+          label="Trades taken"
+          value={num(trades)}
+          note={
+            r.style === "brackets"
+              ? `${wins} won · ${trades - wins} lost`
+              : `${r.fills.filter((x) => x.side === "buy").length} buys · ${r.fills.filter((x) => x.side === "sell").length} sells${m.rejections ? ` · ${m.rejections} rejected` : ""}`
+          }
+        />
+        <Stat
+          label="Time in the market"
+          value={`${Math.round(m.exposure * 100)}%`}
+          note="The rest of the time it held cash"
+        />
+      </div>
+    </Panel>
+  );
+}
+
+/** Risk detail beneath the verdict: none of these repeat the verdict's numbers. */
 function Headline({ run }: { run: RunDetail }) {
   const m = run.metrics;
   const b = run.benchmark_metrics;
@@ -464,34 +600,24 @@ function Headline({ run }: { run: RunDetail }) {
     <Panel>
       <div className="stats">
         <Stat
-          label="Return"
-          value={pct(m.total_return)}
-          note={`BTC buy-and-hold ${pct(b.total_return)} · CAGR ${pct(m.cagr)}`}
+          label="Yearly return"
+          value={pct(m.cagr)}
+          note={`Holding BTC: ${pct(b.cagr)} a year`}
         />
         <Stat
           label="Sharpe"
           value={plain(m.sharpe)}
-          note={
-            m.sharpe === null
-              ? "Undefined for flat equity"
-              : `95% CI ${plain(lo)} to ${plain(hi)} · P(true > 0) ${m.psr === null ? "n/a" : `${Math.round(m.psr * 100)}%`}`
-          }
+          note={m.sharpe === null ? "Undefined for flat equity" : `95% CI ${plain(lo)} to ${plain(hi)}`}
         />
         <Stat
-          label="Max drawdown"
+          label="Worst drop"
           value={pct(m.max_drawdown)}
-          note={`${Math.round(m.longest_underwater_days)} days underwater at worst`}
+          note={`${Math.round(m.longest_underwater_days)} days at worst to recover`}
         />
         <Stat
-          label={run.style === "brackets" ? "Round trips" : "Trades"}
-          value={num(run.style === "brackets" ? (m.round_trips ?? 0) : m.trades)}
-          note={
-            m.few_trades ? (
-              <span className="warn">Too few to trust per-trade statistics</span>
-            ) : (
-              `${num(m.rejections)} rejected`
-            )
-          }
+          label="Costs paid"
+          value={`${usdt(m.total_costs)} ${run.account_currency}`}
+          note="Fees, spread and impact, already in the profit"
         />
       </div>
     </Panel>

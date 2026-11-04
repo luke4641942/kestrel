@@ -4,16 +4,30 @@ import {
   LineSeries,
   LineStyle,
   createChart,
+  createSeriesMarkers,
   type IChartApi,
   type ISeriesApi,
+  type ISeriesMarkersPluginApi,
+  type SeriesMarker,
+  type Time,
   type UTCTimestamp,
 } from "lightweight-charts";
 import { useEffect, useRef } from "react";
 import type { EquitySeries } from "../api";
 import { cssVar, useTheme } from "../theme";
 
+/** A trade drawn on the equity line. `time` is epoch seconds of a bar boundary. */
+export interface TradeMarker {
+  time: number;
+  side: "buy" | "sell";
+  /** Colour by outcome when known (an exit's result); otherwise by side. */
+  good?: boolean;
+  label?: string;
+}
+
 interface Handles {
   chart: IChartApi;
+  markers: ISeriesMarkersPluginApi<Time>;
   equity: ISeriesApi<"Line">;
   benchmark: ISeriesApi<"Line">;
   drawdown: ISeriesApi<"Area">;
@@ -33,7 +47,15 @@ function withAlpha(hex: string, alpha: number): string {
  * Same lifetime model as CandleChart: one chart per mount; data or theme changes only
  * update options and series data.
  */
-export function EquityChart({ equity, benchmark }: { equity: EquitySeries; benchmark: EquitySeries }) {
+export function EquityChart({
+  equity,
+  benchmark,
+  trades = [],
+}: {
+  equity: EquitySeries;
+  benchmark: EquitySeries;
+  trades?: TradeMarker[];
+}) {
   const el = useRef<HTMLDivElement>(null);
   const handles = useRef<Handles>();
   const { theme } = useTheme();
@@ -71,7 +93,14 @@ export function EquityChart({ equity, benchmark }: { equity: EquitySeries; bench
       1,
     );
     chart.panes()[1]?.setHeight(130);
-    handles.current = { chart, equity: equityLine, benchmark: benchmarkLine, drawdown, benchmarkDrawdown };
+    handles.current = {
+      chart,
+      markers: createSeriesMarkers(equityLine, []),
+      equity: equityLine,
+      benchmark: benchmarkLine,
+      drawdown,
+      benchmarkDrawdown,
+    };
     return () => {
       handles.current = undefined;
       chart.remove();
@@ -106,8 +135,22 @@ export function EquityChart({ equity, benchmark }: { equity: EquitySeries; bench
     h.benchmark.setData(points(benchmark, "equity"));
     h.drawdown.setData(points(equity, "drawdown"));
     h.benchmarkDrawdown.setData(points(benchmark, "drawdown"));
+    const up = cssVar("--up");
+    h.markers.setMarkers(
+      [...trades]
+        .sort((a, b) => a.time - b.time)
+        .map(
+          (m): SeriesMarker<Time> => ({
+            time: m.time as UTCTimestamp,
+            position: m.side === "buy" ? "belowBar" : "aboveBar",
+            shape: m.side === "buy" ? "arrowUp" : "arrowDown",
+            color: (m.good ?? m.side === "buy") ? up : down,
+            text: m.label,
+          }),
+        ),
+    );
     h.chart.timeScale().fitContent();
-  }, [equity, benchmark, theme]);
+  }, [equity, benchmark, trades, theme]);
 
   return <div ref={el} className="chart equity-chart" />;
 }

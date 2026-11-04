@@ -850,6 +850,39 @@ p {
   border-bottom: 1px solid var(--line);
 }
 
+.verdict {
+  padding: 16px 20px;
+  border-bottom: 1px solid var(--line);
+  border-left: 3px solid var(--text-3);
+  border-radius: var(--radius) var(--radius) 0 0;
+}
+
+.verdict h3 {
+  font-size: 17px;
+  font-weight: 600;
+  margin-bottom: 4px;
+}
+
+.verdict-ok {
+  border-left-color: var(--up);
+}
+
+.verdict-warn {
+  border-left-color: var(--warn);
+}
+
+.verdict-bad {
+  border-left-color: var(--down);
+}
+
+.stats-5 {
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+}
+
+.chart-foot {
+  margin-top: 8px;
+}
+
 /* ---------- strategies ---------- */
 
 .strat-layout {
