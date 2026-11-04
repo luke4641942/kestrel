@@ -156,5 +156,5 @@ def serve(
     uvicorn.run("kestrel.api.server:app", host=host, port=port, reload=reload, factory=False)
 
 
-if __name__ == "__main__":
+if __name__ == "__main__":  # pragma: no cover - entry-point guard
     app()

@@ -98,3 +98,30 @@ def test_unexpected_failure_keeps_traceback() -> None:
 
     job = _wait(manager, manager.submit("t", {}, fn))
     assert any("Traceback" in line for line in job.logs)
+
+
+def test_job_cancelled_while_queued_never_runs() -> None:
+    manager = JobManager(max_workers=1)
+    release = threading.Event()
+    ran: list[str] = []
+    blocker = manager.submit("block", {}, lambda ctx: release.wait(5) and {})
+    queued = manager.submit("queued", {}, lambda ctx: ran.append("ran") or {})
+    manager.cancel(queued.id)
+    release.set()
+    _wait(manager, blocker)
+    assert _wait(manager, queued).status is JobStatus.CANCELLED
+    assert ran == []
+    manager.shutdown()
+
+
+def test_history_keeps_only_the_newest_finished_jobs() -> None:
+    manager = JobManager(history=3)
+    jobs = []
+    for i in range(6):
+        jobs.append(_wait(manager, manager.submit("quick", {"i": i}, lambda ctx: {})))
+        time.sleep(0.002)  # distinct created_at for a stable order
+    manager.submit("trigger-trim", {}, lambda ctx: {})
+    kept = {j.params.get("i") for j in manager.list()}
+    assert {0, 1, 2}.isdisjoint(kept)
+    assert len(manager.list()) <= 4
+    manager.shutdown()

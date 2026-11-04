@@ -66,6 +66,36 @@ def test_backtest_refuses_holdout(tmp_path: Path, make_archive: ArchiveFactory) 
     assert "holdout period" in result.output
 
 
+def test_backtest_unknown_strategy(tmp_path: Path) -> None:
+    args = ["backtest", "BTCUSDT", "--start", "2024-01", "--end", "2024-01", "--strategy", "magic"]
+    result = runner.invoke(app, [*args, "--data-dir", str(tmp_path)])
+    assert result.exit_code == 2
+    assert "unknown strategy 'magic'" in result.output
+
+
+def test_serve_passes_data_and_config_to_the_server(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    calls: list[tuple[str, dict[str, object]]] = []
+    monkeypatch.setattr("uvicorn.run", lambda target, **kw: calls.append((target, kw)))
+    monkeypatch.delenv("KESTREL_DATA", raising=False)
+    monkeypatch.delenv("KESTREL_CONFIG", raising=False)
+    result = runner.invoke(
+        app, ["serve", "--data-dir", str(tmp_path), "--config", "other.toml", "--port", "9001"]
+    )
+    assert result.exit_code == 0, result.output
+    assert calls == [
+        (
+            "kestrel.api.server:app",
+            {"host": "127.0.0.1", "port": 9001, "reload": False, "factory": False},
+        )
+    ]
+    import os
+
+    assert os.environ["KESTREL_DATA"] == str(tmp_path)
+    assert os.environ["KESTREL_CONFIG"] == "other.toml"
+
+
 def test_backtest_with_no_data(tmp_path: Path) -> None:
     args = ["backtest", "BTCUSDT", "--start", "2024-01", "--end", "2024-02"]
     result = runner.invoke(app, [*args, "--data-dir", str(tmp_path), "--config", REPO_CONFIG])

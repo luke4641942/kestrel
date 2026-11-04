@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import threading
 import time
 from datetime import UTC, datetime
 from pathlib import Path
@@ -164,3 +165,48 @@ def test_unknown_job_is_404(tmp_path: Path) -> None:
     with TestClient(create_app(tmp_path, static_dir=None)) as client:
         assert client.get("/api/jobs/nope").status_code == 404
         assert client.post("/api/jobs/nope/cancel").status_code == 404
+
+
+def test_jobs_are_listed_and_can_be_cancelled(tmp_path: Path, make_archive: ArchiveFactory) -> None:
+    gate = threading.Event()
+
+    def slow_factory() -> BinanceVisionClient:
+        gate.wait(5)
+        return _mock_binance(make_archive, [Month(2024, 1)])
+
+    app = create_app(tmp_path, client_factory=slow_factory, static_dir=None)
+    with TestClient(app) as client:
+        job = client.post(
+            "/api/jobs/ingest", json={"symbol": "BTCUSDT", "start": "2024-01", "end": "2024-01"}
+        ).json()
+        assert [j["id"] for j in client.get("/api/jobs").json()] == [job["id"]]
+        cancelled = client.post(f"/api/jobs/{job['id']}/cancel")
+        assert cancelled.status_code == 200
+        assert cancelled.json()["message"] == "Cancelling"
+        gate.set()
+        assert _wait(client, job["id"])["status"] == "cancelled"
+
+
+def test_built_dashboard_is_served(tmp_path: Path) -> None:
+    static = tmp_path / "static"
+    static.mkdir()
+    (static / "index.html").write_text("<title>Kestrel</title>")
+    with TestClient(create_app(tmp_path, static_dir=static)) as client:
+        page = client.get("/")
+    assert page.status_code == 200
+    assert "Kestrel" in page.text
+
+
+def test_server_reads_data_and_config_from_env(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    import importlib
+
+    import kestrel.api.server as server
+
+    config = Path(__file__).resolve().parent.parent / "kestrel.toml"
+    monkeypatch.setenv("KESTREL_DATA", str(tmp_path))
+    monkeypatch.setenv("KESTREL_CONFIG", str(config))
+    with TestClient(importlib.reload(server).app) as client:
+        assert client.get("/api/health").json()["data_dir"] == str(tmp_path.resolve())
+        assert client.get("/api/costs").status_code == 200

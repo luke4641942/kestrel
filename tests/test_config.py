@@ -70,6 +70,9 @@ def test_invalid_toml(tmp_path: Path) -> None:
         (lambda d: d["instruments"].update(ETHBTC=d["instruments"]["BTCUSDT"]), "quoted in USDT"),
         (lambda d: d.update(account_currency="US$"), "currency code"),
         (lambda d: d.pop("backtest"), "top level: missing backtest"),
+        (lambda d: d.update(costs=10), r"\[costs\] must be a table"),
+        (lambda d: d["instruments"].update(BTCUSDT="x"), "must be a table"),
+        (lambda d: d["costs"].update(half_spread_bps="one"), "must be a number, got 'one'"),
         (
             lambda d: d["backtest"].update(no_trade_band=0.6),
             "no_trade_band must be >= 0 and <= 0.5",

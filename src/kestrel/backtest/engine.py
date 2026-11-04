@@ -174,8 +174,7 @@ def _rebalance(
         return venue.submit_market(symbol, Side.SELL, qty) if qty > 0 else None
     # Buying: size so notional plus all costs fits in cash. Costs depend on size, so
     # use the rate for the intended size (it only shrinks the order, never grows it).
+    # Cash is positive whenever current < target (current = 1 - cash / equity).
     notional = min((target - current) * equity, venue.cash())
-    if notional <= 0:
-        return None
     rate = model.cost_rate(Side.BUY, notional, last_volume) if last_volume > 0 else Decimal(0)
     return venue.submit_market(symbol, Side.BUY, notional / (1 + rate) / price)

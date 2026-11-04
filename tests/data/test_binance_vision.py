@@ -144,3 +144,15 @@ def test_live_download_of_real_month() -> None:
         df = client.fetch_month("BTCUSDT", Interval.D1, Month(2024, 1))
     assert df is not None
     assert df.height == 31
+
+
+def test_archive_with_several_csvs_is_rejected() -> None:
+    import io
+    import zipfile
+
+    buf = io.BytesIO()
+    with zipfile.ZipFile(buf, "w") as zf:
+        zf.writestr("a.csv", "1,2\n")
+        zf.writestr("b.csv", "1,2\n")
+    with pytest.raises(ValueError, match="exactly one CSV"):
+        parse_archive(buf.getvalue())

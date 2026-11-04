@@ -125,6 +125,24 @@ def test_invalid_weights_are_refused(weights: list[float], message: str) -> None
         run_backtest(FixedWeights(weights), bars([100] * 4), H4, config(), D(1000))
 
 
+def test_zero_volume_bar_rejects_rather_than_fills() -> None:
+    # Impact is sized from the last closed bar; with no volume there is no fair price.
+    result = run_backtest(BuyAndHold(), bars([100] * 3, quote_volume=0), H4, config(), D(1000))
+    assert not result.fills
+    assert "no traded volume" in result.rejections[0].rejection.reason
+
+
+def test_needs_two_bars() -> None:
+    with pytest.raises(ValueError, match="at least two bars"):
+        run_backtest(BuyAndHold(), bars([100]), H4, config(), D(1000))
+
+
+def test_duplicate_bars_are_refused() -> None:
+    frame = bars([100] * 3)
+    with pytest.raises(ValueError, match="unique"):
+        run_backtest(BuyAndHold(), pl.concat([frame, frame.tail(1)]), H4, config(), D(1000))
+
+
 def test_unsorted_bars_are_refused() -> None:
     frame = bars([100] * 4).reverse()
     with pytest.raises(ValueError, match="sorted"):
