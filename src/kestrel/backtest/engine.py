@@ -134,7 +134,7 @@ def run_backtest(
             order = _rebalance(venue, model, symbol, target, current, equity, price, volumes[i - 1])
             if isinstance(order, Fill):
                 result.fills.append(FillRecord(times[i], order))
-            elif isinstance(order, Rejection):
+            else:
                 result.rejections.append(RejectionRecord(times[i], order))
         elif target != current and (i == 1 or target != targets[i - 2]):
             result.band_skips += 1
@@ -166,12 +166,13 @@ def _rebalance(
     equity: Decimal,
     price: Decimal,
     last_volume: Decimal,
-) -> Fill | Rejection | None:
+) -> Fill | Rejection:
     """One market order moving the position from ``current`` to ``target`` weight."""
     if target < current:
+        # current > target >= 0, so there is a position to sell.
         held = venue.position(symbol)
         qty = held if target == 0 else min(held, (current - target) * equity / price)
-        return venue.submit_market(symbol, Side.SELL, qty) if qty > 0 else None
+        return venue.submit_market(symbol, Side.SELL, qty)
     # Buying: size so notional plus all costs fits in cash. Costs depend on size, so
     # use the rate for the intended size (it only shrinks the order, never grows it).
     # Cash is positive whenever current < target (current = 1 - cash / equity).

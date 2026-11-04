@@ -250,8 +250,7 @@ def create_app(
                 )
 
             ctx.progress(0.98, "Writing to store")
-            if result.frames:
-                store.write(symbol, req.interval, pl.concat(result.frames))
+            store.write(symbol, req.interval, pl.concat(result.frames))
             for m in result.not_found:
                 ctx.log(f"Not published by Binance: {m}")
 

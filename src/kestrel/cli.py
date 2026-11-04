@@ -57,8 +57,7 @@ def ingest(
             err=True,
         )
         raise typer.Exit(code=1)
-    if result.frames:
-        store.write(symbol, interval, pl.concat(result.frames))
+    store.write(symbol, interval, pl.concat(result.frames))
     typer.echo(f"fetched {len(result.fetched)} month(s) of {symbol.upper()} {interval.value}")
     if result.not_found:
         typer.echo(f"not published by Binance: {', '.join(map(str, result.not_found))}")
@@ -150,5 +149,5 @@ def serve(
     uvicorn.run("kestrel.api.server:app", host=host, port=port, reload=reload, factory=False)
 
 
-if __name__ == "__main__":  # pragma: no cover - entry-point guard
+if __name__ == "__main__":
     app()

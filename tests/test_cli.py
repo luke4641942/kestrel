@@ -57,6 +57,25 @@ def test_backtest_prints_a_report(tmp_path: Path, make_archive: ArchiveFactory) 
     assert "too few to trust" in result.output
 
 
+def test_backtest_no_save_leaves_no_run(tmp_path: Path, make_archive: ArchiveFactory) -> None:
+    ParquetStore(tmp_path).write("BTCUSDT", Interval.H1, parse_archive(make_archive(n=24 * 10)))
+    args = ["backtest", "BTCUSDT", "--start", "2024-01", "--end", "2024-01", "--interval", "1h"]
+    result = runner.invoke(
+        app, [*args, "--no-save", "--data-dir", str(tmp_path), "--config", REPO_CONFIG]
+    )
+    assert result.exit_code == 0, result.output
+    assert "Saved as run" not in result.output
+    assert not (tmp_path / "runs").exists()
+
+
+def test_backtest_saves_by_default(tmp_path: Path, make_archive: ArchiveFactory) -> None:
+    ParquetStore(tmp_path).write("BTCUSDT", Interval.H1, parse_archive(make_archive(n=24 * 10)))
+    args = ["backtest", "BTCUSDT", "--start", "2024-01", "--end", "2024-01", "--interval", "1h"]
+    result = runner.invoke(app, [*args, "--data-dir", str(tmp_path), "--config", REPO_CONFIG])
+    assert "Saved as run" in result.output
+    assert len(list((tmp_path / "runs").glob("*/run.json"))) == 1
+
+
 def test_backtest_refuses_holdout(tmp_path: Path, make_archive: ArchiveFactory) -> None:
     archive = make_archive(start=datetime(2025, 11, 1, tzinfo=UTC), n=24 * 5)
     ParquetStore(tmp_path).write("BTCUSDT", Interval.H1, parse_archive(archive))

@@ -139,3 +139,13 @@ def test_metrics_dict_is_json_safe(tmp_path: Path) -> None:
     assert isinstance(d["start"], str)
     assert d["few_trades"] is True
     assert not any(isinstance(v, float) and math.isnan(v) for v in d.values())
+
+
+def test_list_ignores_folders_that_are_not_runs(store: ParquetStore, tmp_path: Path) -> None:
+    runs = RunStore(tmp_path)
+    run_id = runs.save(execute(request(), store, config()), config())
+    # A leftover temp folder or anything hand-made must not show up as a run.
+    for stray in (".20260101-000000-abcdef.tmp", "notes"):
+        (runs.root / stray).mkdir()
+        (runs.root / stray / "run.json").write_text("{}")
+    assert [r["id"] for r in runs.list()] == [run_id]

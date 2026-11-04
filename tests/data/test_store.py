@@ -58,3 +58,14 @@ def test_writing_empty_frame_is_a_no_op(tmp_path: Path) -> None:
 def test_no_temp_files_left_behind(tmp_path: Path, make_archive: ArchiveFactory) -> None:
     ParquetStore(tmp_path).write("BTCUSDT", Interval.H1, parse_archive(make_archive()))
     assert not list(tmp_path.rglob("*.tmp"))
+
+
+def test_datasets_ignores_unknown_and_empty_interval_folders(
+    tmp_path: Path, make_archive: ArchiveFactory
+) -> None:
+    store = ParquetStore(tmp_path)
+    store.write("BTCUSDT", Interval.H1, parse_archive(make_archive()))
+    base = tmp_path / "klines" / "venue=binance" / "symbol=BTCUSDT"
+    (base / "interval=7m").mkdir()  # not an interval Binance publishes
+    (base / "interval=4h").mkdir()  # known interval, but no months stored
+    assert store.datasets() == [("BTCUSDT", Interval.H1)]

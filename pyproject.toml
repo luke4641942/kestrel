@@ -52,3 +52,10 @@ packages = ["kestrel"]
 [[tool.mypy.overrides]]
 module = ["pyarrow.*", "duckdb.*", "uvicorn.*"]
 ignore_missing_imports = true
+
+[tool.coverage.run]
+branch = true
+
+[tool.coverage.report]
+show_missing = true
+exclude_also = ["if __name__ == .__main__.:"]
