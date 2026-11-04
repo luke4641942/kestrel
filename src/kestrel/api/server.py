@@ -7,9 +7,11 @@ root (KESTREL_RESEARCH) from the environment.
 import os
 
 from kestrel.api.app import create_app
+from kestrel.assistant import ResearchAssistant
 
 app = create_app(
     data_dir=os.environ.get("KESTREL_DATA", "data"),
     config_path=os.environ.get("KESTREL_CONFIG", "kestrel.toml"),
     research_dir=os.environ.get("KESTREL_RESEARCH", "research"),
+    assistant=ResearchAssistant(),
 )

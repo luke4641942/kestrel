@@ -25,6 +25,7 @@ from kestrel.api.models import (
     BacktestRequest,
     Bars,
     ChatMessage,
+    ChatRequest,
     CostConfigOut,
     CostCurve,
     CreateResearch,
@@ -52,6 +53,7 @@ from kestrel.api.models import (
     StatusChangeOut,
     StrategyOut,
 )
+from kestrel.assistant import AssistantError, ResearchAssistant, chat_record, credentials_hint
 from kestrel.backtest.costs import CostModel, Fill, Side
 from kestrel.backtest.engine import HoldoutError
 from kestrel.backtest.runs import RunRequest, RunStore, count_trials, execute
@@ -89,7 +91,7 @@ def create_app(
     static_dir: Path | None = STATIC_DIR,
     config_path: Path | str = "kestrel.toml",
     research_dir: Path | str = "research",
-    assistant: Any = None,
+    assistant: ResearchAssistant | None = None,
 ) -> FastAPI:
     store = ParquetStore(data_dir)
     runs = RunStore(data_dir)
@@ -446,6 +448,7 @@ def create_app(
             trial_log=[RunSummary.model_validate(r) for r in runs.trials(slug)],
             chat=[ChatMessage.model_validate(m) for m in research.chat(slug)],
             assistant_available=assistant is not None,
+            assistant_hint=credentials_hint() if assistant is not None else None,
         )
 
     def _research_call(fn: Callable[[], Any]) -> Any:
@@ -482,6 +485,32 @@ def create_app(
     @api.post("/research/{slug}/notes", status_code=status.HTTP_201_CREATED)
     def new_note_version(slug: str, req: Reason) -> ResearchDetail:
         _research_call(lambda: research.new_version(slug, req.reason))
+        return _detail(slug)
+
+    @api.post("/research/{slug}/chat")
+    def chat_research(slug: str, req: ChatRequest) -> ResearchDetail:
+        """Ask the research assistant. It sees the note and code, never any results."""
+        if assistant is None:
+            raise HTTPException(status.HTTP_503_SERVICE_UNAVAILABLE, "assistant not enabled")
+        try:
+            s = research.get(slug)
+        except KeyError:
+            raise HTTPException(status.HTTP_404_NOT_FOUND, "research strategy not found") from None
+        note = s.latest
+        source = strategy_source(note.implementation) if note.implementation else None
+        try:
+            answer = assistant.reply(
+                s, source, research.chat(slug), req.message, load_config(config_path)
+            )
+        except (AssistantError, ConfigError) as e:
+            raise HTTPException(status.HTTP_503_SERVICE_UNAVAILABLE, str(e)) from None
+        research.append_chat(
+            slug,
+            [
+                chat_record("user", req.message, note.version),
+                chat_record("assistant", answer, note.version),
+            ],
+        )
         return _detail(slug)
 
     @api.post("/research/{slug}/reject")

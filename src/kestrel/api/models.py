@@ -508,6 +508,8 @@ class ResearchDetail(ResearchSummary):
     trial_log: list[RunSummary]
     chat: list[ChatMessage]
     assistant_available: bool
+    assistant_hint: str | None = None
+    """Why the assistant may not work yet (e.g. no API key), shown before the first message."""
 
 
 class CreateResearch(BaseModel):
