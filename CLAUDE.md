@@ -69,8 +69,9 @@ Agreed with Luke; don't re-litigate without a reason.
   parity is tested on a large account (the vectorised engine can't model minimums).
 - **Metrics.** Headline row on every backtest, in this order:
   return vs BTC buy-and-hold · Sharpe with 95% CI and probabilistic Sharpe (P(true
-  SR > 0)) · max drawdown + longest time underwater · break-even cost vs actual cost
-  (bps per trade) · number of trades (with a warning when it is too few to trust).
+  SR > 0)) · net expectancy per trade with 95% CI · max drawdown + longest time
+  underwater · break-even cost vs actual cost (bps per trade) · number of trades
+  (with a warning when it is too few to trust).
   Detail view:
   - Returns: CAGR, vol, Sortino, Calmar (de-emphasised), calendar-year table, A$ P&L
     alongside %.
@@ -80,7 +81,20 @@ Agreed with Luke; don't re-litigate without a reason.
     cost per trade, break-even cost (cost at which net return reaches zero).
   - Tails: worst day, worst month, expected shortfall (95%, daily), skew, kurtosis
     (skew/kurtosis also feed P3's deflated Sharpe).
-  - Trades: count, average holding period, win rate only beside average win/loss.
+  - Profit per trade: expectancy (net, bps and A$), profit factor, payoff ratio, win
+    rate only beside average win/loss, and profit concentration (share of net profit
+    from the best 5 trades; flag when a handful of trades carry the result).
+  - Statistical confidence: 95% CIs on expectancy, CAGR and Sharpe via block bootstrap
+    (keeps crypto's autocorrelation), P(net profit > 0), and minimum track record
+    length (how long paper trading must run before this Sharpe is credible; sets the
+    P4 paper-trading duration). Always shown with the caveat that CIs assume a single
+    trial until P3's deflated Sharpe corrects for every variant tried.
+  - Conviction: strategies express conviction through target weight. Report net
+    expectancy by entry-weight bucket to check that high conviction actually earns
+    more; uncalibrated conviction just adds risk.
+  - Trade record (blotter), per trade: entry/exit time and price, quantity, entry
+    weight, gross P&L, fee/spread/impact, net P&L (USDT, A$, bps), holding period,
+    max adverse and max favourable excursion.
   - Simulator effects: orders rejected (with reasons), trades the no-trade band skipped.
   - Tax (AU, information only): holding-period distribution and share of gains from
     positions held > 12 months (CGT discount). Not modelled in the engine.
