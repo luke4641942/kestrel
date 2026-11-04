@@ -11,6 +11,16 @@ function, so paper and live trading in P4 replace the venue and nothing else.
 
 A rebalance only happens when the target differs from the current weight by more than
 the no-trade band; skipped rebalances are counted so the band's effect is visible.
+
+Bracket strategies (entries with a stop and a target) run a second loop, per bar:
+    1. Entry at the open, if the previous close signalled and no trade is open. Size =
+       risk_per_trade x equity / (open - stop), capped by cash (spot: no leverage).
+    2. Exits inside the bar from its low and high. If a bar reaches both the stop and
+       the target, the stop is assumed to have come first: bar data can't tell the
+       order, so assume the worse one. If the bar opens past the stop (a gap), the exit
+       is at the open, not the stop. Exits pay full taker costs.
+    3. Equity is marked at the close. A trade still open at the end is closed at the
+       final close so every trade has a result.
 Data from the holdout period is refused unless the caller explicitly allows it.
 """
 
@@ -20,6 +30,7 @@ import logging
 from dataclasses import dataclass, field
 from datetime import datetime
 from decimal import Decimal
+from typing import Literal
 
 import polars as pl
 
@@ -28,7 +39,12 @@ from kestrel.config import Config
 from kestrel.data.schema import Interval
 from kestrel.execution.venue import SimVenue
 from kestrel.provenance import CodeVersion, code_version
-from kestrel.strategy import Strategy, validated_weights
+from kestrel.strategy import (
+    BracketStrategy,
+    Strategy,
+    validated_brackets,
+    validated_weights,
+)
 
 log = logging.getLogger(__name__)
 
@@ -50,6 +66,39 @@ class RejectionRecord:
     rejection: Rejection
 
 
+ExitReason = Literal["target", "stop", "end of data"]
+
+
+@dataclass(frozen=True)
+class TradeRecord:
+    """One round trip of a bracket strategy, with its result in units of risk (R)."""
+
+    entry_time: datetime
+    exit_time: datetime
+    exit_reason: ExitReason
+    quantity: Decimal
+    entry_price: Decimal
+    """Executed, after spread and impact."""
+    exit_price: Decimal
+    stop: Decimal
+    target: Decimal
+    risk: Decimal
+    """Planned loss at the stop before costs: quantity x (entry open - stop)."""
+    pnl: Decimal
+    """Net cash result after every cost."""
+    costs: Decimal
+    risk_capped: bool
+    """True when cash couldn't fund the full risk, so the position is smaller."""
+
+    @property
+    def r_multiple(self) -> Decimal:
+        return self.pnl / self.risk
+
+    @property
+    def cost_r(self) -> Decimal:
+        return self.costs / self.risk
+
+
 @dataclass
 class BacktestResult:
     strategy: str
@@ -60,6 +109,9 @@ class BacktestResult:
     """Per bar: close_time, equity, cash, position, weight (actual, after trading)."""
     fills: list[FillRecord] = field(default_factory=list)
     rejections: list[RejectionRecord] = field(default_factory=list)
+    trades: list[TradeRecord] = field(default_factory=list)
+    """Round trips; filled for bracket strategies only."""
+    style: Literal["weights", "brackets"] = "weights"
     start: datetime | None = None
     """Open time of the first bar: when the starting cash is first marked."""
     band_skips: int = 0
@@ -75,7 +127,7 @@ class BacktestResult:
 
 
 def run_backtest(
-    strategy: Strategy,
+    strategy: Strategy | BracketStrategy,
     bars: pl.DataFrame,
     interval: Interval,
     config: Config,
@@ -100,11 +152,8 @@ def run_backtest(
     if used_holdout:
         log.warning("HOLDOUT USED: %s on %s from %s", strategy.name, strategy.symbol, holdout)
 
-    weights = validated_weights(strategy, bars)
     symbol = strategy.symbol
     venue = SimVenue(config, initial_cash)
-    model = venue.cost_model()
-    band = config.backtest.no_trade_band
     result = BacktestResult(
         strategy=strategy.name,
         symbol=symbol,
@@ -116,14 +165,50 @@ def run_backtest(
         config_fingerprint=config.fingerprint(),
         code=code_version(),
     )
+    if isinstance(strategy, BracketStrategy):
+        result.style = "brackets"
+        rows = _run_brackets(strategy, bars, venue, config, result)
+    else:
+        rows = _run_weights(strategy, bars, venue, config, result)
 
+    close_times = bars["open_time"] + interval.duration
+    result.equity = pl.DataFrame(
+        {
+            "close_time": close_times,
+            "equity": [float(r[0]) for r in rows],
+            "cash": [float(r[1]) for r in rows],
+            "position": [float(r[2]) for r in rows],
+        }
+    ).with_columns(
+        weight=pl.when(pl.col("equity") > 0)
+        .then(1 - pl.col("cash") / pl.col("equity"))
+        .otherwise(0.0)
+    )
+    return result
+
+
+Row = tuple[Decimal, Decimal, Decimal]
+"""(equity, cash, position) at a bar's close."""
+
+
+def _run_weights(
+    strategy: Strategy,
+    bars: pl.DataFrame,
+    venue: SimVenue,
+    config: Config,
+    result: BacktestResult,
+) -> list[Row]:
+    weights = validated_weights(strategy, bars)
+    symbol = strategy.symbol
+    model = venue.cost_model()
+    band = config.backtest.no_trade_band
     opens = [Decimal(str(v)) for v in bars["open"]]
     closes = [Decimal(str(v)) for v in bars["close"]]
     volumes = [Decimal(str(v)) for v in bars["quote_volume"]]
     times = bars["open_time"].to_list()
     targets = [Decimal(str(w)) for w in weights]
 
-    rows: list[tuple[Decimal, Decimal, Decimal]] = [(initial_cash, initial_cash, Decimal(0))]
+    rows: list[Row] = [(result.initial_cash, result.initial_cash, Decimal(0))]
     for i in range(1, bars.height):
         price, target = opens[i], targets[i - 1]
         venue.set_market(symbol, price, volumes[i - 1])
@@ -140,21 +225,141 @@ def run_backtest(
             result.band_skips += 1
         held = venue.position(symbol)
         rows.append((venue.cash() + held * closes[i], venue.cash(), held))
+    return rows
 
-    close_times = bars["open_time"] + interval.duration
-    result.equity = pl.DataFrame(
-        {
-            "close_time": close_times,
-            "equity": [float(r[0]) for r in rows],
-            "cash": [float(r[1]) for r in rows],
-            "position": [float(r[2]) for r in rows],
-        }
-    ).with_columns(
-        weight=pl.when(pl.col("equity") > 0)
-        .then(1 - pl.col("cash") / pl.col("equity"))
-        .otherwise(0.0)
-    )
-    return result
+
+@dataclass
+class _OpenTrade:
+    entry: Fill
+    entry_time: datetime
+    stop: Decimal
+    target: Decimal
+    risk: Decimal
+    capped: bool
+
+
+def _run_brackets(
+    strategy: BracketStrategy,
+    bars: pl.DataFrame,
+    venue: SimVenue,
+    config: Config,
+    result: BacktestResult,
+) -> list[Row]:
+    frame = validated_brackets(strategy, bars)
+    symbol = strategy.symbol
+    model = venue.cost_model()
+    risk_fraction = config.backtest.risk_per_trade
+
+    def prices(col: str) -> list[Decimal]:
+        return [Decimal(str(v)) for v in bars[col]]
+
+    def levels(col: str) -> list[Decimal | None]:  # set on entry rows only
+        return [None if v is None else Decimal(str(v)) for v in frame[col]]
+
+    opens, highs, lows, closes = prices("open"), prices("high"), prices("low"), prices("close")
+    volumes = prices("quote_volume")
+    enters, stops, targets = frame["enter"].to_list(), levels("stop"), levels("target")
+    times = bars["open_time"].to_list()
+
+    def close_trade(trade: _OpenTrade, exit_fill: Fill, at: datetime, reason: ExitReason) -> None:
+        result.fills.append(FillRecord(at, exit_fill))
+        result.trades.append(
+            TradeRecord(
+                entry_time=trade.entry_time,
+                exit_time=at,
+                exit_reason=reason,
+                quantity=trade.entry.quantity,
+                entry_price=trade.entry.price,
+                exit_price=exit_fill.price,
+                stop=trade.stop,
+                target=trade.target,
+                risk=trade.risk,
+                pnl=trade.entry.cash_flow + exit_fill.cash_flow,
+                costs=trade.entry.total_cost + exit_fill.total_cost,
+                risk_capped=trade.capped,
+            )
+        )
+
+    open_trade: _OpenTrade | None = None
+    rows: list[Row] = [(result.initial_cash, result.initial_cash, Decimal(0))]
+    for i in range(1, bars.height):
+        o, h, lo, c = opens[i], highs[i], lows[i], closes[i]
+        last_volume = volumes[i - 1]
+
+        # 1. Entry at the open on the previous close's signal.
+        if open_trade is None and enters[i - 1]:
+            stop, target = stops[i - 1], targets[i - 1]
+            assert stop is not None  # validated_brackets guarantees both on entry rows
+            assert target is not None
+            if not stop < o < target:
+                result.rejections.append(
+                    RejectionRecord(
+                        times[i],
+                        Rejection(
+                            symbol,
+                            Side.BUY,
+                            Decimal(0),
+                            f"opened at {o}, outside stop {stop} and target {target}; skipped",
+                        ),
+                    )
+                )
+            else:
+                cash = venue.cash()
+                wanted = risk_fraction * cash / (o - stop)
+                rate = (
+                    model.cost_rate(Side.BUY, min(wanted * o, cash), last_volume)
+                    if last_volume > 0
+                    else Decimal(0)
+                )
+                affordable = cash / (1 + rate) / o
+                venue.set_market(symbol, o, last_volume)
+                order = venue.submit_market(symbol, Side.BUY, min(wanted, affordable))
+                if isinstance(order, Fill):
+                    result.fills.append(FillRecord(times[i], order))
+                    open_trade = _OpenTrade(
+                        entry=order,
+                        entry_time=times[i],
+                        stop=stop,
+                        target=target,
+                        risk=order.quantity * (o - stop),
+                        capped=affordable < wanted,
+                    )
+                else:
+                    result.rejections.append(RejectionRecord(times[i], order))
+
+        # 2. Exits inside the bar. The stop is checked first: when one bar reaches both
+        # levels its order is unknown, so assume the worse outcome.
+        if open_trade is not None:
+            exit_at: Decimal | None = None
+            reason: ExitReason = "stop"
+            if lo <= open_trade.stop:
+                exit_at = o if o <= open_trade.stop else open_trade.stop  # a gap fills at the open
+            elif h >= open_trade.target:
+                exit_at, reason = (o if o >= open_trade.target else open_trade.target), "target"
+            if exit_at is not None:
+                venue.set_market(symbol, exit_at, last_volume)
+                sell = venue.submit_market(symbol, Side.SELL, venue.position(symbol))
+                if isinstance(sell, Fill):
+                    close_trade(open_trade, sell, times[i], reason)
+                    open_trade = None
+                else:  # e.g. the position fell below the exchange minimum; keep it
+                    result.rejections.append(RejectionRecord(times[i], sell))
+
+        held = venue.position(symbol)
+        rows.append((venue.cash() + held * c, venue.cash(), held))
+
+    # 3. Close anything still open at the final close, so every trade has a result.
+    if open_trade is not None:
+        last = bars.height - 1
+        final = closes[last]
+        venue.set_market(symbol, final, volumes[last])
+        sell = venue.submit_market(symbol, Side.SELL, venue.position(symbol))
+        if isinstance(sell, Fill):
+            close_trade(open_trade, sell, times[last], "end of data")
+            rows[-1] = (venue.cash(), venue.cash(), venue.position(symbol))
+        else:
+            result.rejections.append(RejectionRecord(times[last], sell))
+    return rows
 
 
 def _rebalance(

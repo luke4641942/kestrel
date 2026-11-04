@@ -157,6 +157,8 @@ export interface SignalsRequest {
 }
 
 export interface Signals {
+  /** "entries": weight is 1 on bars that signal an entry (bracket strategies). */
+  kind: "weights" | "entries";
   time: number[];
   open: number[];
   high: number[];
@@ -246,6 +248,15 @@ export interface Metrics {
   total_costs: number;
   turnover: number | null;
   few_trades: boolean;
+  /** Bracket strategies only; null otherwise. */
+  round_trips?: number | null;
+  win_rate?: number | null;
+  avg_win_r?: number | null;
+  avg_loss_r?: number | null;
+  expectancy_r?: number | null;
+  profit_factor?: number | null;
+  avg_cost_r?: number | null;
+  risk_capped?: number | null;
 }
 
 export interface RunSummary {
@@ -253,6 +264,7 @@ export interface RunSummary {
   created_at: string;
   strategy: string;
   strategy_kind: StrategyKind;
+  style: "weights" | "brackets";
   params: Record<string, number>;
   research: { slug: string; version: number } | null;
   strategy_name: string;
@@ -291,6 +303,22 @@ export interface RunDetail extends RunSummary {
     cash_flow: number;
   }[];
   rejections: { time: string; side: Side; quantity: number; reason: string }[];
+  trades: {
+    entry_time: string;
+    exit_time: string;
+    exit_reason: "target" | "stop" | "end of data";
+    quantity: number;
+    entry_price: number;
+    exit_price: number;
+    stop: number;
+    target: number;
+    risk: number;
+    pnl: number;
+    costs: number;
+    r_multiple: number;
+    cost_r: number;
+    risk_capped: boolean;
+  }[];
 }
 
 export interface IngestRequest {

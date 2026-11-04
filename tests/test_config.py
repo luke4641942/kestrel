@@ -23,7 +23,11 @@ def document() -> dict[str, Any]:
             "impact_coef_bps": 100,
             "max_participation": 0.01,
         },
-        "backtest": {"no_trade_band": 0.02, "holdout_start": date(2025, 11, 1)},
+        "backtest": {
+            "no_trade_band": 0.02,
+            "risk_per_trade": 0.01,
+            "holdout_start": date(2025, 11, 1),
+        },
         "instruments": {
             "BTCUSDT": {"step_size": "0.00001", "min_qty": "0.00001", "min_notional": "5"},
         },
@@ -36,6 +40,7 @@ def test_repo_config_loads() -> None:
     assert config.costs.taker_fee_bps == Decimal(10)
     assert config.instrument("btcusdt").step_size == Decimal("0.00001")
     assert config.backtest.no_trade_band == Decimal("0.02")
+    assert config.backtest.risk_per_trade == Decimal("0.01")
     assert config.backtest.holdout_start == datetime(2025, 11, 1, tzinfo=UTC)
 
 

@@ -48,7 +48,9 @@ export function EquityChart({ equity, benchmark }: { equity: EquitySeries; bench
         fontSize: 11,
         attributionLogo: false,
       },
-      timeScale: { timeVisible: false },
+      // The default minimum bar spacing (0.5px) can't fit years of 4h bars, so the
+      // chart would silently show only the most recent part. Allow it to compress.
+      timeScale: { timeVisible: false, minBarSpacing: 0.001 },
       crosshair: { mode: 0 },
     });
     // Each pane's axis takes its number format from its series: money on top, % below.

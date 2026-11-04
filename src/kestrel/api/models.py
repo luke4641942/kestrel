@@ -327,7 +327,11 @@ class SignalsRequest(BaseModel):
 
 
 class Signals(BaseModel):
-    """Bars with the strategy's target weight decided at each bar's close."""
+    """Bars with the strategy's decision at each bar's close: a target weight, or for
+    bracket strategies 1.0 on bars that signal an entry (exits depend on fills, so
+    they appear in backtests, not here)."""
+
+    kind: str = "weights"
 
     time: list[int]
     open: list[float]
@@ -393,6 +397,15 @@ class MetricsOut(BaseModel):
     total_costs: float
     turnover: float | None
     few_trades: bool
+    # Bracket strategies only (None otherwise, and for runs saved before stops existed).
+    round_trips: int | None = None
+    win_rate: float | None = None
+    avg_win_r: float | None = None
+    avg_loss_r: float | None = None
+    expectancy_r: float | None = None
+    profit_factor: float | None = None
+    avg_cost_r: float | None = None
+    risk_capped: int | None = None
 
 
 class CodeOut(BaseModel):
@@ -411,6 +424,7 @@ class RunSummary(BaseModel):
     strategy: str
     # Defaults keep runs saved before these fields existed loadable.
     strategy_kind: str = "benchmark"
+    style: str = "weights"
     params: dict[str, int] = Field(default_factory=dict)
     research: ResearchRef | None = None
     strategy_name: str
@@ -454,12 +468,30 @@ class RejectionOut(BaseModel):
     reason: str
 
 
+class TradeOut(BaseModel):
+    entry_time: datetime
+    exit_time: datetime
+    exit_reason: str
+    quantity: float
+    entry_price: float
+    exit_price: float
+    stop: float
+    target: float
+    risk: float
+    pnl: float
+    costs: float
+    r_multiple: float
+    cost_r: float
+    risk_capped: bool
+
+
 class RunDetail(RunSummary):
     config: dict[str, Any]
     equity: Series
     benchmark: Series
     fills: list[FillOut]
     rejections: list[RejectionOut]
+    trades: list[TradeOut] = Field(default_factory=list)
 
 
 # ---------- research ----------

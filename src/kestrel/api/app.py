@@ -52,6 +52,7 @@ from kestrel.api.models import (
     SourceOut,
     StatusChangeOut,
     StrategyOut,
+    TradeOut,
 )
 from kestrel.assistant import AssistantError, ResearchAssistant, chat_record, credentials_hint
 from kestrel.backtest.costs import CostModel, Fill, Side
@@ -72,10 +73,12 @@ from kestrel.research import (
 )
 from kestrel.strategy import (
     STRATEGIES,
+    BracketStrategy,
     StrategySpec,
     make_strategy,
     resolve_params,
     strategy_source,
+    validated_brackets,
     validated_weights,
 )
 
@@ -344,10 +347,15 @@ def create_app(
         if bars.is_empty():
             raise HTTPException(status.HTTP_404_NOT_FOUND, "no stored bars in that range")
         try:
-            weights = validated_weights(strategy, bars)
+            if isinstance(strategy, BracketStrategy):
+                kind = "entries"
+                weights = validated_brackets(strategy, bars)["enter"].cast(pl.Float64)
+            else:
+                kind, weights = "weights", validated_weights(strategy, bars)
         except ValueError as e:
             raise HTTPException(422, str(e)) from None
         return Signals(
+            kind=kind,
             time=bars["open_time"].dt.epoch("s").to_list(),
             open=bars["open"].to_list(),
             high=bars["high"].to_list(),
@@ -416,6 +424,7 @@ def create_app(
                 "rejections": [
                     RejectionOut.model_validate(r) for r in saved.rejections.iter_rows(named=True)
                 ],
+                "trades": [TradeOut.model_validate(r) for r in saved.trades.iter_rows(named=True)],
             }
         )
 

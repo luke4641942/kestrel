@@ -42,7 +42,8 @@ export function SignalsChart({ signals }: { signals: Signals }) {
         fontSize: 11,
         attributionLogo: false,
       },
-      timeScale: { timeVisible: true, secondsVisible: false },
+      // See EquityChart: let years of 4h bars fit instead of showing only the latest.
+      timeScale: { timeVisible: true, secondsVisible: false, minBarSpacing: 0.001 },
       crosshair: { mode: 0 },
     });
     // Formats are per series so each pane's axis gets its own (prices on top, % below);
@@ -102,6 +103,17 @@ export function SignalsChart({ signals }: { signals: Signals }) {
     h.weight.setData(signals.time.map((_, i) => ({ time: t(i), value: signals.weight[i]! })));
 
     const markers: SeriesMarker<Time>[] = [];
+    if (signals.kind === "entries") {
+      // Bracket strategies: mark each entry signal on the bar it would fill (the next open).
+      for (let i = 0; i + 1 < signals.time.length; i++) {
+        if (signals.weight[i]) {
+          markers.push({ time: t(i + 1), position: "belowBar", shape: "arrowUp", color: up });
+        }
+      }
+      h.markers.setMarkers(markers);
+      h.chart.timeScale().fitContent();
+      return;
+    }
     for (let i = 1; i + 1 < signals.time.length; i++) {
       const prev = signals.weight[i - 1]!;
       const next = signals.weight[i]!;

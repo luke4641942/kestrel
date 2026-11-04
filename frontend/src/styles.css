@@ -844,6 +844,12 @@ p {
   color: var(--warn);
 }
 
+.r-stats {
+  margin-top: 12px;
+  border-top: 1px solid var(--line);
+  border-bottom: 1px solid var(--line);
+}
+
 /* ---------- strategies ---------- */
 
 .strat-layout {

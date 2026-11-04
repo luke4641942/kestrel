@@ -559,7 +559,11 @@ function SignalsPanel({ impl }: { impl: StrategyInfo }) {
     <Panel pad>
       <div className="code-head">
         <h3 className="panel-title">Signals</h3>
-        <span className="small tertiary">Target weight after each bar closes; arrows mark where it would trade</span>
+        <span className="small tertiary">
+          {signals.data?.kind === "entries"
+            ? "Arrows mark entry signals; exits depend on stops and targets, so see them in a backtest"
+            : "Target weight after each bar closes; arrows mark where it would trade"}
+        </span>
       </div>
       {datasets.length === 0 ? (
         <p className="secondary small">Ingest a dataset first (More → Data).</p>

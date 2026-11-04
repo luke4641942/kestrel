@@ -17,7 +17,7 @@ from __future__ import annotations
 import inspect
 from collections.abc import Callable
 from dataclasses import dataclass
-from typing import Literal, Protocol
+from typing import Literal, Protocol, runtime_checkable
 
 import polars as pl
 
@@ -36,6 +36,25 @@ class Strategy(Protocol):
     def target_weights(self, bars: pl.DataFrame) -> pl.Series:
         """One weight in [0, 1] per row of ``bars``, using only that row and earlier."""
         ...
+
+
+@runtime_checkable
+class BracketStrategy(Protocol):
+    """A strategy that enters with its own stop and target instead of holding weights.
+
+    ``brackets`` returns one row per bar with columns ``enter`` (go long at the next
+    open), ``stop`` and ``target`` (price levels, set on entry rows). The strategy
+    decides *where* the stop and target are; the engine decides *how much* to buy,
+    from the risk per trade in kestrel.toml and the distance to the stop.
+    """
+
+    name: str
+    symbol: str
+
+    def brackets(self, bars: pl.DataFrame) -> pl.DataFrame: ...
+
+
+BRACKET_SCHEMA = {"enter": pl.Boolean, "stop": pl.Float64, "target": pl.Float64}
 
 
 class BuyAndHold:
@@ -73,6 +92,38 @@ class MovingAverageTrend:
         return (fast > slow).fill_null(False).cast(pl.Float64).alias("weight")
 
 
+class ChannelBreakout:
+    """Enter when the close breaks above the prior N-bar high; stop below the recent low;
+    target a fixed multiple of the risk.
+
+    An ENGINE TEST, not research: it exists to exercise stops, targets and risk-based
+    sizing. Its results say nothing about whether breakouts work.
+    """
+
+    def __init__(
+        self,
+        symbol: str = "BTCUSDT",
+        lookback: int = 20,
+        stop_lookback: int = 10,
+        target_r: int = 3,
+    ) -> None:
+        self.symbol = symbol
+        self.lookback, self.stop_lookback, self.target_r = lookback, stop_lookback, target_r
+        self.name = f"channel breakout {lookback}/{stop_lookback} {target_r}R {symbol}"
+
+    def brackets(self, bars: pl.DataFrame) -> pl.DataFrame:
+        # Prior bars only for the channel; the current bar's close is known at its close.
+        channel = pl.col("high").shift(1).rolling_max(self.lookback)
+        stop = pl.col("low").rolling_min(self.stop_lookback)
+        enter = ((pl.col("close") > channel) & (stop < pl.col("close"))).fill_null(False)
+        target = pl.col("close") + self.target_r * (pl.col("close") - stop)
+        return bars.select(
+            enter.alias("enter"),
+            pl.when(enter).then(stop).alias("stop"),
+            pl.when(enter).then(target).alias("target"),
+        )
+
+
 @dataclass(frozen=True)
 class Param:
     name: str
@@ -87,7 +138,7 @@ class StrategySpec:
     key: str
     kind: Literal["benchmark", "engine-test", "research"]
     description: str
-    factory: Callable[..., Strategy]
+    factory: Callable[..., Strategy | BracketStrategy]
     params: tuple[Param, ...] = ()
 
 
@@ -99,6 +150,18 @@ STRATEGIES: dict[str, StrategySpec] = {
             "benchmark",
             "Fully invested from the first bar. The benchmark every strategy must beat.",
             BuyAndHold,
+        ),
+        StrategySpec(
+            "channel-breakout",
+            "engine-test",
+            "Breakout entry with a stop below the recent low and a fixed-R target. An "
+            "engine test for stops, targets and risk sizing, not a research result.",
+            ChannelBreakout,
+            (
+                Param("lookback", 20, 2, 500, "Bars in the breakout channel"),
+                Param("stop_lookback", 10, 1, 200, "Bars whose lowest low sets the stop"),
+                Param("target_r", 3, 1, 20, "Target as a multiple of the risk to the stop"),
+            ),
         ),
         StrategySpec(
             "ma-trend",
@@ -142,7 +205,9 @@ def spec_for(key: str) -> StrategySpec:
     return STRATEGIES[key]
 
 
-def make_strategy(key: str, symbol: str, params: dict[str, int] | None = None) -> Strategy:
+def make_strategy(
+    key: str, symbol: str, params: dict[str, int] | None = None
+) -> Strategy | BracketStrategy:
     return spec_for(key).factory(symbol.upper(), **resolve_params(key, params))
 
 
@@ -164,22 +229,65 @@ def validated_weights(strategy: Strategy, bars: pl.DataFrame, checkpoints: int =
     return weights
 
 
+def validated_brackets(
+    strategy: BracketStrategy, bars: pl.DataFrame, checkpoints: int = 8
+) -> pl.DataFrame:
+    """Compute brackets, check their shape and levels, and check for lookahead."""
+    frame = strategy.brackets(bars)
+    if frame.height != bars.height:
+        raise ValueError(f"{strategy.name}: {frame.height} bracket rows for {bars.height} bars")
+    if set(frame.columns) != set(BRACKET_SCHEMA):
+        raise ValueError(f"{strategy.name}: bracket columns must be {sorted(BRACKET_SCHEMA)}")
+    frame = frame.select([pl.col(c).cast(t) for c, t in BRACKET_SCHEMA.items()])
+    frame = frame.with_columns(pl.col("enter").fill_null(False))
+    entries = frame.filter("enter")
+    bad = entries.filter(
+        pl.col("stop").is_null()
+        | pl.col("target").is_null()
+        | pl.col("stop").is_nan()
+        | pl.col("target").is_nan()
+        | (pl.col("stop") <= 0)
+        | (pl.col("stop") >= pl.col("target"))
+    )
+    if bad.height:
+        raise ValueError(f"{strategy.name}: every entry needs 0 < stop < target")
+    _check_prefixes(strategy.name, strategy.brackets, bars, frame, checkpoints)
+    return frame
+
+
 def check_no_lookahead(
     strategy: Strategy, bars: pl.DataFrame, weights: pl.Series, checkpoints: int = 8
 ) -> None:
     """Recompute on prefixes of the history; every shared weight must be identical."""
+    _check_prefixes(strategy.name, strategy.target_weights, bars, weights.to_frame(), checkpoints)
+
+
+def _check_prefixes(
+    name: str,
+    compute: Callable[[pl.DataFrame], pl.Series | pl.DataFrame],
+    bars: pl.DataFrame,
+    full: pl.DataFrame,
+    checkpoints: int,
+) -> None:
+    """Rows computed on a truncated history must equal the same rows computed on all of it.
+
+    Works for both strategy styles: a weight Series or a bracket DataFrame."""
     n = bars.height
     if n < 2:
         return
     cuts = sorted({max(1, (n * k) // (checkpoints + 1)) for k in range(1, checkpoints + 1)})
     for cut in cuts:
-        prefix = strategy.target_weights(bars.head(cut))
-        expected = weights.head(cut)
-        if prefix.len() != cut or not prefix.equals(expected, check_names=False):
-            diff = (prefix.head(cut) != expected).arg_true() if prefix.len() == cut else None
-            first = int(diff[0]) if diff is not None and diff.len() else cut - 1
-            raise LookaheadError(
-                f"{strategy.name}: weight at bar {first} "
-                f"({bars['open_time'][first]}) changes when bars after {cut - 1} are removed. "
-                "It is using information from the future."
-            )
+        out = compute(bars.head(cut))
+        prefix = out.to_frame() if isinstance(out, pl.Series) else out
+        expected = full.head(cut)
+        first = cut - 1
+        if prefix.shape == expected.shape:
+            prefix = prefix.rename(dict(zip(prefix.columns, expected.columns, strict=True)))
+            if prefix.equals(expected):
+                continue
+            first = next(i for i in range(cut) if prefix.row(i) != expected.row(i))
+        raise LookaheadError(
+            f"{name}: decision at bar {first} "
+            f"({bars['open_time'][first]}) changes when bars after {cut - 1} are removed. "
+            "It is using information from the future."
+        )

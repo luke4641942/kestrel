@@ -31,6 +31,11 @@ max_participation = 0.01
 # this fraction of equity, so tiny adjustments don't pay fees.
 no_trade_band = 0.02
 
+# For strategies with stops: the share of equity lost if a stop is hit. The position
+# is sized from it (risk / distance to the stop), capped at 100% of equity: spot, no
+# leverage. A wide stop can be capped below this risk; the run records when it is.
+risk_per_trade = 0.01
+
 # Holdout: data from this date (UTC) on is reserved for one final test of a finished
 # strategy. Pre-registered 2026-10-31, before any strategy research. Never move it.
 holdout_start = 2025-11-01

@@ -268,7 +268,7 @@ function RunsTable({
                 </td>
                 <td className="num">{plain(m.sharpe)}</td>
                 <td className="num">{pct(m.max_drawdown)}</td>
-                <td className="num">{m.trades}</td>
+                <td className="num">{r.style === "brackets" ? (m.round_trips ?? 0) : m.trades}</td>
                 <td className="num secondary">{ago(r.created_at)}</td>
               </tr>
             );
@@ -367,6 +367,7 @@ function RunView({ id }: { id: string }) {
             />
           </Panel>
         </div>
+        {r.style === "brackets" && <TradesPanel run={r} />}
         <Panel>
           <FillsTable run={r} />
         </Panel>
@@ -376,6 +377,82 @@ function RunView({ id }: { id: string }) {
         </p>
       </div>
     </Section>
+  );
+}
+
+const rFmt = (x: number | null | undefined) =>
+  x === null || x === undefined ? "n/a" : `${x >= 0 ? "+" : ""}${x.toFixed(2)}R`;
+
+function TradesPanel({ run }: { run: RunDetail }) {
+  const m = run.metrics;
+  const risk = (run.config as { backtest?: { risk_per_trade?: number } }).backtest?.risk_per_trade;
+  return (
+    <Panel>
+      <div className="code-head">
+        <h3 className="panel-title">Trades in R</h3>
+        <span className="small tertiary">
+          1R = the loss if a stop is hit{risk ? `, sized at ${(risk * 100).toFixed(1)}% of equity` : ""}. After all
+          costs.
+        </span>
+      </div>
+      <div className="stats r-stats">
+        <Stat label="Expectancy" value={rFmt(m.expectancy_r)} note="Average result per trade" />
+        <Stat
+          label="Win rate"
+          value={m.win_rate === null || m.win_rate === undefined ? "n/a" : `${Math.round(m.win_rate * 100)}%`}
+          note={`avg win ${rFmt(m.avg_win_r)} · avg loss ${rFmt(m.avg_loss_r)}`}
+        />
+        <Stat
+          label="Profit factor"
+          value={m.profit_factor === null || m.profit_factor === undefined ? "n/a" : m.profit_factor.toFixed(2)}
+          note="Winning R ÷ losing R"
+        />
+        <Stat
+          label="Costs per trade"
+          value={rFmt(m.avg_cost_r)}
+          note={m.risk_capped ? `${m.risk_capped} trades capped by cash` : "Share of each risk unit lost to costs"}
+        />
+      </div>
+      {run.trades.length > 0 && (
+        <div className="table-wrap">
+          <table className="table nowrap">
+            <thead>
+              <tr>
+                <th>Entry</th>
+                <th>Exit</th>
+                <th>Reason</th>
+                <th className="num">Entry price</th>
+                <th className="num">Stop</th>
+                <th className="num">Target</th>
+                <th className="num">Exit price</th>
+                <th className="num">Net</th>
+                <th className="num">Result</th>
+              </tr>
+            </thead>
+            <tbody>
+              {run.trades.map((t, i) => (
+                <tr key={i}>
+                  <td>{dateTime(t.entry_time)}</td>
+                  <td>{dateTime(t.exit_time)}</td>
+                  <td>
+                    <Status tone={t.exit_reason === "target" ? "ok" : t.exit_reason === "stop" ? "bad" : "neutral"}>
+                      {t.exit_reason}
+                    </Status>
+                    {t.risk_capped && <span className="chip run-chip">capped</span>}
+                  </td>
+                  <td className="num mono">{usdt(t.entry_price)}</td>
+                  <td className="num mono">{usdt(t.stop)}</td>
+                  <td className="num mono">{usdt(t.target)}</td>
+                  <td className="num mono">{usdt(t.exit_price)}</td>
+                  <td className={`num mono ${t.pnl >= 0 ? "up" : "down"}`}>{usdt(t.pnl)}</td>
+                  <td className={`num mono ${t.r_multiple >= 0 ? "up" : "down"}`}>{rFmt(t.r_multiple)}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+    </Panel>
   );
 }
 
@@ -406,8 +483,8 @@ function Headline({ run }: { run: RunDetail }) {
           note={`${Math.round(m.longest_underwater_days)} days underwater at worst`}
         />
         <Stat
-          label="Trades"
-          value={num(m.trades)}
+          label={run.style === "brackets" ? "Round trips" : "Trades"}
+          value={num(run.style === "brackets" ? (m.round_trips ?? 0) : m.trades)}
           note={
             m.few_trades ? (
               <span className="warn">Too few to trust per-trade statistics</span>

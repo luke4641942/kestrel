@@ -113,3 +113,38 @@ def test_a_lookahead_strategy_fails_the_job_with_a_clear_reason(
     assert job["status"] == "failed"
     assert "information from the future" in job["error"]
     assert not any("Traceback" in line for line in job["logs"])
+
+
+def test_bracket_backtest_returns_trades_and_r_metrics(tmp_path: Path) -> None:
+    import math
+
+    closes = [100 + 10 * math.sin(i / 7) + i * 0.05 for i in range(400)]
+    ParquetStore(tmp_path).write(
+        "BTCUSDT",
+        Interval.H4,
+        bars(
+            closes,
+            closes=closes,
+            highs=[c * 1.004 for c in closes],
+            lows=[c * 0.996 for c in closes],
+        ),
+    )
+    client = TestClient(create_app(tmp_path, static_dir=None, config_path=REPO_CONFIG))
+    job = _finish(
+        client,
+        {**BODY, "end": "2024-03", "strategy": "channel-breakout", "params": {"target_r": 2}},
+    )
+    assert job["status"] == "succeeded", job
+    detail = client.get(f"/api/backtests/{job['result']['run_id']}").json()
+    assert detail["style"] == "brackets"
+    assert detail["params"] == {"lookback": 20, "stop_lookback": 10, "target_r": 2}
+    assert len(detail["trades"]) == detail["metrics"]["round_trips"] >= 3
+    assert detail["metrics"]["avg_cost_r"] > 0
+    assert detail["trades"][0]["exit_reason"] in {"target", "stop", "end of data"}
+    assert detail["benchmark_metrics"]["round_trips"] is None
+
+    signals = client.post(
+        "/api/strategies/channel-breakout/signals", json={**BODY, "end": "2024-03"}
+    ).json()
+    assert signals["kind"] == "entries"
+    assert set(signals["weight"]) == {0.0, 1.0}

@@ -182,3 +182,37 @@ def test_runs_record_params_and_research_link(store: ParquetStore, tmp_path: Pat
     assert meta["research"] == {"slug": "trend", "version": 1}
     assert meta["strategy_kind"] == "engine-test"
     assert runs.trials("other") == []
+
+
+def test_bracket_runs_save_their_trades(tmp_path: Path) -> None:
+    import math
+
+    closes = [100 + 10 * math.sin(i / 7) + i * 0.05 for i in range(400)]
+    s = ParquetStore(tmp_path)
+    s.write(
+        "BTCUSDT",
+        H4,
+        bars(
+            closes,
+            closes=closes,
+            highs=[c * 1.004 for c in closes],
+            lows=[c * 0.996 for c in closes],
+        ),
+    )
+    outcome = execute(request(strategy="channel-breakout", end=Month(2024, 3)), s, config())
+    runs = RunStore(tmp_path)
+    saved = runs.load(runs.save(outcome, config()))
+    assert saved.meta["style"] == "brackets"
+    assert saved.trades.height == len(outcome.result.trades) >= 1
+    assert saved.trades["r_multiple"][0] == pytest.approx(
+        float(outcome.result.trades[0].r_multiple)
+    )
+    assert saved.meta["metrics"]["round_trips"] == saved.trades.height
+    assert outcome.benchmark.style == "weights"  # the benchmark is still buy-and-hold
+
+
+def test_runs_saved_before_stops_still_load(store: ParquetStore, tmp_path: Path) -> None:
+    runs = RunStore(tmp_path)
+    run_id = runs.save(execute(request(), store, config()), config())
+    (runs.root / run_id / "trades.parquet").unlink()
+    assert runs.load(run_id).trades.is_empty()

@@ -35,6 +35,8 @@ class CostConfig:
 @dataclass(frozen=True)
 class BacktestConfig:
     no_trade_band: Decimal
+    risk_per_trade: Decimal
+    """Fraction of equity risked per trade by strategies with stops."""
     holdout_start: datetime
     """First instant of the holdout period (UTC). Research must stay before it."""
 
@@ -112,7 +114,7 @@ def parse_config(document: dict[str, Any]) -> Config:
     )
 
     raw_bt = _table(document, "backtest")
-    _expect_keys(raw_bt, {"no_trade_band", "holdout_start"}, "[backtest]")
+    _expect_keys(raw_bt, {"no_trade_band", "risk_per_trade", "holdout_start"}, "[backtest]")
     holdout = raw_bt["holdout_start"]
     if isinstance(holdout, datetime) or not isinstance(holdout, date):
         raise ConfigError(
@@ -120,6 +122,9 @@ def parse_config(document: dict[str, Any]) -> Config:
         )
     backtest = BacktestConfig(
         no_trade_band=_decimal(raw_bt, "no_trade_band", "[backtest]", low=0, high=0.5),
+        risk_per_trade=_decimal(
+            raw_bt, "risk_per_trade", "[backtest]", low=0, high=0.1, low_inclusive=False
+        ),
         holdout_start=datetime(holdout.year, holdout.month, holdout.day, tzinfo=UTC),
     )
 

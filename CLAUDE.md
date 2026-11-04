@@ -106,9 +106,10 @@ Agreed with Luke; don't re-litigate without a reason.
   `kestrel.strategy`, `kestrel.execution.venue`, `kestrel.backtest.engine`,
   `kestrel.backtest.metrics`, `kestrel backtest` CLI, ~~run storage + Backtests
   page~~ (`kestrel.backtest.runs`, `/api/backtests`) -> vectorised engine with a parity
-  test -> stops, targets and risk-based sizing (below) -> remaining metrics (round
-  trips, blotter, per-trade profit and bootstrap CIs, BTC beta, break-even cost, tails,
-  tax view, R-multiple distribution).
+  test -> ~~stops, targets and risk-based sizing~~ (done: `BracketStrategy`,
+  `ChannelBreakout` engine test, R metrics, trades in runs and on the Backtests page)
+  -> remaining metrics (per-trade profit bootstrap CIs, BTC beta, break-even cost,
+  tails, tax view, R-multiple distribution chart).
 - **Stops, targets and risk-based sizing (P2, spot, no leverage).** Prompted by the
   "risk a little, target 3-4x" idea. Leverage doesn't change reward:risk; it only lets
   a tight stop carry a given risk, and tight stops are where costs dominate (22 bps

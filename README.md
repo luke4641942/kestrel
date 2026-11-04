@@ -136,7 +136,7 @@ data.binance.vision ──► BinanceVisionClient ──► parse_archive ──
 | `kestrel.backtest.costs` | Fee, spread and square-root impact model; simulated market fills with exchange order rules |
 | `kestrel.strategy` | Strategy interface (target weights from closed bars) and the automatic lookahead check |
 | `kestrel.execution.venue` | `ExecutionVenue` interface and `SimVenue`, the simulated spot account |
-| `kestrel.backtest.engine` | Event-driven engine: decide at close, fill at next open, no-trade band, holdout guard |
+| `kestrel.backtest.engine` | Event-driven engine: decide at close, fill at next open, no-trade band, holdout guard; stops and targets inside bars with risk-based sizing |
 | `kestrel.backtest.metrics` | Daily-marked metrics with uncertainty: Sharpe CI, probabilistic Sharpe, drawdown, costs |
 | `kestrel.research` | Versioned research notes with enforced pre-registration, and the single rule set for starting a backtest |
 | `kestrel.assistant` | Research assistant on Claude, given the note and code only, never results |
@@ -183,6 +183,11 @@ data.binance.vision ──► BinanceVisionClient ──► parse_archive ──
 - **An AI assistant outside the tuning loop.** The research assistant (Claude) is given
   the note and the code, never backtest results, so it can challenge an idea but can't
   fit it to past data. A test runs a trial and checks nothing from it reaches the API.
+- **Stops and targets, measured in R.** Bracket strategies set a stop and a target;
+  the engine sizes each trade from the risk per trade and the stop distance (spot, no
+  leverage) and exits inside bars from the high and low. When a bar reaches both, the
+  stop is assumed first, and a gap through the stop fills at the open. Results, costs
+  and expectancy are reported in units of risk.
 - **Config is versioned, not a settings page.** `kestrel.toml` has no defaults in
   code and rejects unknown keys. Each run will store the config and its fingerprint,
   so changing a fee never silently changes what an old result meant.

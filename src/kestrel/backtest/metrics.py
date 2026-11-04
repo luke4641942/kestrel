@@ -22,6 +22,7 @@ from __future__ import annotations
 import math
 from dataclasses import dataclass
 from datetime import datetime, timedelta
+from typing import Any
 
 import polars as pl
 
@@ -62,6 +63,19 @@ class Metrics:
     impact_costs: float
     turnover: float
     """Traded notional per year as a multiple of average equity."""
+    # Round trips in units of risk (R): bracket strategies only, None otherwise.
+    round_trips: int | None = None
+    win_rate: float | None = None
+    avg_win_r: float | None = None
+    avg_loss_r: float | None = None
+    expectancy_r: float | None = None
+    """Average net result per trade, in R, after costs."""
+    profit_factor: float | None = None
+    """Gross winning R divided by gross losing R."""
+    avg_cost_r: float | None = None
+    """Average cost per round trip, in R: how much of each risk unit costs eat."""
+    risk_capped: int | None = None
+    """Trades sized below the target risk because cash ran out (spot, no leverage)."""
 
     @property
     def total_costs(self) -> float:
@@ -69,7 +83,8 @@ class Metrics:
 
     @property
     def few_trades(self) -> bool:
-        return self.trades < FEW_TRADES
+        count = self.round_trips if self.round_trips is not None else self.trades
+        return count < FEW_TRADES
 
 
 def daily_equity(result: BacktestResult) -> pl.DataFrame:
@@ -145,7 +160,32 @@ def compute_metrics(result: BacktestResult) -> Metrics:
         spread_costs=sum(float(f.spread_cost) for f in fills),
         impact_costs=sum(float(f.impact_cost) for f in fills),
         turnover=traded / avg_equity / years if years > 0 and avg_equity > 0 else math.nan,
+        **_trade_stats(result),
     )
+
+
+def _trade_stats(result: BacktestResult) -> dict[str, Any]:
+    """R statistics for bracket strategies; empty for weight strategies."""
+    trades = result.trades
+    if not trades and not _is_bracket(result):
+        return {}
+    rs = [float(t.r_multiple) for t in trades]
+    wins = [r for r in rs if r > 0]
+    losses = [r for r in rs if r <= 0]
+    return {
+        "round_trips": len(rs),
+        "win_rate": len(wins) / len(rs) if rs else None,
+        "avg_win_r": sum(wins) / len(wins) if wins else None,
+        "avg_loss_r": sum(losses) / len(losses) if losses else None,
+        "expectancy_r": sum(rs) / len(rs) if rs else None,
+        "profit_factor": sum(wins) / -sum(losses) if wins and sum(losses) < 0 else None,
+        "avg_cost_r": sum(float(t.cost_r) for t in trades) / len(trades) if trades else None,
+        "risk_capped": sum(t.risk_capped for t in trades),
+    }
+
+
+def _is_bracket(result: BacktestResult) -> bool:
+    return result.style == "brackets"
 
 
 def _drawdown(equity: pl.DataFrame) -> tuple[float, timedelta]:
@@ -162,6 +202,23 @@ def _drawdown(equity: pl.DataFrame) -> tuple[float, timedelta]:
             assert peak_time is not None
             longest = max(longest, t - peak_time)
     return worst, longest
+
+
+def _r_lines(m: Metrics) -> list[str]:
+    if m.round_trips is None:
+        return []
+
+    def r(x: float | None) -> str:
+        return "n/a" if x is None else f"{x:+.2f}R"
+
+    win = "n/a" if m.win_rate is None else f"{m.win_rate:.0%}"
+    pf = "n/a" if m.profit_factor is None else f"{m.profit_factor:.2f}"
+    return [
+        f"  Win rate          {win}   avg win {r(m.avg_win_r)}   avg loss {r(m.avg_loss_r)}",
+        f"  Expectancy        {r(m.expectancy_r)} per trade after costs   profit factor {pf}",
+        f"  Costs in R        {r(m.avg_cost_r)} per round trip"
+        + (f"   ({m.risk_capped} trades capped by cash)" if m.risk_capped else ""),
+    ]
 
 
 def _norm_cdf(x: float) -> float:
@@ -188,8 +245,9 @@ def format_report(result: BacktestResult, m: Metrics) -> str:
         f"P(true Sharpe > 0) = {'n/a' if math.isnan(m.psr) else f'{m.psr:.0%}'}",
         f"  Max drawdown      {pct(m.max_drawdown)}   longest underwater "
         f"{m.longest_underwater.days} days",
-        f"  Trades            {m.trades}"
+        f"  Trades            {m.trades if m.round_trips is None else m.round_trips}"
         + ("   (too few to trust per-trade statistics)" if m.few_trades else ""),
+        *_r_lines(m),
         "",
         f"  Equity            {float(result.initial_cash):,.2f} -> {m.final_equity:,.2f} USDT",
         f"  Volatility        {'n/a' if math.isnan(m.volatility) else f'{m.volatility:.2%}'}"

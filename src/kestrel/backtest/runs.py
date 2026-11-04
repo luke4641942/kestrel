@@ -37,7 +37,14 @@ from kestrel.config import Config
 from kestrel.data.binance_vision import Month
 from kestrel.data.schema import Interval
 from kestrel.data.store import ParquetStore
-from kestrel.strategy import BuyAndHold, Strategy, make_strategy, resolve_params, spec_for
+from kestrel.strategy import (
+    BracketStrategy,
+    BuyAndHold,
+    Strategy,
+    make_strategy,
+    resolve_params,
+    spec_for,
+)
 
 RUN_ID = re.compile(r"^\d{8}-\d{6}-[0-9a-f]{6}$")
 
@@ -84,7 +91,7 @@ def execute(request: RunRequest, store: ParquetStore, config: Config) -> RunOutc
             f"{request.start}..{request.end}; ingest them first"
         )
 
-    def run(s: Strategy) -> BacktestResult:
+    def run(s: Strategy | BracketStrategy) -> BacktestResult:
         return run_backtest(
             s,
             bars,
@@ -132,6 +139,7 @@ class RunStore:
             "created_at": created.isoformat(),
             "strategy": req.strategy,
             "strategy_kind": spec_for(req.strategy).kind,
+            "style": res.style,
             "strategy_name": res.strategy,
             "params": resolve_params(req.strategy, req.params),
             "research": (
@@ -160,6 +168,7 @@ class RunStore:
             outcome.benchmark.equity.write_parquet(tmp / "benchmark.parquet")
             _fills_frame(res).write_parquet(tmp / "fills.parquet")
             _rejections_frame(res).write_parquet(tmp / "rejections.parquet")
+            _trades_frame(res).write_parquet(tmp / "trades.parquet")
             tmp.rename(self.root / run_id)
         except BaseException:
             shutil.rmtree(tmp, ignore_errors=True)
@@ -191,6 +200,12 @@ class RunStore:
             benchmark=pl.read_parquet(d / "benchmark.parquet"),
             fills=pl.read_parquet(d / "fills.parquet"),
             rejections=pl.read_parquet(d / "rejections.parquet"),
+            # Runs saved before stops existed have no trades file.
+            trades=(
+                pl.read_parquet(d / "trades.parquet")
+                if (d / "trades.parquet").exists()
+                else _trades_frame(None)
+            ),
         )
 
 
@@ -201,6 +216,7 @@ class SavedRun:
     benchmark: pl.DataFrame
     fills: pl.DataFrame
     rejections: pl.DataFrame
+    trades: pl.DataFrame
 
 
 def _fills_frame(res: BacktestResult) -> pl.DataFrame:
@@ -270,3 +286,44 @@ def trial_key(run: dict[str, Any]) -> tuple[Any, ...]:
 
 def count_trials(runs: list[dict[str, Any]]) -> int:
     return len({trial_key(r) for r in runs})
+
+
+TRADE_SCHEMA: dict[str, pl.DataType] = {
+    "entry_time": pl.Datetime("us", "UTC"),
+    "exit_time": pl.Datetime("us", "UTC"),
+    "exit_reason": pl.Utf8(),
+    "quantity": pl.Float64(),
+    "entry_price": pl.Float64(),
+    "exit_price": pl.Float64(),
+    "stop": pl.Float64(),
+    "target": pl.Float64(),
+    "risk": pl.Float64(),
+    "pnl": pl.Float64(),
+    "costs": pl.Float64(),
+    "r_multiple": pl.Float64(),
+    "cost_r": pl.Float64(),
+    "risk_capped": pl.Boolean(),
+}
+
+
+def _trades_frame(res: BacktestResult | None) -> pl.DataFrame:
+    rows = [
+        {
+            "entry_time": t.entry_time,
+            "exit_time": t.exit_time,
+            "exit_reason": t.exit_reason,
+            "quantity": float(t.quantity),
+            "entry_price": float(t.entry_price),
+            "exit_price": float(t.exit_price),
+            "stop": float(t.stop),
+            "target": float(t.target),
+            "risk": float(t.risk),
+            "pnl": float(t.pnl),
+            "costs": float(t.costs),
+            "r_multiple": float(t.r_multiple),
+            "cost_r": float(t.cost_r),
+            "risk_capped": t.risk_capped,
+        }
+        for t in (res.trades if res else [])
+    ]
+    return pl.DataFrame(rows, schema=TRADE_SCHEMA)
