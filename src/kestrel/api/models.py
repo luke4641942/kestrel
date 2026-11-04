@@ -104,19 +104,26 @@ class IngestRequest(BaseModel):
     @field_validator("symbol")
     @classmethod
     def _valid_symbol(cls, v: str) -> str:
-        if not v.isascii() or not v.isalnum():
-            raise ValueError("use the Binance pair code with no separators, e.g. BTCUSDT")
-        return v.upper()
+        return _check_symbol(v)
 
     @field_validator("start", "end")
     @classmethod
     def _valid_month(cls, v: str | None) -> str | None:
-        if v is not None:
-            try:
-                Month.parse(v)
-            except (ValueError, TypeError) as exc:
-                raise ValueError("must be YYYY-MM") from exc
-        return v
+        return v if v is None else _check_month(v)
+
+
+def _check_symbol(v: str) -> str:
+    if not v.isascii() or not v.isalnum():
+        raise ValueError("use the Binance pair code with no separators, e.g. BTCUSDT")
+    return v.upper()
+
+
+def _check_month(v: str) -> str:
+    try:
+        Month.parse(v)
+    except (ValueError, TypeError) as exc:
+        raise ValueError("must be YYYY-MM") from exc
+    return v
 
 
 class JobOut(BaseModel):
@@ -169,10 +176,16 @@ class InstrumentOut(BaseModel):
     min_notional: float
 
 
+class BacktestSettings(BaseModel):
+    no_trade_band: float
+    holdout_start: datetime
+
+
 class CostConfigOut(BaseModel):
     account_currency: str
     fingerprint: str
     costs: CostSettings
+    backtest: BacktestSettings
     instruments: list[InstrumentOut]
 
     @classmethod
@@ -185,6 +198,10 @@ class CostConfigOut(BaseModel):
                 half_spread_bps=float(c.costs.half_spread_bps),
                 impact_coef_bps=float(c.costs.impact_coef_bps),
                 max_participation=float(c.costs.max_participation),
+            ),
+            backtest=BacktestSettings(
+                no_trade_band=float(c.backtest.no_trade_band),
+                holdout_start=c.backtest.holdout_start,
             ),
             instruments=[
                 InstrumentOut(
@@ -263,3 +280,121 @@ class CostCurve(BaseModel):
     max_notional: float
     """Largest order the simulator fills (max participation of the bar's volume)."""
     points: list[CurvePoint]
+
+
+# ---------- backtests ----------
+
+
+class StrategyOut(BaseModel):
+    key: str
+    description: str
+
+
+class BacktestRequest(BaseModel):
+    """Start a backtest. There is deliberately no holdout switch here: the holdout is
+    for one final test of a finished strategy, run from the CLI with an explicit flag."""
+
+    symbol: str = Field(min_length=2, max_length=20, examples=["BTCUSDT"])
+    interval: Interval = Interval.H4
+    strategy: str = "buy-and-hold"
+    start: str = Field(description="First month, YYYY-MM")
+    end: str = Field(description="Last month, YYYY-MM (inclusive)")
+    initial_cash: float = Field(default=330.0, gt=0, le=1e9)
+
+    @field_validator("symbol")
+    @classmethod
+    def _valid_symbol(cls, v: str) -> str:
+        return _check_symbol(v)
+
+    @field_validator("start", "end")
+    @classmethod
+    def _valid_month(cls, v: str) -> str:
+        return _check_month(v)
+
+
+class MetricsOut(BaseModel):
+    """Backtest metrics. None where a value is undefined (e.g. Sharpe of flat equity)."""
+
+    start: datetime
+    end: datetime
+    days: int
+    final_equity: float
+    total_return: float
+    cagr: float | None
+    volatility: float | None
+    sharpe: float | None
+    sharpe_ci: list[float | None]
+    psr: float | None
+    sortino: float | None
+    max_drawdown: float
+    longest_underwater_days: float
+    skew: float | None
+    kurtosis: float | None
+    exposure: float
+    trades: int
+    rejections: int
+    band_skips: int
+    fees: float
+    spread_costs: float
+    impact_costs: float
+    total_costs: float
+    turnover: float | None
+    few_trades: bool
+
+
+class CodeOut(BaseModel):
+    commit: str | None
+    dirty: bool
+
+
+class RunSummary(BaseModel):
+    id: str
+    created_at: datetime
+    strategy: str
+    strategy_name: str
+    symbol: str
+    interval: Interval
+    start: str
+    end: str
+    initial_cash: str
+    account_currency: str
+    used_holdout: bool
+    config_fingerprint: str
+    code: CodeOut | None
+    metrics: MetricsOut
+    benchmark_metrics: MetricsOut
+
+
+class Series(BaseModel):
+    """Column-oriented time series; ``time`` is epoch seconds (UTC)."""
+
+    time: list[int]
+    equity: list[float]
+    drawdown: list[float]
+
+
+class FillOut(BaseModel):
+    time: datetime
+    side: str
+    quantity: float
+    reference_price: float
+    price: float
+    fee: float
+    spread_cost: float
+    impact_cost: float
+    cash_flow: float
+
+
+class RejectionOut(BaseModel):
+    time: datetime
+    side: str
+    quantity: float
+    reason: str
+
+
+class RunDetail(RunSummary):
+    config: dict[str, Any]
+    equity: Series
+    benchmark: Series
+    fills: list[FillOut]
+    rejections: list[RejectionOut]

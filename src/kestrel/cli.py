@@ -16,14 +16,15 @@ from typing import Annotated
 import polars as pl
 import typer
 
-from kestrel.backtest.engine import HoldoutError, run_backtest
-from kestrel.backtest.metrics import compute_metrics, format_report
+from kestrel.backtest.engine import HoldoutError
+from kestrel.backtest.metrics import format_report
+from kestrel.backtest.runs import RunRequest, RunStore, execute
 from kestrel.config import ConfigError, load_config
 from kestrel.data.binance_vision import BinanceVisionClient, Month, last_complete_month
 from kestrel.data.quality import check_klines
 from kestrel.data.schema import Interval
 from kestrel.data.store import ParquetStore
-from kestrel.strategy import BuyAndHold
+from kestrel.strategy import STRATEGIES
 
 app = typer.Typer(help="Kestrel trading platform.", no_args_is_help=True)
 
@@ -84,9 +85,6 @@ def list_months(
     typer.echo("\n".join(months) if months else "(no data)")
 
 
-STRATEGIES = {"buy-and-hold": BuyAndHold}
-
-
 @app.command()
 def backtest(
     symbol: str,
@@ -104,33 +102,29 @@ def backtest(
     config: Annotated[
         Path, typer.Option("--config", envvar="KESTREL_CONFIG", help="Config file.")
     ] = Path("kestrel.toml"),
+    save: Annotated[bool, typer.Option(help="Save the run so it appears on the dashboard.")] = True,
 ) -> None:
     """Backtest a strategy on stored bars and print its metrics."""
     if strategy not in STRATEGIES:
         raise typer.BadParameter(f"unknown strategy {strategy!r}; one of {', '.join(STRATEGIES)}")
-    first, last = Month.parse(start), Month.parse(end).next()
-    bars = ParquetStore(data_dir).read(
-        symbol,
-        interval,
-        datetime(first.year, first.month, 1, tzinfo=UTC),
-        datetime(last.year, last.month, 1, tzinfo=UTC),
+    request = RunRequest(
+        strategy=strategy,
+        symbol=symbol,
+        interval=interval,
+        start=Month.parse(start),
+        end=Month.parse(end),
+        initial_cash=Decimal(str(cash)),
+        allow_holdout=allow_holdout,
     )
-    if bars.height < 2:
-        typer.echo(f"no stored {symbol.upper()} {interval.value} bars in that range", err=True)
-        raise typer.Exit(code=1)
     try:
-        result = run_backtest(
-            STRATEGIES[strategy](symbol.upper()),
-            bars,
-            interval,
-            load_config(config),
-            Decimal(str(cash)),
-            allow_holdout=allow_holdout,
-        )
+        cfg = load_config(config)
+        outcome = execute(request, ParquetStore(data_dir), cfg)
     except (HoldoutError, ConfigError, ValueError) as e:
         typer.echo(str(e), err=True)
         raise typer.Exit(code=1) from None
-    typer.echo(format_report(result, compute_metrics(result)))
+    typer.echo(format_report(outcome.result, outcome.metrics))
+    if save:
+        typer.echo(f"\nSaved as run {RunStore(data_dir).save(outcome, cfg)}")
 
 
 @app.command()

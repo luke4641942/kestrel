@@ -92,7 +92,8 @@ cancellation, so nothing blocks and every run leaves a record.
 | Overview | Platform health, data coverage, active and recent jobs, roadmap |
 | Data | Ingest from Binance, browse datasets, candlestick + volume chart, quality audit with gap list |
 | Jobs dock | Floating tray on every page: live progress when collapsed; expands to every job with logs and cancel |
-| Backtests | *Phase 2:* equity and drawdown, cost attribution, trade blotter, run comparison |
+| What a trade costs | The live cost model: per-order breakdown, cost vs size, yearly drag by trading frequency, decision log |
+| Backtests | Launch runs as jobs; saved runs with return vs BTC, Sharpe CI, drawdown, equity and drawdown charts, costs, fills and provenance |
 | Trading | *Phase 4:* positions, live vs backtest drift, risk limits, kill switch |
 
 ## Architecture
@@ -136,6 +137,7 @@ data.binance.vision ──► BinanceVisionClient ──► parse_archive ──
 | `kestrel.execution.venue` | `ExecutionVenue` interface and `SimVenue`, the simulated spot account |
 | `kestrel.backtest.engine` | Event-driven engine: decide at close, fill at next open, no-trade band, holdout guard |
 | `kestrel.backtest.metrics` | Daily-marked metrics with uncertainty: Sharpe CI, probabilistic Sharpe, drawdown, costs |
+| `kestrel.backtest.runs` | Runs a strategy plus the BTC benchmark and saves every run (metrics, config snapshot, code version) |
 | `kestrel.api.app` | REST endpoints for datasets, bars, quality and jobs |
 | `kestrel.api.jobs` | Thread-pool job runner: progress, logs, cooperative cancellation |
 | `kestrel.cli` | `ingest`, `check`, `list`, `serve` commands |

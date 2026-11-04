@@ -13,33 +13,6 @@ function Scope({ items }: { items: [string, string][] }) {
   );
 }
 
-export function Backtests() {
-  return (
-    <>
-      <PageHeader title="Backtests" subtitle="Run, inspect and compare strategy backtests." />
-      <Panel pad>
-        <div className="empty" style={{ padding: 8 }}>
-          <h3>Not built yet. This is phase 2.</h3>
-          <p>
-            Backtests will run as jobs, the same way ingests do, and every run is kept so results can be compared
-            side by side.
-          </p>
-          <Scope
-            items={[
-              ["Equity and drawdown", "Net equity against buy-and-hold, with the drawdown underneath."],
-              ["Cost attribution", "Gross and net PnL, showing what fees and slippage cost."],
-              ["Trade blotter", "Every simulated fill with price, size, fee and the reason for it."],
-              ["Metrics", "Sharpe, Sortino, max drawdown, turnover, exposure and hit rate."],
-              ["Run comparison", "Overlay runs and compare their parameters."],
-              ["Trial log", "Every variant tried, so results can be deflated for multiple testing."],
-            ]}
-          />
-        </div>
-      </Panel>
-    </>
-  );
-}
-
 export function Trading() {
   return (
     <>

@@ -7,6 +7,9 @@ export function describeJob(job: Job): string {
   if (job.kind === "ingest") {
     return `Ingest ${p.symbol?.toUpperCase()} ${p.interval}, ${p.start} to ${p.end ?? "latest"}`;
   }
+  if (job.kind === "backtest") {
+    return `Backtest ${p.strategy} on ${p.symbol} ${p.interval}, ${p.start} to ${p.end}`;
+  }
   return job.kind;
 }
 

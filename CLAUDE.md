@@ -101,10 +101,11 @@ Agreed with Luke; don't re-litigate without a reason.
   Treat max drawdown as a floor, not a forecast. Capacity metrics are out of scope.
 - **Remaining P2 order:** ~~trading core, event-driven engine, core metrics~~ (done:
   `kestrel.strategy`, `kestrel.execution.venue`, `kestrel.backtest.engine`,
-  `kestrel.backtest.metrics`, `kestrel backtest` CLI) -> run storage + Backtests page
-  -> vectorised engine with a parity test -> remaining metrics (round trips, blotter,
+  `kestrel.backtest.metrics`, `kestrel backtest` CLI, ~~run storage + Backtests
+  page~~ (`kestrel.backtest.runs`, `/api/backtests`) -> vectorised engine with a parity test -> remaining metrics (round trips, blotter,
   per-trade profit and bootstrap CIs, BTC beta, break-even cost, tails, tax view).
   The only strategy is BuyAndHold (the benchmark) until the backtester is validated.
+  The dashboard and API can never use the holdout; only the CLI's explicit flag can.
 - **Config lives in `kestrel.toml`**, version-controlled. Every backtest run stores the
   full config it used, so old results keep their meaning. No global settings UI.
 - **Parked, P3+: multi-strategy portfolios.** Strategies emit *target positions*, never

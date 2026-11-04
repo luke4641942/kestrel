@@ -14,6 +14,7 @@ future is cut off, and is refused before any backtest runs.
 
 from __future__ import annotations
 
+from collections.abc import Callable
 from typing import Protocol
 
 import polars as pl
@@ -42,6 +43,21 @@ class BuyAndHold:
 
     def target_weights(self, bars: pl.DataFrame) -> pl.Series:
         return pl.Series("weight", [1.0] * bars.height, dtype=pl.Float64)
+
+
+StrategyFactory = Callable[[str], Strategy]
+
+STRATEGIES: dict[str, tuple[StrategyFactory, str]] = {
+    "buy-and-hold": (BuyAndHold, "Fully invested from the first bar. The benchmark."),
+}
+"""Strategies available to the CLI and API, by key, with a one-line description.
+Only the benchmark until the backtester is validated (CLAUDE.md)."""
+
+
+def make_strategy(key: str, symbol: str) -> Strategy:
+    if key not in STRATEGIES:
+        raise ValueError(f"unknown strategy {key!r}; one of {', '.join(STRATEGIES)}")
+    return STRATEGIES[key][0](symbol.upper())
 
 
 def validated_weights(strategy: Strategy, bars: pl.DataFrame, checkpoints: int = 8) -> pl.Series:

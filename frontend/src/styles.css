@@ -710,6 +710,72 @@ p {
   padding: 20px 16px;
 }
 
+/* ---------- backtests ---------- */
+
+.form-backtest {
+  grid-template-columns: 1fr 1fr 1fr 1fr 0.9fr auto;
+}
+
+.equity-chart {
+  height: 520px;
+}
+
+.swatch-dashed {
+  height: 0;
+  border-top: 2px dashed var(--text-3);
+  vertical-align: 3px;
+}
+
+.run-stack {
+  display: grid;
+  gap: 16px;
+}
+
+.run-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 16px;
+  align-items: start;
+}
+
+.panel-title {
+  font-size: 13px;
+  font-weight: 600;
+  margin-bottom: 6px;
+}
+
+.mini-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+
+.mini-table th {
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--text-3);
+  padding: 6px 0;
+  text-align: left;
+}
+
+.mini-table td {
+  padding: 7px 0;
+  border-top: 1px solid var(--line);
+  color: var(--text-2);
+}
+
+.mini-table .num {
+  text-align: right;
+}
+
+.run-chip {
+  margin-left: 8px;
+}
+
+.warn {
+  color: var(--warn);
+}
+
 /* ---------- what a trade costs ---------- */
 
 .cost-hero {
@@ -1232,6 +1298,12 @@ p {
   }
   .cost-calc {
     grid-template-columns: 1fr;
+  }
+  .run-grid {
+    grid-template-columns: 1fr;
+  }
+  .form-backtest {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
   .cost-controls {
     border-right: 0;

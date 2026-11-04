@@ -21,23 +21,33 @@ from fastapi.staticfiles import StaticFiles
 from kestrel import __version__
 from kestrel.api.jobs import JobContext, JobError, JobManager
 from kestrel.api.models import (
+    BacktestRequest,
     Bars,
     CostConfigOut,
     CostCurve,
     CurvePoint,
     Dataset,
+    FillOut,
     Health,
     IngestRequest,
     JobOut,
     QualityOut,
     Quote,
+    RejectionOut,
+    RunDetail,
+    RunSummary,
+    Series,
+    StrategyOut,
 )
 from kestrel.backtest.costs import CostModel, Fill, Side
+from kestrel.backtest.engine import HoldoutError
+from kestrel.backtest.runs import RunRequest, RunStore, execute
 from kestrel.config import Config, ConfigError, InstrumentRules, load_config
 from kestrel.data.binance_vision import BinanceVisionClient, Month, last_complete_month
 from kestrel.data.quality import check_klines
 from kestrel.data.schema import Interval
 from kestrel.data.store import ParquetStore
+from kestrel.strategy import STRATEGIES
 
 STATIC_DIR = Path(__file__).parent / "static"
 MAX_BARS = 20_000
@@ -52,6 +62,7 @@ def create_app(
     config_path: Path | str = "kestrel.toml",
 ) -> FastAPI:
     store = ParquetStore(data_dir)
+    runs = RunStore(data_dir)
     jobs = JobManager()
 
     @asynccontextmanager
@@ -269,6 +280,68 @@ def create_app(
         job = jobs.submit("ingest", req.model_dump(mode="json"), _ingest(req))
         return JobOut.from_job(job)
 
+    # ---------- backtests ----------
+
+    @api.get("/strategies")
+    def list_strategies() -> list[StrategyOut]:
+        return [StrategyOut(key=k, description=d) for k, (_, d) in STRATEGIES.items()]
+
+    @api.post("/jobs/backtest", status_code=status.HTTP_202_ACCEPTED)
+    def start_backtest(req: BacktestRequest) -> JobOut:
+        if req.strategy not in STRATEGIES:
+            raise HTTPException(422, f"unknown strategy {req.strategy!r}")
+        if Month.parse(req.start) > Month.parse(req.end):
+            raise HTTPException(422, "start is after end")
+        request = RunRequest(
+            strategy=req.strategy,
+            symbol=req.symbol,
+            interval=req.interval,
+            start=Month.parse(req.start),
+            end=Month.parse(req.end),
+            initial_cash=Decimal(str(req.initial_cash)),
+        )
+
+        def run(ctx: JobContext) -> dict[str, Any]:
+            ctx.log(f"Backtesting {req.strategy} on {req.symbol} {req.interval.value}")
+            ctx.progress(0.1, "Running strategy and benchmark")
+            try:
+                config = load_config(config_path)
+                outcome = execute(request, store, config)
+            except (HoldoutError, ConfigError, ValueError) as e:
+                raise JobError(str(e)) from None
+            ctx.progress(0.9, "Saving run")
+            run_id = runs.save(outcome, config)
+            m = outcome.metrics
+            ctx.log(f"Saved run {run_id}: return {m.total_return:+.2%}, {m.trades} trades")
+            return {"run_id": run_id}
+
+        job = jobs.submit("backtest", req.model_dump(mode="json"), run)
+        return JobOut.from_job(job)
+
+    @api.get("/backtests")
+    def list_backtests() -> list[RunSummary]:
+        return [RunSummary.model_validate(meta) for meta in runs.list()]
+
+    @api.get("/backtests/{run_id}")
+    def get_backtest(run_id: str) -> RunDetail:
+        try:
+            saved = runs.load(run_id)
+        except KeyError:
+            raise HTTPException(status.HTTP_404_NOT_FOUND, "run not found") from None
+        return RunDetail.model_validate(
+            {
+                **saved.meta,
+                "equity": _series(saved.equity),
+                "benchmark": _series(saved.benchmark),
+                "fills": [FillOut.model_validate(r) for r in saved.fills.iter_rows(named=True)],
+                "rejections": [
+                    RejectionOut.model_validate(r) for r in saved.rejections.iter_rows(named=True)
+                ],
+            }
+        )
+
+    # ---------- job status ----------
+
     @api.get("/jobs")
     def list_jobs() -> list[JobOut]:
         return [JobOut.from_job(j) for j in jobs.list()]
@@ -293,3 +366,17 @@ def create_app(
         app.mount("/", StaticFiles(directory=static_dir, html=True), name="dashboard")
 
     return app
+
+
+def _series(equity: pl.DataFrame) -> Series:
+    """Equity per bar close, with drawdown from the running peak (a negative fraction)."""
+    frame = equity.select(
+        pl.col("close_time").dt.epoch("s").alias("time"),
+        "equity",
+        (pl.col("equity") / pl.col("equity").cum_max() - 1).alias("drawdown"),
+    )
+    return Series(
+        time=frame["time"].to_list(),
+        equity=frame["equity"].to_list(),
+        drawdown=frame["drawdown"].to_list(),
+    )

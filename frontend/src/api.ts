@@ -83,6 +83,7 @@ export interface CostConfig {
     impact_coef_bps: number;
     max_participation: number;
   };
+  backtest: { no_trade_band: number; holdout_start: string };
   instruments: { symbol: string; step_size: number; min_qty: number; min_notional: number }[];
 }
 
@@ -121,6 +122,91 @@ export interface QuoteParams {
   bar_volume: number;
   side: Side;
   symbol?: string;
+}
+
+export interface StrategyInfo {
+  key: string;
+  description: string;
+}
+
+export interface BacktestRequest {
+  symbol: string;
+  interval: Interval;
+  strategy: string;
+  start: string;
+  end: string;
+  initial_cash: number;
+}
+
+/** Backtest metrics. null where a value is undefined (e.g. Sharpe of flat equity). */
+export interface Metrics {
+  start: string;
+  end: string;
+  days: number;
+  final_equity: number;
+  total_return: number;
+  cagr: number | null;
+  volatility: number | null;
+  sharpe: number | null;
+  sharpe_ci: (number | null)[];
+  psr: number | null;
+  sortino: number | null;
+  max_drawdown: number;
+  longest_underwater_days: number;
+  skew: number | null;
+  kurtosis: number | null;
+  exposure: number;
+  trades: number;
+  rejections: number;
+  band_skips: number;
+  fees: number;
+  spread_costs: number;
+  impact_costs: number;
+  total_costs: number;
+  turnover: number | null;
+  few_trades: boolean;
+}
+
+export interface RunSummary {
+  id: string;
+  created_at: string;
+  strategy: string;
+  strategy_name: string;
+  symbol: string;
+  interval: Interval;
+  start: string;
+  end: string;
+  initial_cash: string;
+  account_currency: string;
+  used_holdout: boolean;
+  config_fingerprint: string;
+  code: { commit: string | null; dirty: boolean } | null;
+  metrics: Metrics;
+  benchmark_metrics: Metrics;
+}
+
+export interface EquitySeries {
+  time: number[];
+  equity: number[];
+  drawdown: number[];
+}
+
+export interface RunDetail extends RunSummary {
+  config: Record<string, unknown>;
+  equity: EquitySeries;
+  benchmark: EquitySeries;
+  fills: {
+    time: string;
+    side: Side;
+    quantity: number;
+    reference_price: number;
+    price: number;
+    fee: number;
+    spread_cost: number;
+    impact_cost: number;
+    cash_flow: number;
+  }[];
+  rejections: { time: string; side: Side; quantity: number; reason: string }[];
 }
 
 export interface IngestRequest {
@@ -179,6 +265,11 @@ export const api = {
   ingest: (body: IngestRequest) =>
     request<Job>("/jobs/ingest", { method: "POST", body: JSON.stringify(body) }),
   cancelJob: (id: string) => request<Job>(`/jobs/${enc(id)}/cancel`, { method: "POST" }),
+  strategies: () => request<StrategyInfo[]>("/strategies"),
+  startBacktest: (body: BacktestRequest) =>
+    request<Job>("/jobs/backtest", { method: "POST", body: JSON.stringify(body) }),
+  backtests: () => request<RunSummary[]>("/backtests"),
+  backtest: (id: string) => request<RunDetail>(`/backtests/${enc(id)}`),
   costs: () => request<CostConfig>("/costs"),
   quote: (p: QuoteParams) => request<Quote>(`/costs/quote?${query(p)}`),
   curve: (p: Omit<QuoteParams, "notional">) => request<CostCurve>(`/costs/curve?${query(p)}`),

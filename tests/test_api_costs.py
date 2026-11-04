@@ -32,6 +32,7 @@ def test_costs_returns_the_config(client: TestClient) -> None:
     body = client.get("/api/costs").json()
     assert body["account_currency"] == "USDT"
     assert body["costs"]["taker_fee_bps"] == 10
+    assert body["backtest"] == {"no_trade_band": 0.02, "holdout_start": "2025-11-01T00:00:00Z"}
     assert body["fingerprint"] == load_config(REPO_CONFIG).fingerprint()
     assert {i["symbol"] for i in body["instruments"]} >= {"BTCUSDT", "ETHUSDT"}
 

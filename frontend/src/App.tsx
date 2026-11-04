@@ -7,7 +7,8 @@ import { useResource } from "./hooks";
 import { Costs } from "./pages/Costs";
 import { Data } from "./pages/Data";
 import { Overview } from "./pages/Overview";
-import { Backtests, Trading } from "./pages/Placeholders";
+import { Backtests } from "./pages/Backtests";
+import { Trading } from "./pages/Placeholders";
 import { useTheme } from "./theme";
 
 export type Route = "overview" | "data" | "costs" | "backtests" | "trading";
@@ -16,7 +17,7 @@ const NAV: { route: Route; label: string; later?: string }[] = [
   { route: "overview", label: "Overview" },
   { route: "data", label: "Data" },
   { route: "costs", label: "What a trade costs" },
-  { route: "backtests", label: "Backtests", later: "P2" },
+  { route: "backtests", label: "Backtests" },
   { route: "trading", label: "Trading", later: "P4" },
 ];
 
@@ -98,7 +99,7 @@ export function App() {
       page = <Costs />;
       break;
     case "backtests":
-      page = <Backtests />;
+      page = <Backtests jobs={jobList} onJobStarted={onJobStarted} />;
       break;
     case "trading":
       page = <Trading />;
