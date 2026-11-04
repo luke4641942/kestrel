@@ -1,4 +1,4 @@
-import { useEffect, useState, type ReactNode } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 import { api, type Job } from "./api";
 import { JobsDock } from "./components/JobsDock";
 import { ErrorBanner, Status } from "./components/ui";
@@ -13,12 +13,13 @@ import { useTheme } from "./theme";
 
 export type Route = "overview" | "data" | "costs" | "backtests" | "trading";
 
-const NAV: { route: Route; label: string; later?: string }[] = [
+// Main tabs are about strategies and trading; reference and data pages live under More.
+const NAV: { route: Route; label: string; later?: string; more?: boolean }[] = [
   { route: "overview", label: "Overview" },
-  { route: "data", label: "Data" },
-  { route: "costs", label: "What a trade costs" },
   { route: "backtests", label: "Backtests" },
   { route: "trading", label: "Trading", later: "P4" },
+  { route: "data", label: "Data", more: true },
+  { route: "costs", label: "What a trade costs", more: true },
 ];
 
 function readRoute(): Route {
@@ -52,6 +53,88 @@ function ThemeToggle() {
         </svg>
       )}
     </button>
+  );
+}
+
+/**
+ * "More" tab holding secondary pages. It is underlined like an active tab when one of
+ * its pages is open. The menu is positioned from the button's screen position because
+ * the top bar scrolls sideways on narrow screens, which would clip an absolute menu.
+ */
+function MoreMenu({ route, items }: { route: Route; items: { route: Route; label: string }[] }) {
+  const [anchor, setAnchor] = useState<DOMRect>();
+  const button = useRef<HTMLButtonElement>(null);
+  const menu = useRef<HTMLDivElement>(null);
+  const open = anchor !== undefined;
+  const current = items.some((i) => i.route === route);
+
+  useEffect(() => setAnchor(undefined), [route]);
+  useEffect(() => {
+    if (!open) return;
+    const close = () => setAnchor(undefined);
+    const onPointer = (e: PointerEvent) => {
+      const t = e.target as Node;
+      if (!menu.current?.contains(t) && !button.current?.contains(t)) close();
+    };
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        close();
+        button.current?.focus();
+      }
+    };
+    document.addEventListener("pointerdown", onPointer);
+    document.addEventListener("keydown", onKey);
+    window.addEventListener("resize", close);
+    window.addEventListener("scroll", close, true);
+    return () => {
+      document.removeEventListener("pointerdown", onPointer);
+      document.removeEventListener("keydown", onKey);
+      window.removeEventListener("resize", close);
+      window.removeEventListener("scroll", close, true);
+    };
+  }, [open]);
+
+  return (
+    <>
+      <button
+        ref={button}
+        type="button"
+        className={`nav-more${current ? " current" : ""}`}
+        aria-haspopup="menu"
+        aria-expanded={open}
+        aria-controls="nav-more-menu"
+        onClick={() => setAnchor(open ? undefined : button.current?.getBoundingClientRect())}
+      >
+        More
+        <svg width="10" height="10" viewBox="0 0 10 10" fill="none" aria-hidden>
+          <path d="m2 3.5 3 3 3-3" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round" />
+        </svg>
+      </button>
+      {anchor && (
+        <div
+          ref={menu}
+          id="nav-more-menu"
+          className="nav-menu"
+          role="menu"
+          style={{
+            top: anchor.bottom + 6,
+            // clientWidth is the visible width; innerWidth can be wider on mobile.
+            left: Math.max(8, Math.min(anchor.left, document.documentElement.clientWidth - 228)),
+          }}
+        >
+          {items.map((i) => (
+            <a
+              key={i.route}
+              role="menuitem"
+              href={`#/${i.route}`}
+              aria-current={route === i.route ? "page" : undefined}
+            >
+              {i.label}
+            </a>
+          ))}
+        </div>
+      )}
+    </>
   );
 }
 
@@ -118,12 +201,13 @@ export function App() {
             Kestrel
           </a>
           <nav className="nav" aria-label="Main">
-            {NAV.map((n) => (
+            {NAV.filter((n) => !n.more).map((n) => (
               <a key={n.route} href={`#/${n.route}`} aria-current={route === n.route ? "page" : undefined}>
                 {n.label}
                 {n.later && <span className="later">{n.later}</span>}
               </a>
             ))}
+            <MoreMenu route={route} items={NAV.filter((n) => n.more)} />
           </nav>
           <div className="topbar-end">
             {health.data ? (
