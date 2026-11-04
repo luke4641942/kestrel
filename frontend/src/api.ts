@@ -124,9 +124,87 @@ export interface QuoteParams {
   symbol?: string;
 }
 
+export interface ParamInfo {
+  name: string;
+  default: number;
+  low: number;
+  high: number;
+  description: string;
+}
+
+export type StrategyKind = "benchmark" | "engine-test" | "research";
+
 export interface StrategyInfo {
   key: string;
+  kind: StrategyKind;
   description: string;
+  params: ParamInfo[];
+}
+
+export interface StrategySource {
+  key: string;
+  source: string;
+  commit: string | null;
+  dirty: boolean;
+}
+
+export interface SignalsRequest {
+  symbol: string;
+  interval: Interval;
+  start: string;
+  end: string;
+  params: Record<string, number>;
+}
+
+export interface Signals {
+  time: number[];
+  open: number[];
+  high: number[];
+  low: number[];
+  close: number[];
+  weight: number[];
+}
+
+export type ResearchStatus = "idea" | "specified" | "backtested" | "validated" | "paper" | "live" | "rejected";
+
+export interface ResearchSummary {
+  slug: string;
+  name: string;
+  status: ResearchStatus;
+  created_at: string;
+  version: number;
+  frozen: boolean;
+  implementation: string | null;
+  runs: number;
+  /** Distinct configurations tested; identical re-runs count once. */
+  trials: number;
+}
+
+export interface Note {
+  version: number;
+  created_at: string;
+  sections: Record<string, string>;
+  implementation: string | null;
+  frozen_at: string | null;
+  change_reason: string | null;
+}
+
+export interface ChatMessage {
+  role: "user" | "assistant";
+  content: string;
+  at: string;
+  note_version: number | null;
+}
+
+export interface ResearchDetail extends ResearchSummary {
+  /** Section key -> heading, in display order. */
+  sections: Record<string, string>;
+  notes: Note[];
+  history: { status: ResearchStatus; at: string; reason: string }[];
+  trial_log: RunSummary[];
+  chat: ChatMessage[];
+  assistant_available: boolean;
+  assistant_hint: string | null;
 }
 
 export interface BacktestRequest {
@@ -136,6 +214,9 @@ export interface BacktestRequest {
   start: string;
   end: string;
   initial_cash: number;
+  params?: Record<string, number>;
+  /** Research strategy slug: runs its frozen note's implementation as a logged trial. */
+  research?: string;
 }
 
 /** Backtest metrics. null where a value is undefined (e.g. Sharpe of flat equity). */
@@ -171,6 +252,9 @@ export interface RunSummary {
   id: string;
   created_at: string;
   strategy: string;
+  strategy_kind: StrategyKind;
+  params: Record<string, number>;
+  research: { slug: string; version: number } | null;
   strategy_name: string;
   symbol: string;
   interval: Interval;
@@ -271,6 +355,26 @@ export const api = {
   backtests: () => request<RunSummary[]>("/backtests"),
   backtest: (id: string) => request<RunDetail>(`/backtests/${enc(id)}`),
   costs: () => request<CostConfig>("/costs"),
+  source: (key: string) => request<StrategySource>(`/strategies/${enc(key)}/source`),
+  signals: (key: string, body: SignalsRequest) =>
+    request<Signals>(`/strategies/${enc(key)}/signals`, { method: "POST", body: JSON.stringify(body) }),
+  researchList: () => request<ResearchSummary[]>("/research"),
+  research: (slug: string) => request<ResearchDetail>(`/research/${enc(slug)}`),
+  createResearch: (name: string) =>
+    request<ResearchDetail>("/research", { method: "POST", body: JSON.stringify({ name }) }),
+  editNote: (slug: string, version: number, sections: Record<string, string>, implementation: string | null) =>
+    request<ResearchDetail>(`/research/${enc(slug)}/notes/${version}`, {
+      method: "PUT",
+      body: JSON.stringify({ sections, implementation }),
+    }),
+  freezeNote: (slug: string, version: number) =>
+    request<ResearchDetail>(`/research/${enc(slug)}/notes/${version}/freeze`, { method: "POST" }),
+  newVersion: (slug: string, reason: string) =>
+    request<ResearchDetail>(`/research/${enc(slug)}/notes`, { method: "POST", body: JSON.stringify({ reason }) }),
+  rejectResearch: (slug: string, reason: string) =>
+    request<ResearchDetail>(`/research/${enc(slug)}/reject`, { method: "POST", body: JSON.stringify({ reason }) }),
+  chat: (slug: string, message: string) =>
+    request<ResearchDetail>(`/research/${enc(slug)}/chat`, { method: "POST", body: JSON.stringify({ message }) }),
   quote: (p: QuoteParams) => request<Quote>(`/costs/quote?${query(p)}`),
   curve: (p: Omit<QuoteParams, "notional">) => request<CostCurve>(`/costs/curve?${query(p)}`),
 };

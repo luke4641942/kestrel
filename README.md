@@ -93,6 +93,7 @@ cancellation, so nothing blocks and every run leaves a record.
 | Data | Ingest from Binance, browse datasets, candlestick + volume chart, quality audit with gap list |
 | Jobs dock | Floating tray on every page: live progress when collapsed; expands to every job with logs and cancel |
 | What a trade costs | The live cost model: per-order breakdown, cost vs size, yearly drag by trading frequency, decision log |
+| Strategies | Research notes (hypothesis, rationale, rules, falsification, parameters, costs), frozen before testing; read-only code; signals chart; trials run from the note; trial log; a research assistant that never sees results |
 | Backtests | Launch runs as jobs; saved runs with return vs BTC, Sharpe CI, drawdown, equity and drawdown charts, costs, fills and provenance |
 | Trading | *Phase 4:* positions, live vs backtest drift, risk limits, kill switch |
 
@@ -137,6 +138,8 @@ data.binance.vision ──► BinanceVisionClient ──► parse_archive ──
 | `kestrel.execution.venue` | `ExecutionVenue` interface and `SimVenue`, the simulated spot account |
 | `kestrel.backtest.engine` | Event-driven engine: decide at close, fill at next open, no-trade band, holdout guard |
 | `kestrel.backtest.metrics` | Daily-marked metrics with uncertainty: Sharpe CI, probabilistic Sharpe, drawdown, costs |
+| `kestrel.research` | Versioned research notes with enforced pre-registration, and the single rule set for starting a backtest |
+| `kestrel.assistant` | Research assistant on Claude, given the note and code only, never results |
 | `kestrel.backtest.runs` | Runs a strategy plus the BTC benchmark and saves every run (metrics, config snapshot, code version) |
 | `kestrel.api.app` | REST endpoints for datasets, bars, quality and jobs |
 | `kestrel.api.jobs` | Thread-pool job runner: progress, logs, cooperative cancellation |
@@ -169,6 +172,17 @@ data.binance.vision ──► BinanceVisionClient ──► parse_archive ──
 - **Validated against an independent calculation.** On real BTCUSDT 4h data
   (2022-01 to 2025-10), the engine's buy-and-hold result matches a hand calculation
   from the raw bars to within the 0.00001 BTC quantity rounding.
+- **Pre-registration is enforced.** A research strategy can't be backtested until its
+  note (hypothesis, why the edge exists, rules, what would prove it wrong, parameters,
+  expected costs) is frozen. A frozen note can't be edited, only superseded by a new
+  version with a written reason. Notes live in `research/` in the repo, so git history
+  independently dates each freeze.
+- **Every run is a counted trial.** Runs record the note version and parameters; the
+  trial log counts distinct configurations (identical re-runs count once) for P3's
+  deflated Sharpe.
+- **An AI assistant outside the tuning loop.** The research assistant (Claude) is given
+  the note and the code, never backtest results, so it can challenge an idea but can't
+  fit it to past data. A test runs a trial and checks nothing from it reaches the API.
 - **Config is versioned, not a settings page.** `kestrel.toml` has no defaults in
   code and rejects unknown keys. Each run will store the config and its fingerprint,
   so changing a fee never silently changes what an old result meant.

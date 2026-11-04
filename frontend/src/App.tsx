@@ -7,23 +7,26 @@ import { useResource } from "./hooks";
 import { Costs } from "./pages/Costs";
 import { Data } from "./pages/Data";
 import { Overview } from "./pages/Overview";
+import { Strategies } from "./pages/Strategies";
 import { Backtests } from "./pages/Backtests";
 import { Trading } from "./pages/Placeholders";
 import { useTheme } from "./theme";
 
-export type Route = "overview" | "data" | "costs" | "backtests" | "trading";
+export type Route = "overview" | "strategies" | "data" | "costs" | "backtests" | "trading";
 
 // Main tabs are about strategies and trading; reference and data pages live under More.
 const NAV: { route: Route; label: string; later?: string; more?: boolean }[] = [
   { route: "overview", label: "Overview" },
+  { route: "strategies", label: "Strategies" },
   { route: "backtests", label: "Backtests" },
   { route: "trading", label: "Trading", later: "P4" },
   { route: "data", label: "Data", more: true },
   { route: "costs", label: "What a trade costs", more: true },
 ];
 
+/** The page from `#/<route>` or `#/<route>/<id>`; the id is read by the page itself. */
 function readRoute(): Route {
-  const r = window.location.hash.replace(/^#\/?/, "") as Route;
+  const r = window.location.hash.replace(/^#\/?/, "").split("/")[0] as Route;
   return NAV.some((n) => n.route === r) ? r : "overview";
 }
 
@@ -68,7 +71,9 @@ function MoreMenu({ route, items }: { route: Route; items: { route: Route; label
   const open = anchor !== undefined;
   const current = items.some((i) => i.route === route);
 
-  useEffect(() => setAnchor(undefined), [route]);
+  useEffect(() => {
+    setAnchor(undefined);
+  }, [route]);
   useEffect(() => {
     if (!open) return;
     const close = () => setAnchor(undefined);
@@ -159,7 +164,9 @@ export function App() {
   const jobs = useResource(api.jobs, [], fast ? 1000 : 5000);
   const jobList = jobs.data ?? [];
   const active = jobList.filter(isActive).length;
-  useEffect(() => setFast(active > 0), [active]);
+  useEffect(() => {
+    setFast(active > 0);
+  }, [active]);
   const [dockOpen, setDockOpen] = useState(false);
 
   const go = (r: Route) => {
@@ -180,6 +187,9 @@ export function App() {
       break;
     case "costs":
       page = <Costs />;
+      break;
+    case "strategies":
+      page = <Strategies jobs={jobList} onJobStarted={onJobStarted} />;
       break;
     case "backtests":
       page = <Backtests jobs={jobList} onJobStarted={onJobStarted} />;

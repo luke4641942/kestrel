@@ -781,7 +781,7 @@ p {
 /* ---------- backtests ---------- */
 
 .form-backtest {
-  grid-template-columns: 1fr 1fr 1fr 1fr 0.9fr auto;
+  grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
 }
 
 .equity-chart {
@@ -842,6 +842,340 @@ p {
 
 .warn {
   color: var(--warn);
+}
+
+/* ---------- strategies ---------- */
+
+.strat-layout {
+  display: grid;
+  grid-template-columns: 250px minmax(0, 1fr) 380px;
+  gap: 20px;
+  align-items: start;
+}
+
+/* minmax(0, 1fr): without it a grid's implicit column grows to its widest child
+   (the code view's unwrapped lines) and overflows into the next column. */
+.strat-list,
+.strat-main,
+.strat-side {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 16px;
+  min-width: 0;
+}
+
+.strat-side {
+  position: sticky;
+  top: 72px;
+}
+
+.strat-empty {
+  grid-column: 2 / -1;
+}
+
+.new-idea {
+  display: grid;
+  gap: 6px;
+}
+
+.new-idea .row {
+  flex-wrap: nowrap;
+  gap: 6px;
+}
+
+.new-idea input,
+.reason-form input,
+.field textarea {
+  width: 100%;
+  min-width: 0;
+  padding: 7px 10px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--line-strong);
+  background: var(--bg);
+  color: var(--text);
+  font: inherit;
+}
+
+.new-idea input {
+  height: 32px;
+}
+
+.field textarea {
+  resize: vertical;
+  line-height: 1.5;
+}
+
+.field textarea:focus-visible,
+.new-idea input:focus-visible,
+.reason-form input:focus-visible {
+  outline-offset: 0;
+  border-color: var(--focus);
+}
+
+.strat-items {
+  list-style: none;
+  margin: 0;
+  padding: 4px;
+  display: grid;
+  gap: 2px;
+}
+
+.strat-item {
+  width: 100%;
+  display: grid;
+  gap: 4px;
+  padding: 10px;
+  text-align: left;
+  font: inherit;
+  color: var(--text);
+  background: none;
+  border: 0;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+}
+
+.strat-item:hover {
+  background: var(--surface);
+}
+
+.strat-item.active {
+  background: var(--surface-2);
+}
+
+.strat-item-name {
+  font-weight: 500;
+}
+
+.strat-item-meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 10px;
+}
+
+.strat-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.strat-title {
+  font-size: 18px;
+  margin-bottom: 4px;
+}
+
+.note-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 12px;
+  margin-bottom: 14px;
+}
+
+.note-head h3 {
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.frozen-chip {
+  color: var(--info);
+  border-color: var(--info);
+}
+
+.note-reason {
+  flex-basis: 100%;
+  font-size: 13px;
+  color: var(--text-2);
+}
+
+.note-sections {
+  display: grid;
+  gap: 14px;
+}
+
+.note-section h4 {
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--text-2);
+  margin-bottom: 4px;
+}
+
+.note-section p {
+  white-space: pre-wrap;
+  max-width: 72ch;
+}
+
+.note-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+  margin-top: 16px;
+}
+
+.reason-form {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  flex: 1;
+  min-width: 260px;
+}
+
+.reason-form input {
+  flex: 1;
+  min-width: 200px;
+  height: 30px;
+}
+
+.reason-form .form-error {
+  flex-basis: 100%;
+}
+
+.code-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 6px 12px;
+  padding: 14px 16px 0;
+}
+
+.panel-pad .code-head {
+  padding: 0;
+  margin-bottom: 10px;
+}
+
+.code-desc {
+  padding: 4px 16px 10px;
+}
+
+.code {
+  margin: 0;
+  padding: 14px 16px;
+  max-height: 360px;
+  overflow: auto;
+  font: 12.5px/1.6 var(--mono);
+  color: var(--text);
+  background: var(--surface);
+  border-top: 1px solid var(--line);
+  border-radius: 0 0 var(--radius) var(--radius);
+  white-space: pre;
+}
+
+.signals-controls {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+  gap: 10px;
+  align-items: end;
+  margin-bottom: 12px;
+}
+
+.signals-chart {
+  height: 360px;
+}
+
+/* .seg.strat-tabs outranks the generic .seg (width: max-content) defined later. */
+.seg.strat-tabs {
+  width: 100%;
+}
+
+.seg.strat-tabs button {
+  flex: 1;
+}
+
+.assistant-note {
+  padding: 12px 14px;
+  color: var(--text-2);
+  border-bottom: 1px solid var(--line);
+}
+
+.assistant-hint {
+  margin: 12px 14px 0;
+  padding: 8px 10px;
+  border: 1px solid var(--warn);
+  border-radius: var(--radius-sm);
+  color: var(--text);
+}
+
+.assistant-pad {
+  padding: 12px 14px 0;
+}
+
+.chat {
+  display: grid;
+  gap: 12px;
+  padding: 14px;
+  max-height: 52vh;
+  overflow-y: auto;
+}
+
+.chat-msg {
+  display: grid;
+  gap: 3px;
+}
+
+.chat-msg.user .chat-text {
+  background: var(--surface-2);
+}
+
+.chat-text {
+  padding: 8px 10px;
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+  white-space: pre-wrap;
+  font-size: 13px;
+  line-height: 1.55;
+}
+
+.chat-form {
+  display: grid;
+  gap: 8px;
+  padding: 12px 14px 14px;
+  border-top: 1px solid var(--line);
+}
+
+.chat-form textarea {
+  width: 100%;
+  padding: 8px 10px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--line-strong);
+  background: var(--bg);
+  color: var(--text);
+  font: inherit;
+  resize: vertical;
+}
+
+.chat-actions {
+  justify-content: space-between;
+}
+
+.trial-table td,
+.trial-table th {
+  padding-left: 10px;
+  padding-right: 10px;
+}
+
+@media (max-width: 1200px) {
+  .strat-layout {
+    grid-template-columns: 230px minmax(0, 1fr);
+  }
+  .strat-side {
+    grid-column: 2;
+    position: static;
+  }
+}
+
+@media (max-width: 800px) {
+  .strat-layout {
+    grid-template-columns: 1fr;
+  }
+  .strat-side,
+  .strat-empty {
+    grid-column: auto;
+  }
 }
 
 /* ---------- what a trade costs ---------- */
@@ -1370,9 +1704,7 @@ p {
   .run-grid {
     grid-template-columns: 1fr;
   }
-  .form-backtest {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
+
   .cost-controls {
     border-right: 0;
     border-bottom: 1px solid var(--line);

@@ -108,6 +108,15 @@ Agreed with Luke; don't re-litigate without a reason.
   The dashboard and API can never use the holdout; only the CLI's explicit flag can.
 - **Config lives in `kestrel.toml`**, version-controlled. Every backtest run stores the
   full config it used, so old results keep their meaning. No global settings UI.
+- **Strategies tab (built):** research notes in `research/strategies/<slug>/` (in the
+  repo; Luke commits them). Backtesting a research strategy requires a frozen note;
+  changes need a new version with a reason; rejection needs a reason and is final.
+  `kestrel.research.run_target` is the one rule set for starting a backtest (CLI and
+  API both call it). Strategy *code* lives in the repo, never in a browser editor.
+  Pine Script / TradingView export was rejected: a second implementation would drift.
+- **Research assistant (built):** Claude (`claude-opus-5-5`) sees the note, code and
+  conversation only, never results, metrics or the trial log. Keep it that way: never
+  add a results tool or pass run data into `ResearchAssistant.reply`.
 - **Parked, P3+: multi-strategy portfolios.** Strategies emit *target positions*, never
   orders; an allocator owns the wallet, resolves conflicts and nets orders before the
   `ExecutionVenue`. Build P2 around this so single-strategy is a portfolio of one.

@@ -50,3 +50,10 @@ export function lastCompleteMonth(): string {
   d.setUTCMonth(d.getUTCMonth() - 1);
   return d.toISOString().slice(0, 7);
 }
+
+/** The month before the holdout starts: the last month research may use. */
+export function lastResearchMonth(holdoutStart: string): string {
+  const d = new Date(holdoutStart);
+  d.setUTCMonth(d.getUTCMonth() - 1);
+  return d.toISOString().slice(0, 7);
+}

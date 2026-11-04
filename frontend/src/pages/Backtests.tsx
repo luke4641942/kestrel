@@ -1,8 +1,9 @@
-import { useEffect, useState, type FormEvent, type ReactNode } from "react";
+import { useEffect, useRef, useState, type FormEvent, type ReactNode } from "react";
 import { api, type Dataset, type Job, type Metrics, type RunDetail, type RunSummary } from "../api";
 import { EquityChart } from "../components/EquityChart";
+import { ParamInputs, defaultParams } from "../components/ParamInputs";
 import { Empty, PageHeader, Panel, Section, Stat, Status } from "../components/ui";
-import { ago, dateTime, num } from "../format";
+import { ago, dateTime, lastResearchMonth, num } from "../format";
 import { useResource } from "../hooks";
 
 const pct = (x: number | null | undefined, digits = 1) =>
@@ -12,25 +13,36 @@ const plain = (x: number | null | undefined, digits = 2) =>
 const usdt = (x: number, digits = 2) =>
   x.toLocaleString("en-AU", { minimumFractionDigits: digits, maximumFractionDigits: digits });
 
-/** The month before the holdout starts: the last month research may use. */
-function lastResearchMonth(holdoutStart: string): string {
-  const d = new Date(holdoutStart);
-  d.setUTCMonth(d.getUTCMonth() - 1);
-  return d.toISOString().slice(0, 7);
-}
-
 const datasetKey = (d: Pick<Dataset, "symbol" | "interval">) => `${d.symbol}/${d.interval}`;
+
+/** The run id in `#/backtests/<id>`, if any. */
+function runFromHash(): string | undefined {
+  const [, id] = window.location.hash.replace(/^#\/?/, "").split("/");
+  return id || undefined;
+}
 
 export function Backtests({ jobs, onJobStarted }: { jobs: Job[]; onJobStarted: (job: Job) => void }) {
   const runs = useResource(api.backtests, []);
-  const [selected, setSelected] = useState<string>();
+  const [selected, setSelected] = useState<string | undefined>(runFromHash);
 
-  // When a backtest job finishes, refresh the list and show the newest run.
+  useEffect(() => {
+    const onHash = () => setSelected(runFromHash());
+    window.addEventListener("hashchange", onHash);
+    return () => window.removeEventListener("hashchange", onHash);
+  }, []);
+
+  // When a backtest job finishes, refresh the list and show the newest run. Skip the
+  // first run of this effect so a link to a specific run (#/backtests/<id>) is kept.
   const finished = jobs.filter((j) => j.kind === "backtest" && j.finished_at).length;
+  const mounted = useRef(false);
   useEffect(() => {
     runs.reload();
-    setSelected(undefined);
+    if (mounted.current) setSelected(undefined);
+    mounted.current = true;
   }, [finished, runs.reload]);
+  const select = (id: string) => {
+    window.location.hash = `/backtests/${id}`;
+  };
 
   const list = runs.data ?? [];
   const current = list.find((r) => r.id === selected) ?? list[0];
@@ -55,7 +67,7 @@ export function Backtests({ jobs, onJobStarted }: { jobs: Job[]; onJobStarted: (
               {!runs.loading && <p>Start a backtest above. Results are saved, so they stay here after a restart.</p>}
             </Empty>
           ) : (
-            <RunsTable runs={list} current={current?.id} onSelect={setSelected} />
+            <RunsTable runs={list} current={current?.id} onSelect={select} />
           )}
         </Panel>
       </Section>
@@ -69,8 +81,11 @@ function BacktestForm({ onStarted }: { onStarted: (job: Job) => void }) {
   const datasets = useResource(api.datasets, []);
   const strategies = useResource(api.strategies, []);
   const config = useResource(api.costs, []);
+  const research = useResource(api.researchList, []);
   const [dataset, setDataset] = useState<string>();
-  const [strategy, setStrategy] = useState("buy-and-hold");
+  // "impl:<key>" for benchmarks and engine tests, "research:<slug>" for a frozen note.
+  const [choice, setChoice] = useState("impl:buy-and-hold");
+  const [params, setParams] = useState<Record<string, number>>({});
   const [start, setStart] = useState("");
   const [end, setEnd] = useState("");
   const [cash, setCash] = useState("330");
@@ -79,6 +94,15 @@ function BacktestForm({ onStarted }: { onStarted: (job: Job) => void }) {
 
   const maxMonth = config.data ? lastResearchMonth(config.data.backtest.holdout_start) : undefined;
   const ds = datasets.data?.find((d) => datasetKey(d) === dataset) ?? datasets.data?.[0];
+  const direct = (strategies.data ?? []).filter((s) => s.kind !== "research");
+  const testable = (research.data ?? []).filter((r) => r.frozen && r.status !== "rejected" && r.implementation);
+  const [kind, value] = choice.split(":") as ["impl" | "research", string];
+  const chosenResearch = kind === "research" ? testable.find((r) => r.slug === value) : undefined;
+  const implKey = kind === "research" ? chosenResearch?.implementation : value;
+  const impl = strategies.data?.find((s) => s.key === implKey);
+  useEffect(() => {
+    setParams(impl ? defaultParams(impl.params) : {});
+  }, [impl?.key]);
 
   // Default the range to the dataset's history, stopping before the holdout.
   useEffect(() => {
@@ -98,10 +122,12 @@ function BacktestForm({ onStarted }: { onStarted: (job: Job) => void }) {
         await api.startBacktest({
           symbol: ds.symbol,
           interval: ds.interval,
-          strategy,
+          strategy: implKey ?? "buy-and-hold",
           start,
           end,
           initial_cash: Number(cash),
+          params,
+          research: chosenResearch?.slug,
         }),
       );
     } catch (err) {
@@ -114,7 +140,9 @@ function BacktestForm({ onStarted }: { onStarted: (job: Job) => void }) {
   if (datasets.data && datasets.data.length === 0) {
     return <p className="secondary">Ingest a dataset on the Data page first; backtests run on stored bars.</p>;
   }
-  const description = strategies.data?.find((s) => s.key === strategy)?.description;
+  const description = chosenResearch
+    ? `Runs ${chosenResearch.name} v${chosenResearch.version} with ${implKey} and logs it as a trial.`
+    : impl?.description;
 
   return (
     <form onSubmit={submit}>
@@ -131,14 +159,26 @@ function BacktestForm({ onStarted }: { onStarted: (job: Job) => void }) {
         </div>
         <div className="field">
           <label htmlFor="bt-strategy">Strategy</label>
-          <select id="bt-strategy" value={strategy} onChange={(e) => setStrategy(e.target.value)}>
-            {strategies.data?.map((s) => (
-              <option key={s.key} value={s.key}>
-                {s.key}
-              </option>
-            ))}
+          <select id="bt-strategy" value={choice} onChange={(e) => setChoice(e.target.value)}>
+            <optgroup label="Benchmark and engine tests">
+              {direct.map((s) => (
+                <option key={s.key} value={`impl:${s.key}`}>
+                  {s.key}
+                </option>
+              ))}
+            </optgroup>
+            {testable.length > 0 && (
+              <optgroup label="Research (frozen notes, logged as trials)">
+                {testable.map((r) => (
+                  <option key={r.slug} value={`research:${r.slug}`}>
+                    {r.name} v{r.version}
+                  </option>
+                ))}
+              </optgroup>
+            )}
           </select>
         </div>
+        <ParamInputs params={impl?.params ?? []} values={params} onChange={setParams} idPrefix="bt" />
         <div className="field">
           <label htmlFor="bt-start">From month</label>
           <input id="bt-start" type="month" value={start} max={maxMonth} onChange={(e) => setStart(e.target.value)} />
@@ -203,9 +243,18 @@ function RunsTable({
                 className={`clickable${r.id === current ? " selected" : ""}`}
                 onClick={() => onSelect(r.id)}
               >
-                <td style={{ fontWeight: 500 }}>
-                  {r.strategy}
-                  {r.used_holdout && <span className="chip verify run-chip">holdout</span>}
+                <td>
+                  <div style={{ fontWeight: 500 }}>
+                    {r.strategy}
+                    {r.used_holdout && <span className="chip verify run-chip">holdout</span>}
+                  </div>
+                  <div className="cell-sub">
+                    {r.research ? `trial of ${r.research.slug} v${r.research.version}` : r.strategy_kind}
+                    {Object.keys(r.params).length > 0 &&
+                      ` · ${Object.entries(r.params)
+                        .map(([k, v]) => `${k}=${v}`)
+                        .join(" ")}`}
+                  </div>
                 </td>
                 <td>
                   {r.symbol} {r.interval}

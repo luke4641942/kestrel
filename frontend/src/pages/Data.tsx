@@ -14,7 +14,9 @@ export function Data({ jobs, onJobStarted }: { jobs: Job[]; onJobStarted: (job: 
 
   // Refresh the dataset list whenever an ingest job finishes.
   const finished = jobs.filter((j) => j.kind === "ingest" && j.finished_at).length;
-  useEffect(() => datasets.reload(), [finished, datasets.reload]);
+  useEffect(() => {
+    datasets.reload();
+  }, [finished, datasets.reload]);
 
   const list = datasets.data ?? [];
   const current = list.find((d) => key(d) === selected) ?? list[0];
