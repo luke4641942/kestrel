@@ -14,7 +14,7 @@ from kestrel.backtest.runs import RunRequest, RunStore, execute, metrics_dict
 from kestrel.data.binance_vision import Month
 from kestrel.data.schema import Interval
 from kestrel.data.store import ParquetStore
-from kestrel.strategy import STRATEGIES
+from kestrel.strategy import STRATEGIES, StrategySpec
 from tests.backtest.helpers import FixedWeights, bars, config
 
 H4 = Interval.H4
@@ -49,7 +49,8 @@ def test_execute_runs_strategy_and_benchmark(store: ParquetStore) -> None:
 def test_other_strategies_get_a_separate_benchmark_run(
     store: ParquetStore, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    monkeypatch.setitem(STRATEGIES, "half", (lambda s: FixedWeights([0.5] * 60, s), "Half in."))
+    spec = StrategySpec("half", "engine-test", "Half in.", lambda s: FixedWeights([0.5] * 60, s))
+    monkeypatch.setitem(STRATEGIES, "half", spec)
     outcome = execute(request(strategy="half"), store, config())
     assert outcome.benchmark is not outcome.result
     assert outcome.benchmark.strategy == "buy-and-hold BTCUSDT"
@@ -95,7 +96,7 @@ def test_list_is_newest_first_and_omits_the_config(store: ParquetStore, tmp_path
     runs = RunStore(tmp_path)
     first = runs.save(execute(request(), store, config()), config())
     second = runs.save(execute(request(initial_cash=Decimal(500)), store, config()), config())
-    listed = runs.list()
+    listed = runs.summaries()
     assert [r["id"] for r in listed] == [second, first]  # created_at has microseconds
     assert all("config" not in r for r in listed)
 
@@ -148,4 +149,36 @@ def test_list_ignores_folders_that_are_not_runs(store: ParquetStore, tmp_path: P
     for stray in (".20260101-000000-abcdef.tmp", "notes"):
         (runs.root / stray).mkdir()
         (runs.root / stray / "run.json").write_text("{}")
-    assert [r["id"] for r in runs.list()] == [run_id]
+    assert [r["id"] for r in runs.summaries()] == [run_id]
+
+
+def test_identical_reruns_are_one_trial_any_change_is_another() -> None:
+    from kestrel.backtest.runs import count_trials
+
+    base = {
+        "research": {"slug": "x", "version": 1},
+        "strategy": "ma-trend",
+        "params": {"fast": 20, "slow": 100},
+        "symbol": "BTCUSDT",
+        "interval": "4h",
+        "start": "2022-01",
+        "end": "2025-10",
+        "initial_cash": "330",
+    }
+    assert count_trials([base, dict(base)]) == 1
+    assert count_trials([base, {**base, "params": {"fast": 21, "slow": 100}}]) == 2
+    assert count_trials([base, {**base, "research": {"slug": "x", "version": 2}}]) == 2
+    assert count_trials([base, {**base, "start": "2023-01"}]) == 2
+
+
+def test_runs_record_params_and_research_link(store: ParquetStore, tmp_path: Path) -> None:
+    outcome = execute(
+        request(strategy="ma-trend", params={"fast": 3}, research=("trend", 1)), store, config()
+    )
+    runs = RunStore(tmp_path)
+    runs.save(outcome, config())
+    (meta,) = runs.trials("trend")
+    assert meta["params"] == {"fast": 3, "slow": 100}
+    assert meta["research"] == {"slug": "trend", "version": 1}
+    assert meta["strategy_kind"] == "engine-test"
+    assert runs.trials("other") == []

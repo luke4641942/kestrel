@@ -14,14 +14,19 @@ future is cut off, and is refused before any backtest runs.
 
 from __future__ import annotations
 
+import inspect
 from collections.abc import Callable
-from typing import Protocol
+from dataclasses import dataclass
+from typing import Literal, Protocol
 
 import polars as pl
 
 
-class LookaheadError(Exception):
-    """A strategy's weight at bar t changed when bars after t were removed."""
+class LookaheadError(ValueError):
+    """A strategy's weight at bar t changed when bars after t were removed.
+
+    A ValueError: it is invalid input, so the CLI, API and jobs report it with the
+    other validation errors instead of crashing."""
 
 
 class Strategy(Protocol):
@@ -45,19 +50,105 @@ class BuyAndHold:
         return pl.Series("weight", [1.0] * bars.height, dtype=pl.Float64)
 
 
-StrategyFactory = Callable[[str], Strategy]
+class MovingAverageTrend:
+    """Long when the fast moving average of closes is above the slow one, else cash.
 
-STRATEGIES: dict[str, tuple[StrategyFactory, str]] = {
-    "buy-and-hold": (BuyAndHold, "Fully invested from the first bar. The benchmark."),
+    An ENGINE TEST, not research: a textbook rule with known behaviour, used to check
+    the engines (and, later, that the vectorised and event-driven engines agree).
+    Its results say nothing about whether trend following works.
+    """
+
+    def __init__(self, symbol: str = "BTCUSDT", fast: int = 20, slow: int = 100) -> None:
+        if not 1 <= fast < slow:
+            raise ValueError("need 1 <= fast < slow")
+        self.symbol = symbol
+        self.fast, self.slow = fast, slow
+        self.name = f"moving-average trend {fast}/{slow} {symbol}"
+
+    def target_weights(self, bars: pl.DataFrame) -> pl.Series:
+        close = bars["close"]
+        # Trailing windows only; until the slow average has a full window, stay in cash.
+        fast = close.rolling_mean(self.fast)
+        slow = close.rolling_mean(self.slow)
+        return (fast > slow).fill_null(False).cast(pl.Float64).alias("weight")
+
+
+@dataclass(frozen=True)
+class Param:
+    name: str
+    default: int
+    low: int
+    high: int
+    description: str
+
+
+@dataclass(frozen=True)
+class StrategySpec:
+    key: str
+    kind: Literal["benchmark", "engine-test", "research"]
+    description: str
+    factory: Callable[..., Strategy]
+    params: tuple[Param, ...] = ()
+
+
+STRATEGIES: dict[str, StrategySpec] = {
+    spec.key: spec
+    for spec in (
+        StrategySpec(
+            "buy-and-hold",
+            "benchmark",
+            "Fully invested from the first bar. The benchmark every strategy must beat.",
+            BuyAndHold,
+        ),
+        StrategySpec(
+            "ma-trend",
+            "engine-test",
+            "Long when the fast moving average is above the slow one. An engine test, "
+            "not a research result.",
+            MovingAverageTrend,
+            (
+                Param("fast", 20, 2, 200, "Bars in the fast moving average"),
+                Param("slow", 100, 3, 1000, "Bars in the slow moving average"),
+            ),
+        ),
+    )
 }
-"""Strategies available to the CLI and API, by key, with a one-line description.
-Only the benchmark until the backtester is validated (CLAUDE.md)."""
+"""Strategy implementations available to the CLI and API. Research strategies are
+added here once their research note is frozen (CLAUDE.md: no strategy research until
+the backtester is validated)."""
 
 
-def make_strategy(key: str, symbol: str) -> Strategy:
+def resolve_params(key: str, params: dict[str, int] | None = None) -> dict[str, int]:
+    """Fill defaults and check every parameter is known and inside its allowed range."""
+    spec = spec_for(key)
+    given = dict(params or {})
+    unknown = set(given) - {p.name for p in spec.params}
+    if unknown:
+        raise ValueError(f"{key} has no parameter(s) {', '.join(sorted(unknown))}")
+    out: dict[str, int] = {}
+    for p in spec.params:
+        value = given.get(p.name, p.default)
+        if isinstance(value, bool) or not isinstance(value, int):
+            raise ValueError(f"{key} parameter {p.name} must be a whole number")
+        if not p.low <= value <= p.high:
+            raise ValueError(f"{key} parameter {p.name} must be {p.low} to {p.high}, got {value}")
+        out[p.name] = value
+    return out
+
+
+def spec_for(key: str) -> StrategySpec:
     if key not in STRATEGIES:
         raise ValueError(f"unknown strategy {key!r}; one of {', '.join(STRATEGIES)}")
-    return STRATEGIES[key][0](symbol.upper())
+    return STRATEGIES[key]
+
+
+def make_strategy(key: str, symbol: str, params: dict[str, int] | None = None) -> Strategy:
+    return spec_for(key).factory(symbol.upper(), **resolve_params(key, params))
+
+
+def strategy_source(key: str) -> str:
+    """The implementation's source code, for display. What the backtester runs."""
+    return inspect.getsource(spec_for(key).factory)
 
 
 def validated_weights(strategy: Strategy, bars: pl.DataFrame, checkpoints: int = 8) -> pl.Series:

@@ -285,9 +285,56 @@ class CostCurve(BaseModel):
 # ---------- backtests ----------
 
 
+class ParamOut(BaseModel):
+    name: str
+    default: int
+    low: int
+    high: int
+    description: str
+
+
 class StrategyOut(BaseModel):
     key: str
+    kind: str
+    """benchmark, engine-test or research."""
     description: str
+    params: list[ParamOut]
+
+
+class SourceOut(BaseModel):
+    key: str
+    source: str
+    commit: str | None
+    dirty: bool
+
+
+class SignalsRequest(BaseModel):
+    symbol: str = Field(min_length=2, max_length=20)
+    interval: Interval = Interval.H4
+    start: str
+    end: str
+    params: dict[str, int] = Field(default_factory=dict)
+
+    @field_validator("symbol")
+    @classmethod
+    def _valid_symbol(cls, v: str) -> str:
+        return _check_symbol(v)
+
+    @field_validator("start", "end")
+    @classmethod
+    def _valid_month(cls, v: str) -> str:
+        return _check_month(v)
+
+
+class Signals(BaseModel):
+    """Bars with the strategy's target weight decided at each bar's close."""
+
+    time: list[int]
+    open: list[float]
+    high: list[float]
+    low: list[float]
+    close: list[float]
+    weight: list[float]
 
 
 class BacktestRequest(BaseModel):
@@ -300,6 +347,12 @@ class BacktestRequest(BaseModel):
     start: str = Field(description="First month, YYYY-MM")
     end: str = Field(description="Last month, YYYY-MM (inclusive)")
     initial_cash: float = Field(default=330.0, gt=0, le=1e9)
+    params: dict[str, int] = Field(default_factory=dict)
+    research: str | None = Field(
+        default=None,
+        description="Research strategy slug. Its latest note must be frozen; the run is "
+        "logged as a trial and uses the implementation the note names.",
+    )
 
     @field_validator("symbol")
     @classmethod
@@ -347,10 +400,19 @@ class CodeOut(BaseModel):
     dirty: bool
 
 
+class ResearchRef(BaseModel):
+    slug: str
+    version: int
+
+
 class RunSummary(BaseModel):
     id: str
     created_at: datetime
     strategy: str
+    # Defaults keep runs saved before these fields existed loadable.
+    strategy_kind: str = "benchmark"
+    params: dict[str, int] = Field(default_factory=dict)
+    research: ResearchRef | None = None
     strategy_name: str
     symbol: str
     interval: Interval
@@ -398,3 +460,68 @@ class RunDetail(RunSummary):
     benchmark: Series
     fills: list[FillOut]
     rejections: list[RejectionOut]
+
+
+# ---------- research ----------
+
+
+class NoteOut(BaseModel):
+    version: int
+    created_at: datetime
+    sections: dict[str, str]
+    implementation: str | None
+    frozen_at: datetime | None
+    change_reason: str | None
+
+
+class StatusChangeOut(BaseModel):
+    status: str
+    at: datetime
+    reason: str
+
+
+class ResearchSummary(BaseModel):
+    slug: str
+    name: str
+    status: str
+    created_at: datetime
+    version: int
+    frozen: bool
+    implementation: str | None
+    runs: int
+    trials: int
+    """Distinct configurations tested (identical re-runs are one trial)."""
+
+
+class ChatMessage(BaseModel):
+    role: str
+    content: str
+    at: datetime
+    note_version: int | None = None
+
+
+class ResearchDetail(ResearchSummary):
+    sections: dict[str, str]
+    """Section key -> heading, in display order."""
+    notes: list[NoteOut]
+    history: list[StatusChangeOut]
+    trial_log: list[RunSummary]
+    chat: list[ChatMessage]
+    assistant_available: bool
+
+
+class CreateResearch(BaseModel):
+    name: str = Field(min_length=1, max_length=80)
+
+
+class EditNote(BaseModel):
+    sections: dict[str, str]
+    implementation: str | None = None
+
+
+class Reason(BaseModel):
+    reason: str = Field(min_length=1, max_length=2000)
+
+
+class ChatRequest(BaseModel):
+    message: str = Field(min_length=1, max_length=8000)

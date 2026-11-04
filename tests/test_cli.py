@@ -113,6 +113,7 @@ def test_serve_passes_data_and_config_to_the_server(
 
     assert os.environ["KESTREL_DATA"] == str(tmp_path)
     assert os.environ["KESTREL_CONFIG"] == "other.toml"
+    assert os.environ["KESTREL_RESEARCH"] == "research"
 
 
 def test_backtest_with_no_data(tmp_path: Path) -> None:
@@ -190,3 +191,56 @@ def test_ingest_then_check_is_clean(tmp_path: Path) -> None:
     result = runner.invoke(app, ["check", "BTCUSDT", *args])
     assert result.exit_code == 0
     assert "rows:               24" in result.output
+
+
+def _hourly_store(tmp_path: Path, make_archive: ArchiveFactory) -> list[str]:
+    ParquetStore(tmp_path).write("BTCUSDT", Interval.H1, parse_archive(make_archive(n=24 * 10)))
+    return [
+        "backtest", "BTCUSDT", "--start", "2024-01", "--end", "2024-01", "--interval", "1h",
+        "--data-dir", str(tmp_path), "--config", REPO_CONFIG,
+        "--research-dir", str(tmp_path / "research"),
+    ]  # fmt: skip
+
+
+def test_backtest_with_params(tmp_path: Path, make_archive: ArchiveFactory) -> None:
+    args = _hourly_store(tmp_path, make_archive)
+    result = runner.invoke(
+        app, [*args, "--strategy", "ma-trend", "--param", "fast=3", "--param", "slow=12"]
+    )
+    assert result.exit_code == 0, result.output
+    assert "moving-average trend 3/12" in result.output
+
+
+@pytest.mark.parametrize(
+    ("param", "message"),
+    [("fast", "name=<whole number>"), ("fast=x", "name=<whole number>"), ("fast=0", "2 to 200")],
+)
+def test_backtest_bad_params(
+    tmp_path: Path, make_archive: ArchiveFactory, param: str, message: str
+) -> None:
+    args = _hourly_store(tmp_path, make_archive)
+    result = runner.invoke(app, [*args, "--strategy", "ma-trend", "--param", param])
+    assert result.exit_code == 2
+    assert message in result.output
+
+
+def test_backtest_research_requires_a_frozen_note(
+    tmp_path: Path, make_archive: ArchiveFactory
+) -> None:
+    from kestrel.research import SECTIONS, ResearchStore
+
+    args = _hourly_store(tmp_path, make_archive)
+    notes = ResearchStore(tmp_path / "research")
+    slug = notes.create("Trend").slug
+    refused = runner.invoke(app, [*args, "--research", slug])
+    assert refused.exit_code == 2
+    assert "freeze" in refused.output
+
+    notes.edit(slug, 1, {k: "x" for k in SECTIONS}, "ma-trend")
+    notes.freeze(slug, 1)
+    result = runner.invoke(
+        app, [*args, "--research", slug, "--param", "fast=3", "--param", "slow=12"]
+    )
+    assert result.exit_code == 0, result.output
+    assert f"Logged as a trial of {slug} v1" in result.output
+    assert notes.get(slug).status == "backtested"

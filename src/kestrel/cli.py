@@ -24,12 +24,16 @@ from kestrel.data.binance_vision import BinanceVisionClient, Month, last_complet
 from kestrel.data.quality import check_klines
 from kestrel.data.schema import Interval
 from kestrel.data.store import ParquetStore
-from kestrel.strategy import STRATEGIES
+from kestrel.research import ResearchStore, run_target
+from kestrel.strategy import STRATEGIES, resolve_params
 
 app = typer.Typer(help="Kestrel trading platform.", no_args_is_help=True)
 
 DataDir = Annotated[Path, typer.Option("--data-dir", envvar="KESTREL_DATA", help="Data root.")]
 IntervalOpt = Annotated[Interval, typer.Option("--interval", "-i")]
+ResearchDir = Annotated[
+    Path, typer.Option("--research-dir", envvar="KESTREL_RESEARCH", help="Research notes root.")
+]
 
 
 @app.command()
@@ -102,18 +106,32 @@ def backtest(
         Path, typer.Option("--config", envvar="KESTREL_CONFIG", help="Config file.")
     ] = Path("kestrel.toml"),
     save: Annotated[bool, typer.Option(help="Save the run so it appears on the dashboard.")] = True,
+    param: Annotated[
+        list[str] | None, typer.Option(help="Strategy parameter as name=value; repeatable.")
+    ] = None,
+    research: Annotated[
+        str | None,
+        typer.Option(help="Research strategy slug: runs its frozen note's code as a trial."),
+    ] = None,
+    research_dir: ResearchDir = Path("research"),
 ) -> None:
     """Backtest a strategy on stored bars and print its metrics."""
-    if strategy not in STRATEGIES:
-        raise typer.BadParameter(f"unknown strategy {strategy!r}; one of {', '.join(STRATEGIES)}")
+    notes = ResearchStore(research_dir)
+    try:
+        key, link = run_target(notes, strategy, research)
+        params = resolve_params(key, _parse_params(param or []))
+    except ValueError as e:
+        raise typer.BadParameter(str(e)) from None
     request = RunRequest(
-        strategy=strategy,
+        strategy=key,
         symbol=symbol,
         interval=interval,
         start=Month.parse(start),
         end=Month.parse(end),
         initial_cash=Decimal(str(cash)),
         allow_holdout=allow_holdout,
+        params=params,
+        research=link,
     )
     try:
         cfg = load_config(config)
@@ -124,6 +142,19 @@ def backtest(
     typer.echo(format_report(outcome.result, outcome.metrics))
     if save:
         typer.echo(f"\nSaved as run {RunStore(data_dir).save(outcome, cfg)}")
+        if link:
+            notes.mark_backtested(*link)
+            typer.echo(f"Logged as a trial of {link[0]} v{link[1]}")
+
+
+def _parse_params(pairs: list[str]) -> dict[str, int]:
+    out: dict[str, int] = {}
+    for pair in pairs:
+        name, sep, value = pair.partition("=")
+        if not sep or not value.strip().lstrip("-").isdigit():
+            raise ValueError(f"--param must be name=<whole number>, got {pair!r}")
+        out[name.strip()] = int(value)
+    return out
 
 
 @app.command()
@@ -137,6 +168,7 @@ def serve(
     config: Annotated[
         Path, typer.Option("--config", envvar="KESTREL_CONFIG", help="Config file.")
     ] = Path("kestrel.toml"),
+    research_dir: ResearchDir = Path("research"),
 ) -> None:
     """Run the API and dashboard at http://HOST:PORT."""
     import os
@@ -145,6 +177,7 @@ def serve(
 
     os.environ["KESTREL_DATA"] = str(data_dir)
     os.environ["KESTREL_CONFIG"] = str(config)
+    os.environ["KESTREL_RESEARCH"] = str(research_dir)
     typer.echo(f"Kestrel dashboard: http://{host}:{port}   API docs: http://{host}:{port}/api/docs")
     uvicorn.run("kestrel.api.server:app", host=host, port=port, reload=reload, factory=False)
 

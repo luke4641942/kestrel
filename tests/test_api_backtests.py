@@ -39,7 +39,10 @@ def _finish(client: TestClient, body: dict[str, Any]) -> dict[str, Any]:
 
 
 def test_strategies_are_listed(client: TestClient) -> None:
-    assert [s["key"] for s in client.get("/api/strategies").json()] == ["buy-and-hold"]
+    listed = {s["key"]: s for s in client.get("/api/strategies").json()}
+    assert listed["buy-and-hold"]["kind"] == "benchmark"
+    assert listed["ma-trend"]["kind"] == "engine-test"
+    assert [p["name"] for p in listed["ma-trend"]["params"]] == ["fast", "slow"]
 
 
 def test_backtest_job_saves_a_run_that_can_be_read_back(client: TestClient) -> None:
@@ -96,3 +99,17 @@ def test_bad_requests_are_rejected(
 
 def test_unknown_run_is_404(client: TestClient) -> None:
     assert client.get("/api/backtests/20260101-000000-abcdef").status_code == 404
+
+
+def test_a_lookahead_strategy_fails_the_job_with_a_clear_reason(
+    client: TestClient, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    from kestrel.strategy import STRATEGIES, StrategySpec
+    from tests.backtest.test_engine import PeeksAhead
+
+    spec = StrategySpec("peek", "engine-test", "Cheats.", lambda symbol: PeeksAhead())
+    monkeypatch.setitem(STRATEGIES, "peek", spec)
+    job = _finish(client, {**BODY, "strategy": "peek"})
+    assert job["status"] == "failed"
+    assert "information from the future" in job["error"]
+    assert not any("Traceback" in line for line in job["logs"])

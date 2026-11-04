@@ -23,7 +23,7 @@ import math
 import re
 import shutil
 import uuid
-from dataclasses import asdict, dataclass
+from dataclasses import asdict, dataclass, field
 from datetime import UTC, datetime, timedelta
 from decimal import Decimal
 from pathlib import Path
@@ -37,7 +37,7 @@ from kestrel.config import Config
 from kestrel.data.binance_vision import Month
 from kestrel.data.schema import Interval
 from kestrel.data.store import ParquetStore
-from kestrel.strategy import BuyAndHold, Strategy, make_strategy
+from kestrel.strategy import BuyAndHold, Strategy, make_strategy, resolve_params, spec_for
 
 RUN_ID = re.compile(r"^\d{8}-\d{6}-[0-9a-f]{6}$")
 
@@ -53,6 +53,10 @@ class RunRequest:
     """Inclusive."""
     initial_cash: Decimal
     allow_holdout: bool = False
+    params: dict[str, int] = field(default_factory=dict)
+    """Strategy parameters; defaults are filled in from the strategy's spec."""
+    research: tuple[str, int] | None = None
+    """(research slug, note version) this run tests, making it a logged trial."""
 
 
 @dataclass(frozen=True)
@@ -66,7 +70,7 @@ class RunOutcome:
 
 def execute(request: RunRequest, store: ParquetStore, config: Config) -> RunOutcome:
     symbol = request.symbol.upper()
-    strategy = make_strategy(request.strategy, symbol)
+    strategy = make_strategy(request.strategy, symbol, request.params)
     after = request.end.next()
     bars = store.read(
         symbol,
@@ -127,7 +131,12 @@ class RunStore:
             "id": run_id,
             "created_at": created.isoformat(),
             "strategy": req.strategy,
+            "strategy_kind": spec_for(req.strategy).kind,
             "strategy_name": res.strategy,
+            "params": resolve_params(req.strategy, req.params),
+            "research": (
+                {"slug": req.research[0], "version": req.research[1]} if req.research else None
+            ),
             "symbol": res.symbol,
             "interval": req.interval.value,
             "start": str(req.start),
@@ -157,7 +166,7 @@ class RunStore:
             raise
         return run_id
 
-    def list(self) -> list[dict[str, Any]]:
+    def summaries(self) -> list[dict[str, Any]]:
         """Saved runs, newest first (without the config snapshot)."""
         runs = []
         for path in self.root.glob("*/run.json"):
@@ -166,6 +175,11 @@ class RunStore:
                 meta.pop("config", None)
                 runs.append(meta)
         return sorted(runs, key=lambda r: r["created_at"], reverse=True)
+
+    def trials(self, slug: str) -> list[dict[str, Any]]:
+        """Runs logged against a research strategy, oldest first."""
+        runs = [r for r in self.summaries() if (r.get("research") or {}).get("slug") == slug]
+        return sorted(runs, key=lambda r: r["created_at"])
 
     def load(self, run_id: str) -> SavedRun:
         if not RUN_ID.match(run_id) or not (self.root / run_id / "run.json").exists():
@@ -235,3 +249,24 @@ def _rejections_frame(res: BacktestResult) -> pl.DataFrame:
         for r in res.rejections
     ]
     return pl.DataFrame(rows, schema=schema)
+
+
+def trial_key(run: dict[str, Any]) -> tuple[Any, ...]:
+    """What makes two runs the same trial: identical version, code, parameters, market,
+    period and cash. Re-running an identical configuration is not a new trial; any
+    change to it is. P3's deflated Sharpe uses the count of distinct trials."""
+    research = run.get("research") or {}
+    return (
+        research.get("version"),
+        run["strategy"],
+        tuple(sorted((run.get("params") or {}).items())),
+        run["symbol"],
+        run["interval"],
+        run["start"],
+        run["end"],
+        run["initial_cash"],
+    )
+
+
+def count_trials(runs: list[dict[str, Any]]) -> int:
+    return len({trial_key(r) for r in runs})

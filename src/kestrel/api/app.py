@@ -9,6 +9,7 @@ from __future__ import annotations
 
 from collections.abc import AsyncIterator, Callable
 from contextlib import asynccontextmanager
+from dataclasses import asdict
 from datetime import UTC, datetime
 from decimal import Decimal
 from pathlib import Path
@@ -23,31 +24,58 @@ from kestrel.api.jobs import JobContext, JobError, JobManager
 from kestrel.api.models import (
     BacktestRequest,
     Bars,
+    ChatMessage,
     CostConfigOut,
     CostCurve,
+    CreateResearch,
     CurvePoint,
     Dataset,
+    EditNote,
     FillOut,
     Health,
     IngestRequest,
     JobOut,
+    NoteOut,
+    ParamOut,
     QualityOut,
     Quote,
+    Reason,
     RejectionOut,
+    ResearchDetail,
+    ResearchSummary,
     RunDetail,
     RunSummary,
     Series,
+    Signals,
+    SignalsRequest,
+    SourceOut,
+    StatusChangeOut,
     StrategyOut,
 )
 from kestrel.backtest.costs import CostModel, Fill, Side
 from kestrel.backtest.engine import HoldoutError
-from kestrel.backtest.runs import RunRequest, RunStore, execute
+from kestrel.backtest.runs import RunRequest, RunStore, count_trials, execute
 from kestrel.config import Config, ConfigError, InstrumentRules, load_config
 from kestrel.data.binance_vision import BinanceVisionClient, Month, last_complete_month
 from kestrel.data.quality import check_klines
 from kestrel.data.schema import Interval
 from kestrel.data.store import ParquetStore
-from kestrel.strategy import STRATEGIES
+from kestrel.provenance import code_version
+from kestrel.research import (
+    SECTIONS,
+    ResearchError,
+    ResearchStore,
+    ResearchStrategy,
+    run_target,
+)
+from kestrel.strategy import (
+    STRATEGIES,
+    StrategySpec,
+    make_strategy,
+    resolve_params,
+    strategy_source,
+    validated_weights,
+)
 
 STATIC_DIR = Path(__file__).parent / "static"
 MAX_BARS = 20_000
@@ -60,9 +88,12 @@ def create_app(
     client_factory: ClientFactory = BinanceVisionClient,
     static_dir: Path | None = STATIC_DIR,
     config_path: Path | str = "kestrel.toml",
+    research_dir: Path | str = "research",
+    assistant: Any = None,
 ) -> FastAPI:
     store = ParquetStore(data_dir)
     runs = RunStore(data_dir)
+    research = ResearchStore(research_dir)
     jobs = JobManager()
 
     @asynccontextmanager
@@ -283,25 +314,70 @@ def create_app(
 
     @api.get("/strategies")
     def list_strategies() -> list[StrategyOut]:
-        return [StrategyOut(key=k, description=d) for k, (_, d) in STRATEGIES.items()]
+        return [_strategy_out(spec) for spec in STRATEGIES.values()]
+
+    @api.get("/strategies/{key}/source")
+    def get_source(key: str) -> SourceOut:
+        try:
+            source = strategy_source(key)
+        except ValueError:
+            raise HTTPException(status.HTTP_404_NOT_FOUND, "strategy not found") from None
+        version = code_version()
+        return SourceOut(key=key, source=source, commit=version.commit, dirty=version.dirty)
+
+    @api.post("/strategies/{key}/signals")
+    def get_signals(key: str, req: SignalsRequest) -> Signals:
+        """What the strategy would hold after each bar closes, on stored bars."""
+        try:
+            strategy = make_strategy(key, req.symbol, req.params)
+        except ValueError as e:
+            raise HTTPException(422, str(e)) from None
+        first, after = Month.parse(req.start), Month.parse(req.end).next()
+        bars = store.read(
+            req.symbol,
+            req.interval,
+            datetime(first.year, first.month, 1, tzinfo=UTC),
+            datetime(after.year, after.month, 1, tzinfo=UTC),
+        ).tail(MAX_BARS)
+        if bars.is_empty():
+            raise HTTPException(status.HTTP_404_NOT_FOUND, "no stored bars in that range")
+        try:
+            weights = validated_weights(strategy, bars)
+        except ValueError as e:
+            raise HTTPException(422, str(e)) from None
+        return Signals(
+            time=bars["open_time"].dt.epoch("s").to_list(),
+            open=bars["open"].to_list(),
+            high=bars["high"].to_list(),
+            low=bars["low"].to_list(),
+            close=bars["close"].to_list(),
+            weight=weights.to_list(),
+        )
 
     @api.post("/jobs/backtest", status_code=status.HTTP_202_ACCEPTED)
     def start_backtest(req: BacktestRequest) -> JobOut:
-        if req.strategy not in STRATEGIES:
-            raise HTTPException(422, f"unknown strategy {req.strategy!r}")
         if Month.parse(req.start) > Month.parse(req.end):
             raise HTTPException(422, "start is after end")
+        try:
+            key, link = run_target(research, req.strategy, req.research)
+            params = resolve_params(key, req.params)
+        except ValueError as e:  # ResearchError is a ValueError
+            raise HTTPException(422, str(e)) from None
         request = RunRequest(
-            strategy=req.strategy,
+            strategy=key,
             symbol=req.symbol,
             interval=req.interval,
             start=Month.parse(req.start),
             end=Month.parse(req.end),
             initial_cash=Decimal(str(req.initial_cash)),
+            params=params,
+            research=link,
         )
 
         def run(ctx: JobContext) -> dict[str, Any]:
-            ctx.log(f"Backtesting {req.strategy} on {req.symbol} {req.interval.value}")
+            ctx.log(f"Backtesting {key} {params or ''} on {req.symbol} {req.interval.value}")
+            if link:
+                ctx.log(f"Logged as a trial of {link[0]} v{link[1]}")
             ctx.progress(0.1, "Running strategy and benchmark")
             try:
                 config = load_config(config_path)
@@ -310,16 +386,18 @@ def create_app(
                 raise JobError(str(e)) from None
             ctx.progress(0.9, "Saving run")
             run_id = runs.save(outcome, config)
+            if link:
+                research.mark_backtested(*link)
             m = outcome.metrics
             ctx.log(f"Saved run {run_id}: return {m.total_return:+.2%}, {m.trades} trades")
             return {"run_id": run_id}
 
-        job = jobs.submit("backtest", req.model_dump(mode="json"), run)
+        job = jobs.submit("backtest", {**req.model_dump(mode="json"), "strategy": key}, run)
         return JobOut.from_job(job)
 
     @api.get("/backtests")
     def list_backtests() -> list[RunSummary]:
-        return [RunSummary.model_validate(meta) for meta in runs.list()]
+        return [RunSummary.model_validate(meta) for meta in runs.summaries()]
 
     @api.get("/backtests/{run_id}")
     def get_backtest(run_id: str) -> RunDetail:
@@ -338,6 +416,78 @@ def create_app(
                 ],
             }
         )
+
+    # ---------- research ----------
+
+    def _summary(s: ResearchStrategy) -> ResearchSummary:
+        logged = runs.trials(s.slug)
+        return ResearchSummary(
+            slug=s.slug,
+            name=s.name,
+            status=s.status,
+            created_at=datetime.fromisoformat(s.created_at),
+            version=s.latest.version,
+            frozen=s.latest.frozen,
+            implementation=s.latest.implementation,
+            runs=len(logged),
+            trials=count_trials(logged),
+        )
+
+    def _detail(slug: str) -> ResearchDetail:
+        try:
+            s = research.get(slug)
+        except KeyError:
+            raise HTTPException(status.HTTP_404_NOT_FOUND, "research strategy not found") from None
+        return ResearchDetail(
+            **_summary(s).model_dump(),
+            sections=SECTIONS,
+            notes=[NoteOut.model_validate(asdict(n)) for n in s.notes],
+            history=[StatusChangeOut.model_validate(asdict(h)) for h in s.history],
+            trial_log=[RunSummary.model_validate(r) for r in runs.trials(slug)],
+            chat=[ChatMessage.model_validate(m) for m in research.chat(slug)],
+            assistant_available=assistant is not None,
+        )
+
+    def _research_call(fn: Callable[[], Any]) -> Any:
+        try:
+            return fn()
+        except KeyError:
+            raise HTTPException(status.HTTP_404_NOT_FOUND, "not found") from None
+        except ResearchError as e:
+            raise HTTPException(status.HTTP_409_CONFLICT, str(e)) from None
+
+    @api.get("/research")
+    def list_research() -> list[ResearchSummary]:
+        return [_summary(s) for s in research.strategies()]
+
+    @api.post("/research", status_code=status.HTTP_201_CREATED)
+    def create_research(req: CreateResearch) -> ResearchDetail:
+        s = _research_call(lambda: research.create(req.name))
+        return _detail(s.slug)
+
+    @api.get("/research/{slug}")
+    def get_research(slug: str) -> ResearchDetail:
+        return _detail(slug)
+
+    @api.put("/research/{slug}/notes/{version}")
+    def edit_note(slug: str, version: int, req: EditNote) -> ResearchDetail:
+        _research_call(lambda: research.edit(slug, version, req.sections, req.implementation))
+        return _detail(slug)
+
+    @api.post("/research/{slug}/notes/{version}/freeze")
+    def freeze_note(slug: str, version: int) -> ResearchDetail:
+        _research_call(lambda: research.freeze(slug, version))
+        return _detail(slug)
+
+    @api.post("/research/{slug}/notes", status_code=status.HTTP_201_CREATED)
+    def new_note_version(slug: str, req: Reason) -> ResearchDetail:
+        _research_call(lambda: research.new_version(slug, req.reason))
+        return _detail(slug)
+
+    @api.post("/research/{slug}/reject")
+    def reject_research(slug: str, req: Reason) -> ResearchDetail:
+        _research_call(lambda: research.reject(slug, req.reason))
+        return _detail(slug)
 
     # ---------- job status ----------
 
@@ -365,6 +515,15 @@ def create_app(
         app.mount("/", StaticFiles(directory=static_dir, html=True), name="dashboard")
 
     return app
+
+
+def _strategy_out(spec: StrategySpec) -> StrategyOut:
+    return StrategyOut(
+        key=spec.key,
+        kind=spec.kind,
+        description=spec.description,
+        params=[ParamOut.model_validate(asdict(p)) for p in spec.params],
+    )
 
 
 def _series(equity: pl.DataFrame) -> Series:
