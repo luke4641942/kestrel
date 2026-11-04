@@ -3,21 +3,27 @@
 kestrel ingest BTCUSDT --interval 1h --start 2020-01
 kestrel check BTCUSDT --interval 1h
 kestrel list BTCUSDT --interval 1h
+kestrel backtest BTCUSDT --interval 4h --start 2022-01 --end 2025-10
 """
 
 from __future__ import annotations
 
 from datetime import UTC, datetime
+from decimal import Decimal
 from pathlib import Path
 from typing import Annotated
 
 import polars as pl
 import typer
 
+from kestrel.backtest.engine import HoldoutError, run_backtest
+from kestrel.backtest.metrics import compute_metrics, format_report
+from kestrel.config import ConfigError, load_config
 from kestrel.data.binance_vision import BinanceVisionClient, Month, last_complete_month
 from kestrel.data.quality import check_klines
 from kestrel.data.schema import Interval
 from kestrel.data.store import ParquetStore
+from kestrel.strategy import BuyAndHold
 
 app = typer.Typer(help="Kestrel trading platform.", no_args_is_help=True)
 
@@ -76,6 +82,55 @@ def list_months(
     """List stored months for a symbol."""
     months = ParquetStore(data_dir).months(symbol, interval)
     typer.echo("\n".join(months) if months else "(no data)")
+
+
+STRATEGIES = {"buy-and-hold": BuyAndHold}
+
+
+@app.command()
+def backtest(
+    symbol: str,
+    start: Annotated[str, typer.Option(help="First month, YYYY-MM.")],
+    end: Annotated[str, typer.Option(help="Last month, YYYY-MM (inclusive).")],
+    strategy: Annotated[
+        str, typer.Option(help=f"One of: {', '.join(STRATEGIES)}.")
+    ] = "buy-and-hold",
+    interval: IntervalOpt = Interval.H4,
+    cash: Annotated[float, typer.Option(help="Starting cash in USDT.")] = 330.0,
+    allow_holdout: Annotated[
+        bool, typer.Option(help="Allow the reserved holdout period. For one final test only.")
+    ] = False,
+    data_dir: DataDir = Path("data"),
+    config: Annotated[
+        Path, typer.Option("--config", envvar="KESTREL_CONFIG", help="Config file.")
+    ] = Path("kestrel.toml"),
+) -> None:
+    """Backtest a strategy on stored bars and print its metrics."""
+    if strategy not in STRATEGIES:
+        raise typer.BadParameter(f"unknown strategy {strategy!r}; one of {', '.join(STRATEGIES)}")
+    first, last = Month.parse(start), Month.parse(end).next()
+    bars = ParquetStore(data_dir).read(
+        symbol,
+        interval,
+        datetime(first.year, first.month, 1, tzinfo=UTC),
+        datetime(last.year, last.month, 1, tzinfo=UTC),
+    )
+    if bars.height < 2:
+        typer.echo(f"no stored {symbol.upper()} {interval.value} bars in that range", err=True)
+        raise typer.Exit(code=1)
+    try:
+        result = run_backtest(
+            STRATEGIES[strategy](symbol.upper()),
+            bars,
+            interval,
+            load_config(config),
+            Decimal(str(cash)),
+            allow_holdout=allow_holdout,
+        )
+    except (HoldoutError, ConfigError, ValueError) as e:
+        typer.echo(str(e), err=True)
+        raise typer.Exit(code=1) from None
+    typer.echo(format_report(result, compute_metrics(result)))
 
 
 @app.command()

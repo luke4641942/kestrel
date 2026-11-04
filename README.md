@@ -59,6 +59,9 @@ kestrel ingest BTCUSDT --interval 1h --start 2020-01
 
 # Audit it
 kestrel check BTCUSDT --interval 1h
+
+# Backtest the benchmark (BTC buy-and-hold) before the holdout period
+kestrel backtest BTCUSDT --interval 4h --start 2022-01 --end 2025-10
 ```
 
 Data lands in `./data` (override with `--data-dir` or `KESTREL_DATA`) as
@@ -129,6 +132,10 @@ data.binance.vision ──► BinanceVisionClient ──► parse_archive ──
 | `kestrel.data.quality` | Integrity audit that reports rather than repairs |
 | `kestrel.config` | Strict loader for `kestrel.toml`: no defaults in code, exact decimals, fingerprint per config |
 | `kestrel.backtest.costs` | Fee, spread and square-root impact model; simulated market fills with exchange order rules |
+| `kestrel.strategy` | Strategy interface (target weights from closed bars) and the automatic lookahead check |
+| `kestrel.execution.venue` | `ExecutionVenue` interface and `SimVenue`, the simulated spot account |
+| `kestrel.backtest.engine` | Event-driven engine: decide at close, fill at next open, no-trade band, holdout guard |
+| `kestrel.backtest.metrics` | Daily-marked metrics with uncertainty: Sharpe CI, probabilistic Sharpe, drawdown, costs |
 | `kestrel.api.app` | REST endpoints for datasets, bars, quality and jobs |
 | `kestrel.api.jobs` | Thread-pool job runner: progress, logs, cooperative cancellation |
 | `kestrel.cli` | `ingest`, `check`, `list`, `serve` commands |
@@ -151,6 +158,15 @@ data.binance.vision ──► BinanceVisionClient ──► parse_archive ──
   last *closed* bar's volume, so a fill never uses information from its own bar.
 - **One cost formula, two engines.** The per-order fill (event-driven engine) and the
   cost rate (vectorised engine) share a formula, and a test asserts they agree.
+- **Lookahead is checked, not trusted.** Before a backtest runs, the engine recomputes
+  the strategy's weights on truncated histories. A strategy that peeks at a future bar
+  gives different answers and is refused.
+- **A pre-registered holdout.** Data from 2025-11-01 is reserved for one final test.
+  The engine refuses it unless explicitly allowed, and the report flags any run that
+  used it.
+- **Validated against an independent calculation.** On real BTCUSDT 4h data
+  (2022-01 to 2025-10), the engine's buy-and-hold result matches a hand calculation
+  from the raw bars to within the 0.00001 BTC quantity rounding.
 - **Config is versioned, not a settings page.** `kestrel.toml` has no defaults in
   code and rejects unknown keys. Each run will store the config and its fingerprint,
   so changing a fee never silently changes what an old result meant.

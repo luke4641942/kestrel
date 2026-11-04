@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import copy
+from datetime import UTC, date, datetime
 from decimal import Decimal
 from pathlib import Path
 from typing import Any
@@ -22,6 +23,7 @@ def document() -> dict[str, Any]:
             "impact_coef_bps": 100,
             "max_participation": 0.01,
         },
+        "backtest": {"no_trade_band": 0.02, "holdout_start": date(2025, 11, 1)},
         "instruments": {
             "BTCUSDT": {"step_size": "0.00001", "min_qty": "0.00001", "min_notional": "5"},
         },
@@ -33,6 +35,8 @@ def test_repo_config_loads() -> None:
     assert config.account_currency == "USDT"
     assert config.costs.taker_fee_bps == Decimal(10)
     assert config.instrument("btcusdt").step_size == Decimal("0.00001")
+    assert config.backtest.no_trade_band == Decimal("0.02")
+    assert config.backtest.holdout_start == datetime(2025, 11, 1, tzinfo=UTC)
 
 
 def test_numbers_are_exact_decimals(document: dict[str, Any]) -> None:
@@ -65,6 +69,16 @@ def test_invalid_toml(tmp_path: Path) -> None:
         (lambda d: d["instruments"]["BTCUSDT"].update(step_size="0"), "step_size must be > 0"),
         (lambda d: d["instruments"].update(ETHBTC=d["instruments"]["BTCUSDT"]), "quoted in USDT"),
         (lambda d: d.update(account_currency="US$"), "currency code"),
+        (lambda d: d.pop("backtest"), "top level: missing backtest"),
+        (
+            lambda d: d["backtest"].update(no_trade_band=0.6),
+            "no_trade_band must be >= 0 and <= 0.5",
+        ),
+        (lambda d: d["backtest"].update(holdout_start="2025-11-01"), "must be a TOML date"),
+        (
+            lambda d: d["backtest"].update(holdout_start=datetime(2025, 11, 1, tzinfo=UTC)),
+            "must be a TOML date",
+        ),
     ],
 )
 def test_invalid_values_are_rejected_with_a_clear_message(

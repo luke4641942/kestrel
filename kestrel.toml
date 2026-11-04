@@ -26,6 +26,15 @@ impact_coef_bps = 100
 # rather than filled at a price the market could not have offered.
 max_participation = 0.01
 
+[backtest]
+# Only rebalance when a target weight differs from the current weight by more than
+# this fraction of equity, so tiny adjustments don't pay fees.
+no_trade_band = 0.02
+
+# Holdout: data from this date (UTC) on is reserved for one final test of a finished
+# strategy. Pre-registered 2026-10-31, before any strategy research. Never move it.
+holdout_start = 2025-11-01
+
 # Exchange order rules (Binance LOT_SIZE and NOTIONAL filters). Verify against
 # GET /api/v3/exchangeInfo before any live use; P4 will refresh these from the API.
 [instruments.BTCUSDT]

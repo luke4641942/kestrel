@@ -99,8 +99,12 @@ Agreed with Luke; don't re-litigate without a reason.
   - Tax (AU, information only): holding-period distribution and share of gains from
     positions held > 12 months (CGT discount). Not modelled in the engine.
   Treat max drawdown as a floor, not a forecast. Capacity metrics are out of scope.
-- **Remaining P2 order:** trading core (`ExecutionVenue`, sim venue, target
-  positions) -> vectorised engine -> event-driven engine -> metrics -> Backtests page.
+- **Remaining P2 order:** ~~trading core, event-driven engine, core metrics~~ (done:
+  `kestrel.strategy`, `kestrel.execution.venue`, `kestrel.backtest.engine`,
+  `kestrel.backtest.metrics`, `kestrel backtest` CLI) -> run storage + Backtests page
+  -> vectorised engine with a parity test -> remaining metrics (round trips, blotter,
+  per-trade profit and bootstrap CIs, BTC beta, break-even cost, tails, tax view).
+  The only strategy is BuyAndHold (the benchmark) until the backtester is validated.
 - **Config lives in `kestrel.toml`**, version-controlled. Every backtest run stores the
   full config it used, so old results keep their meaning. No global settings UI.
 - **Parked, P3+: multi-strategy portfolios.** Strategies emit *target positions*, never

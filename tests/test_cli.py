@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from datetime import UTC, datetime
 from pathlib import Path
 
 import httpx
@@ -41,6 +42,35 @@ def test_list_shows_months(tmp_path: Path, make_archive: ArchiveFactory) -> None
 def test_list_with_no_data(tmp_path: Path) -> None:
     result = runner.invoke(app, ["list", "BTCUSDT", "--data-dir", str(tmp_path)])
     assert result.output.strip() == "(no data)"
+
+
+REPO_CONFIG = str(Path(__file__).resolve().parent.parent / "kestrel.toml")
+
+
+def test_backtest_prints_a_report(tmp_path: Path, make_archive: ArchiveFactory) -> None:
+    ParquetStore(tmp_path).write("BTCUSDT", Interval.H1, parse_archive(make_archive(n=24 * 10)))
+    args = ["backtest", "BTCUSDT", "--start", "2024-01", "--end", "2024-01", "--interval", "1h"]
+    result = runner.invoke(app, [*args, "--data-dir", str(tmp_path), "--config", REPO_CONFIG])
+    assert result.exit_code == 0, result.output
+    assert "buy-and-hold BTCUSDT" in result.output
+    assert "P(true Sharpe > 0)" in result.output
+    assert "too few to trust" in result.output
+
+
+def test_backtest_refuses_holdout(tmp_path: Path, make_archive: ArchiveFactory) -> None:
+    archive = make_archive(start=datetime(2025, 11, 1, tzinfo=UTC), n=24 * 5)
+    ParquetStore(tmp_path).write("BTCUSDT", Interval.H1, parse_archive(archive))
+    args = ["backtest", "BTCUSDT", "--start", "2025-11", "--end", "2025-11", "--interval", "1h"]
+    result = runner.invoke(app, [*args, "--data-dir", str(tmp_path), "--config", REPO_CONFIG])
+    assert result.exit_code == 1
+    assert "holdout period" in result.output
+
+
+def test_backtest_with_no_data(tmp_path: Path) -> None:
+    args = ["backtest", "BTCUSDT", "--start", "2024-01", "--end", "2024-02"]
+    result = runner.invoke(app, [*args, "--data-dir", str(tmp_path), "--config", REPO_CONFIG])
+    assert result.exit_code == 1
+    assert "no stored BTCUSDT 4h bars" in result.output
 
 
 @pytest.fixture

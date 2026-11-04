@@ -14,6 +14,7 @@ import hashlib
 import json
 import tomllib
 from dataclasses import dataclass
+from datetime import UTC, date, datetime
 from decimal import ROUND_FLOOR, Decimal, InvalidOperation
 from pathlib import Path
 from typing import Any
@@ -29,6 +30,13 @@ class CostConfig:
     half_spread_bps: Decimal
     impact_coef_bps: Decimal
     max_participation: Decimal
+
+
+@dataclass(frozen=True)
+class BacktestConfig:
+    no_trade_band: Decimal
+    holdout_start: datetime
+    """First instant of the holdout period (UTC). Research must stay before it."""
 
 
 @dataclass(frozen=True)
@@ -50,6 +58,7 @@ class InstrumentRules:
 class Config:
     account_currency: str
     costs: CostConfig
+    backtest: BacktestConfig
     instruments: dict[str, InstrumentRules]
     document: dict[str, Any]
 
@@ -80,7 +89,7 @@ def load_config(path: Path | str = "kestrel.toml") -> Config:
 
 
 def parse_config(document: dict[str, Any]) -> Config:
-    _expect_keys(document, {"account_currency", "costs", "instruments"}, "top level")
+    _expect_keys(document, {"account_currency", "costs", "backtest", "instruments"}, "top level")
 
     currency = document["account_currency"]
     if not isinstance(currency, str) or not currency.isalpha():
@@ -102,6 +111,18 @@ def parse_config(document: dict[str, Any]) -> Config:
         ),
     )
 
+    raw_bt = _table(document, "backtest")
+    _expect_keys(raw_bt, {"no_trade_band", "holdout_start"}, "[backtest]")
+    holdout = raw_bt["holdout_start"]
+    if isinstance(holdout, datetime) or not isinstance(holdout, date):
+        raise ConfigError(
+            f"[backtest] holdout_start must be a TOML date like 2025-11-01, got {holdout!r}"
+        )
+    backtest = BacktestConfig(
+        no_trade_band=_decimal(raw_bt, "no_trade_band", "[backtest]", low=0, high=0.5),
+        holdout_start=datetime(holdout.year, holdout.month, holdout.day, tzinfo=UTC),
+    )
+
     instruments: dict[str, InstrumentRules] = {}
     for symbol, raw in _table(document, "instruments").items():
         where = f"[instruments.{symbol}]"
@@ -121,7 +142,11 @@ def parse_config(document: dict[str, Any]) -> Config:
         )
 
     return Config(
-        account_currency=currency, costs=costs, instruments=instruments, document=document
+        account_currency=currency,
+        costs=costs,
+        backtest=backtest,
+        instruments=instruments,
+        document=document,
     )
 
 
