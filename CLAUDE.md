@@ -46,7 +46,9 @@ cd frontend && npm run build
 - [ ] P3 Validation: walk-forward, parameter robustness, trial log, deflated Sharpe
 - [ ] P4 Execution: ExecutionVenue adapters (sim, Binance testnet, live),
       reconciliation, risk limits, kill switch, alerting, parity tests
-- [ ] P5 Perps: funding, basis, margin
+- [ ] P5 Perps: funding, basis, margin. **Needs a rethink:** Binance perps aren't
+      available to Australian retail. Options: ≤2x via an ASIC-licensed provider, or
+      drop shorting/leverage. Decide before building.
 
 ## Decisions and parked ideas
 Agreed with Luke; don't re-litigate without a reason.
@@ -57,7 +59,8 @@ Agreed with Luke; don't re-litigate without a reason.
   holdout data without an explicit flag and log every such run. It is used once, for a
   final verdict on a finished strategy. Never move this date after seeing results.
 - **Long-only for now.** Strategies output target weights in [0, 1] per symbol (sum
-  <= 1, rest is cash). Luke is open to shorting; it arrives with perps in P5.
+  <= 1, rest is cash). Luke is open to shorting; it was planned for perps in P5, which
+  now needs a rethink (see Leverage in Australia).
 - **No-trade band: 2% of equity** (to live in `kestrel.toml`). Only rebalance when a
   target differs from the current position by more than the band, so tiny weight
   changes don't pay fees. Report how often the band suppressed a trade.
@@ -102,8 +105,22 @@ Agreed with Luke; don't re-litigate without a reason.
 - **Remaining P2 order:** ~~trading core, event-driven engine, core metrics~~ (done:
   `kestrel.strategy`, `kestrel.execution.venue`, `kestrel.backtest.engine`,
   `kestrel.backtest.metrics`, `kestrel backtest` CLI, ~~run storage + Backtests
-  page~~ (`kestrel.backtest.runs`, `/api/backtests`) -> vectorised engine with a parity test -> remaining metrics (round trips, blotter,
-  per-trade profit and bootstrap CIs, BTC beta, break-even cost, tails, tax view).
+  page~~ (`kestrel.backtest.runs`, `/api/backtests`) -> vectorised engine with a parity
+  test -> stops, targets and risk-based sizing (below) -> remaining metrics (round
+  trips, blotter, per-trade profit and bootstrap CIs, BTC beta, break-even cost, tails,
+  tax view, R-multiple distribution).
+- **Stops, targets and risk-based sizing (P2, spot, no leverage).** Prompted by the
+  "risk a little, target 3-4x" idea. Leverage doesn't change reward:risk; it only lets
+  a tight stop carry a given risk, and tight stops are where costs dominate (22 bps
+  round trip is 0.44R at a 0.5% stop). On 4h/daily bars stops are wide enough for spot.
+  Build: intrabar stop/target exits from bar high/low, assuming the stop fills first
+  when a bar touches both; size = risk% x equity / stop distance, capped at 100%;
+  report results, expectancy and costs in R. A fixed R:R exit is a hypothesis to test
+  in a research note, not an edge in itself.
+- **Leverage in Australia (researched 2026-11-04).** Binance doesn't offer futures to
+  Australian retail (licence cancelled April 2023 after misclassifying retail clients;
+  Federal Court penalty reported March 2026). ASIC caps retail crypto CFD leverage at
+  2:1. Never route around this via offshore exchanges or a wrong wholesale status.
   The only strategy is BuyAndHold (the benchmark) until the backtester is validated.
   The dashboard and API can never use the holdout; only the CLI's explicit flag can.
 - **Config lives in `kestrel.toml`**, version-controlled. Every backtest run stores the

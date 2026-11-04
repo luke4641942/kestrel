@@ -32,10 +32,10 @@ bias, unrealistic fills, ignored costs, and research code that is rewritten
 |---|---|---|
 | 1. Data | Binance bulk ingestion, canonical schema, Parquet store, quality checks | Done |
 | 1.5 Platform | FastAPI service, job runner, React dashboard | Done |
-| 2. Backtester | Vectorised research engine, event-driven validation engine, cost model, metrics | In progress |
+| 2. Backtester | Vectorised research engine, event-driven validation engine, cost model, metrics, stops/targets with risk-based sizing | In progress |
 | 3. Validation | Walk-forward, parameter robustness, trial log, deflated Sharpe | Planned |
 | 4. Execution | `ExecutionVenue` adapters (sim, Binance testnet, live), reconciliation, kill switch, alerting | Planned |
-| 5. Perps | Funding, basis, margin model | Planned |
+| 5. Perps | Funding, basis, margin model. Being rethought: Binance perps aren't available to Australian retail, and ASIC caps retail crypto leverage at 2:1 | Rethink |
 | Parked | Multi-strategy portfolios on one wallet (after P3); settings for risk limits and exchange status (after P4) | Parked |
 
 ## Quick start
