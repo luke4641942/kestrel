@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { MAX_LABELLED_TRADES, money, span, tradeMarkers, verdict } from "./summary";
+import { MAX_LABELLED_TRADES, costHeadroom, money, span, trackRecord, tradeMarkers, verdict } from "./summary";
 import { run, trade } from "./test/fixtures";
 
 describe("verdict", () => {
@@ -101,5 +101,28 @@ describe("tradeMarkers", () => {
     );
     expect(markers.map((m) => m.side)).toEqual(["buy", "sell"]);
     expect(markers[0]!.time).toBe(Date.UTC(2023, 0, 1) / 1000);
+  });
+});
+
+describe("trackRecord", () => {
+  it.each([
+    [null, "Never, at this Sharpe"],
+    [100, "About 3 months"],
+    [5, "About 1 month"],
+    [2095, "About 5.7 years"],
+    [367_839, "More than 50 years"],
+  ])("%s days -> %s", (days, text) => {
+    expect(trackRecord(days)).toBe(text);
+  });
+});
+
+describe("costHeadroom", () => {
+  it.each([
+    [null, 22, "No trades"],
+    [20, 22, "No room"],
+    [29, 22, "Fragile: costs could only rise 1.3x"],
+    [184, 22, "Robust: costs could rise 8x"],
+  ])("break-even %s vs paying %s", (be, paying, text) => {
+    expect(costHeadroom(be, paying)).toContain(text);
   });
 });

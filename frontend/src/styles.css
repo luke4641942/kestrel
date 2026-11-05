@@ -844,6 +844,14 @@ p {
   color: var(--warn);
 }
 
+.run-grid-2 {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.panel-foot {
+  margin-top: 10px;
+}
+
 .r-stats {
   margin-top: 12px;
   border-top: 1px solid var(--line);

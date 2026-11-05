@@ -58,6 +58,7 @@ export function run(over: Partial<RunDetail> = {}, m: Partial<Metrics> = {}, btc
     fills: [],
     rejections: [],
     trades: [],
+    analysis: null,
     ...over,
   };
 }

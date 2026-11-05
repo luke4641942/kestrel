@@ -216,3 +216,26 @@ def test_runs_saved_before_stops_still_load(store: ParquetStore, tmp_path: Path)
     run_id = runs.save(execute(request(), store, config()), config())
     (runs.root / run_id / "trades.parquet").unlink()
     assert runs.load(run_id).trades.is_empty()
+
+
+def test_runs_save_the_analysis(store: ParquetStore, tmp_path: Path) -> None:
+    import json
+
+    runs = RunStore(tmp_path)
+    run_id = runs.save(execute(request(), store, config()), config())
+    raw = (runs.root / run_id / "run.json").read_text()
+    assert "NaN" not in raw  # strict JSON
+    analysis = json.loads(raw)["analysis"]
+    assert analysis["resamples"] == 2000
+    assert len(analysis["return_ci"]) == 2
+    assert analysis["years"][0]["year"] == 2024
+
+
+def test_json_safe_replaces_non_finite_numbers() -> None:
+    from kestrel.backtest.runs import _json_safe
+
+    assert _json_safe({"a": float("nan"), "b": (1.0, float("inf")), "c": [{"d": 2}]}) == {
+        "a": None,
+        "b": [1.0, None],
+        "c": [{"d": 2}],
+    }

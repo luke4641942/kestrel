@@ -148,3 +148,25 @@ def test_bracket_backtest_returns_trades_and_r_metrics(tmp_path: Path) -> None:
     ).json()
     assert signals["kind"] == "entries"
     assert set(signals["weight"]) == {0.0, 1.0}
+
+
+def test_run_detail_includes_the_analysis(client: TestClient) -> None:
+    job = _finish(client, BODY)
+    detail = client.get(f"/api/backtests/{job['result']['run_id']}").json()
+    a = detail["analysis"]
+    assert a["resamples"] == 2000
+    assert 0 <= a["p_profit"] <= 1
+    assert a["beta"] == pytest.approx(1)  # buy-and-hold against itself
+    assert set(a["holding_buckets"]) == {"under 1 month", "1 to 12 months", "over 12 months"}
+
+
+def test_runs_saved_before_the_analysis_still_load(client: TestClient, tmp_path: Path) -> None:
+    import json
+
+    job = _finish(client, BODY)
+    run_id = job["result"]["run_id"]
+    path = tmp_path / "runs" / run_id / "run.json"
+    meta = json.loads(path.read_text())
+    del meta["analysis"]
+    path.write_text(json.dumps(meta))
+    assert client.get(f"/api/backtests/{run_id}").json()["analysis"] is None

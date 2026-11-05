@@ -146,7 +146,7 @@ def backtest(
     except (HoldoutError, ConfigError, ValueError) as e:
         typer.echo(str(e), err=True)
         raise typer.Exit(code=1) from None
-    typer.echo(format_report(outcome.result, outcome.metrics))
+    typer.echo(format_report(outcome.result, outcome.metrics, outcome.analysis))
     if save:
         typer.echo(f"\nSaved as run {RunStore(data_dir).save(outcome, cfg)}")
         if link:

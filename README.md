@@ -141,6 +141,7 @@ data.binance.vision ──► BinanceVisionClient ──► parse_archive ──
 | `kestrel.research` | Versioned research notes with enforced pre-registration, and the single rule set for starting a backtest |
 | `kestrel.assistant` | Research assistant on Claude, given the note and code only, never results |
 | `kestrel.backtest.vectorised` | Second, independent engine in polars columns; a parity test requires it to agree with the event engine |
+| `kestrel.backtest.analysis` | Block-bootstrap confidence, break-even cost, BTC beta and exposure-matched BTC, tails, calendar years, FIFO tax view |
 | `kestrel.backtest.runs` | Runs a strategy plus the BTC benchmark and saves every run (metrics, config snapshot, code version) |
 | `kestrel.api.app` | REST endpoints for datasets, bars, quality and jobs |
 | `kestrel.api.jobs` | Thread-pool job runner: progress, logs, cooperative cancellation |

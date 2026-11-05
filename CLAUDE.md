@@ -111,8 +111,10 @@ Agreed with Luke; don't re-litigate without a reason.
   faster, agrees to <0.13% final equity; the fractional-weights case is the one that
   catches drift bugs, keep it) -> ~~stops, targets and risk-based sizing~~ (done: `BracketStrategy`,
   `ChannelBreakout` engine test, R metrics, trades in runs and on the Backtests page)
-  -> remaining metrics (per-trade profit bootstrap CIs, BTC beta, break-even cost,
-  tails, tax view, R-multiple distribution chart).
+  -> ~~remaining metrics~~ (`kestrel.backtest.analysis`: block-bootstrap CIs, P(profit),
+  min track record, break-even cost, BTC beta/correlation and exposure-matched BTC,
+  tails, calendar years, payoff, profit without top 5 trades, FIFO tax view). Still to
+  do: expectancy by conviction bucket, once a strategy varies its sizing.
 - **Stops, targets and risk-based sizing (P2, spot, no leverage).** Prompted by the
   "risk a little, target 3-4x" idea. Leverage doesn't change reward:risk; it only lets
   a tight stop carry a given risk, and tight stops are where costs dominate (22 bps

@@ -81,6 +81,24 @@ export function span(startIso: string, endIso: string): string {
   return parts.filter(Boolean).join(" ");
 }
 
+/** How long paper trading must run before a Sharpe like this one is credible. */
+export function trackRecord(days: number | null): string {
+  if (days === null) return "Never, at this Sharpe";
+  const years = days / 365;
+  if (years > 50) return "More than 50 years";
+  if (years >= 1) return `About ${years.toFixed(1)} years`;
+  const months = Math.max(1, Math.round(days / 30.44));
+  return `About ${months} month${months === 1 ? "" : "s"}`;
+}
+
+/** Whether costs could rise before the edge disappears, in plain words. */
+export function costHeadroom(breakEven: number | null, paying: number | null): string {
+  if (breakEven === null || paying === null) return "No trades, so no costs to compare.";
+  if (breakEven <= paying) return "No room: costs already exceed the edge.";
+  const ratio = breakEven / Math.max(paying, 1e-9);
+  return ratio >= 3 ? `Robust: costs could rise ${ratio.toFixed(0)}x before the edge is gone.` : `Fragile: costs could only rise ${ratio.toFixed(1)}x before the edge is gone.`;
+}
+
 /** Labels beyond this many trades overlap into noise; colour still shows each result. */
 export const MAX_LABELLED_TRADES = 20;
 

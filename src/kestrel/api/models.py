@@ -486,6 +486,39 @@ class TradeOut(BaseModel):
     risk_capped: bool
 
 
+class YearOut(BaseModel):
+    year: int
+    strategy: float | None
+    btc: float | None
+
+
+class AnalysisOut(BaseModel):
+    """Deeper analysis; see kestrel.backtest.analysis. None where it doesn't apply."""
+
+    return_ci: list[float | None]
+    p_profit: float
+    expectancy_ci: list[float | None] | None
+    p_positive_expectancy: float | None
+    min_track_record_days: float | None
+    gross_profit: float
+    cost_per_round_trip_bps: float | None
+    break_even_cost_bps: float | None
+    beta: float | None
+    correlation: float | None
+    matched_btc_return: float | None
+    worst_day: float
+    worst_month: float
+    expected_shortfall: float
+    years: list[YearOut]
+    payoff_ratio: float | None
+    profit_without_top5: float | None
+    holding_buckets: dict[str, int]
+    long_term_gain_share: float | None
+    open_at_end: bool
+    resamples: int
+    block_days: int
+
+
 class RunDetail(RunSummary):
     config: dict[str, Any]
     equity: Series
@@ -493,6 +526,8 @@ class RunDetail(RunSummary):
     fills: list[FillOut]
     rejections: list[RejectionOut]
     trades: list[TradeOut] = Field(default_factory=list)
+    analysis: AnalysisOut | None = None
+    """Missing for runs saved before the analysis existed."""
 
 
 # ---------- research ----------

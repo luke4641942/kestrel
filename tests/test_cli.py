@@ -66,6 +66,8 @@ def test_backtest_prints_a_report(tmp_path: Path, make_archive: ArchiveFactory) 
     assert result.exit_code == 0, result.output
     assert "buy-and-hold BTCUSDT" in result.output
     assert "P(true Sharpe > 0)" in result.output
+    assert "Return 95% CI" in result.output
+    assert "Track record" in result.output
     assert "too few to trust" in result.output
 
 

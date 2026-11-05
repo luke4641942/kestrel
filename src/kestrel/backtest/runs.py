@@ -31,6 +31,7 @@ from typing import Any, Literal
 
 import polars as pl
 
+from kestrel.backtest.analysis import Analysis, analyse
 from kestrel.backtest.engine import BacktestResult, run_backtest
 from kestrel.backtest.metrics import Metrics, compute_metrics
 from kestrel.backtest.vectorised import run_vectorised
@@ -76,6 +77,7 @@ class RunOutcome:
     metrics: Metrics
     benchmark: BacktestResult
     benchmark_metrics: Metrics
+    analysis: Analysis
 
 
 def execute(request: RunRequest, store: ParquetStore, config: Config) -> RunOutcome:
@@ -109,8 +111,24 @@ def execute(request: RunRequest, store: ParquetStore, config: Config) -> RunOutc
     result = run(strategy)
     benchmark = result if isinstance(strategy, BuyAndHold) else run(BuyAndHold(symbol))
     return RunOutcome(
-        request, result, compute_metrics(result), benchmark, compute_metrics(benchmark)
+        request,
+        result,
+        compute_metrics(result),
+        benchmark,
+        compute_metrics(benchmark),
+        analyse(result, benchmark),
     )
+
+
+def _json_safe(value: Any) -> Any:
+    """NaN and infinities become None; tuples become lists."""
+    if isinstance(value, float):
+        return value if math.isfinite(value) else None
+    if isinstance(value, dict):
+        return {k: _json_safe(v) for k, v in value.items()}
+    if isinstance(value, list | tuple):
+        return [_json_safe(v) for v in value]
+    return value
 
 
 def metrics_dict(m: Metrics) -> dict[str, Any]:
@@ -163,6 +181,7 @@ class RunStore:
             "code": asdict(res.code) if res.code else None,
             "metrics": metrics_dict(outcome.metrics),
             "benchmark_metrics": metrics_dict(outcome.benchmark_metrics),
+            "analysis": _json_safe(asdict(outcome.analysis)),
         }
 
         self.root.mkdir(parents=True, exist_ok=True)

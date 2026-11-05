@@ -22,11 +22,14 @@ from __future__ import annotations
 import math
 from dataclasses import dataclass
 from datetime import datetime, timedelta
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 import polars as pl
 
 from kestrel.backtest.engine import BacktestResult
+
+if TYPE_CHECKING:
+    from kestrel.backtest.analysis import Analysis
 
 DAYS_PER_YEAR = 365
 Z95 = 1.959963984540054
@@ -227,11 +230,47 @@ def _r_lines(m: Metrics) -> list[str]:
     ]
 
 
+def _analysis_lines(a: Analysis) -> list[str]:
+    def p(x: float | None) -> str:
+        return "n/a" if x is None else f"{x:+.0%}"
+
+    lo, hi = a.return_ci
+    lines = [
+        "",
+        f"  Return 95% CI     {p(lo)} to {p(hi)}   P(profit after costs) {a.p_profit:.0%}",
+    ]
+    if a.expectancy_ci and a.p_positive_expectancy is not None:
+        elo, ehi = a.expectancy_ci
+        lines.append(
+            f"  Expectancy CI     {elo:+.2f}R to {ehi:+.2f}R   P(> 0) {a.p_positive_expectancy:.0%}"
+        )
+    trl = a.min_track_record_days
+    lines.append(
+        "  Track record      "
+        + ("never credible at this Sharpe" if trl is None else f"~{trl / 365:.1f} years needed")
+    )
+    if a.break_even_cost_bps is not None and a.cost_per_round_trip_bps is not None:
+        lines.append(
+            f"  Break-even cost   {a.break_even_cost_bps:,.0f} bps per round trip "
+            f"(paying {a.cost_per_round_trip_bps:.0f})"
+        )
+    if a.beta is not None and a.correlation is not None:
+        lines.append(
+            f"  vs BTC            beta {a.beta:.2f}, correlation {a.correlation:.2f}; BTC at the "
+            f"same exposure {p(a.matched_btc_return)}"
+        )
+    lines.append(
+        f"  Tails             worst day {a.worst_day:.1%}, worst month {a.worst_month:.1%}, "
+        f"worst 5% of days average {a.expected_shortfall:.2%}"
+    )
+    return lines
+
+
 def _norm_cdf(x: float) -> float:
     return 0.5 * (1 + math.erf(x / math.sqrt(2)))
 
 
-def format_report(result: BacktestResult, m: Metrics) -> str:
+def format_report(result: BacktestResult, m: Metrics, analysis: Analysis | None = None) -> str:
     def pct(x: float) -> str:
         return "n/a" if math.isnan(x) else f"{x:+.2%}"
 
@@ -267,6 +306,7 @@ def format_report(result: BacktestResult, m: Metrics) -> str:
         f"  Simulator         {m.rejections} rejected orders, {m.band_skips} rebalances "
         "skipped by the no-trade band",
         "",
+        *(_analysis_lines(analysis) if analysis else []),
         f"  Config {result.config_fingerprint}  ·  code {version}"
         + ("  ·  HOLDOUT DATA USED" if result.used_holdout else ""),
         "  Confidence intervals assume this was the only strategy tried.",

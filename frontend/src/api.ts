@@ -287,6 +287,31 @@ export interface EquitySeries {
   drawdown: number[];
 }
 
+export interface Analysis {
+  return_ci: (number | null)[];
+  p_profit: number;
+  expectancy_ci: (number | null)[] | null;
+  p_positive_expectancy: number | null;
+  min_track_record_days: number | null;
+  gross_profit: number;
+  cost_per_round_trip_bps: number | null;
+  break_even_cost_bps: number | null;
+  beta: number | null;
+  correlation: number | null;
+  matched_btc_return: number | null;
+  worst_day: number;
+  worst_month: number;
+  expected_shortfall: number;
+  years: { year: number; strategy: number | null; btc: number | null }[];
+  payoff_ratio: number | null;
+  profit_without_top5: number | null;
+  holding_buckets: Record<string, number>;
+  long_term_gain_share: number | null;
+  open_at_end: boolean;
+  resamples: number;
+  block_days: number;
+}
+
 export interface RunDetail extends RunSummary {
   config: Record<string, unknown>;
   equity: EquitySeries;
@@ -319,6 +344,8 @@ export interface RunDetail extends RunSummary {
     cost_r: number;
     risk_capped: boolean;
   }[];
+  /** Missing for runs saved before the analysis existed. */
+  analysis: Analysis | null;
 }
 
 export interface IngestRequest {

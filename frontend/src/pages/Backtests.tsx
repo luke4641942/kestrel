@@ -1,11 +1,11 @@
 import { useEffect, useRef, useState, type FormEvent, type ReactNode } from "react";
-import { api, type Dataset, type Job, type Metrics, type RunDetail, type RunSummary } from "../api";
+import { api, type Analysis, type Dataset, type Job, type Metrics, type RunDetail, type RunSummary } from "../api";
 import { EquityChart } from "../components/EquityChart";
 import { ParamInputs, defaultParams } from "../components/ParamInputs";
 import { Empty, PageHeader, Panel, Section, Stat, Status } from "../components/ui";
 import { ago, dateTime, lastResearchMonth, num } from "../format";
 import { useResource } from "../hooks";
-import { money, span, tradeMarkers, usdt, verdict, MAX_LABELLED_TRADES } from "../summary";
+import { costHeadroom, money, span, trackRecord, tradeMarkers, usdt, verdict, MAX_LABELLED_TRADES } from "../summary";
 
 const pct = (x: number | null | undefined, digits = 1) =>
   x === null || x === undefined ? "n/a" : `${x >= 0 ? "+" : ""}${(x * 100).toFixed(digits)}%`;
@@ -331,6 +331,7 @@ function RunView({ id }: { id: string }) {
             .
           </p>
         </Panel>
+        {r.analysis && <AnalysisPanels run={r} analysis={r.analysis} />}
         <div className="run-grid">
           <Panel pad>
             <h3 className="panel-title">Costs and activity</h3>
@@ -396,6 +397,121 @@ function RunView({ id }: { id: string }) {
 
 const rFmt = (x: number | null | undefined) =>
   x === null || x === undefined ? "n/a" : `${x >= 0 ? "+" : ""}${x.toFixed(2)}R`;
+
+const prob = (x: number | null | undefined) => (x === null || x === undefined ? "n/a" : `${Math.round(x * 100)}%`);
+
+function AnalysisPanels({ run: r, analysis: a }: { run: RunDetail; analysis: Analysis }) {
+  const [lo, hi] = a.return_ci;
+  const cur = r.account_currency;
+  const isBenchmark = r.strategy === "buy-and-hold";
+  const buckets = Object.entries(a.holding_buckets);
+  const sold = buckets.reduce((s, [, n]) => s + n, 0);
+  return (
+    <>
+      <div className="run-grid">
+        <Panel pad>
+          <h3 className="panel-title">Is the edge real?</h3>
+          <Ledger
+            rows={[
+              ["Likely range of return", `${pct(lo, 0)} to ${pct(hi, 0)}`],
+              ["Chance of a profit after costs", prob(a.p_profit)],
+              ...(a.expectancy_ci
+                ? ([
+                    ["Likely range per trade", `${rFmt(a.expectancy_ci[0])} to ${rFmt(a.expectancy_ci[1])}`],
+                    ["Chance each trade makes money on average", prob(a.p_positive_expectancy)],
+                  ] as [string, string][])
+                : []),
+              ["Paper trading needed to trust it", trackRecord(a.min_track_record_days)],
+            ]}
+          />
+          <p className="small tertiary panel-foot">
+            From {a.resamples.toLocaleString("en-AU")} reshuffles of the history in {a.block_days}-day blocks. Assumes this was the only
+            variant tried.
+          </p>
+        </Panel>
+        <Panel pad>
+          <h3 className="panel-title">Where the money comes from</h3>
+          <Ledger
+            rows={[
+              ["Profit before costs", `${money(a.gross_profit)} ${cur}`],
+              [
+                "Break-even cost per round trip",
+                a.break_even_cost_bps === null ? "n/a" : `${Math.round(a.break_even_cost_bps).toLocaleString("en-AU")} bps (paying ${a.cost_per_round_trip_bps?.toFixed(0)})`,
+              ],
+              ...(isBenchmark
+                ? []
+                : ([
+                    ["Moves with BTC (beta)", plain(a.beta)],
+                    ["Correlation with BTC", plain(a.correlation)],
+                    ["BTC held at the same exposure", pct(a.matched_btc_return, 0)],
+                  ] as [string, string][])),
+            ]}
+          />
+          <p className="small tertiary panel-foot">{costHeadroom(a.break_even_cost_bps, a.cost_per_round_trip_bps)}</p>
+        </Panel>
+        <Panel pad>
+          <h3 className="panel-title">What it's like to hold</h3>
+          <Ledger
+            rows={[
+              ["Worst day", pct(a.worst_day)],
+              ["Worst month", pct(a.worst_month)],
+              ["Average of the worst 5% of days", pct(a.expected_shortfall, 2)],
+              ...(a.payoff_ratio !== null
+                ? ([["Average win ÷ average loss", `${a.payoff_ratio.toFixed(2)}`]] as [string, string][])
+                : []),
+              ...(a.profit_without_top5 !== null
+                ? ([["Profit without the 5 best trades", `${money(a.profit_without_top5)} ${cur}`]] as [string, string][])
+                : []),
+            ]}
+          />
+        </Panel>
+      </div>
+      <div className="run-grid run-grid-2">
+        <Panel pad>
+          <h3 className="panel-title">Year by year</h3>
+          <table className="mini-table">
+            <thead>
+              <tr>
+                <th>Year</th>
+                <th className="num">Strategy</th>
+                <th className="num">Holding BTC</th>
+              </tr>
+            </thead>
+            <tbody>
+              {a.years.map((y) => (
+                <tr key={y.year}>
+                  <td>{y.year}</td>
+                  <td className={`num mono ${(y.strategy ?? 0) >= 0 ? "up" : "down"}`}>{pct(y.strategy, 0)}</td>
+                  <td className="num mono secondary">{pct(y.btc, 0)}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </Panel>
+        <Panel pad>
+          <h3 className="panel-title">Tax view (Australia, information only)</h3>
+          {sold === 0 ? (
+            <p className="small secondary">
+              {a.open_at_end ? "Nothing was sold, so every gain is still unrealised." : "No positions were bought or sold."}
+            </p>
+          ) : (
+            <Ledger
+              rows={[
+                ...(buckets.map(([k, n]) => [`Sold after ${k}`, `${n} position${n === 1 ? "" : "s"}`]) as [string, string][]),
+                ["Gains held over 12 months", prob(a.long_term_gain_share)],
+              ]}
+            />
+          )}
+          <p className="small tertiary panel-foot">
+            Gains on assets held over 12 months can get the CGT discount. Sells are matched to buys first-in first-out. Not
+            tax advice.
+            {a.open_at_end && sold > 0 ? " A position was still open at the end, so part of the gain is unrealised." : ""}
+          </p>
+        </Panel>
+      </div>
+    </>
+  );
+}
 
 function TradesPanel({ run }: { run: RunDetail }) {
   const m = run.metrics;
