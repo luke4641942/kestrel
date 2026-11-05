@@ -208,9 +208,10 @@ mypy                                    # strict type-checking
 pytest -m "not network"                 # offline suite
 pytest -m network                       # live check against data.binance.vision
 cd frontend && npm run typecheck        # strict TypeScript
+cd frontend && npm test                 # dashboard tests (Vitest, jsdom)
 ```
 
-CI runs the Python checks on 3.11 to 3.13 and type-checks and builds the
+CI runs the Python checks on 3.11 to 3.13 and tests, type-checks and builds the
 dashboard on every push.
 
 Charts use [TradingView Lightweight Charts](https://github.com/tradingview/lightweight-charts) (Apache 2.0).

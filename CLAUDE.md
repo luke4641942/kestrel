@@ -26,14 +26,15 @@ Long-running operations (ingest, backtests, validation) run as jobs via
 - Python 3.11+, polars (not pandas), strict mypy, ruff. Type everything.
 - Timestamps: tz-aware UTC, microseconds. `open_time` is a bar's identity.
 - Data problems are reported, never silently repaired.
-- Every change ships with tests. HTTP is injected so tests run offline; anything
+- Every change ships with tests, frontend included (Vitest + Testing Library; keep page
+  logic in plain modules like `frontend/src/summary.ts` so it can be tested directly). HTTP is injected so tests run offline; anything
   that hits the real network is marked `@pytest.mark.network`.
 - No lookahead: a decision at bar t may only use data from bars <= t (closed bars).
 
 ## Before calling a task done
 ```bash
 ruff check . && ruff format --check . && mypy && pytest -m "not network"
-cd frontend && npm run build
+cd frontend && npm test && npm run build
 ```
 
 ## Roadmap

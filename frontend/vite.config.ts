@@ -1,8 +1,10 @@
+/// <reference types="vitest/config" />
 import react from "@vitejs/plugin-react";
 import { defineConfig } from "vite";
 
 // Dev: `npm run dev` serves the UI on :5173 and proxies /api to the Python server on :8000.
 // Build: output goes into the Python package so `kestrel serve` hosts the dashboard itself.
+// Test: `npm test` runs Vitest in a simulated browser (jsdom).
 export default defineConfig({
   plugins: [react()],
   server: {
@@ -11,5 +13,9 @@ export default defineConfig({
   build: {
     outDir: "../src/kestrel/api/static",
     emptyOutDir: true,
+  },
+  test: {
+    environment: "jsdom",
+    setupFiles: ["./src/test/setup.ts"],
   },
 });
