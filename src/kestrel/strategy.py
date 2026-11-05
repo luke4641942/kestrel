@@ -21,6 +21,8 @@ from typing import Literal, Protocol, runtime_checkable
 
 import polars as pl
 
+from kestrel.strategies.structure import StructurePullback
+
 
 class LookaheadError(ValueError):
     """A strategy's weight at bar t changed when bars after t were removed.
@@ -164,6 +166,19 @@ STRATEGIES: dict[str, StrategySpec] = {
             ),
         ),
         StrategySpec(
+            "structure-pullback",
+            "research",
+            "Change of character, then a pullback into the 61.8% retracement and a fair "
+            "value gap; stop at the leg low, fixed-R target. Research: runs only through "
+            "its frozen note.",
+            StructurePullback,
+            (
+                Param("swing_bars", 3, 1, 6, "Bars each side that make a swing point"),
+                Param("target_r", 4, 2, 8, "Target as a multiple of the risk to the stop"),
+                Param("expiry_bars", 30, 5, 120, "Bars a setup waits for its pullback"),
+            ),
+        ),
+        StrategySpec(
             "ma-trend",
             "engine-test",
             "Long when the fast moving average is above the slow one. An engine test, "
@@ -212,8 +227,15 @@ def make_strategy(
 
 
 def strategy_source(key: str) -> str:
-    """The implementation's source code, for display. What the backtester runs."""
-    return inspect.getsource(spec_for(key).factory)
+    """The implementation's source code, for display. What the backtester runs.
+
+    Research strategies live in their own modules under kestrel.strategies, whose
+    docstring states the rules, so the whole module is shown."""
+    spec = spec_for(key)
+    module = inspect.getmodule(spec.factory)
+    if spec.kind == "research" and module is not None:
+        return inspect.getsource(module)
+    return inspect.getsource(spec.factory)
 
 
 def validated_weights(strategy: Strategy, bars: pl.DataFrame, checkpoints: int = 8) -> pl.Series:

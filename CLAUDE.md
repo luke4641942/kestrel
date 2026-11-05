@@ -140,6 +140,11 @@ Agreed with Luke; don't re-litigate without a reason.
 - **Research assistant (built):** Claude (`claude-opus-5-5`) sees the note, code and
   conversation only, never results, metrics or the trial log. Keep it that way: never
   add a results tool or pass run data into `ResearchAssistant.reply`.
+- **First research strategy: `structure-pullback`** (`kestrel.strategies.structure`),
+  Luke's pick from Craig Percoco's video. Its note (`research/strategies/structure-
+  pullback-craig-percoco-setup`) is a draft for Luke to edit and freeze. **Never run it on
+  market data before the note is frozen**; only its synthetic unit tests. Its
+  falsification test needs BTCUSDT and ETHUSDT 4h ingested for 2020-01..2025-10.
 - **Parked, P3+: multi-strategy portfolios.** Strategies emit *target positions*, never
   orders; an allocator owns the wallet, resolves conflicts and nets orders before the
   `ExecutionVenue`. Build P2 around this so single-strategy is a portfolio of one.
