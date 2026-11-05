@@ -1,0 +1,15 @@
+{
+  "version": 1,
+  "created_at": "2026-11-05T03:09:06.937513+00:00",
+  "sections": {
+    "hypothesis": "After a bullish change of character on BTC or ETH 4h bars, the first pullback into the 61.8% retracement of the impulse leg that also reaches a fair value gap from that leg continues to a 4R target often enough to make money after costs: more than the roughly 21-22% win rate a 4R target needs to break even.",
+    "rationale": "Claimed by a course seller (Craig Percoco, 'Give me 25 minutes...', ~29:10), not by independent evidence. The proposed mechanism: a break of the down-trend's last lower high shows buyers taking control, and late buyers and stopped-out sellers drive a continuation after the first pullback. Weak point: these levels are widely watched, so it's unclear why any edge would survive. The test is whether it does.",
+    "rules": "Long only, 4h bars. Swing high/low = a bar's high (low) beats the 3 bars each side; known only 3 bars later. Setup: the latest known swing high is lower than the one before, and a bar closes above it (change of character). Leg = lowest low since that swing high up to the highest high since. Fair value gap = three bars where the third bar's low is above the first bar's high; use its midpoint. Signal at a bar's close: its low reaches the leg's 61.8% retracement and the midpoint of a leg gap lying between the 50% and 78.6% retracements, and it closes above 78.6%. Buy at the next open. Stop at the leg low; target 4R from the signal close. Cancel the setup on a close below the leg low or after 30 bars. One entry per change of character. Risk 1% per trade (spot, no leverage). Differs from the video: no shorts, one timeframe, market entry at the next open, no RSI indicator.",
+    "falsification": "Run once with the default parameters on BTCUSDT and ETHUSDT 4h, 2020-01 to 2025-10 (before the holdout). Reject if, across both: net expectancy after costs is 0R or below; or P(expectancy > 0) is under 90%; or there are fewer than 50 trades (too few to judge); or it doesn't beat the channel-breakout engine test with the same 4R target and 1% risk on the same data. Any parameter change is a new version and new trials.",
+    "parameters": "swing_bars = 3 (allowed 2-5), target_r = 4 (allowed 3-5), expiry_bars = 30 (allowed 10-60). Only the defaults are pre-registered for trial 1. No tuning: other values count as further trials and need a written reason.",
+    "costs": "Expect roughly 1-3 setups a month per market. Stops sit at the leg low, typically several percent away on 4h bars, so a 22 bps round trip costs about 0.03-0.1R per trade. At 4R the win rate needed rises only from ~20% to ~21-22% after costs, so costs shouldn't decide this one; too few trades might."
+  },
+  "implementation": "structure-pullback",
+  "frozen_at": "2026-11-05T03:15:27.634183+00:00",
+  "change_reason": null
+}

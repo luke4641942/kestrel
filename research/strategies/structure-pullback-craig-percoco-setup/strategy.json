@@ -1,0 +1,28 @@
+{
+  "slug": "structure-pullback-craig-percoco-setup",
+  "name": "Structure pullback (Craig Percoco setup)",
+  "created_at": "2026-11-05T03:09:06.937513+00:00",
+  "status": "rejected",
+  "history": [
+    {
+      "status": "idea",
+      "at": "2026-11-05T03:09:06.937513+00:00",
+      "reason": "Created"
+    },
+    {
+      "status": "specified",
+      "at": "2026-11-05T03:15:27.634207+00:00",
+      "reason": "v1 frozen"
+    },
+    {
+      "status": "backtested",
+      "at": "2026-11-05T03:15:49.266065+00:00",
+      "reason": "first run on v1"
+    },
+    {
+      "status": "rejected",
+      "at": "2026-11-05T03:23:05.370870+00:00",
+      "reason": "Failed its pre-registered test (v1, defaults, BTCUSDT + ETHUSDT 4h, 2020-01..2025-10). Pooled over 160 trades: expectancy +0.057R after costs, 95% CI -0.26R to +0.39R, P(expectancy > 0) 63%, below the 90% required. Win rate 23.1% against a 22.0% break-even. BTC alone (+0.26R, P 82%) is a post-hoc subset and was not acted on. Without the 5 best trades both markets lose money. Costs were 0.09-0.12R per trade, above the 0.03-0.1R the note estimated. The channel-breakout comparison was not needed once a rule had failed."
+    }
+  ]
+}
