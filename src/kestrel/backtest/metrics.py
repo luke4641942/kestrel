@@ -133,6 +133,12 @@ def compute_metrics(result: BacktestResult) -> Metrics:
 
     fills = [r.fill for r in result.fills]
     traded = sum(float(f.quantity * f.reference_price) for f in fills)
+    cs = result.summary  # the vectorised engine has totals, not fills
+    fees = cs.fees if cs else sum(float(f.fee) for f in fills)
+    spread_costs = cs.spread_costs if cs else sum(float(f.spread_cost) for f in fills)
+    impact_costs = cs.impact_costs if cs else sum(float(f.impact_cost) for f in fills)
+    if cs:
+        traded = cs.traded_notional
     avg_equity = float(result.equity["equity"].mean())  # type: ignore[arg-type]
     max_dd, underwater = _drawdown(result.equity)
 
@@ -153,12 +159,12 @@ def compute_metrics(result: BacktestResult) -> Metrics:
         skew=skew,
         kurtosis=kurt,
         exposure=float(result.equity["weight"].mean()),  # type: ignore[arg-type]
-        trades=len(fills),
+        trades=cs.rebalances if cs else len(fills),
         rejections=len(result.rejections),
         band_skips=result.band_skips,
-        fees=sum(float(f.fee) for f in fills),
-        spread_costs=sum(float(f.spread_cost) for f in fills),
-        impact_costs=sum(float(f.impact_cost) for f in fills),
+        fees=fees,
+        spread_costs=spread_costs,
+        impact_costs=impact_costs,
         turnover=traded / avg_equity / years if years > 0 and avg_equity > 0 else math.nan,
         **_trade_stats(result),
     )
@@ -238,7 +244,8 @@ def format_report(result: BacktestResult, m: Metrics) -> str:
     version = commit[:10] + (" (uncommitted changes)" if code and code.dirty else "")
     lines = [
         f"{result.strategy}  ·  {result.symbol} {result.interval.value}  ·  "
-        f"{m.start:%Y-%m-%d} to {m.end:%Y-%m-%d} ({m.days} days)",
+        + ("vectorised engine  ·  " if result.engine == "vectorised" else "")
+        + f"{m.start:%Y-%m-%d} to {m.end:%Y-%m-%d} ({m.days} days)",
         "",
         f"  Return            {pct(m.total_return)}   (CAGR {pct(m.cagr)})",
         f"  Sharpe            {num(m.sharpe)}   95% CI [{num(lo)}, {num(hi)}]   "

@@ -99,6 +99,17 @@ class TradeRecord:
         return self.costs / self.risk
 
 
+@dataclass(frozen=True)
+class CostSummary:
+    """Totals for an engine that computes costs per bar instead of per fill."""
+
+    fees: float
+    spread_costs: float
+    impact_costs: float
+    traded_notional: float
+    rebalances: int
+
+
 @dataclass
 class BacktestResult:
     strategy: str
@@ -120,6 +131,9 @@ class BacktestResult:
     used_holdout: bool = False
     config_fingerprint: str = ""
     code: CodeVersion | None = None
+    engine: Literal["event", "vectorised"] = "event"
+    summary: CostSummary | None = None
+    """Set by the vectorised engine, which has no individual fills to sum."""
 
     @property
     def final_equity(self) -> Decimal:
@@ -136,22 +150,7 @@ def run_backtest(
     allow_holdout: bool = False,
 ) -> BacktestResult:
     """Run ``strategy`` over ``bars`` (canonical kline schema, one symbol, sorted)."""
-    if bars.height < 2:
-        raise ValueError("need at least two bars: decide on one, fill on the next")
-    if not bars["open_time"].is_sorted() or bars["open_time"].n_unique() != bars.height:
-        raise ValueError("bars must be sorted with unique open_time; run the quality check")
-
-    holdout = config.backtest.holdout_start
-    used_holdout = bool(bars["open_time"].max() >= holdout)  # type: ignore[operator]
-    if used_holdout and not allow_holdout:
-        raise HoldoutError(
-            f"bars reach into the holdout period (from {holdout:%Y-%m-%d} UTC). "
-            "End the range before it, or pass allow_holdout for a finished strategy's "
-            "one final test."
-        )
-    if used_holdout:
-        log.warning("HOLDOUT USED: %s on %s from %s", strategy.name, strategy.symbol, holdout)
-
+    used_holdout = check_inputs(bars, config, strategy.name, strategy.symbol, allow_holdout)
     symbol = strategy.symbol
     venue = SimVenue(config, initial_cash)
     result = BacktestResult(
@@ -185,6 +184,27 @@ def run_backtest(
         .otherwise(0.0)
     )
     return result
+
+
+def check_inputs(
+    bars: pl.DataFrame, config: Config, name: str, symbol: str, allow_holdout: bool
+) -> bool:
+    """Checks every engine runs first. Returns whether the holdout is used."""
+    if bars.height < 2:
+        raise ValueError("need at least two bars: decide on one, fill on the next")
+    if not bars["open_time"].is_sorted() or bars["open_time"].n_unique() != bars.height:
+        raise ValueError("bars must be sorted with unique open_time; run the quality check")
+    holdout = config.backtest.holdout_start
+    used_holdout = bool(bars["open_time"].max() >= holdout)  # type: ignore[operator]
+    if used_holdout and not allow_holdout:
+        raise HoldoutError(
+            f"bars reach into the holdout period (from {holdout:%Y-%m-%d} UTC). "
+            "End the range before it, or pass allow_holdout for a finished strategy's "
+            "one final test."
+        )
+    if used_holdout:
+        log.warning("HOLDOUT USED: %s on %s from %s", name, symbol, holdout)
+    return used_holdout
 
 
 Row = tuple[Decimal, Decimal, Decimal]

@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 import re
 from datetime import UTC, datetime
 from pathlib import Path
@@ -255,3 +256,29 @@ def test_backtest_research_requires_a_frozen_note(
     assert result.exit_code == 0, result.output
     assert f"Logged as a trial of {slug} v1" in result.output
     assert notes.get(slug).status == "backtested"
+
+
+def test_backtest_with_the_vectorised_engine(tmp_path: Path, make_archive: ArchiveFactory) -> None:
+    args = _hourly_store(tmp_path, make_archive)
+    result = runner.invoke(app, [*args, "--strategy", "ma-trend", "--engine", "vectorised",
+                                 "--param", "fast=3", "--param", "slow=12"])  # fmt: skip
+    assert result.exit_code == 0, result.output
+    assert "vectorised engine" in result.output
+    (meta,) = [json.loads(p.read_text()) for p in (tmp_path / "runs").glob("*/run.json")]
+    assert meta["engine"] == "vectorised"
+
+
+def test_backtest_rejects_an_unknown_engine(tmp_path: Path, make_archive: ArchiveFactory) -> None:
+    args = _hourly_store(tmp_path, make_archive)
+    result = runner.invoke(app, [*args, "--engine", "warp"])
+    assert result.exit_code == 2
+    assert "engine must be event or vectorised" in plain(result.output)
+
+
+def test_vectorised_engine_refuses_bracket_strategies(
+    tmp_path: Path, make_archive: ArchiveFactory
+) -> None:
+    args = _hourly_store(tmp_path, make_archive)
+    result = runner.invoke(app, [*args, "--strategy", "channel-breakout", "--engine", "vectorised"])
+    assert result.exit_code == 1
+    assert "weight strategies only" in plain(result.output)

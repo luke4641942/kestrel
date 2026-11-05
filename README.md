@@ -140,6 +140,7 @@ data.binance.vision ──► BinanceVisionClient ──► parse_archive ──
 | `kestrel.backtest.metrics` | Daily-marked metrics with uncertainty: Sharpe CI, probabilistic Sharpe, drawdown, costs |
 | `kestrel.research` | Versioned research notes with enforced pre-registration, and the single rule set for starting a backtest |
 | `kestrel.assistant` | Research assistant on Claude, given the note and code only, never results |
+| `kestrel.backtest.vectorised` | Second, independent engine in polars columns; a parity test requires it to agree with the event engine |
 | `kestrel.backtest.runs` | Runs a strategy plus the BTC benchmark and saves every run (metrics, config snapshot, code version) |
 | `kestrel.api.app` | REST endpoints for datasets, bars, quality and jobs |
 | `kestrel.api.jobs` | Thread-pool job runner: progress, logs, cooperative cancellation |
@@ -183,6 +184,10 @@ data.binance.vision ──► BinanceVisionClient ──► parse_archive ──
 - **An AI assistant outside the tuning loop.** The research assistant (Claude) is given
   the note and the code, never backtest results, so it can challenge an idea but can't
   fit it to past data. A test runs a trial and checks nothing from it reaches the API.
+- **Two engines that must agree.** A vectorised engine (whole columns, floats, ~6x
+  faster) re-implements the event engine's model, including how a position's weight
+  drifts between trades. A parity test runs both on the same data and requires daily
+  returns to match within 0.01%; planting a timing bug or ignoring drift makes it fail.
 - **Stops and targets, measured in R.** Bracket strategies set a stop and a target;
   the engine sizes each trade from the risk per trade and the stop distance (spot, no
   leverage) and exits inside bars from the high and low. When a bar reaches both, the

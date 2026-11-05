@@ -114,8 +114,14 @@ def backtest(
         typer.Option(help="Research strategy slug: runs its frozen note's code as a trial."),
     ] = None,
     research_dir: ResearchDir = Path("research"),
+    engine: Annotated[
+        str,
+        typer.Option(help="event (reference, exact) or vectorised (fast, weight strategies)."),
+    ] = "event",
 ) -> None:
     """Backtest a strategy on stored bars and print its metrics."""
+    if engine not in ("event", "vectorised"):
+        raise typer.BadParameter("engine must be event or vectorised")
     notes = ResearchStore(research_dir)
     try:
         key, link = run_target(notes, strategy, research)
@@ -132,6 +138,7 @@ def backtest(
         allow_holdout=allow_holdout,
         params=params,
         research=link,
+        engine="vectorised" if engine == "vectorised" else "event",
     )
     try:
         cfg = load_config(config)

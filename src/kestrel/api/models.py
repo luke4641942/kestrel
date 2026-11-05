@@ -425,6 +425,7 @@ class RunSummary(BaseModel):
     # Defaults keep runs saved before these fields existed loadable.
     strategy_kind: str = "benchmark"
     style: str = "weights"
+    engine: str = "event"
     params: dict[str, int] = Field(default_factory=dict)
     research: ResearchRef | None = None
     strategy_name: str

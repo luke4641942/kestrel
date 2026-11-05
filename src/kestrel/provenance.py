@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import functools
 import subprocess
 from dataclasses import dataclass
 from pathlib import Path
@@ -15,7 +16,14 @@ class CodeVersion:
     """True if there were uncommitted changes, so the commit alone can't reproduce it."""
 
 
+@functools.cache
 def code_version(repo: Path | None = None) -> CodeVersion:
+    """The git commit and dirty flag, looked up once per process.
+
+    Cached because a process runs the code it loaded at start, so the first answer is the
+    accurate one; asking git again after a file is edited would describe code that isn't
+    running. (`kestrel serve --reload` restarts the process, so it looks up afresh.) The
+    lookup is a subprocess (~30 ms), which also dominated the cost of a backtest."""
     cwd = repo or Path(__file__).resolve().parent
 
     def git(*args: str) -> str | None:

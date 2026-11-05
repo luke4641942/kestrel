@@ -105,8 +105,10 @@ Agreed with Luke; don't re-litigate without a reason.
 - **Remaining P2 order:** ~~trading core, event-driven engine, core metrics~~ (done:
   `kestrel.strategy`, `kestrel.execution.venue`, `kestrel.backtest.engine`,
   `kestrel.backtest.metrics`, `kestrel backtest` CLI, ~~run storage + Backtests
-  page~~ (`kestrel.backtest.runs`, `/api/backtests`) -> vectorised engine with a parity
-  test -> ~~stops, targets and risk-based sizing~~ (done: `BracketStrategy`,
+  page~~ (`kestrel.backtest.runs`, `/api/backtests`) -> ~~vectorised engine with a
+  parity test~~ (`kestrel.backtest.vectorised`, `tests/backtest/test_parity.py`; ~6x
+  faster, agrees to <0.13% final equity; the fractional-weights case is the one that
+  catches drift bugs, keep it) -> ~~stops, targets and risk-based sizing~~ (done: `BracketStrategy`,
   `ChannelBreakout` engine test, R metrics, trades in runs and on the Backtests page)
   -> remaining metrics (per-trade profit bootstrap CIs, BTC beta, break-even cost,
   tails, tax view, R-multiple distribution chart).

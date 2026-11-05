@@ -27,12 +27,13 @@ from dataclasses import asdict, dataclass, field
 from datetime import UTC, datetime, timedelta
 from decimal import Decimal
 from pathlib import Path
-from typing import Any
+from typing import Any, Literal
 
 import polars as pl
 
 from kestrel.backtest.engine import BacktestResult, run_backtest
 from kestrel.backtest.metrics import Metrics, compute_metrics
+from kestrel.backtest.vectorised import run_vectorised
 from kestrel.config import Config
 from kestrel.data.binance_vision import Month
 from kestrel.data.schema import Interval
@@ -64,6 +65,8 @@ class RunRequest:
     """Strategy parameters; defaults are filled in from the strategy's spec."""
     research: tuple[str, int] | None = None
     """(research slug, note version) this run tests, making it a logged trial."""
+    engine: Literal["event", "vectorised"] = "event"
+    """The event engine is the reference; the vectorised one is for fast research."""
 
 
 @dataclass(frozen=True)
@@ -91,8 +94,10 @@ def execute(request: RunRequest, store: ParquetStore, config: Config) -> RunOutc
             f"{request.start}..{request.end}; ingest them first"
         )
 
+    engine = run_vectorised if request.engine == "vectorised" else run_backtest
+
     def run(s: Strategy | BracketStrategy) -> BacktestResult:
-        return run_backtest(
+        return engine(
             s,
             bars,
             request.interval,
@@ -140,6 +145,7 @@ class RunStore:
             "strategy": req.strategy,
             "strategy_kind": spec_for(req.strategy).kind,
             "style": res.style,
+            "engine": res.engine,
             "strategy_name": res.strategy,
             "params": resolve_params(req.strategy, req.params),
             "research": (
