@@ -60,7 +60,7 @@ kestrel ingest BTCUSDT --interval 1h --start 2020-01
 # Audit it
 kestrel check BTCUSDT --interval 1h
 
-# Backtest the benchmark (BTC buy-and-hold) before the holdout period
+# Backtest the benchmark (buy-and-hold of the same market) before the holdout period
 kestrel backtest BTCUSDT --interval 4h --start 2022-01 --end 2025-10
 ```
 

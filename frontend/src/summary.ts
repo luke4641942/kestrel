@@ -24,7 +24,14 @@ export interface Verdict {
   wins: number;
 }
 
-/** Did it make money, did it beat holding BTC, and can the result be trusted? */
+/** What the benchmark holds: the symbol without its quote currency (ETHUSDT -> ETH).
+ * Every run is compared with buy-and-hold of its own market, not always BTC. */
+export function heldAsset(r: { symbol: string; account_currency: string }): string {
+  const cur = r.account_currency;
+  return cur && r.symbol.endsWith(cur) ? r.symbol.slice(0, -cur.length) : r.symbol;
+}
+
+/** Did it make money, did it beat holding the same market, and can it be trusted? */
 export function verdict(r: RunDetail): Verdict {
   const m = r.metrics;
   const start = Number(r.initial_cash);
@@ -33,6 +40,7 @@ export function verdict(r: RunDetail): Verdict {
   const vsBtc = profit - btcProfit;
   const isBenchmark = r.strategy === "buy-and-hold";
   const cur = r.account_currency;
+  const asset = heldAsset(r);
   const trades = r.style === "brackets" ? (m.round_trips ?? 0) : m.trades;
   const wins = r.trades.filter((t) => t.r_multiple > 0).length;
 
@@ -40,16 +48,16 @@ export function verdict(r: RunDetail): Verdict {
   let headline: string;
   if (isBenchmark) {
     tone = "neutral";
-    headline = `The benchmark: simply holding BTC ${profit >= 0 ? "made" : "lost"} ${usdt(Math.abs(profit))} ${cur}.`;
+    headline = `The benchmark: simply holding ${asset} ${profit >= 0 ? "made" : "lost"} ${usdt(Math.abs(profit))} ${cur}.`;
   } else if (profit <= 0) {
     tone = "bad";
     headline = `Lost money: ${usdt(Math.abs(profit))} ${cur} down after costs.`;
   } else if (vsBtc < 0) {
     tone = "warn";
-    headline = `Made money, but less than just holding BTC (${usdt(btcProfit)} ${cur}).`;
+    headline = `Made money, but less than just holding ${asset} (${usdt(btcProfit)} ${cur}).`;
   } else {
     tone = "ok";
-    headline = `Beat holding BTC by ${usdt(vsBtc)} ${cur} after costs.`;
+    headline = `Beat holding ${asset} by ${usdt(vsBtc)} ${cur} after costs.`;
   }
 
   let trust: string;

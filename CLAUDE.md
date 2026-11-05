@@ -65,14 +65,16 @@ Agreed with Luke; don't re-litigate without a reason.
 - **No-trade band: 2% of equity** (to live in `kestrel.toml`). Only rebalance when a
   target differs from the current position by more than the band, so tiny weight
   changes don't pay fees. Report how often the band suppressed a trade.
-- **Benchmark: BTC buy-and-hold** over the same period, paying one entry's costs.
+- **Benchmark: buy-and-hold of the same market** (BTC for a BTC run, ETH for an ETH run)
+  over the same period, paying one entry's costs. Labels must name the actual asset
+  (`BacktestResult.asset`, `heldAsset()` in the dashboard); never hard-code "BTC".
   Every result is shown against it and against cash.
 - **Backtest conventions:** decide at bar t's close, fill at bar t+1's open; annualise
   with 365 days; risk-free rate 0; returns measured daily at 00:00 UTC for every
   strategy; each run stores config fingerprint, git commit and dirty flag; engine
   parity is tested on a large account (the vectorised engine can't model minimums).
 - **Metrics.** Headline row on every backtest, in this order:
-  return vs BTC buy-and-hold · Sharpe with 95% CI and probabilistic Sharpe (P(true
+  return vs buy-and-hold of the same market · Sharpe with 95% CI and probabilistic Sharpe (P(true
   SR > 0)) · net expectancy per trade with 95% CI · max drawdown + longest time
   underwater · break-even cost vs actual cost (bps per trade) · number of trades
   (with a warning when it is too few to trust).
@@ -140,11 +142,13 @@ Agreed with Luke; don't re-litigate without a reason.
 - **Research assistant (built):** Claude (`claude-opus-5-5`) sees the note, code and
   conversation only, never results, metrics or the trial log. Keep it that way: never
   add a results tool or pass run data into `ResearchAssistant.reply`.
-- **First research strategy: `structure-pullback`** (`kestrel.strategies.structure`),
-  Luke's pick from Craig Percoco's video. Its note (`research/strategies/structure-
-  pullback-craig-percoco-setup`) is a draft for Luke to edit and freeze. **Never run it on
-  market data before the note is frozen**; only its synthetic unit tests. Its
-  falsification test needs BTCUSDT and ETHUSDT 4h ingested for 2020-01..2025-10.
+- **First research strategy: `structure-pullback` — REJECTED 2026-11-05.**
+  (`kestrel.strategies.structure`; note in `research/strategies/structure-pullback-craig-
+  percoco-setup`.) Pre-registered test on BTC+ETH 4h, 2020-01..2025-10: 160 trades,
+  expectancy +0.057R, P(>0) 63% < 90% required. Don't rescue it by tuning (a 3R target,
+  other swing lengths, "BTC only"): those choices would come from seeing these results.
+  A genuinely new reason means a new note version, and its runs count as new trials. The
+  code stays as a worked example of a research strategy.
 - **Parked, P3+: multi-strategy portfolios.** Strategies emit *target positions*, never
   orders; an allocator owns the wallet, resolves conflicts and nets orders before the
   `ExecutionVenue`. Build P2 around this so single-strategy is a portfolio of one.

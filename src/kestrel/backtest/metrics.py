@@ -230,7 +230,7 @@ def _r_lines(m: Metrics) -> list[str]:
     ]
 
 
-def _analysis_lines(a: Analysis) -> list[str]:
+def _analysis_lines(a: Analysis, asset: str) -> list[str]:
     def p(x: float | None) -> str:
         return "n/a" if x is None else f"{x:+.0%}"
 
@@ -256,8 +256,8 @@ def _analysis_lines(a: Analysis) -> list[str]:
         )
     if a.beta is not None and a.correlation is not None:
         lines.append(
-            f"  vs BTC            beta {a.beta:.2f}, correlation {a.correlation:.2f}; BTC at the "
-            f"same exposure {p(a.matched_btc_return)}"
+            f"  vs {asset:<14} beta {a.beta:.2f}, correlation {a.correlation:.2f}; {asset} at "
+            f"the same exposure {p(a.matched_btc_return)}"
         )
     lines.append(
         f"  Tails             worst day {a.worst_day:.1%}, worst month {a.worst_month:.1%}, "
@@ -306,7 +306,7 @@ def format_report(result: BacktestResult, m: Metrics, analysis: Analysis | None 
         f"  Simulator         {m.rejections} rejected orders, {m.band_skips} rebalances "
         "skipped by the no-trade band",
         "",
-        *(_analysis_lines(analysis) if analysis else []),
+        *(_analysis_lines(analysis, result.asset) if analysis else []),
         f"  Config {result.config_fingerprint}  ·  code {version}"
         + ("  ·  HOLDOUT DATA USED" if result.used_holdout else ""),
         "  Confidence intervals assume this was the only strategy tried.",

@@ -202,3 +202,19 @@ def test_break_even_trades_do_not_break_the_payoff_ratio() -> None:
     assert sorted(float(t.r_multiple) for t in r.trades) == [0.0, 3.0]
     a = analyse(r, run_backtest(BuyAndHold(), frame, D1, config(costs=False), Decimal(1000)))
     assert a.payoff_ratio is None
+
+
+def test_an_eth_run_is_compared_with_holding_eth() -> None:
+    # Regression: the report said "vs BTC" for every market.
+    from kestrel.backtest.metrics import compute_metrics, format_report
+    from kestrel.config import parse_config
+
+    doc = config(costs=False, band=0).document
+    cfg = parse_config({**doc, "instruments": {"ETHUSDT": doc["instruments"]["BTCUSDT"]}})
+    frame = rising()
+    r = run_backtest(FixedWeights([0.5] * frame.height, "ETHUSDT"), frame, D1, cfg, Decimal(1000))
+    b = run_backtest(BuyAndHold("ETHUSDT"), frame, D1, cfg, Decimal(1000))
+    assert r.asset == "ETH"
+    report = format_report(r, compute_metrics(r), analyse(r, b))
+    assert "vs ETH" in report
+    assert "BTC" not in report

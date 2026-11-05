@@ -62,7 +62,8 @@ class Analysis:
     beta: float | None
     correlation: float | None
     matched_btc_return: float
-    """BTC held at the strategy's average exposure, rebalanced daily, no costs."""
+    """The benchmark's asset held at the strategy's average exposure, rebalanced daily,
+    no costs. (Field names say "btc"; for an ETH run this is ETH.)"""
     # Living with it
     worst_day: float
     worst_month: float
@@ -145,7 +146,7 @@ def analyse(
     per_rt = 2 * m.total_costs / traded * 1e4 if traded > 0 else None
     break_even = max(0.0, 2 * gross / traded * 1e4) if traded > 0 else None
 
-    # Against BTC.
+    # Against the benchmark: buy-and-hold of the same market.
     bench = daily_equity(benchmark).with_columns(btc=pl.col("equity").pct_change())
     joined = daily.join(bench.select("close_time", "btc"), on="close_time").drop_nulls(
         ["ret", "btc"]

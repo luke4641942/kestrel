@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { MAX_LABELLED_TRADES, costHeadroom, money, span, trackRecord, tradeMarkers, verdict } from "./summary";
+import { MAX_LABELLED_TRADES, costHeadroom, heldAsset, money, span, trackRecord, tradeMarkers, verdict } from "./summary";
 import { run, trade } from "./test/fixtures";
 
 describe("verdict", () => {
@@ -124,5 +124,25 @@ describe("costHeadroom", () => {
     [184, 22, "Robust: costs could rise 8x"],
   ])("break-even %s vs paying %s", (be, paying, text) => {
     expect(costHeadroom(be, paying)).toContain(text);
+  });
+});
+
+describe("the benchmark is the run's own market", () => {
+  // Regression: an ETHUSDT run said "holding BTC" while comparing with holding ETH.
+  it("names the asset from the symbol", () => {
+    expect(heldAsset({ symbol: "ETHUSDT", account_currency: "USDT" })).toBe("ETH");
+    expect(heldAsset({ symbol: "BTCUSDT", account_currency: "USDT" })).toBe("BTC");
+    expect(heldAsset({ symbol: "ODDPAIR", account_currency: "USDT" })).toBe("ODDPAIR");
+  });
+
+  it("says ETH in an ETH run's verdict", () => {
+    const eth = run({ symbol: "ETHUSDT" }, { final_equity: 295.22 }, 9740.42);
+    expect(verdict(eth).headline).toBe("Lost money: 34.78 USDT down after costs.");
+    const better = run({ symbol: "ETHUSDT" }, { final_equity: 400 }, 9740.42);
+    expect(verdict(better).headline).toBe("Made money, but less than just holding ETH (9,410.42 USDT).");
+    expect(verdict(run({ symbol: "ETHUSDT" }, { final_equity: 9800 }, 9740.42)).headline).toContain("Beat holding ETH");
+    expect(verdict(run({ symbol: "ETHUSDT", strategy: "buy-and-hold" }, { final_equity: 9740.42 })).headline).toContain(
+      "simply holding ETH",
+    );
   });
 });

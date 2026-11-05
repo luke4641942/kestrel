@@ -132,8 +132,15 @@ class BacktestResult:
     config_fingerprint: str = ""
     code: CodeVersion | None = None
     engine: Literal["event", "vectorised"] = "event"
+    account_currency: str = "USDT"
     summary: CostSummary | None = None
     """Set by the vectorised engine, which has no individual fills to sum."""
+
+    @property
+    def asset(self) -> str:
+        """What the benchmark holds: the symbol without its quote currency (ETHUSDT -> ETH)."""
+        cur = self.account_currency
+        return self.symbol[: -len(cur)] if cur and self.symbol.endswith(cur) else self.symbol
 
     @property
     def final_equity(self) -> Decimal:
@@ -163,6 +170,7 @@ def run_backtest(
         used_holdout=used_holdout,
         config_fingerprint=config.fingerprint(),
         code=code_version(),
+        account_currency=config.account_currency,
     )
     if isinstance(strategy, BracketStrategy):
         result.style = "brackets"

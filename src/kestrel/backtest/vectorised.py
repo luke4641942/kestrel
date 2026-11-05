@@ -136,6 +136,7 @@ def run_vectorised(
         config_fingerprint=config.fingerprint(),
         code=code_version(),
         engine="vectorised",
+        account_currency=config.account_currency,
         summary=CostSummary(
             fees=totals["fees"],
             spread_costs=totals["spread"],

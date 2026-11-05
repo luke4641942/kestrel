@@ -5,7 +5,7 @@ import { ParamInputs, defaultParams } from "../components/ParamInputs";
 import { Empty, PageHeader, Panel, Section, Stat, Status } from "../components/ui";
 import { ago, dateTime, lastResearchMonth, num } from "../format";
 import { useResource } from "../hooks";
-import { costHeadroom, money, span, trackRecord, tradeMarkers, usdt, verdict, MAX_LABELLED_TRADES } from "../summary";
+import { costHeadroom, heldAsset, money, span, trackRecord, tradeMarkers, usdt, verdict, MAX_LABELLED_TRADES } from "../summary";
 
 const pct = (x: number | null | undefined, digits = 1) =>
   x === null || x === undefined ? "n/a" : `${x >= 0 ? "+" : ""}${(x * 100).toFixed(digits)}%`;
@@ -50,7 +50,7 @@ export function Backtests({ jobs, onJobStarted }: { jobs: Job[]; onJobStarted: (
     <>
       <PageHeader
         title="Backtests"
-        subtitle="Strategies run through the event-driven engine, after costs, against BTC buy-and-hold on the same bars."
+        subtitle="Strategies run through the event-driven engine, after costs, against buy-and-hold of the same market on the same bars."
       />
 
       <Section title="New backtest">
@@ -225,7 +225,9 @@ function RunsTable({
             <th>Market</th>
             <th>Period</th>
             <th className="num">Net profit</th>
-            <th className="num">vs holding BTC</th>
+            <th className="num" title="Net profit minus what buy-and-hold of the same market made">
+              vs buy-and-hold
+            </th>
             <th className="num">Sharpe</th>
             <th className="num">Max drawdown</th>
             <th className="num">Trades</th>
@@ -316,7 +318,7 @@ function RunView({ id }: { id: string }) {
               </span>
               <span>
                 <i className="swatch swatch-dashed" />
-                BTC buy-and-hold
+                {heldAsset(r)} buy-and-hold
               </span>
             </span>
           </div>
@@ -403,6 +405,7 @@ const prob = (x: number | null | undefined) => (x === null || x === undefined ? 
 function AnalysisPanels({ run: r, analysis: a }: { run: RunDetail; analysis: Analysis }) {
   const [lo, hi] = a.return_ci;
   const cur = r.account_currency;
+  const asset = heldAsset(r);
   const isBenchmark = r.strategy === "buy-and-hold";
   const buckets = Object.entries(a.holding_buckets);
   const sold = buckets.reduce((s, [, n]) => s + n, 0);
@@ -441,9 +444,9 @@ function AnalysisPanels({ run: r, analysis: a }: { run: RunDetail; analysis: Ana
               ...(isBenchmark
                 ? []
                 : ([
-                    ["Moves with BTC (beta)", plain(a.beta)],
-                    ["Correlation with BTC", plain(a.correlation)],
-                    ["BTC held at the same exposure", pct(a.matched_btc_return, 0)],
+                    [`Moves with ${asset} (beta)`, plain(a.beta)],
+                    [`Correlation with ${asset}`, plain(a.correlation)],
+                    [`${asset} held at the same exposure`, pct(a.matched_btc_return, 0)],
                   ] as [string, string][])),
             ]}
           />
@@ -474,7 +477,7 @@ function AnalysisPanels({ run: r, analysis: a }: { run: RunDetail; analysis: Ana
               <tr>
                 <th>Year</th>
                 <th className="num">Strategy</th>
-                <th className="num">Holding BTC</th>
+                <th className="num">Holding {asset}</th>
               </tr>
             </thead>
             <tbody>
@@ -586,7 +589,7 @@ function TradesPanel({ run }: { run: RunDetail }) {
   );
 }
 
-/** The plain-English answer: did it make money, did it beat holding BTC, can we trust it? */
+/** The plain-English answer: did it make money, did it beat holding the same market, can we trust it? */
 function Verdict({ run: r }: { run: RunDetail }) {
   const m = r.metrics;
   const start = Number(r.initial_cash);
@@ -606,7 +609,7 @@ function Verdict({ run: r }: { run: RunDetail }) {
           note={`${pct(m.total_return)} on ${usdt(start)} ${cur}, after all costs`}
         />
         <Stat
-          label="Compared with holding BTC"
+          label={`Compared with holding ${heldAsset(r)}`}
           value={
             isBenchmark ? (
               "—"
@@ -616,7 +619,7 @@ function Verdict({ run: r }: { run: RunDetail }) {
               </span>
             )
           }
-          note={`Holding BTC: ${money(btcProfit)} ${cur}`}
+          note={`Holding ${heldAsset(r)}: ${money(btcProfit)} ${cur}`}
         />
         <Stat label="Test period" value={span(m.start, m.end)} note={`${m.start.slice(0, 10)} to ${m.end.slice(0, 10)}`} />
         <Stat
@@ -649,7 +652,7 @@ function Headline({ run }: { run: RunDetail }) {
         <Stat
           label="Yearly return"
           value={pct(m.cagr)}
-          note={`Holding BTC: ${pct(b.cagr)} a year`}
+          note={`Holding ${heldAsset(run)}: ${pct(b.cagr)} a year`}
         />
         <Stat
           label="Sharpe"
@@ -686,7 +689,7 @@ function MetricsLedger({ m, b }: { m: Metrics; b: Metrics }) {
         <tr>
           <th />
           <th className="num">Strategy</th>
-          <th className="num">BTC</th>
+          <th className="num">Buy-and-hold</th>
         </tr>
       </thead>
       <tbody>
