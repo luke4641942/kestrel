@@ -184,3 +184,9 @@ def test_missing_note_version(store: ResearchStore) -> None:
     slug = store.create("Trend").slug
     with pytest.raises(KeyError):
         store.note(slug, 7)
+
+
+def test_long_names_are_cut_at_a_word_boundary(store: ResearchStore) -> None:
+    slug = store.create("Horizontal level retest (resistance becomes support)").slug
+    assert slug == "horizontal-level-retest-resistance-becomes"
+    assert len(slug) <= 48

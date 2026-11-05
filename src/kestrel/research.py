@@ -127,7 +127,10 @@ class ResearchStore:
         name = name.strip()
         if not name:
             raise ResearchError("give the strategy a name")
-        slug = re.sub(r"[^a-z0-9]+", "-", name.lower()).strip("-")[:48] or "strategy"
+        slug = re.sub(r"[^a-z0-9]+", "-", name.lower()).strip("-")
+        if len(slug) > 48:  # cut at a word boundary, not mid-word
+            slug = slug[:49].rsplit("-", 1)[0]
+        slug = slug or "strategy"
         base, n = slug, 2
         while (self._dir(slug) / "strategy.json").exists():
             slug, n = f"{base}-{n}", n + 1
