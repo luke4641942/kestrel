@@ -149,6 +149,14 @@ Agreed with Luke; don't re-litigate without a reason.
   other swing lengths, "BTC only"): those choices would come from seeing these results.
   A genuinely new reason means a new note version, and its runs count as new trials. The
   code stays as a worked example of a research strategy.
+- **Chart-pattern batch (built 2026-11-05, not yet run).** Four research notes:
+  level retest, rising trendline bounce, falling trendline breakout, falling wedge
+  breakout (`kestrel.strategies.levels`, `.trendlines`, shared `.geometry`). Each names a
+  comparison it must beat: kind `"control"` (`level-breakout`, `swing-pullback`), or the
+  existing `channel-breakout` / `trendline-breakout`. Swings only count once confirmed
+  (k bars later); that is the whole lookahead defence for lines, keep it. Tested on
+  hand-built paths only. Four ideas tried at once means four trials: a single pass among
+  them is weaker evidence than it looks until P3's deflated Sharpe.
 - **Parked, P3+: multi-strategy portfolios.** Strategies emit *target positions*, never
   orders; an allocator owns the wallet, resolves conflicts and nets orders before the
   `ExecutionVenue`. Build P2 around this so single-strategy is a portfolio of one.

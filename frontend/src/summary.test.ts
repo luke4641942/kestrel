@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { MAX_LABELLED_TRADES, costHeadroom, heldAsset, money, span, trackRecord, tradeMarkers, verdict } from "./summary";
+import { KIND_LABEL, MAX_LABELLED_TRADES, costHeadroom, heldAsset, money, span, trackRecord, tradeMarkers, verdict } from "./summary";
 import { run, trade } from "./test/fixtures";
 
 describe("verdict", () => {
@@ -144,5 +144,12 @@ describe("the benchmark is the run's own market", () => {
     expect(verdict(run({ symbol: "ETHUSDT", strategy: "buy-and-hold" }, { final_equity: 9740.42 })).headline).toContain(
       "simply holding ETH",
     );
+  });
+});
+
+describe("KIND_LABEL", () => {
+  it("calls a control strategy a comparison", () => {
+    expect(KIND_LABEL.control).toBe("comparison");
+    expect(KIND_LABEL["engine-test"]).toBe("engine test");
   });
 });

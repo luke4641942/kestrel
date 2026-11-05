@@ -132,7 +132,7 @@ export interface ParamInfo {
   description: string;
 }
 
-export type StrategyKind = "benchmark" | "engine-test" | "research";
+export type StrategyKind = "benchmark" | "engine-test" | "research" | "control";
 
 export interface StrategyInfo {
   key: string;

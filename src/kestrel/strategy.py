@@ -21,7 +21,14 @@ from typing import Literal, Protocol, runtime_checkable
 
 import polars as pl
 
+from kestrel.strategies.levels import LevelBreakout, LevelRetest
 from kestrel.strategies.structure import StructurePullback
+from kestrel.strategies.trendlines import (
+    SwingPullback,
+    TrendlineBounce,
+    TrendlineBreakout,
+    WedgeBreakout,
+)
 
 
 class LookaheadError(ValueError):
@@ -138,7 +145,7 @@ class Param:
 @dataclass(frozen=True)
 class StrategySpec:
     key: str
-    kind: Literal["benchmark", "engine-test", "research"]
+    kind: Literal["benchmark", "engine-test", "research", "control"]
     description: str
     factory: Callable[..., Strategy | BracketStrategy]
     params: tuple[Param, ...] = ()
@@ -176,6 +183,151 @@ STRATEGIES: dict[str, StrategySpec] = {
                 Param("swing_bars", 3, 1, 6, "Bars each side that make a swing point"),
                 Param("target_r", 4, 2, 8, "Target as a multiple of the risk to the stop"),
                 Param("expiry_bars", 30, 5, 120, "Bars a setup waits for its pullback"),
+            ),
+        ),
+        StrategySpec(
+            "level-retest",
+            "research",
+            "Break of a horizontal level made of two or more swing highs, then a "
+            "retest that holds; stop below the level, fixed-R target. Research: runs only "
+            "through its frozen note.",
+            LevelRetest,
+            (
+                Param("swing_bars", 3, 1, 6, "Bars each side that make a swing point"),
+                Param(
+                    "level_tol_atr_pct",
+                    50,
+                    10,
+                    200,
+                    "Swing highs within this % of an ATR form one level",
+                ),
+                Param(
+                    "breakout_atr_pct",
+                    50,
+                    0,
+                    200,
+                    "Close this % of an ATR beyond the level or line",
+                ),
+                Param(
+                    "touch_atr_pct",
+                    25,
+                    0,
+                    100,
+                    "A retest's low comes within this % of an ATR of the level",
+                ),
+                Param("retest_bars", 30, 3, 120, "Bars a breakout waits for its retest"),
+                Param("lookback_bars", 120, 20, 500, "Bars back a level's swing highs may be"),
+                Param("target_r", 3, 1, 8, "Target as a multiple of the risk to the stop"),
+            ),
+        ),
+        StrategySpec(
+            "level-breakout",
+            "control",
+            "The level retest's comparison: buy the breakout close itself, without "
+            "waiting for a retest. The retest has to beat this.",
+            LevelBreakout,
+            (
+                Param("swing_bars", 3, 1, 6, "Bars each side that make a swing point"),
+                Param(
+                    "level_tol_atr_pct",
+                    50,
+                    10,
+                    200,
+                    "Swing highs within this % of an ATR form one level",
+                ),
+                Param(
+                    "breakout_atr_pct",
+                    50,
+                    0,
+                    200,
+                    "Close this % of an ATR beyond the level or line",
+                ),
+                Param("lookback_bars", 120, 20, 500, "Bars back a level's swing highs may be"),
+                Param("target_r", 3, 1, 8, "Target as a multiple of the risk to the stop"),
+            ),
+        ),
+        StrategySpec(
+            "trendline-bounce",
+            "research",
+            "In an uptrend (rising swing highs and lows), buy a touch of the rising line "
+            "through the last two swing lows that closes above it; stop below the line, "
+            "fixed-R target. Research: runs only through its frozen note.",
+            TrendlineBounce,
+            (
+                Param("swing_bars", 3, 1, 6, "Bars each side that make a swing point"),
+                Param(
+                    "touch_atr_pct",
+                    25,
+                    0,
+                    100,
+                    "A touch's low comes within this % of an ATR of the line",
+                ),
+                Param("stop_atr_pct", 100, 10, 300, "Stop this % of an ATR below the line"),
+                Param("target_r", 3, 1, 8, "Target as a multiple of the risk to the stop"),
+            ),
+        ),
+        StrategySpec(
+            "swing-pullback",
+            "control",
+            "The trendline bounce's comparison: the same uptrend, buying a pullback near "
+            "the last swing low with no line drawn. The bounce has to beat this.",
+            SwingPullback,
+            (
+                Param("swing_bars", 3, 1, 6, "Bars each side that make a swing point"),
+                Param(
+                    "pullback_atr_pct",
+                    150,
+                    10,
+                    400,
+                    "A pullback's low comes within this % of an ATR of the swing low",
+                ),
+                Param("stop_atr_pct", 100, 10, 300, "Stop this % of an ATR below the swing low"),
+                Param("target_r", 3, 1, 8, "Target as a multiple of the risk to the stop"),
+            ),
+        ),
+        StrategySpec(
+            "trendline-breakout",
+            "research",
+            "Buy a close above the falling line through the last two swing highs; stop at "
+            "the lowest low since the second swing high, fixed-R target. Compared with the "
+            "channel breakout. Research: runs only through its frozen note.",
+            TrendlineBreakout,
+            (
+                Param("swing_bars", 3, 1, 6, "Bars each side that make a swing point"),
+                Param(
+                    "breakout_atr_pct",
+                    50,
+                    0,
+                    200,
+                    "Close this % of an ATR beyond the level or line",
+                ),
+                Param("target_r", 3, 1, 8, "Target as a multiple of the risk to the stop"),
+            ),
+        ),
+        StrategySpec(
+            "wedge-breakout",
+            "research",
+            "Buy a close above the upper line of a falling wedge (two falling, converging "
+            "lines); stop at the last swing low, fixed-R target. Compared with the trendline "
+            "breakout. Research: runs only through its frozen note.",
+            WedgeBreakout,
+            (
+                Param("swing_bars", 3, 1, 6, "Bars each side that make a swing point"),
+                Param(
+                    "converge_pct",
+                    60,
+                    10,
+                    95,
+                    "The lines' gap narrows to at most this % of where it started",
+                ),
+                Param(
+                    "breakout_atr_pct",
+                    50,
+                    0,
+                    200,
+                    "Close this % of an ATR beyond the level or line",
+                ),
+                Param("target_r", 3, 1, 8, "Target as a multiple of the risk to the stop"),
             ),
         ),
         StrategySpec(
@@ -229,11 +381,12 @@ def make_strategy(
 def strategy_source(key: str) -> str:
     """The implementation's source code, for display. What the backtester runs.
 
-    Research strategies live in their own modules under kestrel.strategies, whose
-    docstring states the rules, so the whole module is shown."""
+    Research strategies (and the controls they are compared with) live in their own
+    modules under kestrel.strategies, whose docstring states the rules, so the whole
+    module is shown."""
     spec = spec_for(key)
     module = inspect.getmodule(spec.factory)
-    if spec.kind == "research" and module is not None:
+    if spec.kind in ("research", "control") and module is not None:
         return inspect.getsource(module)
     return inspect.getsource(spec.factory)
 

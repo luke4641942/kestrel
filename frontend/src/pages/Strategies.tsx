@@ -13,6 +13,7 @@ import { ParamInputs, defaultParams } from "../components/ParamInputs";
 import { SignalsChart } from "../components/SignalsChart";
 import { Empty, PageHeader, Panel, Status, type Tone } from "../components/ui";
 import { ago, dateTime, lastResearchMonth } from "../format";
+import { KIND_LABEL } from "../summary";
 import { useResource } from "../hooks";
 
 const STATUS: Record<ResearchStatus, { tone: Tone; label: string }> = {
@@ -25,7 +26,6 @@ const STATUS: Record<ResearchStatus, { tone: Tone; label: string }> = {
   rejected: { tone: "bad", label: "Rejected" },
 };
 
-const KIND_LABEL = { benchmark: "benchmark", "engine-test": "engine test", research: "research" } as const;
 
 /** The slug in `#/strategies/<slug>`, if any. */
 function slugFromHash(): string | undefined {

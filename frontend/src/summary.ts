@@ -1,6 +1,6 @@
 // Plain logic behind the Backtests page: the verdict, the test-period wording and the
 // chart's trade markers. Kept out of components so it can be tested directly.
-import type { RunDetail } from "./api";
+import type { RunDetail, StrategyKind } from "./api";
 import type { TradeMarker } from "./components/EquityChart";
 
 export const usdt = (x: number, digits = 2) =>
@@ -8,6 +8,15 @@ export const usdt = (x: number, digits = 2) =>
 
 /** Signed money: "+1.63", "−440.08" (a true minus sign, not a hyphen). */
 export const money = (x: number) => `${x >= 0 ? "+" : "−"}${usdt(Math.abs(x))}`;
+
+/** How each kind of strategy is named in lists. A control is the plainer strategy a
+ * research idea has to beat, so it is called a comparison. */
+export const KIND_LABEL: Record<StrategyKind, string> = {
+  benchmark: "benchmark",
+  "engine-test": "engine test",
+  research: "research",
+  control: "comparison",
+};
 
 export type VerdictTone = "ok" | "warn" | "bad" | "neutral";
 

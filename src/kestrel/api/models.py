@@ -296,7 +296,7 @@ class ParamOut(BaseModel):
 class StrategyOut(BaseModel):
     key: str
     kind: str
-    """benchmark, engine-test or research."""
+    """benchmark, engine-test, research or control."""
     description: str
     params: list[ParamOut]
 
