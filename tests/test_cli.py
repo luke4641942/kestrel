@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import re
 from datetime import UTC, datetime
 from pathlib import Path
 
@@ -15,6 +16,16 @@ from kestrel.data.store import ParquetStore
 from tests.conftest import ArchiveFactory, checksum_for
 
 runner = CliRunner()
+
+
+def plain(output: str) -> str:
+    """CLI output without colour codes, error-box borders or line wrapping.
+
+    On CI the CLI's error box is coloured and wrapped at 80 columns, which splits long
+    messages across lines; tests should check the message, not the terminal layout."""
+    text = re.sub(r"\x1b\[[0-9;]*m", "", output)
+    text = re.sub(r"[│╭╮╰╯─]", " ", text)
+    return " ".join(text.split())
 
 
 def test_check_passes_on_clean_data(tmp_path: Path, make_archive: ArchiveFactory) -> None:
@@ -89,7 +100,7 @@ def test_backtest_unknown_strategy(tmp_path: Path) -> None:
     args = ["backtest", "BTCUSDT", "--start", "2024-01", "--end", "2024-01", "--strategy", "magic"]
     result = runner.invoke(app, [*args, "--data-dir", str(tmp_path)])
     assert result.exit_code == 2
-    assert "unknown strategy 'magic'" in result.output
+    assert "unknown strategy 'magic'" in plain(result.output)
 
 
 def test_serve_passes_data_and_config_to_the_server(
@@ -221,7 +232,7 @@ def test_backtest_bad_params(
     args = _hourly_store(tmp_path, make_archive)
     result = runner.invoke(app, [*args, "--strategy", "ma-trend", "--param", param])
     assert result.exit_code == 2
-    assert message in result.output
+    assert message in plain(result.output)
 
 
 def test_backtest_research_requires_a_frozen_note(
@@ -234,7 +245,7 @@ def test_backtest_research_requires_a_frozen_note(
     slug = notes.create("Trend").slug
     refused = runner.invoke(app, [*args, "--research", slug])
     assert refused.exit_code == 2
-    assert "freeze" in refused.output
+    assert "freeze" in plain(refused.output)
 
     notes.edit(slug, 1, {k: "x" for k in SECTIONS}, "ma-trend")
     notes.freeze(slug, 1)
