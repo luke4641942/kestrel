@@ -391,7 +391,7 @@ def create_app(
         def run(ctx: JobContext) -> dict[str, Any]:
             ctx.log(f"Backtesting {key} {params or ''} on {req.symbol} {req.interval.value}")
             if link:
-                ctx.log(f"Logged as a trial of {link[0]} v{link[1]}")
+                ctx.log(f"A trial of {link[0]} v{link[1]}: logged once the run is saved")
             ctx.progress(0.1, "Running strategy and benchmark")
             try:
                 config = load_config(config_path)
@@ -404,6 +404,8 @@ def create_app(
                 research.mark_backtested(*link)
             m = outcome.metrics
             ctx.log(f"Saved run {run_id}: return {m.total_return:+.2%}, {m.trades} trades")
+            if link:
+                ctx.log(f"Logged as a trial of {link[0]} v{link[1]}")
             return {"run_id": run_id}
 
         job = jobs.submit("backtest", {**req.model_dump(mode="json"), "strategy": key}, run)

@@ -164,3 +164,35 @@ def test_the_api_runs_and_serves_a_universe_run(tmp_path: Path) -> None:
     )
     detail = client.get(f"/api/backtests/{run['id']}").json()
     assert {f["side"] for f in detail["fills"]} <= {"buy", "sell"}
+
+
+def test_a_failed_trial_is_not_logged_and_does_not_say_it_was(tmp_path: Path) -> None:
+    # Regression: the job log said "Logged as a trial" before running; when the universe
+    # was missing the run failed and nothing was logged, but the log claimed otherwise.
+    client = TestClient(
+        create_app(tmp_path, static_dir=None, config_path=REPO_CONFIG, research_dir=tmp_path / "r")
+    )
+    note = client.post("/api/research", json={"name": "Momentum"}).json()
+    sections = {k: "x" for k in note["sections"]}
+    client.put(
+        f"/api/research/{note['slug']}/notes/1",
+        json={"sections": sections, "implementation": "xs-momentum"},
+    )
+    client.post(f"/api/research/{note['slug']}/notes/1/freeze")
+    body = {
+        "strategy": "xs-momentum",
+        "symbol": "UNIVERSE",
+        "interval": "1d",
+        "start": "2023-01",
+        "end": "2023-12",
+        "research": note["slug"],
+    }
+    job = client.post("/api/jobs/backtest", json=body).json()
+    deadline = time.monotonic() + 10
+    while not job["finished_at"] and time.monotonic() < deadline:
+        time.sleep(0.05)
+        job = client.get(f"/api/jobs/{job['id']}").json()
+    assert job["status"] == "failed"
+    assert "ingest-universe" in job["error"]
+    assert not any(line.split(" ", 1)[1].startswith("Logged as a trial") for line in job["logs"])
+    assert client.get(f"/api/research/{note['slug']}").json()["trials"] == 0
