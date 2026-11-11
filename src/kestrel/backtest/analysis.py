@@ -58,7 +58,9 @@ class Analysis:
     """Profit before costs."""
     cost_per_round_trip_bps: float | None
     break_even_cost_bps: float | None
-    """Cost per round trip at which the net profit would be zero."""
+    """Cost per round trip at which the net profit would be zero. Linear in the notional
+    actually traded: it ignores that different costs would have compounded into
+    different position sizes later, so read it as an estimate."""
     beta: float | None
     correlation: float | None
     matched_btc_return: float

@@ -125,6 +125,7 @@ def test_open_trades_are_closed_at_the_final_close() -> None:
     result = run(frame)
     (t,) = result.trades
     assert t.exit_reason == "end of data"
+    assert t.exit_time == frame["open_time"][-1] + timedelta(hours=4)  # the final close
     assert t.exit_price == D(108)
     assert t.r_multiple == D("1.6")  # 8 points gained per unit over 5 points of risk
     assert result.equity["position"][-1] == 0

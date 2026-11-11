@@ -343,7 +343,7 @@ def create_app(
             req.interval,
             datetime(first.year, first.month, 1, tzinfo=UTC),
             datetime(after.year, after.month, 1, tzinfo=UTC),
-        ).tail(MAX_BARS)
+        )
         if bars.is_empty():
             raise HTTPException(status.HTTP_404_NOT_FOUND, "no stored bars in that range")
         try:
@@ -354,8 +354,12 @@ def create_app(
                 kind, weights = "weights", validated_weights(strategy, bars)
         except ValueError as e:
             raise HTTPException(422, str(e)) from None
+        # Computed on the whole range, exactly as a backtest would; only drawing is capped.
+        total = bars.height
+        bars, weights = bars.tail(MAX_BARS), weights.tail(MAX_BARS)
         return Signals(
             kind=kind,
+            total_bars=total,
             time=bars["open_time"].dt.epoch("s").to_list(),
             open=bars["open"].to_list(),
             high=bars["high"].to_list(),

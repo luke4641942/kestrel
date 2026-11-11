@@ -56,7 +56,8 @@ class HoldoutError(Exception):
 @dataclass(frozen=True)
 class FillRecord:
     time: datetime
-    """Open time of the bar the order filled at."""
+    """When the order filled: a bar's open, or the final bar's close for a trade closed
+    at the end of the data."""
     fill: Fill
 
 
@@ -380,13 +381,14 @@ def _run_brackets(
     if open_trade is not None:
         last = bars.height - 1
         final = closes[last]
+        closed_at = times[last] + result.interval.duration  # sold at the close, not the open
         venue.set_market(symbol, final, volumes[last])
         sell = venue.submit_market(symbol, Side.SELL, venue.position(symbol))
         if isinstance(sell, Fill):
-            close_trade(open_trade, sell, times[last], "end of data")
+            close_trade(open_trade, sell, closed_at, "end of data")
             rows[-1] = (venue.cash(), venue.cash(), venue.position(symbol))
         else:
-            result.rejections.append(RejectionRecord(times[last], sell))
+            result.rejections.append(RejectionRecord(closed_at, sell))
     return rows
 
 

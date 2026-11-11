@@ -3,6 +3,7 @@ import {
   ColorType,
   LineSeries,
   LineStyle,
+  PriceScaleMode,
   createChart,
   createSeriesMarkers,
   type IChartApi,
@@ -44,6 +45,8 @@ function withAlpha(hex: string, alpha: number): string {
 
 /**
  * Strategy equity against the benchmark, with both drawdowns in a pane underneath.
+ * Equity uses a log scale: a strategy and a benchmark that grew 15-fold can only share a
+ * linear axis by flattening one of them.
  * Same lifetime model as CandleChart: one chart per mount; data or theme changes only
  * update options and series data.
  */
@@ -85,13 +88,11 @@ export function EquityChart({
       priceFormat: money,
     });
     const equityLine = chart.addSeries(LineSeries, { ...common, lineWidth: 2, priceFormat: money });
+    equityLine.priceScale().applyOptions({ mode: PriceScaleMode.Logarithmic });
     const pctFormat = { type: "custom" as const, formatter: pct, minMove: 0.0001 };
     const drawdown = chart.addSeries(AreaSeries, { ...common, lineWidth: 1, priceFormat: pctFormat }, 1);
-    const benchmarkDrawdown = chart.addSeries(
-      LineSeries,
-      { ...common, lineWidth: 1, lineStyle: LineStyle.Dashed, priceFormat: pctFormat },
-      1,
-    );
+    // Solid, not dashed: on hourly bars a dashed line breaks into a comb of spikes.
+    const benchmarkDrawdown = chart.addSeries(LineSeries, { ...common, lineWidth: 1, priceFormat: pctFormat }, 1);
     chart.panes()[1]?.setHeight(130);
     handles.current = {
       chart,
@@ -127,7 +128,7 @@ export function EquityChart({
     h.equity.applyOptions({ color: text });
     h.benchmark.applyOptions({ color: muted });
     h.drawdown.applyOptions({ lineColor: down, topColor: withAlpha(down, 0.05), bottomColor: withAlpha(down, 0.3) });
-    h.benchmarkDrawdown.applyOptions({ color: muted });
+    h.benchmarkDrawdown.applyOptions({ color: withAlpha(muted, 0.6) });
 
     const points = (s: EquitySeries, key: "equity" | "drawdown") =>
       s.time.map((t, i) => ({ time: t as UTCTimestamp, value: s[key][i]! }));

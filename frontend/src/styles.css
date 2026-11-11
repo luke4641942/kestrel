@@ -510,8 +510,75 @@ p {
   border-bottom: 0;
 }
 
-.table.nowrap td {
+.table.nowrap td,
+.table .nw {
   white-space: nowrap;
+}
+
+/* Wide tables scroll inside their panel instead of running off the page. */
+.table-wrap {
+  overflow-x: auto;
+}
+
+.table-more {
+  display: flex;
+  align-items: baseline;
+  gap: 12px;
+  padding: 10px 16px;
+  border-top: 1px solid var(--line);
+}
+
+.runs-table .run-name {
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+.cell-sub.truncate {
+  max-width: 340px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* ---------- tabs ---------- */
+
+.tabs {
+  display: flex;
+  gap: 24px;
+  border-bottom: 1px solid var(--line);
+  overflow-x: auto;
+}
+
+.tabs button {
+  padding: 10px 0;
+  margin-bottom: -1px;
+  border: 0;
+  border-bottom: 2px solid transparent;
+  background: none;
+  color: var(--text-2);
+  font: inherit;
+  font-size: 13.5px;
+  font-weight: 500;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.tabs button:hover {
+  color: var(--text);
+}
+
+.tabs button.active {
+  color: var(--text);
+  border-bottom-color: var(--text);
+}
+
+.tabs button:focus-visible {
+  outline: 2px solid var(--text-3);
+  outline-offset: 2px;
+}
+
+.tab-body {
+  margin-top: 16px;
 }
 
 .table .num {
@@ -799,6 +866,13 @@ p {
   gap: 16px;
 }
 
+/* Grid children default to their content's width; the chart canvas would then push the
+   page wider than a phone screen. */
+.run-stack > *,
+.run-grid > * {
+  min-width: 0;
+}
+
 .run-grid {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -885,6 +959,21 @@ p {
 
 .stats-5 {
   grid-template-columns: repeat(5, minmax(0, 1fr));
+}
+
+/* Eight headline numbers: two rows of four. */
+.stats-8 .stat:nth-child(5) {
+  border-left: 0;
+}
+
+.stats-8 .stat:nth-child(n + 5) {
+  border-top: 1px solid var(--line);
+}
+
+.ledger-cols {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0 40px;
 }
 
 .chart-foot {
@@ -1060,6 +1149,17 @@ p {
   align-items: center;
   gap: 10px;
   margin-top: 16px;
+}
+
+/* Destructive actions sit apart, at the far end of the row. */
+.note-actions-end {
+  display: flex;
+  margin-left: auto;
+}
+
+/* Once the reason box is open it needs the whole row. */
+.note-actions-end:has(form) {
+  flex-basis: 100%;
 }
 
 .reason-form {
@@ -1751,6 +1851,12 @@ p {
   .run-grid {
     grid-template-columns: 1fr;
   }
+  .stats-8 .stat:nth-child(odd) {
+    border-left: 0;
+  }
+  .ledger-cols {
+    grid-template-columns: 1fr;
+  }
 
   .cost-controls {
     border-right: 0;
@@ -1788,8 +1894,5 @@ p {
   .scope li {
     grid-template-columns: 1fr;
     gap: 2px;
-  }
-  .table-wrap {
-    overflow-x: auto;
   }
 }

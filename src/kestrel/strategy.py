@@ -343,9 +343,9 @@ STRATEGIES: dict[str, StrategySpec] = {
         ),
     )
 }
-"""Strategy implementations available to the CLI and API. Research strategies are
-added here once their research note is frozen (CLAUDE.md: no strategy research until
-the backtester is validated)."""
+"""Strategy implementations available to the CLI and API. Research strategies run only
+as trials of a frozen research note (``kestrel.research.run_target``); benchmarks,
+engine tests and controls run directly."""
 
 
 def resolve_params(key: str, params: dict[str, int] | None = None) -> dict[str, int]:

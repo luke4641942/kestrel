@@ -54,6 +54,36 @@ export function Stat({ label, value, note }: { label: string; value: ReactNode; 
   );
 }
 
+/** A row of tabs; the caller renders the selected tab's content underneath. */
+export function Tabs<T extends string>({
+  tabs,
+  value,
+  onChange,
+  label,
+}: {
+  tabs: { id: T; label: ReactNode }[];
+  value: T;
+  onChange: (id: T) => void;
+  label: string;
+}) {
+  return (
+    <div className="tabs" role="tablist" aria-label={label}>
+      {tabs.map((t) => (
+        <button
+          key={t.id}
+          type="button"
+          role="tab"
+          aria-selected={t.id === value}
+          className={t.id === value ? "active" : undefined}
+          onClick={() => onChange(t.id)}
+        >
+          {t.label}
+        </button>
+      ))}
+    </div>
+  );
+}
+
 export type Tone = "ok" | "bad" | "warn" | "info" | "neutral";
 
 export function Status({ tone = "neutral", pulse, children }: { tone?: Tone; pulse?: boolean; children: ReactNode }) {

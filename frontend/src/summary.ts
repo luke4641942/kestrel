@@ -1,6 +1,7 @@
 // Plain logic behind the Backtests page: the verdict, the test-period wording and the
 // chart's trade markers. Kept out of components so it can be tested directly.
-import type { RunDetail, StrategyKind } from "./api";
+import type { ResearchStatus, RunDetail, RunSummary, StrategyKind } from "./api";
+import type { Tone } from "./components/ui";
 import type { TradeMarker } from "./components/EquityChart";
 
 export const usdt = (x: number, digits = 2) =>
@@ -16,6 +17,32 @@ export const KIND_LABEL: Record<StrategyKind, string> = {
   "engine-test": "engine test",
   research: "research",
   control: "comparison",
+};
+
+/** The dataset a form starts on: 4h, then daily, the horizons Kestrel trades (fees
+ * dominate anything faster at this account size), else whatever exists. */
+export function defaultDataset<T extends { interval: string }>(datasets: T[]): T | undefined {
+  return datasets.find((d) => d.interval === "4h") ?? datasets.find((d) => d.interval === "1d") ?? datasets[0];
+}
+
+/** What a signals chart shows, when the range had more bars than are drawn. */
+export function signalsCaption(start: string, end: string, drawn: number, total: number, firstTime?: number): string {
+  if (drawn >= total || firstTime === undefined) return `${start} to ${end}. Research data stops before the holdout.`;
+  const from = new Date(firstTime * 1000).toISOString().slice(0, 10);
+  return `Signals computed on ${start} to ${end}; the most recent ${drawn.toLocaleString("en-AU")} of ${total.toLocaleString(
+    "en-AU",
+  )} bars are drawn (from ${from}). Research data stops before the holdout.`;
+}
+
+/** Where a research idea stands, in the order it moves through. */
+export const RESEARCH_STATUS: Record<ResearchStatus, { tone: Tone; label: string }> = {
+  idea: { tone: "neutral", label: "Idea" },
+  specified: { tone: "info", label: "Frozen" },
+  backtested: { tone: "info", label: "Backtested" },
+  validated: { tone: "ok", label: "Validated" },
+  paper: { tone: "ok", label: "Paper" },
+  live: { tone: "ok", label: "Live" },
+  rejected: { tone: "bad", label: "Rejected" },
 };
 
 export type VerdictTone = "ok" | "warn" | "bad" | "neutral";
@@ -70,16 +97,20 @@ export function verdict(r: RunDetail): Verdict {
   }
 
   let trust: string;
-  if (m.few_trades) {
+  if (isBenchmark) {
+    // One buy is the whole strategy, so "too few trades" doesn't apply.
+    trust = `The bar every strategy on ${asset} has to clear, after the same costs on the same bars.`;
+  } else if (m.few_trades) {
     trust = `Only ${trades} trade${trades === 1 ? "" : "s"}: too few to tell skill from luck. Aim for 30 or more.`;
   } else if (m.psr === null) {
     trust = "Equity never moved, so there's nothing to measure.";
-  } else if (m.psr >= 0.95) {
-    trust = `Statistically convincing: ${Math.round(m.psr * 100)}% chance the edge is real (before correcting for variants tried).`;
-  } else if (m.psr >= 0.8) {
-    trust = `Promising but not proven: ${Math.round(m.psr * 100)}% chance the edge is real.`;
   } else {
-    trust = `Not convincing: only a ${Math.round(m.psr * 100)}% chance the edge is real. This could easily be luck.`;
+    // PSR is the confidence that the true Sharpe is above zero, from this one sample;
+    // it is not corrected for the number of variants tried (that is P3's deflated Sharpe).
+    const conf = `${Math.round(m.psr * 100)}% confidence the true Sharpe is above zero`;
+    if (m.psr >= 0.95) trust = `Statistically convincing: ${conf}, before correcting for variants tried.`;
+    else if (m.psr >= 0.8) trust = `Promising but not proven: ${conf}.`;
+    else trust = `Not convincing: only ${conf}. This could easily be luck.`;
   }
   return { tone, headline, trust, profit, btcProfit, vsBtc, isBenchmark, trades, wins };
 }
@@ -119,10 +150,14 @@ export function costHeadroom(breakEven: number | null, paying: number | null): s
 /** Labels beyond this many trades overlap into noise; colour still shows each result. */
 export const MAX_LABELLED_TRADES = 20;
 
+/** Beyond this many markers the arrows cover the equity line; the trade list has them all. */
+export const MAX_MARKED_TRADES = 150;
+
 /** Exits coloured (and, when few, labelled) by result for bracket runs; buys and sells
  * for weight runs. */
 export function tradeMarkers(r: RunDetail): TradeMarker[] {
   const epoch = (iso: string) => Math.floor(new Date(iso).getTime() / 1000);
+  if (tooManyToMark(r)) return [];
   if (r.style === "brackets") {
     const labelled = r.trades.length <= MAX_LABELLED_TRADES;
     return r.trades.flatMap((t): TradeMarker[] => [
@@ -136,4 +171,30 @@ export function tradeMarkers(r: RunDetail): TradeMarker[] {
     ]);
   }
   return r.fills.map((f) => ({ time: epoch(f.time), side: f.side }));
+}
+
+export function tooManyToMark(r: RunDetail): boolean {
+  return (r.style === "brackets" ? r.trades.length : r.fills.length / 2) > MAX_MARKED_TRADES;
+}
+
+/** What a run was: a logged trial of a research note, or which kind of strategy. */
+export function runRole(r: Pick<RunSummary, "research" | "strategy_kind">): string {
+  return r.research ? `trial of ${r.research.slug} v${r.research.version}` : KIND_LABEL[r.strategy_kind];
+}
+
+/** "swing_bars=3 target_r=4", or "default parameters" when there are none. */
+export function paramsText(params: Record<string, number>): string {
+  const entries = Object.entries(params);
+  return entries.length ? entries.map(([k, v]) => `${k}=${v}`).join(" ") : "no parameters";
+}
+
+/** Trades for the summary: round trips for bracket runs, fills (orders) otherwise. */
+export function tradeCount(r: Pick<RunSummary, "style" | "metrics">): number {
+  return r.style === "brackets" ? (r.metrics.round_trips ?? 0) : r.metrics.trades;
+}
+
+/** Too few trades to trust per-trade statistics. Never said of the benchmark, whose one
+ * buy is the whole strategy. */
+export function fewTrades(r: Pick<RunSummary, "strategy" | "metrics">): boolean {
+  return r.metrics.few_trades && r.strategy !== "buy-and-hold";
 }

@@ -1,6 +1,7 @@
 import { api, type Job } from "../api";
 import type { Route } from "../App";
 import { Empty, PageHeader, Panel, Section, Stat, Status } from "../components/ui";
+import { RESEARCH_STATUS } from "../summary";
 import { ago, date, num } from "../format";
 import { useResource } from "../hooks";
 
@@ -25,26 +26,6 @@ const PHASE_STATUS: Record<PhaseState, { tone: "ok" | "info" | "neutral" | "warn
   parked: { tone: "neutral", label: "Parked" },
   rethink: { tone: "warn", label: "Rethink" },
 };
-
-/**
- * Strategy board columns. The ranking is deliberately out-of-sample, after costs and
- * deflated for the number of variants tried: ranking by raw backtest return would
- * reward whichever of many variants got lucky.
- */
-const STRATEGY_COLUMNS: { label: string; title: string; num?: boolean }[] = [
-  { label: "Strategy", title: "Name, market and bar interval" },
-  { label: "Stage", title: "Backtest, validated, paper or live" },
-  { label: "OOS Sharpe", title: "Sharpe ratio on data the strategy was not tuned on, after all costs", num: true },
-  {
-    label: "Deflated",
-    title: "Deflated Sharpe ratio: probability the true Sharpe is above zero given how many variants were tried",
-    num: true,
-  },
-  { label: "Trials", title: "Variants logged in the trial log for this hypothesis", num: true },
-  { label: "Cost drag", title: "Annual return lost to fees, spread and slippage", num: true },
-  { label: "Drift", title: "Paper or live return minus the backtest on the same bars", num: true },
-  { label: "90 days", title: "Recent equity curve" },
-];
 
 const Pending = () => <span className="tertiary">—</span>;
 
@@ -109,41 +90,10 @@ export function Overview({ jobs, go, openJobs }: { jobs: Job[]; go: (r: Route) =
       </div>
 
       <Section
-        title="Strategies"
-        description="Ranked by out-of-sample Sharpe after costs, adjusted for how many variants were tried."
-        actions={<span className="small tertiary">From P2</span>}
+        title="Research pipeline"
+        description="Every hypothesis and where it stands. Performance joins this table only once a strategy has out-of-sample results (P3), deflated for every trial logged against it."
       >
-        <Panel>
-          <div className="table-wrap">
-            <table className="table">
-              <thead>
-                <tr>
-                  {STRATEGY_COLUMNS.map((c) => (
-                    <th key={c.label} className={c.num ? "num" : undefined}>
-                      <abbr title={c.title}>{c.label}</abbr>
-                    </th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody>
-                <tr>
-                  <td colSpan={STRATEGY_COLUMNS.length} style={{ padding: 0 }}>
-                    <Empty title="No strategies yet">
-                      <p>
-                        Strategy research starts once the backtester is validated. Each strategy appears here after its
-                        first out-of-sample run, with every variant tried counted against it.
-                      </p>
-                    </Empty>
-                  </td>
-                </tr>
-              </tbody>
-            </table>
-          </div>
-          <div className="board-foot">
-            <span>In-sample results never appear on this page.</span>
-            <span>The holdout period stays untouched until a strategy is final.</span>
-          </div>
-        </Panel>
+        <ResearchBoard />
       </Section>
 
       <div className="split">
@@ -217,6 +167,60 @@ function DataSummary({ jobs, openJobs }: { jobs: Job[]; openJobs: () => void }) 
             </>
           )}
         </div>
+      </div>
+    </Panel>
+  );
+}
+
+function ResearchBoard() {
+  const research = useResource(api.researchList, []);
+  const list = research.data ?? [];
+  const open = (slug: string) => {
+    window.location.hash = `/strategies/${slug}`;
+  };
+  return (
+    <Panel>
+      {list.length === 0 ? (
+        <Empty title={research.loading ? "Loading research" : "No research yet"}>
+          {!research.loading && <p>Write a hypothesis on the Strategies page, freeze it, then test it.</p>}
+        </Empty>
+      ) : (
+        <div className="table-wrap">
+          <table className="table">
+            <thead>
+              <tr>
+                <th>Hypothesis</th>
+                <th>Stage</th>
+                <th>Note</th>
+                <th>Implementation</th>
+                <th className="num">
+                  <abbr title="Distinct configurations tested. Every one counts against the result in P3's deflated Sharpe.">
+                    Trials
+                  </abbr>
+                </th>
+              </tr>
+            </thead>
+            <tbody>
+              {list.map((r) => (
+                <tr key={r.slug} className="clickable" onClick={() => open(r.slug)}>
+                  <td style={{ fontWeight: 500 }}>{r.name}</td>
+                  <td className="nw">
+                    <Status tone={RESEARCH_STATUS[r.status].tone}>{RESEARCH_STATUS[r.status].label}</Status>
+                  </td>
+                  <td className="nw secondary">
+                    v{r.version} {r.frozen ? "frozen" : "draft"}
+                  </td>
+                  <td className="mono small">{r.implementation ?? <span className="tertiary">not chosen</span>}</td>
+                  <td className="num">{num(r.trials)}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+      <div className="board-foot">
+        <span>In-sample results never appear on this page.</span>
+        <span>The holdout period stays untouched until a strategy is final.</span>
       </div>
     </Panel>
   );

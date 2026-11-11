@@ -1,7 +1,8 @@
 """Running a backtest end to end, and keeping every run.
 
-``execute`` loads bars, runs the strategy and the benchmark (BTC buy-and-hold on the
-same bars and cash, through the same engine and costs), and computes metrics for both.
+``execute`` loads bars, runs the strategy and the benchmark (buy-and-hold of the same
+market on the same bars and cash, through the same engine and costs), and computes
+metrics for both.
 ``RunStore`` saves each run so results survive restarts and can be compared:
 
     <data>/runs/<run id>/
@@ -10,6 +11,7 @@ same bars and cash, through the same engine and costs), and computes metrics for
         benchmark.parquet        benchmark equity per bar
         fills.parquet            every fill with its cost breakdown
         rejections.parquet       every order the simulator refused, with the reason
+        trades.parquet           round trips (bracket strategies), with results in R
 
 Runs are written to a temporary directory and renamed into place, so a crash never
 leaves a half-saved run. Money is stored as float64 here, for display and analysis;
@@ -293,9 +295,11 @@ def _rejections_frame(res: BacktestResult) -> pl.DataFrame:
 
 
 def trial_key(run: dict[str, Any]) -> tuple[Any, ...]:
-    """What makes two runs the same trial: identical version, code, parameters, market,
-    period and cash. Re-running an identical configuration is not a new trial; any
-    change to it is. P3's deflated Sharpe uses the count of distinct trials."""
+    """What makes two runs the same trial: identical note version, implementation,
+    parameters, market, period and cash. Re-running an identical configuration is not a
+    new trial; any change to it is. A code fix that leaves these unchanged doesn't add a
+    trial, which is why a note version pins its implementation. P3's deflated Sharpe
+    uses the count of distinct trials."""
     research = run.get("research") or {}
     return (
         research.get("version"),

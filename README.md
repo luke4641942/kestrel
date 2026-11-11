@@ -4,8 +4,10 @@ A research-to-production platform for systematic crypto trading, built so that a
 strategy behaves the same way in research, backtest, paper trading and live
 trading.
 
-> **Status:** Data infrastructure, API and dashboard are built. Backtester in progress.
-> No strategies yet, by design.
+> **Status:** Data, API, dashboard and the backtester (two engines, costs, metrics,
+> bootstrap confidence) are built and validated against hand calculations. Research is
+> under way through pre-registered notes; the first hypothesis was tested and rejected.
+> No strategy has yet earned real money, by design.
 
 ## Why this exists
 

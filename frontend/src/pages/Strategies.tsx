@@ -1,30 +1,20 @@
-import { useEffect, useRef, useState, type FormEvent } from "react";
+import { useEffect, useRef, useState, type FormEvent, type ReactNode } from "react";
 import {
   api,
   type Dataset,
   type Job,
   type Note,
   type ResearchDetail,
-  type ResearchStatus,
   type ResearchSummary,
   type StrategyInfo,
 } from "../api";
 import { ParamInputs, defaultParams } from "../components/ParamInputs";
 import { SignalsChart } from "../components/SignalsChart";
-import { Empty, PageHeader, Panel, Status, type Tone } from "../components/ui";
+import { Empty, PageHeader, Panel, Status } from "../components/ui";
 import { ago, dateTime, lastResearchMonth } from "../format";
-import { KIND_LABEL } from "../summary";
+import { KIND_LABEL, RESEARCH_STATUS as STATUS, defaultDataset, signalsCaption } from "../summary";
 import { useResource } from "../hooks";
 
-const STATUS: Record<ResearchStatus, { tone: Tone; label: string }> = {
-  idea: { tone: "neutral", label: "Idea" },
-  specified: { tone: "info", label: "Specified" },
-  backtested: { tone: "info", label: "Backtested" },
-  validated: { tone: "ok", label: "Validated" },
-  paper: { tone: "ok", label: "Paper" },
-  live: { tone: "ok", label: "Live" },
-  rejected: { tone: "bad", label: "Rejected" },
-};
 
 
 /** The slug in `#/strategies/<slug>`, if any. */
@@ -239,12 +229,12 @@ function Workspace({
               headings={d.sections}
               strategies={strategies.data ?? []}
               onSaved={updated}
+              extra={<RejectAction slug={slug} onDone={updated} />}
             />
           ) : (
             <NoteView note={shown} headings={d.sections} />
           )}
           {isLatest && shown.frozen_at && d.status !== "rejected" && <VersionActions slug={slug} onDone={updated} />}
-          {isLatest && !shown.frozen_at && d.status !== "rejected" && <RejectAction slug={slug} onDone={updated} />}
         </Panel>
 
         {impl && (
@@ -259,8 +249,8 @@ function Workspace({
         {!impl && (
           <Panel pad>
             <p className="secondary small">
-              Choose an implementation in the note to see its code and signals. Research code is added to the repo
-              once the note is frozen; until then, the engine test or the benchmark lets you see how the pieces fit.
+              Choose the implementation this note will be tested with to see its code and the signals it gives.
+              Strategy code lives in the repo; a research note can only be backtested once it is frozen.
             </p>
           </Panel>
         )}
@@ -323,12 +313,15 @@ function NoteEditor({
   headings,
   strategies,
   onSaved,
+  extra,
 }: {
   slug: string;
   note: Note;
   headings: Record<string, string>;
   strategies: StrategyInfo[];
   onSaved: (d: ResearchDetail) => void;
+  /** Further actions for the same row, such as rejecting the idea. */
+  extra?: ReactNode;
 }) {
   const [sections, setSections] = useState(note.sections);
   const [impl, setImpl] = useState<string>(note.implementation ?? "");
@@ -412,6 +405,7 @@ function NoteEditor({
             Freeze…
           </button>
         )}
+        {!confirming && extra && <div className="note-actions-end">{extra}</div>}
       </div>
       {error && <div className="form-error">{error}</div>}
     </div>
@@ -538,7 +532,7 @@ function SignalsPanel({ impl }: { impl: StrategyInfo }) {
   const { datasets, maxMonth } = useMarkets();
   const [market, setMarket] = useState<string>();
   const [params, setParams] = useState(() => defaultParams(impl.params));
-  const ds = datasets.find((d) => dsKey(d) === market) ?? datasets[0];
+  const ds = datasets.find((d) => dsKey(d) === market) ?? defaultDataset(datasets);
   const range = rangeFor(ds, maxMonth);
   const [debounced, setDebounced] = useState(params);
   const timer = useRef<number>();
@@ -589,7 +583,7 @@ function SignalsPanel({ impl }: { impl: StrategyInfo }) {
           )}
           {range && (
             <p className="small tertiary">
-              {range[0]} to {range[1]}. Research data stops before the holdout.
+              {signalsCaption(range[0], range[1], signals.data?.time.length ?? 0, signals.data?.total_bars ?? 0, signals.data?.time[0])}
             </p>
           )}
         </>
@@ -616,7 +610,7 @@ function TrialRunner({
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string>();
   const [started, setStarted] = useState(false);
-  const ds = datasets.find((d) => dsKey(d) === market) ?? datasets[0];
+  const ds = datasets.find((d) => dsKey(d) === market) ?? defaultDataset(datasets);
   const range = rangeFor(ds, maxMonth);
 
   async function submit(e: FormEvent) {

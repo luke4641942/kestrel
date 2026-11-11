@@ -332,6 +332,9 @@ class Signals(BaseModel):
     they appear in backtests, not here)."""
 
     kind: str = "weights"
+    total_bars: int
+    """Bars in the requested range. Signals are computed on all of them; only the most
+    recent are returned for drawing, so ``len(time)`` can be smaller."""
 
     time: list[int]
     open: list[float]

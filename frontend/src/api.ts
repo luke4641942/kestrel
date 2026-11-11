@@ -159,6 +159,8 @@ export interface SignalsRequest {
 export interface Signals {
   /** "entries": weight is 1 on bars that signal an entry (bracket strategies). */
   kind: "weights" | "entries";
+  /** Bars in the requested range; signals use all of them, only the latest are sent. */
+  total_bars: number;
   time: number[];
   open: number[];
   high: number[];

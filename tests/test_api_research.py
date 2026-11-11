@@ -185,6 +185,23 @@ def test_signals_endpoint(client: TestClient) -> None:
     assert len(body["time"]) == len(body["weight"]) == len(body["close"]) == 120
     assert set(body["weight"]) <= {0.0, 1.0}
     assert body["weight"][:11] == [0.0] * 11  # slow window not full
+    assert body["total_bars"] == 120
+
+
+def test_signals_are_computed_on_the_whole_range_and_only_drawing_is_capped(
+    client: TestClient, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    # Regression: the bars were cut to the cap before computing, so signals near the start
+    # of what was drawn lacked their warm-up and differed from a backtest's.
+    import kestrel.api.app as app_module
+
+    params = {"fast": 3, "slow": 12}
+    full = client.post("/api/strategies/ma-trend/signals", json={**RUN, "params": params}).json()
+    monkeypatch.setattr(app_module, "MAX_BARS", 50)
+    capped = client.post("/api/strategies/ma-trend/signals", json={**RUN, "params": params}).json()
+    assert capped["total_bars"] == 120
+    assert capped["time"] == full["time"][-50:]
+    assert capped["weight"] == full["weight"][-50:]
 
 
 @pytest.mark.parametrize(

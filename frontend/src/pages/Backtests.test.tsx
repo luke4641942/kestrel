@@ -1,7 +1,11 @@
-import { render, screen, waitFor } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { api } from "../api";
+import { run, trade } from "../test/fixtures";
 import { Backtests } from "./Backtests";
+
+// The canvas chart can't draw in jsdom; it has no logic of its own to test here.
+vi.mock("../components/EquityChart", () => ({ EquityChart: () => null }));
 
 vi.mock("../api", async (importOriginal) => {
   const real = await importOriginal<typeof import("../api")>();
@@ -62,5 +66,57 @@ describe("New backtest form", () => {
   it("says when there are no runs yet", async () => {
     render(<Backtests jobs={[]} onJobStarted={() => {}} />);
     expect(await screen.findByText("No runs yet")).toBeInTheDocument();
+  });
+});
+
+describe("Runs and a run's detail", () => {
+  const runs = Array.from({ length: 12 }, (_, i) =>
+    run({ id: `20260101-0000${String(i).padStart(2, "0")}-abcdef`, created_at: `2026-01-01T00:00:${String(59 - i).padStart(2, "0")}Z` }),
+  );
+
+  beforeEach(() => {
+    window.location.hash = "";
+    api.backtests = vi.fn().mockResolvedValue(runs);
+    api.backtest = vi.fn().mockResolvedValue(
+      run({ style: "brackets", trades: Array.from({ length: 60 }, (_, i) => trade(i % 3 === 0 ? 3 : -1)) }, { round_trips: 60 }),
+    );
+  });
+
+  it("shows the newest ten runs, with the rest one click away", async () => {
+    render(<Backtests jobs={[]} onJobStarted={() => {}} />);
+    expect(await screen.findByText("Showing 10 of 12 runs.")).toBeInTheDocument();
+    const table = screen.getAllByRole("table")[0]!;
+    expect(within(table).getAllByRole("row")).toHaveLength(11); // header + 10
+    fireEvent.click(screen.getByRole("button", { name: "Show all" }));
+    expect(within(table).getAllByRole("row")).toHaveLength(13);
+  });
+
+  it("puts the detail behind tabs, statistics first", async () => {
+    render(<Backtests jobs={[]} onJobStarted={() => {}} />);
+    const stats = await screen.findByRole("tab", { name: "Statistics" });
+    expect(stats).toHaveAttribute("aria-selected", "true");
+    expect(screen.getByText("Against buy-and-hold")).toBeInTheDocument();
+    expect(screen.queryByText("Trades in R")).not.toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("tab", { name: "Trades (60)" }));
+    expect(screen.getByText("Trades in R")).toBeInTheDocument();
+    expect(screen.getByText("Showing 50 of 60 trades.")).toBeInTheDocument();
+    expect(screen.queryByText("Against buy-and-hold")).not.toBeInTheDocument();
+  });
+
+  it("leads with the headline numbers in the agreed order", async () => {
+    render(<Backtests jobs={[]} onJobStarted={() => {}} />);
+    await screen.findByRole("tab", { name: "Statistics" });
+    const labels = [...document.querySelectorAll(".stats-8 .stat-label")].map((e) => e.textContent);
+    expect(labels).toEqual([
+      "Net profit",
+      "Against holding BTC",
+      "Sharpe",
+      "Max drawdown",
+      "Expectancy per trade",
+      "Cost per round trip",
+      "Trades",
+      "Time in the market",
+    ]);
   });
 });
