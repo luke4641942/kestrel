@@ -5,8 +5,9 @@ from __future__ import annotations
 import hashlib
 import io
 import zipfile
-from collections.abc import Callable
+from collections.abc import Callable, Iterator
 from datetime import UTC, datetime, timedelta
+from pathlib import Path
 
 import pytest
 
@@ -77,3 +78,23 @@ def make_archive() -> ArchiveFactory:
         return to_zip(make_rows(start, n, step, microseconds=microseconds), header=header)
 
     return _make
+
+
+REAL_RESEARCH = Path(__file__).resolve().parents[1] / "research" / "strategies"
+
+
+def _research_snapshot() -> dict[str, float]:
+    if not REAL_RESEARCH.exists():
+        return {}
+    return {str(p): p.stat().st_mtime for p in REAL_RESEARCH.rglob("*") if p.is_file()}
+
+
+@pytest.fixture(autouse=True)
+def _never_touch_real_research() -> Iterator[None]:
+    """Fail any test that writes to the repo's research notes. The API defaults its
+    research folder to research/ relative to where it runs, which is the repo during
+    tests; a test that forgets research_dir would write fake notes among the real ones."""
+    before = _research_snapshot()
+    yield
+    after = _research_snapshot()
+    assert after == before, "this test changed research/strategies; pass research_dir=tmp_path"

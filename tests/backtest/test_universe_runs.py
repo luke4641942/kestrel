@@ -118,7 +118,11 @@ def test_the_benchmark_needs_btc(tmp_path: Path) -> None:
 
 def test_the_api_runs_and_serves_a_universe_run(tmp_path: Path) -> None:
     _store_universe(tmp_path)
-    client = TestClient(create_app(tmp_path, static_dir=None, config_path=REPO_CONFIG))
+    client = TestClient(
+        create_app(
+            tmp_path, static_dir=None, config_path=REPO_CONFIG, research_dir=tmp_path / "research"
+        )
+    )
     listed = {s["key"]: s for s in client.get("/api/strategies").json()}
     assert listed["xs-momentum"]["universe"] is True
     assert listed["buy-and-hold"]["universe"] is False
