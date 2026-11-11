@@ -157,6 +157,14 @@ Agreed with Luke; don't re-litigate without a reason.
   (k bars later); that is the whole lookahead defence for lines, keep it. Tested on
   hand-built paths only. Four ideas tried at once means four trials: a single pass among
   them is weaker evidence than it looks until P3's deflated Sharpe.
+- **Strategy backlog (2026-11-11): `research/backlog.md`** tracks every idea Luke has
+  researched (S1-S4) and where it stands. Built and drafted, not yet run: trend following
+  with volatility targeting (`kestrel.strategies.trend`, daily bars), Monday range as a
+  raw-effect study first (`kestrel.studies.anchor_day`, `kestrel anchor-study`; a KILL
+  rejects the note before any strategy run) then `monday-pullback`
+  (`kestrel.strategies.weekday`), and S2-C pivot reversal without the HMM
+  (`kestrel.strategies.pivots`). HMM work (S2, S3) waits by Luke's choice. Bracket
+  strategies may now emit an `exit` column (time exits) and a null target.
 - **Parked, P3+: multi-strategy portfolios.** Strategies emit *target positions*, never
   orders; an allocator owns the wallet, resolves conflicts and nets orders before the
   `ExecutionVenue`. Build P2 around this so single-strategy is a portfolio of one.

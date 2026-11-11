@@ -22,6 +22,7 @@ from typing import Literal, Protocol, runtime_checkable
 import polars as pl
 
 from kestrel.strategies.levels import LevelBreakout, LevelRetest
+from kestrel.strategies.pivots import PivotReversal
 from kestrel.strategies.structure import StructurePullback
 from kestrel.strategies.trend import TrendVolTarget
 from kestrel.strategies.trendlines import (
@@ -30,6 +31,7 @@ from kestrel.strategies.trendlines import (
     TrendlineBreakout,
     WedgeBreakout,
 )
+from kestrel.strategies.weekday import MondayMidPullback
 
 
 class LookaheadError(ValueError):
@@ -348,6 +350,31 @@ STRATEGIES: dict[str, StrategySpec] = {
                 Param("slow_days", 120, 60, 365, "Longest trend lookback, in days"),
                 Param("vol_days", 30, 10, 90, "Days of returns that measure volatility"),
                 Param("target_vol_pct", 50, 10, 150, "Annual volatility to size towards, in %"),
+            ),
+        ),
+        StrategySpec(
+            "monday-pullback",
+            "research",
+            "In a week that breaks Monday's high (AEST) before its low, buy the first pullback "
+            "to Monday's midpoint; stop at Monday's low, out at the end of Friday. 1h bars. "
+            "Research: runs only through its frozen note.",
+            MondayMidPullback,
+            (
+                Param("tolerance_bps", 50, 10, 200, "How close to the midpoint counts, in bps"),
+                Param("exit_day", 5, 2, 7, "Weekday whose last bar closes the trade (5 = Friday)"),
+            ),
+        ),
+        StrategySpec(
+            "pivot-reversal",
+            "research",
+            "Buy when a rebound of 3.5% off the running low confirms a pivot low (a zigzag "
+            "pivot, known only then); stop 1.5% below, target 3% above. Research: runs only "
+            "through its frozen note.",
+            PivotReversal,
+            (
+                Param("swing_bps", 350, 100, 1000, "Move that confirms a pivot, in bps"),
+                Param("stop_bps", 150, 25, 1000, "Stop below the signal close, in bps"),
+                Param("target_bps", 300, 25, 3000, "Target above the signal close, in bps"),
             ),
         ),
         StrategySpec(

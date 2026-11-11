@@ -141,6 +141,7 @@ data.binance.vision ──► BinanceVisionClient ──► parse_archive ──
 | `kestrel.backtest.engine` | Event-driven engine: decide at close, fill at next open, no-trade band, holdout guard; stops and targets inside bars with risk-based sizing |
 | `kestrel.backtest.metrics` | Daily-marked metrics with uncertainty: Sharpe CI, probabilistic Sharpe, drawdown, costs |
 | `kestrel.strategies` | Research strategies and the plainer controls each must beat; `geometry` holds ATR, swings known without hindsight, and lines through them |
+| `kestrel.studies` | Raw-effect studies run before any trading rule, such as the anchor-day range study (`kestrel anchor-study`) |
 | `kestrel.research` | Versioned research notes with enforced pre-registration, and the single rule set for starting a backtest |
 | `kestrel.assistant` | Research assistant on Claude, given the note and code only, never results |
 | `kestrel.backtest.vectorised` | Second, independent engine in polars columns; a parity test requires it to agree with the event engine |

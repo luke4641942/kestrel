@@ -4,6 +4,7 @@ kestrel ingest BTCUSDT --interval 1h --start 2020-01
 kestrel check BTCUSDT --interval 1h
 kestrel list BTCUSDT --interval 1h
 kestrel backtest BTCUSDT --interval 4h --start 2022-01 --end 2025-10
+kestrel anchor-study BTCUSDT --start 2020-01 --end 2025-10
 """
 
 from __future__ import annotations
@@ -26,6 +27,7 @@ from kestrel.data.schema import Interval
 from kestrel.data.store import ParquetStore
 from kestrel.research import ResearchStore, run_target
 from kestrel.strategy import STRATEGIES, resolve_params
+from kestrel.studies.anchor_day import format_study, run_study
 
 app = typer.Typer(help="Kestrel trading platform.", no_args_is_help=True)
 
@@ -152,6 +154,58 @@ def backtest(
         if link:
             notes.mark_backtested(*link)
             typer.echo(f"Logged as a trial of {link[0]} v{link[1]}")
+
+
+@app.command("anchor-study")
+def anchor_study(
+    symbol: str,
+    start: Annotated[str, typer.Option(help="First month, YYYY-MM.")],
+    end: Annotated[str, typer.Option(help="Last month, YYYY-MM (inclusive).")],
+    interval: IntervalOpt = Interval.H1,
+    tolerance_bps: Annotated[
+        int, typer.Option(help="How close to the midpoint counts as a pullback, in bps.")
+    ] = 50,
+    horizon_days: Annotated[int, typer.Option(help="Days measured after each anchor day.")] = 4,
+    data_dir: DataDir = Path("data"),
+    config: Annotated[
+        Path, typer.Option("--config", envvar="KESTREL_CONFIG", help="Config file.")
+    ] = Path("kestrel.toml"),
+) -> None:
+    """Is Monday's range special? Every weekday's range measured the same way (backlog S1).
+
+    A raw-effect study, run before any trading rule. It never uses the holdout."""
+    try:
+        cfg = load_config(config)
+    except ConfigError as e:
+        typer.echo(str(e), err=True)
+        raise typer.Exit(code=1) from None
+    first, after = Month.parse(start), Month.parse(end).next()
+    until = datetime(after.year, after.month, 1, tzinfo=UTC)
+    if until > cfg.backtest.holdout_start:
+        typer.echo(
+            f"the range reaches the holdout (from {cfg.backtest.holdout_start:%Y-%m-%d}); "
+            "studies never use it",
+            err=True,
+        )
+        raise typer.Exit(code=1)
+    bars = ParquetStore(data_dir).read(
+        symbol, interval, datetime(first.year, first.month, 1, tzinfo=UTC), until
+    )
+    # The hurdle is one round trip of fee and spread: what a trade must clear to pay.
+    c = cfg.costs
+    hurdle = float(2 * (c.taker_fee_bps + c.half_spread_bps)) / 1e4
+    try:
+        result = run_study(
+            bars,
+            symbol.upper(),
+            horizon_days=horizon_days,
+            tolerance=tolerance_bps / 1e4,
+            hurdle=hurdle,
+        )
+    except ValueError as e:
+        typer.echo(str(e), err=True)
+        raise typer.Exit(code=1) from None
+    typer.echo(format_study(result))
 
 
 def _parse_params(pairs: list[str]) -> dict[str, int]:
