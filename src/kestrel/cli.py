@@ -1,6 +1,7 @@
 """Command-line entry point.
 
 kestrel ingest BTCUSDT --interval 1h --start 2020-01
+kestrel ingest-universe --interval 1d --start 2020-01
 kestrel check BTCUSDT --interval 1h
 kestrel list BTCUSDT --interval 1h
 kestrel backtest BTCUSDT --interval 4h --start 2022-01 --end 2025-10
@@ -25,6 +26,7 @@ from kestrel.data.binance_vision import BinanceVisionClient, Month, last_complet
 from kestrel.data.quality import check_klines
 from kestrel.data.schema import Interval
 from kestrel.data.store import ParquetStore
+from kestrel.data.universe import ArchiveListing, CoinIngest, ingest_universe, manifest_path
 from kestrel.research import ResearchStore, run_target
 from kestrel.strategy import STRATEGIES, resolve_params
 from kestrel.studies.anchor_day import format_study, run_study
@@ -67,6 +69,39 @@ def ingest(
     typer.echo(f"fetched {len(result.fetched)} month(s) of {symbol.upper()} {interval.value}")
     if result.not_found:
         typer.echo(f"not published by Binance: {', '.join(map(str, result.not_found))}")
+
+
+@app.command("ingest-universe")
+def ingest_universe_cmd(
+    start: Annotated[str, typer.Option(help="First month, YYYY-MM.")],
+    end: Annotated[
+        str | None, typer.Option(help="Last month, YYYY-MM. Default: last complete.")
+    ] = None,
+    interval: IntervalOpt = Interval.D1,
+    workers: Annotated[int, typer.Option(min=1, max=32, help="Coins fetched at once.")] = 8,
+    data_dir: DataDir = Path("data"),
+) -> None:
+    """Download every coin Binance's archive has ever listed against USDT, delisted ones
+    included, so cross-sectional tests are free of survivorship bias. Months already
+    stored are skipped, so it can be re-run to top up."""
+    first = Month.parse(start)
+    last = Month.parse(end) if end else last_complete_month(datetime.now(UTC).date())
+    store = ParquetStore(data_dir)
+
+    def report(coin: CoinIngest, i: int, total: int) -> None:
+        if coin.fetched or i % 50 == 0 or i == total:
+            typer.echo(f"[{i}/{total}] {coin.symbol}: {coin.fetched} new of {coin.archived} months")
+
+    with ArchiveListing() as listing, BinanceVisionClient() as client:
+        results, excluded = ingest_universe(
+            listing, client, store, interval, first, last, workers=workers, on_coin=report
+        )
+    with_data = [r for r in results if r.archived]
+    typer.echo(
+        f"{len(with_data)} coins with {interval.value} data in {first}..{last} "
+        f"({sum(r.fetched for r in results)} months fetched now); {len(excluded)} pairs "
+        f"excluded. Manifest: {manifest_path(store, interval)}"
+    )
 
 
 @app.command()
