@@ -480,7 +480,8 @@ class TradeOut(BaseModel):
     entry_price: float
     exit_price: float
     stop: float
-    target: float
+    target: float | None
+    """None when the strategy set no target."""
     risk: float
     pnl: float
     costs: float

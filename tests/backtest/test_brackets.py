@@ -231,7 +231,10 @@ def test_brackets_are_checked_for_lookahead() -> None:
 
 @pytest.mark.parametrize(
     ("entries", "message"),
-    [({0: (115.0, 95.0)}, "0 < stop < target"), ({0: (0.0, 95.0)}, "0 < stop < target")],
+    [
+        ({0: (115.0, 95.0)}, "stop < target if set"),
+        ({0: (0.0, 95.0)}, "every entry needs 0 < stop"),
+    ],
 )
 def test_bad_levels_are_refused(entries: dict[int, tuple[float, float]], message: str) -> None:
     with pytest.raises(ValueError, match=message):
@@ -280,3 +283,55 @@ def test_channel_breakout_has_no_lookahead_and_trades() -> None:
     )
     assert len(result.trades) >= 3
     assert {t.exit_reason for t in result.trades} <= {"target", "stop", "end of data"}
+
+
+def test_an_exit_signal_sells_at_the_next_open() -> None:
+    # Bought at bar 1's open (100); bar 2's close signals an exit, so it sells at bar 3's
+    # open (104), never touching the stop or the target.
+    frame = bars([100, 100, 103, 104, 104], closes=[100, 103, 104, 104, 104])
+    strategy = FixedBrackets({0: (95.0, 115.0)}, exits={2})
+    (t,) = run_backtest(strategy, frame, H4, config(costs=False), D(1000)).trades
+    assert t.exit_reason == "signal"
+    assert t.exit_time == frame["open_time"][3]
+    assert t.exit_price == D(104)
+    assert t.r_multiple == D("0.8")  # 4 gained per unit over 5 of risk
+
+
+def test_an_exit_signal_with_no_open_trade_does_nothing() -> None:
+    frame = bars([100.0] * 5)
+    result = run_backtest(FixedBrackets({}, exits={1, 2}), frame, H4, config(costs=False), D(1000))
+    assert result.trades == []
+    assert result.fills == []
+
+
+def test_a_trade_without_a_target_rides_until_its_stop() -> None:
+    frame = bars(
+        [100, 100, 130, 140, 90], highs=[100, 101, 131, 141, 100], lows=[99, 99, 129, 139, 89]
+    )
+    (t,) = run_backtest(
+        FixedBrackets({0: (95.0, None)}), frame, H4, config(costs=False), D(1000)
+    ).trades
+    assert t.target is None
+    assert t.exit_reason == "stop"  # a 3R move to 115 and beyond didn't end it
+    assert t.exit_price == D(90)  # bar 4 gapped through the stop
+
+
+def test_without_a_target_only_the_stop_must_be_below_the_open() -> None:
+    frame = bars([100, 94, 94], highs=[100, 95, 95], lows=[99, 93, 93])
+    result = run_backtest(FixedBrackets({0: (95.0, None)}), frame, H4, config(costs=False), D(1000))
+    assert result.trades == []
+    assert "at or below stop 95" in result.rejections[0].rejection.reason
+
+
+def test_a_failed_exit_keeps_the_trade_and_records_why() -> None:
+    # 1% of 1,000 over 99 of risk per unit buys about 0.101 units (about 10 USDT). The
+    # price then falls to 40 without reaching the stop at 1, so the signalled exit is
+    # worth about 4 USDT: below the 5 USDT exchange minimum, and refused.
+    frame = bars([100, 100, 40, 40], closes=[100, 40, 40, 40])
+    result = run_backtest(
+        FixedBrackets({0: (1.0, None)}, exits={2}), frame, H4, config(costs=False), D(1000)
+    )
+    assert [r.fill.side.value for r in result.fills] == ["buy"]
+    assert result.rejections[0].time == frame["open_time"][3]
+    assert "below the minimum" in result.rejections[0].rejection.reason
+    assert result.trades == []  # never closed: kept, not silently dropped

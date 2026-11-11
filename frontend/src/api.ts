@@ -333,12 +333,13 @@ export interface RunDetail extends RunSummary {
   trades: {
     entry_time: string;
     exit_time: string;
-    exit_reason: "target" | "stop" | "end of data";
+    exit_reason: "target" | "stop" | "signal" | "end of data";
     quantity: number;
     entry_price: number;
     exit_price: number;
     stop: number;
-    target: number;
+    /** null when the strategy set no target. */
+  target: number | null;
     risk: number;
     pnl: number;
     costs: number;

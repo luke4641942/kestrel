@@ -12,7 +12,10 @@ function, so paper and live trading in P4 replace the venue and nothing else.
 A rebalance only happens when the target differs from the current weight by more than
 the no-trade band; skipped rebalances are counted so the band's effect is visible.
 
-Bracket strategies (entries with a stop and a target) run a second loop, per bar:
+Bracket strategies (entries with a stop and usually a target) run a second loop, per
+bar:
+    0. An exit the strategy signalled at the previous close (e.g. a time exit) sells
+       an open trade at this open.
     1. Entry at the open, if the previous close signalled and no trade is open. Size =
        risk_per_trade x equity / (open - stop), capped by cash (spot: no leverage).
     2. Exits inside the bar from its low and high. If a bar reaches both the stop and
@@ -67,7 +70,7 @@ class RejectionRecord:
     rejection: Rejection
 
 
-ExitReason = Literal["target", "stop", "end of data"]
+ExitReason = Literal["target", "stop", "signal", "end of data"]
 
 
 @dataclass(frozen=True)
@@ -82,7 +85,8 @@ class TradeRecord:
     """Executed, after spread and impact."""
     exit_price: Decimal
     stop: Decimal
-    target: Decimal
+    target: Decimal | None
+    """None when the strategy set no target."""
     risk: Decimal
     """Planned loss at the stop before costs: quantity x (entry open - stop)."""
     pnl: Decimal
@@ -262,7 +266,7 @@ class _OpenTrade:
     entry: Fill
     entry_time: datetime
     stop: Decimal
-    target: Decimal
+    target: Decimal | None
     risk: Decimal
     capped: bool
 
@@ -288,6 +292,7 @@ def _run_brackets(
     opens, highs, lows, closes = prices("open"), prices("high"), prices("low"), prices("close")
     volumes = prices("quote_volume")
     enters, stops, targets = frame["enter"].to_list(), levels("stop"), levels("target")
+    exits = frame["exit"].to_list()
     times = bars["open_time"].to_list()
 
     def close_trade(trade: _OpenTrade, exit_fill: Fill, at: datetime, reason: ExitReason) -> None:
@@ -315,12 +320,21 @@ def _run_brackets(
         o, h, lo, c = opens[i], highs[i], lows[i], closes[i]
         last_volume = volumes[i - 1]
 
+        # 0. An exit signalled at the previous close sells at this open.
+        if open_trade is not None and exits[i - 1]:
+            venue.set_market(symbol, o, last_volume)
+            sell = venue.submit_market(symbol, Side.SELL, venue.position(symbol))
+            if isinstance(sell, Fill):
+                close_trade(open_trade, sell, times[i], "signal")
+                open_trade = None
+            else:
+                result.rejections.append(RejectionRecord(times[i], sell))
+
         # 1. Entry at the open on the previous close's signal.
         if open_trade is None and enters[i - 1]:
             stop, target = stops[i - 1], targets[i - 1]
-            assert stop is not None  # validated_brackets guarantees both on entry rows
-            assert target is not None
-            if not stop < o < target:
+            assert stop is not None  # validated_brackets guarantees a stop on entry rows
+            if not (stop < o and (target is None or o < target)):
                 result.rejections.append(
                     RejectionRecord(
                         times[i],
@@ -328,7 +342,9 @@ def _run_brackets(
                             symbol,
                             Side.BUY,
                             Decimal(0),
-                            f"opened at {o}, outside stop {stop} and target {target}; skipped",
+                            f"opened at {o}, outside stop {stop} and target {target}; skipped"
+                            if target is not None
+                            else f"opened at {o}, at or below stop {stop}; skipped",
                         ),
                     )
                 )
@@ -363,7 +379,7 @@ def _run_brackets(
             reason: ExitReason = "stop"
             if lo <= open_trade.stop:
                 exit_at = o if o <= open_trade.stop else open_trade.stop  # a gap fills at the open
-            elif h >= open_trade.target:
+            elif open_trade.target is not None and h >= open_trade.target:
                 exit_at, reason = (o if o >= open_trade.target else open_trade.target), "target"
             if exit_at is not None:
                 venue.set_market(symbol, exit_at, last_volume)

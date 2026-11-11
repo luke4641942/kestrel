@@ -755,7 +755,7 @@ function TradesTab({ run }: { run: RunDetail }) {
                     </td>
                     <td className="num mono">{usdt(t.entry_price)}</td>
                     <td className="num mono">{usdt(t.stop)}</td>
-                    <td className="num mono">{usdt(t.target)}</td>
+                    <td className="num mono">{t.target === null ? "—" : usdt(t.target)}</td>
                     <td className="num mono">{usdt(t.exit_price)}</td>
                     <td className={`num mono ${t.pnl >= 0 ? "up" : "down"}`}>{usdt(t.pnl)}</td>
                     <td className={`num mono ${t.r_multiple >= 0 ? "up" : "down"}`}>{rFmt(t.r_multiple)}</td>

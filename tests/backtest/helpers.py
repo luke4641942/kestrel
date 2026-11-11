@@ -82,16 +82,23 @@ class FixedWeights:
 
 
 class FixedBrackets:
-    """Replays fixed entries: ``entries`` maps bar index -> (stop, target)."""
+    """Replays fixed entries: ``entries`` maps bar index -> (stop, target or None).
+    ``exits`` lists bars whose close signals an exit; without it there is no exit column."""
 
-    def __init__(self, entries: dict[int, tuple[float, float]], symbol: str = "BTCUSDT") -> None:
+    def __init__(
+        self,
+        entries: dict[int, tuple[float, float | None]],
+        symbol: str = "BTCUSDT",
+        exits: set[int] | None = None,
+    ) -> None:
         self.entries = entries
         self.symbol = symbol
+        self.exits = exits
         self.name = "fixed brackets"
 
     def brackets(self, frame: pl.DataFrame) -> pl.DataFrame:
         n = frame.height
-        return pl.DataFrame(
+        out = pl.DataFrame(
             {
                 "enter": [i in self.entries for i in range(n)],
                 "stop": [self.entries[i][0] if i in self.entries else None for i in range(n)],
@@ -99,3 +106,6 @@ class FixedBrackets:
             },
             schema={"enter": pl.Boolean, "stop": pl.Float64, "target": pl.Float64},
         )
+        if self.exits is not None:
+            out = out.with_columns(exit=pl.Series([i in self.exits for i in range(n)]))
+        return out

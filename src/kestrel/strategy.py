@@ -23,6 +23,7 @@ import polars as pl
 
 from kestrel.strategies.levels import LevelBreakout, LevelRetest
 from kestrel.strategies.structure import StructurePullback
+from kestrel.strategies.trend import TrendVolTarget
 from kestrel.strategies.trendlines import (
     SwingPullback,
     TrendlineBounce,
@@ -52,9 +53,12 @@ class BracketStrategy(Protocol):
     """A strategy that enters with its own stop and target instead of holding weights.
 
     ``brackets`` returns one row per bar with columns ``enter`` (go long at the next
-    open), ``stop`` and ``target`` (price levels, set on entry rows). The strategy
-    decides *where* the stop and target are; the engine decides *how much* to buy,
-    from the risk per trade in kestrel.toml and the distance to the stop.
+    open), ``stop`` and ``target`` (price levels, set on entry rows), and optionally
+    ``exit`` (sell an open trade at the next open, e.g. a time exit). ``target`` may be
+    null: the trade then ends at its stop, an exit signal or the end of the data. The
+    strategy decides *where* the levels are; the engine decides *how much* to buy, from
+    the risk per trade in kestrel.toml and the distance to the stop, so a stop is
+    always required.
     """
 
     name: str
@@ -63,7 +67,8 @@ class BracketStrategy(Protocol):
     def brackets(self, bars: pl.DataFrame) -> pl.DataFrame: ...
 
 
-BRACKET_SCHEMA = {"enter": pl.Boolean, "stop": pl.Float64, "target": pl.Float64}
+BRACKET_SCHEMA = {"enter": pl.Boolean, "stop": pl.Float64, "target": pl.Float64, "exit": pl.Boolean}
+OPTIONAL_BRACKET_COLUMNS = {"exit"}
 
 
 class BuyAndHold:
@@ -331,6 +336,21 @@ STRATEGIES: dict[str, StrategySpec] = {
             ),
         ),
         StrategySpec(
+            "trend-vol-target",
+            "research",
+            "Long when the 20, 60 and 120-day trends agree (scaled by how many do), sized "
+            "down when volatility is above a target. Research: runs only through its frozen "
+            "note.",
+            TrendVolTarget,
+            (
+                Param("fast_days", 20, 5, 60, "Shortest trend lookback, in days"),
+                Param("mid_days", 60, 20, 180, "Middle trend lookback, in days"),
+                Param("slow_days", 120, 60, 365, "Longest trend lookback, in days"),
+                Param("vol_days", 30, 10, 90, "Days of returns that measure volatility"),
+                Param("target_vol_pct", 50, 10, 150, "Annual volatility to size towards, in %"),
+            ),
+        ),
+        StrategySpec(
             "ma-trend",
             "engine-test",
             "Long when the fast moving average is above the slow one. An engine test, "
@@ -411,23 +431,38 @@ def validated_brackets(
     frame = strategy.brackets(bars)
     if frame.height != bars.height:
         raise ValueError(f"{strategy.name}: {frame.height} bracket rows for {bars.height} bars")
-    if set(frame.columns) != set(BRACKET_SCHEMA):
-        raise ValueError(f"{strategy.name}: bracket columns must be {sorted(BRACKET_SCHEMA)}")
-    frame = frame.select([pl.col(c).cast(t) for c, t in BRACKET_SCHEMA.items()])
-    frame = frame.with_columns(pl.col("enter").fill_null(False))
+    frame = _normalised_brackets(strategy.name, frame)
     entries = frame.filter("enter")
     bad = entries.filter(
         pl.col("stop").is_null()
-        | pl.col("target").is_null()
         | pl.col("stop").is_nan()
         | pl.col("target").is_nan()
         | (pl.col("stop") <= 0)
-        | (pl.col("stop") >= pl.col("target"))
+        | (pl.col("stop") >= pl.col("target"))  # null when there is no target: passes
     )
     if bad.height:
-        raise ValueError(f"{strategy.name}: every entry needs 0 < stop < target")
-    _check_prefixes(strategy.name, strategy.brackets, bars, frame, checkpoints)
+        raise ValueError(f"{strategy.name}: every entry needs 0 < stop, and stop < target if set")
+
+    def compute(b: pl.DataFrame) -> pl.DataFrame:
+        return _normalised_brackets(strategy.name, strategy.brackets(b))
+
+    _check_prefixes(strategy.name, compute, bars, frame, checkpoints)
     return frame
+
+
+def _normalised_brackets(name: str, frame: pl.DataFrame) -> pl.DataFrame:
+    """Every bracket column, in schema order and type, with an absent ``exit`` as False."""
+    columns = set(frame.columns)
+    required = set(BRACKET_SCHEMA) - OPTIONAL_BRACKET_COLUMNS
+    if not required <= columns <= set(BRACKET_SCHEMA):
+        raise ValueError(
+            f"{name}: bracket columns must be {sorted(required)}, optionally "
+            f"{sorted(OPTIONAL_BRACKET_COLUMNS)}"
+        )
+    if "exit" not in columns:
+        frame = frame.with_columns(exit=pl.lit(False))
+    frame = frame.select([pl.col(c).cast(t) for c, t in BRACKET_SCHEMA.items()])
+    return frame.with_columns(pl.col("enter").fill_null(False), pl.col("exit").fill_null(False))
 
 
 def check_no_lookahead(

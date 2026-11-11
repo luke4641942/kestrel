@@ -345,7 +345,7 @@ def _trades_frame(res: BacktestResult | None) -> pl.DataFrame:
             "entry_price": float(t.entry_price),
             "exit_price": float(t.exit_price),
             "stop": float(t.stop),
-            "target": float(t.target),
+            "target": None if t.target is None else float(t.target),
             "risk": float(t.risk),
             "pnl": float(t.pnl),
             "costs": float(t.costs),
