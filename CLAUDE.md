@@ -165,6 +165,16 @@ Agreed with Luke; don't re-litigate without a reason.
   (`kestrel.strategies.weekday`), and S2-C pivot reversal without the HMM
   (`kestrel.strategies.pivots`). HMM work (S2, S3) waits by Luke's choice. Bracket
   strategies may now emit an `exit` column (time exits) and a null target.
+- **Cross-sectional momentum (built 2026-11-11, not yet run).** Universe:
+  `kestrel.data.universe` reads every USDT pair from Binance's archive, delisted ones
+  included (`kestrel ingest-universe`, manifest in `data/universe/1d.json`). Binance
+  reuses symbols (LUNAUSDT is two coins), so `kestrel.data.panel` numbers each coin's
+  unbroken histories and nothing is computed across a gap. `kestrel.backtest.portfolio`
+  holds several coins for one strategy; strategies return decisions (weekly), not daily
+  targets. Each coin pays its own spread (`kestrel.backtest.spread`, Abdi-Ranaldo, 1 bp
+  floor). Benchmark: BTC buy-and-hold. Tokenized stocks listed from June 2026
+  (AAPLBUSDT...) aren't excluded yet; fix from Binance's metadata before any holdout run.
+  This is a single strategy over many coins, not the parked multi-strategy allocator.
 - **Parked, P3+: multi-strategy portfolios.** Strategies emit *target positions*, never
   orders; an allocator owns the wallet, resolves conflicts and nets orders before the
   `ExecutionVenue`. Build P2 around this so single-strategy is a portfolio of one.

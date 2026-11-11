@@ -23,6 +23,7 @@ says. Nothing below has been run on market data.
 | Rising trendline bounce | `rising-trendline-bounce-in-an-uptrend` (freeze v2) | `trendline-bounce` vs `swing-pullback` | BTC and ETH 4h |
 | Falling trendline breakout | `falling-trendline-breakout` | `trendline-breakout` vs `channel-breakout` | BTC and ETH 4h |
 | Falling wedge breakout | `falling-wedge-breakout` | `wedge-breakout` vs `trendline-breakout` | BTC and ETH 4h |
+| Cross-sectional momentum (S4) | `cross-sectional-momentum-across-coins-top-5` | `xs-momentum` | All coins 1d (the delisted-inclusive universe), against BTC |
 
 Testing this many ideas at once is itself a multiple-testing problem: with seven
 hypotheses on two markets, one pass at the 90-95% level is expected by luck alone. Until
@@ -42,7 +43,6 @@ more.
 |---|---|---|
 | S2 HMM regime filter | Luke's call: HMM work comes later. Needs a walk-forward HMM (rolling refit, filtered probabilities, states relabelled by emission means each refit) and a base strategy with an edge to filter. | Yes, as a filter |
 | S3 HMM regime playbook | Same, after S2's walk-forward HMM exists. Must beat a plain 200-day moving-average filter after costs. | Yes, long-only version |
-| Cross-sectional momentum across alts | A multi-asset engine (the parked P3+ portfolio decision: fixed sleeves or a shared pool) and a survivorship-free universe that includes delisted pairs, chosen point in time. The highest-value item here once those exist. | Yes, long-only top N |
 | Funding-rate extremes (as a signal) | A new data source: perpetual funding history (published in Binance's bulk archive). Only the signal comes from perps; trades stay spot. | Signal yes, carry no |
 | Reversion after liquidation cascades | Liquidation and open-interest history; Binance's public archive covers it only partly. Check coverage before writing a note. | Yes, long after down-cascades |
 | Perp/spot basis | Perpetuals, which need the P5 rethink (not offered to Australian retail). | No |
