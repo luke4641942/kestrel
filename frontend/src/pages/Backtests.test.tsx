@@ -91,6 +91,26 @@ describe("Runs and a run's detail", () => {
     expect(within(table).getAllByRole("row")).toHaveLength(13);
   });
 
+  it("sorts by a column when its heading is clicked", async () => {
+    const ranked = [0.1, 0.4, -0.2].map((ret, i) =>
+      run({ id: `20260101-00000${i}-abcdef`, strategy: `s${i}`, created_at: `2026-01-0${i + 1}T00:00:00Z` }, { total_return: ret }),
+    );
+    api.backtests = vi.fn().mockResolvedValue(ranked);
+    render(<Backtests jobs={[]} onJobStarted={() => {}} />);
+    const names = async () => {
+      const table = (await screen.findAllByRole("table"))[0]!;
+      return [...table.querySelectorAll(".run-name")].map((e) => e.textContent);
+    };
+    await waitFor(async () => expect(await names()).toEqual(["s2", "s1", "s0"])); // newest first
+    const heading = screen.getByRole("button", { name: /Net profit/ });
+    fireEvent.click(heading);
+    expect(await names()).toEqual(["s1", "s0", "s2"]);
+    expect(heading.closest("th")).toHaveAttribute("aria-sort", "descending");
+    fireEvent.click(heading);
+    expect(await names()).toEqual(["s2", "s0", "s1"]);
+    expect(heading.closest("th")).toHaveAttribute("aria-sort", "ascending");
+  });
+
   it("puts the detail behind tabs, statistics first", async () => {
     render(<Backtests jobs={[]} onJobStarted={() => {}} />);
     const stats = await screen.findByRole("tab", { name: "Statistics" });

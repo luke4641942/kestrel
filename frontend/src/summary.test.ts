@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { KIND_LABEL, defaultDataset, fewTrades, signalsCaption, MAX_LABELLED_TRADES, MAX_MARKED_TRADES, costHeadroom, paramsText, runRole, tradeCount, heldAsset, money, span, trackRecord, tradeMarkers, verdict } from "./summary";
+import { DEFAULT_RUN_SORT, KIND_LABEL, defaultDataset, nextSort, sortRuns, fewTrades, signalsCaption, MAX_LABELLED_TRADES, MAX_MARKED_TRADES, costHeadroom, paramsText, runRole, tradeCount, heldAsset, money, span, trackRecord, tradeMarkers, verdict } from "./summary";
 import { run, trade } from "./test/fixtures";
 
 describe("verdict", () => {
@@ -205,5 +205,42 @@ describe("signalsCaption", () => {
   it("says when only the latest bars are drawn", () => {
     const text = signalsCaption("2020-01", "2025-10", 20_000, 51_000, Date.UTC(2023, 7, 1) / 1000);
     expect(text).toContain("the most recent 20,000 of 51,000 bars are drawn (from 2023-08-01)");
+  });
+});
+
+describe("sorting runs", () => {
+  const a = run({ id: "a", created_at: "2026-01-01T00:00:00Z" }, { total_return: 0.2, sharpe: 0.5, max_drawdown: -0.3, trades: 10 }, 400);
+  const b = run({ id: "b", created_at: "2026-01-03T00:00:00Z" }, { total_return: -0.1, sharpe: null, max_drawdown: -0.1, trades: 40 }, 400);
+  const c = run({ id: "c", created_at: "2026-01-02T00:00:00Z" }, { total_return: 0.5, sharpe: 1.2, max_drawdown: -0.6, trades: 5 }, 400);
+  const ids = (key: Parameters<typeof nextSort>[1], dir: "desc" | "asc" = "desc") =>
+    sortRuns([a, b, c], { key, dir }).map((r) => r.id);
+
+  it("starts newest first", () => {
+    expect(sortRuns([a, b, c], DEFAULT_RUN_SORT).map((r) => r.id)).toEqual(["b", "c", "a"]);
+  });
+
+  it("puts the best first, then reverses", () => {
+    expect(ids("profit")).toEqual(["c", "a", "b"]);
+    expect(ids("profit", "asc")).toEqual(["b", "a", "c"]);
+    expect(ids("drawdown")).toEqual(["b", "a", "c"]); // shallowest first
+    expect(ids("trades")).toEqual(["b", "a", "c"]);
+  });
+
+  it("sorts profit by return, so different starting cash compares fairly", () => {
+    const small = run({ id: "small", initial_cash: "100" }, { final_equity: 150, total_return: 0.5 });
+    const big = run({ id: "big", initial_cash: "10000" }, { final_equity: 10_100, total_return: 0.01 });
+    expect(sortRuns([big, small], { key: "profit", dir: "desc" }).map((r) => r.id)).toEqual(["small", "big"]);
+  });
+
+  it("puts runs without a value last in both directions", () => {
+    expect(ids("sharpe")).toEqual(["c", "a", "b"]);
+    expect(ids("sharpe", "asc")).toEqual(["a", "c", "b"]);
+    const bench = run({ id: "bench", strategy: "buy-and-hold" }, { total_return: 9 });
+    expect(sortRuns([bench, a], { key: "vsHold", dir: "desc" }).map((r) => r.id)).toEqual(["a", "bench"]);
+  });
+
+  it("flips direction on a second click, and starts a new column best first", () => {
+    expect(nextSort({ key: "sharpe", dir: "desc" }, "sharpe")).toEqual({ key: "sharpe", dir: "asc" });
+    expect(nextSort({ key: "sharpe", dir: "asc" }, "trades")).toEqual({ key: "trades", dir: "desc" });
   });
 });

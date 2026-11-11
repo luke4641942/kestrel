@@ -7,13 +7,18 @@ import { ago, dateTime, lastResearchMonth, num } from "../format";
 import { useResource } from "../hooks";
 import {
   MAX_LABELLED_TRADES,
+  DEFAULT_RUN_SORT,
   costHeadroom,
   defaultDataset,
   fewTrades,
   heldAsset,
   money,
+  nextSort,
   paramsText,
   runRole,
+  sortRuns,
+  type RunSort,
+  type RunSortKey,
   span,
   tooManyToMark,
   trackRecord,
@@ -83,7 +88,7 @@ export function Backtests({ jobs, onJobStarted }: { jobs: Job[]; onJobStarted: (
         </Panel>
       </Section>
 
-      <Section title="Runs" description="Every saved run, newest first, including runs started from the CLI. Select one to see it below.">
+      <Section title="Runs" description="Every saved run, including runs started from the CLI. Click a heading to sort; select a run to see it below.">
         <Panel>
           {list.length === 0 ? (
             <Empty title={runs.loading ? "Loading runs" : "No runs yet"}>
@@ -241,8 +246,13 @@ function RunsTable({
   onSelect: (id: string) => void;
 }) {
   const [all, setAll] = useState(false);
-  // A run linked directly (#/backtests/<id>) stays visible even if it is an older one.
-  const shown = all || runs.findIndex((r) => r.id === current) >= RUNS_SHOWN ? runs : runs.slice(0, RUNS_SHOWN);
+  const [sort, setSort] = useState<RunSort>(DEFAULT_RUN_SORT);
+  const sorted = sortRuns(runs, sort);
+  // A run linked directly (#/backtests/<id>) stays visible even if it is further down.
+  const shown = all || sorted.findIndex((r) => r.id === current) >= RUNS_SHOWN ? sorted : sorted.slice(0, RUNS_SHOWN);
+  const header = (key: RunSortKey, label: string, title: string) => (
+    <SortHeader sortKey={key} label={label} title={title} sort={sort} onSort={(k) => setSort(nextSort(sort, k))} />
+  );
   return (
     <>
       <div className="table-wrap">
@@ -252,14 +262,12 @@ function RunsTable({
               <th>Strategy</th>
               <th>Market</th>
               <th>Period</th>
-              <th className="num">Net profit</th>
-              <th className="num" title="Net profit minus what buy-and-hold of the same market made">
-                vs buy-and-hold
-              </th>
-              <th className="num">Sharpe</th>
-              <th className="num">Max drawdown</th>
-              <th className="num">Trades</th>
-              <th className="num">Saved</th>
+              {header("profit", "Net profit", "After all costs. Sorts by return, so different starting cash compares fairly")}
+              {header("vsHold", "vs buy-and-hold", "Net profit minus what buy-and-hold of the same market made")}
+              {header("sharpe", "Sharpe", "Annualised, from daily returns")}
+              {header("drawdown", "Max drawdown", "Worst fall from a peak; sorts shallowest first")}
+              {header("trades", "Trades", "Round trips for stop-and-target strategies, orders otherwise")}
+              {header("saved", "Saved", "When the run was saved")}
             </tr>
           </thead>
           <tbody>
@@ -311,6 +319,33 @@ function RunsTable({
       </div>
       <MoreRows shown={shown.length} total={runs.length} noun="runs" onShowAll={() => setAll(true)} />
     </>
+  );
+}
+
+/** A column heading that sorts the table. aria-sort tells screen readers the order. */
+function SortHeader({
+  sortKey,
+  label,
+  title,
+  sort,
+  onSort,
+}: {
+  sortKey: RunSortKey;
+  label: string;
+  title: string;
+  sort: RunSort;
+  onSort: (key: RunSortKey) => void;
+}) {
+  const active = sort.key === sortKey;
+  return (
+    <th className="num" aria-sort={active ? (sort.dir === "desc" ? "descending" : "ascending") : "none"}>
+      <button type="button" className={`sort-btn${active ? " active" : ""}`} title={title} onClick={() => onSort(sortKey)}>
+        {label}
+        <span className="sort-arrow" aria-hidden="true">
+          {active && sort.dir === "asc" ? "↑" : "↓"}
+        </span>
+      </button>
+    </th>
   );
 }
 

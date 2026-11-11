@@ -198,3 +198,50 @@ export function tradeCount(r: Pick<RunSummary, "style" | "metrics">): number {
 export function fewTrades(r: Pick<RunSummary, "strategy" | "metrics">): boolean {
   return r.metrics.few_trades && r.strategy !== "buy-and-hold";
 }
+
+export type RunSortKey = "profit" | "vsHold" | "sharpe" | "drawdown" | "trades" | "saved";
+
+export interface RunSort {
+  key: RunSortKey;
+  dir: "desc" | "asc";
+}
+
+export const DEFAULT_RUN_SORT: RunSort = { key: "saved", dir: "desc" };
+
+/** The number a runs-table column sorts by; null when the run has none. Profit sorts by
+ * return, not cash, so runs with different starting cash compare fairly. */
+function sortValue(r: RunSummary, key: RunSortKey): number | null {
+  const m = r.metrics;
+  switch (key) {
+    case "profit":
+      return m.total_return;
+    case "vsHold":
+      // The benchmark against itself is not a result.
+      return r.strategy === "buy-and-hold" ? null : m.total_return - r.benchmark_metrics.total_return;
+    case "sharpe":
+      return m.sharpe;
+    case "drawdown":
+      return m.max_drawdown; // negative: the shallowest drawdown is the largest value
+    case "trades":
+      return tradeCount(r);
+    case "saved":
+      return new Date(r.created_at).getTime();
+  }
+}
+
+/** Sorted copy of the runs. Descending puts the best first in every column; runs with no
+ * value go last either way. Ties keep their existing order. */
+export function sortRuns(runs: RunSummary[], sort: RunSort): RunSummary[] {
+  const sign = sort.dir === "desc" ? -1 : 1;
+  return [...runs].sort((a, b) => {
+    const x = sortValue(a, sort.key);
+    const y = sortValue(b, sort.key);
+    if (x === null || y === null) return x === y ? 0 : x === null ? 1 : -1;
+    return sign * (x - y);
+  });
+}
+
+/** Clicking a column: a new column sorts best first; the same column flips direction. */
+export function nextSort(current: RunSort, key: RunSortKey): RunSort {
+  return current.key === key ? { key, dir: current.dir === "desc" ? "asc" : "desc" } : { key, dir: "desc" };
+}

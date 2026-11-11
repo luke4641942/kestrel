@@ -528,13 +528,65 @@ p {
   border-top: 1px solid var(--line);
 }
 
+.sort-btn {
+  position: relative;
+  padding: 0;
+  border: 0;
+  background: none;
+  font: inherit;
+  color: inherit;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.sort-btn:hover,
+.sort-btn.active {
+  color: var(--text);
+}
+
+.sort-btn:focus-visible {
+  outline: 2px solid var(--text-3);
+  outline-offset: 2px;
+}
+
+/* The arrow hangs just left of the right-aligned label, so it adds no column width.
+   Columns not being sorted show it only on hover. */
+.sort-arrow {
+  position: absolute;
+  right: 100%;
+  margin-right: 3px;
+  visibility: hidden;
+}
+
+.sort-btn:hover .sort-arrow,
+.sort-btn:focus-visible .sort-arrow,
+.sort-btn.active .sort-arrow {
+  visibility: visible;
+}
+
+.runs-table th,
+.runs-table td {
+  padding-left: 12px;
+  padding-right: 12px;
+}
+
+.runs-table th:first-child,
+.runs-table td:first-child {
+  padding-left: 16px;
+}
+
+.runs-table th:last-child,
+.runs-table td:last-child {
+  padding-right: 16px;
+}
+
 .runs-table .run-name {
   font-weight: 500;
   white-space: nowrap;
 }
 
 .cell-sub.truncate {
-  max-width: 340px;
+  max-width: 300px;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
