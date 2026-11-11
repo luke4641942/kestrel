@@ -79,15 +79,23 @@ class CostModel:
     def impact_rate(self, participation: Decimal) -> Decimal:
         return self.impact_coef * participation.sqrt()
 
-    def cost_rate(self, side: Side, notional: Decimal, bar_quote_volume: Decimal) -> Decimal:
+    def cost_rate(
+        self,
+        side: Side,
+        notional: Decimal,
+        bar_quote_volume: Decimal,
+        half_spread: Decimal | None = None,
+    ) -> Decimal:
         """Total cost as a fraction of the order's notional at the reference price.
+        ``half_spread`` (a fraction) overrides the configured one for this order.
 
         Buy:  pay  ref * (1 + slip) * (1 + fee)  per unit, so cost = (1+s)(1+f) - 1
         Sell: get  ref * (1 - slip) * (1 - fee)  per unit, so cost = 1 - (1-s)(1-f)
         """
         if bar_quote_volume <= 0:
             raise ValueError("bar_quote_volume must be positive; a zero-volume bar has no price")
-        slip = self.half_spread_rate + self.impact_rate(notional / bar_quote_volume)
+        half = self.half_spread_rate if half_spread is None else half_spread
+        slip = half + self.impact_rate(notional / bar_quote_volume)
         if side is Side.BUY:
             return (1 + slip) * (1 + self.fee_rate) - 1
         return 1 - (1 - slip) * (1 - self.fee_rate)
@@ -99,8 +107,11 @@ class CostModel:
         reference_price: Decimal,
         bar_quote_volume: Decimal,
         rules: InstrumentRules,
+        half_spread: Decimal | None = None,
     ) -> Fill | Rejection:
-        """Simulate a market order. Quantity is rounded down to the exchange step."""
+        """Simulate a market order. Quantity is rounded down to the exchange step.
+        ``half_spread`` (a fraction) overrides the configured one, e.g. a coin's own
+        estimated spread."""
 
         def reject(reason: str) -> Rejection:
             return Rejection(rules.symbol, side, quantity, reason)
@@ -123,7 +134,8 @@ class CostModel:
             )
 
         impact = self.impact_rate(participation)
-        slip = self.half_spread_rate + impact
+        half = self.half_spread_rate if half_spread is None else half_spread
+        slip = half + impact
         sign = 1 if side is Side.BUY else -1
         price = reference_price * (1 + sign * slip)
         return Fill(
@@ -133,6 +145,6 @@ class CostModel:
             reference_price=reference_price,
             price=price,
             fee=qty * price * self.fee_rate,
-            spread_cost=notional * self.half_spread_rate,
+            spread_cost=notional * half,
             impact_cost=notional * impact,
         )

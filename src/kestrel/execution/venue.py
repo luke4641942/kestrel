@@ -8,11 +8,12 @@ live implementations of the same interface.
 
 from __future__ import annotations
 
+from collections.abc import Callable
 from decimal import Decimal
 from typing import Protocol
 
 from kestrel.backtest.costs import CostModel, Fill, Rejection, Side
-from kestrel.config import Config
+from kestrel.config import Config, InstrumentRules
 
 
 class ExecutionVenue(Protocol):
@@ -27,20 +28,38 @@ class SimVenue:
     """Simulated spot account: cash in the account currency plus coin positions.
 
     The engine sets the market before each decision: the reference price (the bar's
-    open) and the last closed bar's quote volume, which sizes market impact.
+    open), the last closed bar's quote volume, which sizes market impact, and optionally
+    the coin's own half-spread. Exchange rules come from ``rules`` (by default each
+    symbol's [instruments] entry, which must exist).
     """
 
-    def __init__(self, config: Config, initial_cash: Decimal) -> None:
+    def __init__(
+        self,
+        config: Config,
+        initial_cash: Decimal,
+        rules: Callable[[str], InstrumentRules] | None = None,
+    ) -> None:
         if initial_cash <= 0:
             raise ValueError("initial cash must be positive")
         self._config = config
+        self._rules = rules or config.instrument
         self._model = CostModel(config.costs)
         self._cash = initial_cash
         self._positions: dict[str, Decimal] = {}
-        self._market: dict[str, tuple[Decimal, Decimal]] = {}
+        self._market: dict[str, tuple[Decimal, Decimal, Decimal | None]] = {}
 
-    def set_market(self, symbol: str, reference_price: Decimal, last_bar_volume: Decimal) -> None:
-        self._market[symbol] = (reference_price, last_bar_volume)
+    def set_market(
+        self,
+        symbol: str,
+        reference_price: Decimal,
+        last_bar_volume: Decimal,
+        half_spread: Decimal | None = None,
+    ) -> None:
+        self._market[symbol] = (reference_price, last_bar_volume, half_spread)
+
+    def holdings(self) -> dict[str, Decimal]:
+        """Every coin held, by symbol (positions of zero dropped)."""
+        return {s: q for s, q in self._positions.items() if q > 0}
 
     def cash(self) -> Decimal:
         return self._cash
@@ -54,12 +73,12 @@ class SimVenue:
     def submit_market(self, symbol: str, side: Side, quantity: Decimal) -> Fill | Rejection:
         if symbol not in self._market:
             raise RuntimeError(f"no market set for {symbol}; call set_market first")
-        price, volume = self._market[symbol]
+        price, volume, half_spread = self._market[symbol]
         held = self.position(symbol)
         if side is Side.SELL and quantity > held:
             return Rejection(symbol, side, quantity, f"cannot sell {quantity}, holding {held}")
         result = self._model.fill_market(
-            side, quantity, price, volume, self._config.instrument(symbol)
+            side, quantity, price, volume, self._rules(symbol), half_spread
         )
         if isinstance(result, Rejection):
             return result

@@ -2,7 +2,8 @@
 
 ``execute`` loads bars, runs the strategy and the benchmark (buy-and-hold of the same
 market on the same bars and cash, through the same engine and costs), and computes
-metrics for both.
+metrics for both. A cross-sectional strategy runs on the whole coin universe through
+the portfolio engine, against buy-and-hold of BTC over the same period.
 ``RunStore`` saves each run so results survive restarts and can be compared:
 
     <data>/runs/<run id>/
@@ -36,19 +37,26 @@ import polars as pl
 from kestrel.backtest.analysis import Analysis, analyse
 from kestrel.backtest.engine import BacktestResult, run_backtest
 from kestrel.backtest.metrics import Metrics, compute_metrics
+from kestrel.backtest.portfolio import run_portfolio
 from kestrel.backtest.vectorised import run_vectorised
 from kestrel.config import Config
 from kestrel.data.binance_vision import Month
+from kestrel.data.panel import load_panel
 from kestrel.data.schema import Interval
 from kestrel.data.store import ParquetStore
+from kestrel.data.universe import manifest_path
 from kestrel.strategy import (
+    UNIVERSE,
     BracketStrategy,
     BuyAndHold,
     Strategy,
+    make_portfolio_strategy,
     make_strategy,
     resolve_params,
     spec_for,
 )
+
+UNIVERSE_BENCHMARK = "BTCUSDT"
 
 RUN_ID = re.compile(r"^\d{8}-\d{6}-[0-9a-f]{6}$")
 
@@ -80,9 +88,13 @@ class RunOutcome:
     benchmark: BacktestResult
     benchmark_metrics: Metrics
     analysis: Analysis
+    universe_coins: int | None = None
+    """Coins in the panel, for a cross-sectional run."""
 
 
 def execute(request: RunRequest, store: ParquetStore, config: Config) -> RunOutcome:
+    if spec_for(request.strategy).universe or request.symbol.upper() == UNIVERSE:
+        return _execute_universe(request, store, config)
     symbol = request.symbol.upper()
     strategy = make_strategy(request.strategy, symbol, request.params)
     after = request.end.next()
@@ -119,6 +131,55 @@ def execute(request: RunRequest, store: ParquetStore, config: Config) -> RunOutc
         benchmark,
         compute_metrics(benchmark),
         analyse(result, benchmark),
+    )
+
+
+def _execute_universe(request: RunRequest, store: ParquetStore, config: Config) -> RunOutcome:
+    strategy = make_portfolio_strategy(request.strategy, request.params)
+    if request.symbol.upper() != UNIVERSE:
+        raise ValueError(f"{request.strategy} runs on {UNIVERSE}, not {request.symbol}")
+    if request.engine != "event":
+        raise ValueError("cross-sectional strategies run on the event engine only")
+    path = manifest_path(store, request.interval)
+    if not path.exists():
+        raise ValueError(
+            f"no {request.interval.value} coin universe stored; run "
+            f"kestrel ingest-universe --interval {request.interval.value} first"
+        )
+    coins = sorted(json.loads(path.read_text())["coins"])
+    panel = load_panel(store, coins, request.interval, request.start, request.end)
+    if panel.is_empty():
+        raise ValueError(f"no universe bars stored for {request.start}..{request.end}")
+    result = run_portfolio(
+        strategy,
+        panel,
+        request.interval,
+        config,
+        request.initial_cash,
+        allow_holdout=request.allow_holdout,
+    )
+    first, last = panel["open_time"].min(), panel["open_time"].max()
+    btc = store.read(UNIVERSE_BENCHMARK, request.interval).filter(
+        pl.col("open_time").is_between(first, last)
+    )
+    if btc.height < 2:
+        raise ValueError(f"the benchmark needs {UNIVERSE_BENCHMARK} {request.interval.value} bars")
+    benchmark = run_backtest(
+        BuyAndHold(UNIVERSE_BENCHMARK),
+        btc,
+        request.interval,
+        config,
+        request.initial_cash,
+        allow_holdout=request.allow_holdout,
+    )
+    return RunOutcome(
+        request,
+        result,
+        compute_metrics(result),
+        benchmark,
+        compute_metrics(benchmark),
+        analyse(result, benchmark),
+        universe_coins=panel["symbol"].n_unique(),
     )
 
 
@@ -172,6 +233,9 @@ class RunStore:
                 {"slug": req.research[0], "version": req.research[1]} if req.research else None
             ),
             "symbol": res.symbol,
+            "benchmark_symbol": outcome.benchmark.symbol,
+            "universe_coins": outcome.universe_coins,
+            "forced_exits": res.forced_exits,
             "interval": req.interval.value,
             "start": str(req.start),
             "end": str(req.end),

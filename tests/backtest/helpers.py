@@ -65,6 +65,12 @@ def config(
                 "holdout_start": date(2025, 11, 1),
             },
             "instruments": {"BTCUSDT": rules},
+            "universe": {
+                "step_size": "0.00000001",
+                "min_qty": "0.00000001",
+                "min_notional": "5",
+                "spread_window_days": 30,
+            },
         }
     )
 

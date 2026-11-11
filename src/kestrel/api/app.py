@@ -565,6 +565,7 @@ def _strategy_out(spec: StrategySpec) -> StrategyOut:
         kind=spec.kind,
         description=spec.description,
         params=[ParamOut.model_validate(asdict(p)) for p in spec.params],
+        universe=spec.universe,
     )
 
 

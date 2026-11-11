@@ -12,6 +12,8 @@ import {
   defaultDataset,
   fewTrades,
   heldAsset,
+  marketLabel,
+  marketsFor,
   money,
   nextSort,
   paramsText,
@@ -121,13 +123,15 @@ function BacktestForm({ onStarted }: { onStarted: (job: Job) => void }) {
   const [error, setError] = useState<string>();
 
   const maxMonth = config.data ? lastResearchMonth(config.data.backtest.holdout_start) : undefined;
-  const ds = datasets.data?.find((d) => datasetKey(d) === dataset) ?? defaultDataset(datasets.data ?? []);
   const direct = (strategies.data ?? []).filter((s) => s.kind !== "research");
   const testable = (research.data ?? []).filter((r) => r.frozen && r.status !== "rejected" && r.implementation);
   const [kind, value] = choice.split(":") as ["impl" | "research", string];
   const chosenResearch = kind === "research" ? testable.find((r) => r.slug === value) : undefined;
   const implKey = kind === "research" ? chosenResearch?.implementation : value;
   const impl = strategies.data?.find((s) => s.key === implKey);
+  // A cross-sectional strategy runs on the whole coin universe, not a chosen market.
+  const markets = marketsFor(impl, datasets.data ?? []);
+  const ds = markets.find((d) => datasetKey(d) === dataset) ?? defaultDataset(markets);
   useEffect(() => {
     setParams(impl ? defaultParams(impl.params) : {});
   }, [impl?.key]);
@@ -168,9 +172,12 @@ function BacktestForm({ onStarted }: { onStarted: (job: Job) => void }) {
   if (datasets.data && datasets.data.length === 0) {
     return <p className="secondary">Ingest a dataset on the Data page first; backtests run on stored bars.</p>;
   }
-  const description = chosenResearch
-    ? `Runs ${chosenResearch.name} v${chosenResearch.version} with ${implKey} and logs it as a trial.`
-    : impl?.description;
+  const description =
+    impl?.universe && markets.length === 0
+      ? "This strategy ranks every coin: it needs BTCUSDT 1d and the coin universe (kestrel ingest-universe --interval 1d)."
+      : chosenResearch
+        ? `Runs ${chosenResearch.name} v${chosenResearch.version} with ${implKey} and logs it as a trial.`
+        : impl?.description;
 
   return (
     <form onSubmit={submit}>
@@ -178,9 +185,9 @@ function BacktestForm({ onStarted }: { onStarted: (job: Job) => void }) {
         <div className="field">
           <label htmlFor="bt-data">Market</label>
           <select id="bt-data" value={ds ? datasetKey(ds) : ""} onChange={(e) => setDataset(e.target.value)}>
-            {datasets.data?.map((d) => (
+            {markets.map((d) => (
               <option key={datasetKey(d)} value={datasetKey(d)}>
-                {d.symbol} {d.interval}
+                {marketLabel(d)}
               </option>
             ))}
           </select>
@@ -292,9 +299,7 @@ function RunsTable({
                       {sub}
                     </div>
                   </td>
-                  <td className="nw">
-                    {r.symbol} {r.interval}
-                  </td>
+                  <td className="nw">{marketLabel(r)}</td>
                   <td className="nw secondary">
                     {r.start} to {r.end}
                   </td>
@@ -401,7 +406,7 @@ function RunView({ id }: { id: string }) {
   return (
     <Section
       title={r.strategy_name}
-      description={`${r.symbol} ${r.interval} · ${r.start} to ${r.end} (${span(r.metrics.start, r.metrics.end)}) · ${usdt(
+      description={`${marketLabel(r)} · ${r.start} to ${r.end} (${span(r.metrics.start, r.metrics.end)}) · ${usdt(
         Number(r.initial_cash),
       )} ${r.account_currency} starting cash · decided at each bar close, filled at the next open`}
     >

@@ -57,12 +57,33 @@ class InstrumentRules:
 
 
 @dataclass(frozen=True)
+class UniverseConfig:
+    """Assumptions for coins that have no [instruments] entry of their own: the many coins
+    a cross-sectional strategy ranks."""
+
+    step_size: Decimal
+    min_qty: Decimal
+    min_notional: Decimal
+    spread_window_days: int
+    """Days of bars that estimate each coin's spread (see kestrel.backtest.spread)."""
+
+
+@dataclass(frozen=True)
 class Config:
     account_currency: str
     costs: CostConfig
     backtest: BacktestConfig
     instruments: dict[str, InstrumentRules]
+    universe: UniverseConfig
     document: dict[str, Any]
+
+    def rules_for(self, symbol: str) -> InstrumentRules:
+        """A coin's own exchange rules if configured, else the universe's."""
+        symbol = symbol.upper()
+        if symbol in self.instruments:
+            return self.instruments[symbol]
+        u = self.universe
+        return InstrumentRules(symbol, u.step_size, u.min_qty, u.min_notional)
 
     def instrument(self, symbol: str) -> InstrumentRules:
         try:
@@ -91,7 +112,9 @@ def load_config(path: Path | str = "kestrel.toml") -> Config:
 
 
 def parse_config(document: dict[str, Any]) -> Config:
-    _expect_keys(document, {"account_currency", "costs", "backtest", "instruments"}, "top level")
+    _expect_keys(
+        document, {"account_currency", "costs", "backtest", "instruments", "universe"}, "top level"
+    )
 
     currency = document["account_currency"]
     if not isinstance(currency, str) or not currency.isalpha():
@@ -146,11 +169,29 @@ def parse_config(document: dict[str, Any]) -> Config:
             min_notional=_decimal(raw, "min_notional", where, low=0),
         )
 
+    raw_u = _table(document, "universe")
+    _expect_keys(
+        raw_u, {"step_size", "min_qty", "min_notional", "spread_window_days"}, "[universe]"
+    )
+    window = raw_u["spread_window_days"]
+    if isinstance(window, bool) or not isinstance(window, int) or not 2 <= window <= 365:
+        raise ConfigError(
+            "[universe] spread_window_days must be a whole number of days from 2 to 365, "
+            f"got {window!r}"
+        )
+    universe = UniverseConfig(
+        step_size=_decimal(raw_u, "step_size", "[universe]", low=0, low_inclusive=False),
+        min_qty=_decimal(raw_u, "min_qty", "[universe]", low=0),
+        min_notional=_decimal(raw_u, "min_notional", "[universe]", low=0),
+        spread_window_days=window,
+    )
+
     return Config(
         account_currency=currency,
         costs=costs,
         backtest=backtest,
         instruments=instruments,
+        universe=universe,
         document=document,
     )
 

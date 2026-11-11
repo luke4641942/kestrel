@@ -17,11 +17,12 @@ from __future__ import annotations
 import inspect
 from collections.abc import Callable
 from dataclasses import dataclass
-from typing import Literal, Protocol, runtime_checkable
+from typing import Literal, Protocol, cast, runtime_checkable
 
 import polars as pl
 
 from kestrel.strategies.levels import LevelBreakout, LevelRetest
+from kestrel.strategies.momentum import CrossSectionalMomentum
 from kestrel.strategies.pivots import PivotReversal
 from kestrel.strategies.structure import StructurePullback
 from kestrel.strategies.trend import TrendVolTarget
@@ -39,6 +40,19 @@ class LookaheadError(ValueError):
 
     A ValueError: it is invalid input, so the CLI, API and jobs report it with the
     other validation errors instead of crashing."""
+
+
+UNIVERSE = "UNIVERSE"
+"""The market a cross-sectional strategy runs on: every coin in kestrel.data.universe."""
+
+
+class PortfolioStrategy(Protocol):
+    """Holds several coins at once. Returns decisions (open_time, symbol, weight); see
+    kestrel.backtest.portfolio for what they mean."""
+
+    name: str
+
+    def target_weights(self, panel: pl.DataFrame) -> pl.DataFrame: ...
 
 
 class Strategy(Protocol):
@@ -154,8 +168,10 @@ class StrategySpec:
     key: str
     kind: Literal["benchmark", "engine-test", "research", "control"]
     description: str
-    factory: Callable[..., Strategy | BracketStrategy]
+    factory: Callable[..., Strategy | BracketStrategy | PortfolioStrategy]
     params: tuple[Param, ...] = ()
+    universe: bool = False
+    """Ranks the whole coin universe (a PortfolioStrategy) instead of trading one market."""
 
 
 STRATEGIES: dict[str, StrategySpec] = {
@@ -378,6 +394,23 @@ STRATEGIES: dict[str, StrategySpec] = {
             ),
         ),
         StrategySpec(
+            "xs-momentum",
+            "research",
+            "Every Sunday, rank the liquid coins (delisted ones included) on 7, 14 and 28-day "
+            "returns and hold the top 5 equally, each only while its own 28-day trend is up. "
+            "Daily bars, whole universe. Research: runs only through its frozen note.",
+            CrossSectionalMomentum,
+            (
+                Param("top_n", 5, 1, 20, "Coins held at most"),
+                Param("fast_days", 7, 2, 30, "Shortest return lookback, in days"),
+                Param("mid_days", 14, 5, 60, "Middle return lookback, in days"),
+                Param("slow_days", 28, 10, 120, "Longest lookback; also the absolute filter"),
+                Param("min_history_days", 180, 30, 730, "Unbroken history needed to be ranked"),
+                Param("min_volume_musd", 20, 1, 500, "Median daily volume needed, in million USDT"),
+            ),
+            universe=True,
+        ),
+        StrategySpec(
             "ma-trend",
             "engine-test",
             "Long when the fast moving average is above the slow one. An engine test, "
@@ -422,7 +455,19 @@ def spec_for(key: str) -> StrategySpec:
 def make_strategy(
     key: str, symbol: str, params: dict[str, int] | None = None
 ) -> Strategy | BracketStrategy:
-    return spec_for(key).factory(symbol.upper(), **resolve_params(key, params))
+    spec = spec_for(key)
+    if spec.universe:
+        raise ValueError(f"{key} ranks the whole coin universe; run it on {UNIVERSE}, not {symbol}")
+    return cast(
+        Strategy | BracketStrategy, spec.factory(symbol.upper(), **resolve_params(key, params))
+    )
+
+
+def make_portfolio_strategy(key: str, params: dict[str, int] | None = None) -> PortfolioStrategy:
+    spec = spec_for(key)
+    if not spec.universe:
+        raise ValueError(f"{key} trades one market; choose a market instead of {UNIVERSE}")
+    return cast(PortfolioStrategy, spec.factory(UNIVERSE, **resolve_params(key, params)))
 
 
 def strategy_source(key: str) -> str:

@@ -17,6 +17,13 @@ Not every pair is a coin. Excluded, with the reason recorded:
 
 Which coins are *eligible* on a given date (enough history, enough volume) is decided
 point in time by the strategy, from data known then. This module only says what exists.
+
+Known gap: from June 2026 Binance lists tokenized stocks and ETFs quoted in USDT
+(AAPLBUSDT, MSFTBUSDT, EWYBUSDT...). No name rule separates them from real coins whose
+base ends in B (ARB, BNB, CKB), so they are not excluded yet. They cannot affect research
+runs (which end before the 2025-11 holdout) or a holdout run on data through 2026-10
+(they need 180 days of history to be ranked). Exclude them from Binance's symbol metadata
+before the holdout is used.
 """
 
 from __future__ import annotations

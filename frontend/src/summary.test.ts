@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { DEFAULT_RUN_SORT, KIND_LABEL, defaultDataset, nextSort, sortRuns, fewTrades, signalsCaption, MAX_LABELLED_TRADES, MAX_MARKED_TRADES, costHeadroom, paramsText, runRole, tradeCount, heldAsset, money, span, trackRecord, tradeMarkers, verdict } from "./summary";
+import { DEFAULT_RUN_SORT, KIND_LABEL, UNIVERSE, marketLabel, marketsFor, defaultDataset, nextSort, sortRuns, fewTrades, signalsCaption, MAX_LABELLED_TRADES, MAX_MARKED_TRADES, costHeadroom, paramsText, runRole, tradeCount, heldAsset, money, span, trackRecord, tradeMarkers, verdict } from "./summary";
 import { run, trade } from "./test/fixtures";
 
 describe("verdict", () => {
@@ -242,5 +242,31 @@ describe("sorting runs", () => {
   it("flips direction on a second click, and starts a new column best first", () => {
     expect(nextSort({ key: "sharpe", dir: "desc" }, "sharpe")).toEqual({ key: "sharpe", dir: "asc" });
     expect(nextSort({ key: "sharpe", dir: "asc" }, "trades")).toEqual({ key: "trades", dir: "desc" });
+  });
+});
+
+describe("cross-sectional runs", () => {
+  const ds = (symbol: string, interval: "1h" | "4h" | "1d") =>
+    ({ venue: "binance", symbol, interval, months: 70, rows: 2100, first: "2019-01-01T00:00:00Z", last: "2026-10-31T00:00:00Z" });
+
+  it("are compared with BTC, not with 'UNIVERSE'", () => {
+    expect(heldAsset({ symbol: UNIVERSE, account_currency: "USDT", benchmark_symbol: "BTCUSDT" })).toBe("BTC");
+    expect(heldAsset({ symbol: "ETHUSDT", account_currency: "USDT", benchmark_symbol: null })).toBe("ETH");
+    const v = verdict(run({ symbol: UNIVERSE, benchmark_symbol: "BTCUSDT" }, { final_equity: 800 }, 700));
+    expect(v.headline).toBe("Beat holding BTC by 100.00 USDT after costs.");
+  });
+
+  it("name their market", () => {
+    expect(marketLabel({ symbol: UNIVERSE, interval: "1d", universe_coins: 412 })).toBe("All coins (412) 1d");
+    expect(marketLabel({ symbol: UNIVERSE, interval: "1d" })).toBe("All coins 1d");
+    expect(marketLabel({ symbol: "BTCUSDT", interval: "4h" })).toBe("BTCUSDT 4h");
+  });
+
+  it("run on the whole universe, dated by BTC's daily bars", () => {
+    const stored = [ds("BTCUSDT", "4h"), ds("BTCUSDT", "1d"), ds("ETHUSDT", "1d")];
+    expect(marketsFor({ universe: true }, stored).map((d) => [d.symbol, d.interval])).toEqual([[UNIVERSE, "1d"]]);
+    expect(marketsFor({ universe: true }, [ds("ETHUSDT", "1d")])).toEqual([]); // no BTC daily: can't run
+    expect(marketsFor({ universe: false }, stored)).toBe(stored);
+    expect(marketsFor(undefined, stored)).toBe(stored);
   });
 });

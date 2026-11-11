@@ -299,6 +299,8 @@ class StrategyOut(BaseModel):
     """benchmark, engine-test, research or control."""
     description: str
     params: list[ParamOut]
+    universe: bool = False
+    """Ranks the whole coin universe instead of trading one market."""
 
 
 class SourceOut(BaseModel):
@@ -433,6 +435,12 @@ class RunSummary(BaseModel):
     research: ResearchRef | None = None
     strategy_name: str
     symbol: str
+    """The market, or UNIVERSE for a cross-sectional run."""
+    benchmark_symbol: str | None = None
+    """What the benchmark held; older runs (always one market) leave it out."""
+    universe_coins: int | None = None
+    """Coins ranked, for a cross-sectional run."""
+    forced_exits: int = 0
     interval: Interval
     start: str
     end: str

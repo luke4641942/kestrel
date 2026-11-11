@@ -139,6 +139,8 @@ export interface StrategyInfo {
   kind: StrategyKind;
   description: string;
   params: ParamInfo[];
+  /** Ranks the whole coin universe instead of trading one market. */
+  universe: boolean;
 }
 
 export interface StrategySource {
@@ -270,7 +272,13 @@ export interface RunSummary {
   params: Record<string, number>;
   research: { slug: string; version: number } | null;
   strategy_name: string;
+  /** The market, or UNIVERSE for a cross-sectional run. */
   symbol: string;
+  /** What the benchmark held; older runs leave it out (it was the market itself). */
+  benchmark_symbol?: string | null;
+  /** Coins ranked, for a cross-sectional run. */
+  universe_coins?: number | null;
+  forced_exits?: number;
   interval: Interval;
   start: string;
   end: string;

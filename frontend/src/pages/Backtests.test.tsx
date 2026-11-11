@@ -63,6 +63,27 @@ describe("New backtest form", () => {
     expect(select).toHaveTextContent("buy-and-hold");
   });
 
+  it("runs a cross-sectional strategy on all coins, not a chosen market", async () => {
+    api.datasets = vi.fn().mockResolvedValue([
+      { venue: "binance", symbol: "BTCUSDT", interval: "1d", months: 80, rows: 2400, first: "2019-01-01T00:00:00Z", last: "2026-10-31T00:00:00Z" },
+      { venue: "binance", symbol: "ETHUSDT", interval: "4h", months: 80, rows: 14000, first: "2020-01-01T00:00:00Z", last: "2026-10-31T00:00:00Z" },
+    ]);
+    api.strategies = vi.fn().mockResolvedValue([
+      { key: "buy-and-hold", kind: "benchmark", description: "The benchmark.", params: [], universe: false },
+      { key: "xs-momentum", kind: "research", description: "Ranks coins.", params: [], universe: true },
+    ]);
+    api.researchList = vi.fn().mockResolvedValue([
+      { slug: "mom", name: "Momentum", status: "specified", created_at: "2026-01-01T00:00:00Z", version: 1, frozen: true, implementation: "xs-momentum", runs: 0, trials: 0 },
+    ]);
+    render(<Backtests jobs={[]} onJobStarted={() => {}} />);
+    const strategy = await screen.findByLabelText("Strategy");
+    await waitFor(() => expect(strategy).toHaveTextContent("Momentum v1"));
+    fireEvent.change(strategy, { target: { value: "research:mom" } });
+    const market = screen.getByLabelText("Market");
+    await waitFor(() => expect(market).toHaveTextContent("All coins 1d"));
+    expect(market).not.toHaveTextContent("ETHUSDT");
+  });
+
   it("says when there are no runs yet", async () => {
     render(<Backtests jobs={[]} onJobStarted={() => {}} />);
     expect(await screen.findByText("No runs yet")).toBeInTheDocument();

@@ -12,7 +12,7 @@ import { ParamInputs, defaultParams } from "../components/ParamInputs";
 import { SignalsChart } from "../components/SignalsChart";
 import { Empty, PageHeader, Panel, Status } from "../components/ui";
 import { ago, dateTime, lastResearchMonth } from "../format";
-import { KIND_LABEL, RESEARCH_STATUS as STATUS, defaultDataset, signalsCaption } from "../summary";
+import { KIND_LABEL, RESEARCH_STATUS as STATUS, defaultDataset, marketLabel, marketsFor, signalsCaption } from "../summary";
 import { useResource } from "../hooks";
 
 
@@ -529,6 +529,21 @@ function rangeFor(ds: Dataset | undefined, maxMonth: string | undefined): [strin
 }
 
 function SignalsPanel({ impl }: { impl: StrategyInfo }) {
+  if (impl.universe) {
+    return (
+      <Panel pad>
+        <h3 className="panel-title">Signals</h3>
+        <p className="small secondary">
+          This strategy ranks every coin in the universe each week, so it has no single-market chart. Its holdings and
+          trades appear in a backtest.
+        </p>
+      </Panel>
+    );
+  }
+  return <MarketSignals impl={impl} />;
+}
+
+function MarketSignals({ impl }: { impl: StrategyInfo }) {
   const { datasets, maxMonth } = useMarkets();
   const [market, setMarket] = useState<string>();
   const [params, setParams] = useState(() => defaultParams(impl.params));
@@ -610,7 +625,8 @@ function TrialRunner({
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string>();
   const [started, setStarted] = useState(false);
-  const ds = datasets.find((d) => dsKey(d) === market) ?? defaultDataset(datasets);
+  const markets = marketsFor(impl, datasets);
+  const ds = markets.find((d) => dsKey(d) === market) ?? defaultDataset(markets);
   const range = rangeFor(ds, maxMonth);
 
   async function submit(e: FormEvent) {
@@ -647,9 +663,9 @@ function TrialRunner({
           <div className="field">
             <label htmlFor="trial-market">Market</label>
             <select id="trial-market" value={ds ? dsKey(ds) : ""} onChange={(e) => setMarket(e.target.value)}>
-              {datasets.map((d) => (
+              {markets.map((d) => (
                 <option key={dsKey(d)} value={dsKey(d)}>
-                  {d.symbol} {d.interval}
+                  {marketLabel(d)}
                 </option>
               ))}
             </select>

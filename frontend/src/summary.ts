@@ -1,6 +1,6 @@
 // Plain logic behind the Backtests page: the verdict, the test-period wording and the
 // chart's trade markers. Kept out of components so it can be tested directly.
-import type { ResearchStatus, RunDetail, RunSummary, StrategyKind } from "./api";
+import type { Dataset, ResearchStatus, RunDetail, RunSummary, StrategyInfo, StrategyKind } from "./api";
 import type { Tone } from "./components/ui";
 import type { TradeMarker } from "./components/EquityChart";
 
@@ -62,9 +62,28 @@ export interface Verdict {
 
 /** What the benchmark holds: the symbol without its quote currency (ETHUSDT -> ETH).
  * Every run is compared with buy-and-hold of its own market, not always BTC. */
-export function heldAsset(r: { symbol: string; account_currency: string }): string {
+export function heldAsset(r: { symbol: string; account_currency: string; benchmark_symbol?: string | null }): string {
   const cur = r.account_currency;
-  return cur && r.symbol.endsWith(cur) ? r.symbol.slice(0, -cur.length) : r.symbol;
+  const held = r.benchmark_symbol ?? r.symbol;
+  return cur && held.endsWith(cur) ? held.slice(0, -cur.length) : held;
+}
+
+/** The market a cross-sectional strategy runs on: every coin in the stored universe. */
+export const UNIVERSE = "UNIVERSE";
+
+/** "All coins 1d" for a cross-sectional run, else "BTCUSDT 4h". */
+export function marketLabel(r: { symbol: string; interval: string; universe_coins?: number | null }): string {
+  if (r.symbol !== UNIVERSE) return `${r.symbol} ${r.interval}`;
+  return `All coins${r.universe_coins ? ` (${r.universe_coins})` : ""} ${r.interval}`;
+}
+
+/** The markets a strategy can run on. A cross-sectional strategy runs on the whole
+ * universe of daily bars, dated by BTC's daily history (its benchmark); one-market
+ * strategies run on any stored dataset. */
+export function marketsFor(impl: Pick<StrategyInfo, "universe"> | undefined, datasets: Dataset[]): Dataset[] {
+  if (!impl?.universe) return datasets;
+  const btc = datasets.find((d) => d.symbol === "BTCUSDT" && d.interval === "1d");
+  return btc ? [{ ...btc, symbol: UNIVERSE }] : [];
 }
 
 /** Did it make money, did it beat holding the same market, and can it be trusted? */

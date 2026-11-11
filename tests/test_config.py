@@ -31,6 +31,12 @@ def document() -> dict[str, Any]:
         "instruments": {
             "BTCUSDT": {"step_size": "0.00001", "min_qty": "0.00001", "min_notional": "5"},
         },
+        "universe": {
+            "step_size": "0.00000001",
+            "min_qty": "0.00000001",
+            "min_notional": "5",
+            "spread_window_days": 30,
+        },
     }
 
 
@@ -94,6 +100,21 @@ def test_invalid_values_are_rejected_with_a_clear_message(
 ) -> None:
     mutate(document)
     with pytest.raises(ConfigError, match=message):
+        parse_config(document)
+
+
+def test_coins_without_their_own_rules_use_the_universe_rules(document: dict[str, Any]) -> None:
+    config = parse_config(document)
+    assert config.rules_for("btcusdt").step_size == Decimal("0.00001")  # its own entry
+    sol = config.rules_for("SOLUSDT")
+    assert (sol.symbol, sol.step_size, sol.min_notional) == ("SOLUSDT", Decimal("1e-8"), Decimal(5))
+    assert config.universe.spread_window_days == 30
+
+
+@pytest.mark.parametrize("window", [1, 366, 2.5, True, "30"])
+def test_the_spread_window_must_be_whole_days(document: dict[str, Any], window: object) -> None:
+    document["universe"]["spread_window_days"] = window
+    with pytest.raises(ConfigError, match="spread_window_days"):
         parse_config(document)
 
 
