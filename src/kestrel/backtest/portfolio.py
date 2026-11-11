@@ -106,6 +106,10 @@ def run_portfolio(
     allow_holdout: bool = False,
 ) -> BacktestResult:
     """Run ``strategy`` over ``panel`` (kestrel.data.panel: sorted, with histories)."""
+    duplicated = panel.filter(pl.struct("symbol", "open_time").is_duplicated())
+    if duplicated.height:
+        coins = ", ".join(sorted(duplicated["symbol"].unique().to_list()))
+        raise ValueError(f"duplicate bars for {coins}; run the quality check (not repaired)")
     dates: list[datetime] = panel["open_time"].unique().sort().to_list()
     used_holdout = check_inputs(
         pl.DataFrame({"open_time": dates}), config, strategy.name, UNIVERSE, allow_holdout

@@ -257,3 +257,12 @@ def test_a_buy_with_no_cash_left_is_skipped() -> None:
     assert r.equity["cash"][2] == 0
     assert r.rejections == []
     assert r.band_skips == 2
+
+
+def test_duplicate_bars_are_refused_not_repaired() -> None:
+    # Binance's archive has a few exact duplicate days (AXSUSDT 2026-02-10). Keeping one
+    # copy would be a silent repair; the engine refuses and names the coin.
+    p = panel({"A": [100] * 5, "B": [50] * 5})
+    doubled = pl.concat([p, p.filter((pl.col("symbol") == "B") & (pl.col("open_time") == T0))])
+    with pytest.raises(ValueError, match="duplicate bars for B"):
+        run(doubled, {0: {"A": 0.5}})
