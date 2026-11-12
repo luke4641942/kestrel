@@ -6,6 +6,7 @@ kestrel check BTCUSDT --interval 1h
 kestrel list BTCUSDT --interval 1h
 kestrel backtest BTCUSDT --interval 4h --start 2022-01 --end 2025-10
 kestrel anchor-study BTCUSDT --start 2020-01 --end 2025-10
+kestrel walk-forward BTCUSDT --strategy ma-trend --grid fast=10,20 --grid slow=50,100 ...
 """
 
 from __future__ import annotations
@@ -30,6 +31,7 @@ from kestrel.data.universe import ArchiveListing, CoinIngest, ingest_universe, m
 from kestrel.research import ResearchStore, run_target
 from kestrel.strategy import STRATEGIES, resolve_params
 from kestrel.studies.anchor_day import format_study, run_study
+from kestrel.validation.walkforward import format_walk_forward, walk_forward
 
 app = typer.Typer(help="Kestrel trading platform.", no_args_is_help=True)
 
@@ -243,6 +245,73 @@ def anchor_study(
         typer.echo(str(e), err=True)
         raise typer.Exit(code=1) from None
     typer.echo(format_study(result))
+
+
+@app.command("walk-forward")
+def walk_forward_cmd(
+    symbol: str,
+    start: Annotated[str, typer.Option(help="First month, YYYY-MM.")],
+    end: Annotated[str, typer.Option(help="Last month, YYYY-MM (inclusive).")],
+    strategy: Annotated[str, typer.Option(help="Strategy key.")],
+    grid: Annotated[
+        list[str], typer.Option(help="A parameter's values as name=a,b,c; repeatable.")
+    ],
+    interval: IntervalOpt = Interval.H4,
+    train_months: Annotated[int, typer.Option(help="Months each choice is made on.")] = 24,
+    test_months: Annotated[int, typer.Option(help="Months each choice is judged on.")] = 6,
+    cash: Annotated[float, typer.Option(help="Starting cash in USDT.")] = 330.0,
+    research: Annotated[
+        str | None,
+        typer.Option(help="Research strategy slug: its frozen note must name the strategy."),
+    ] = None,
+    research_dir: ResearchDir = Path("research"),
+    data_dir: DataDir = Path("data"),
+    config: Annotated[
+        Path, typer.Option("--config", envvar="KESTREL_CONFIG", help="Config file.")
+    ] = Path("kestrel.toml"),
+) -> None:
+    """Choose parameters on rolling training windows and judge them on the windows after
+    (P3). Never uses the holdout."""
+    try:
+        key, _ = run_target(ResearchStore(research_dir), strategy, research)
+        values = _parse_grid(grid)
+        cfg = load_config(config)
+        first, last = Month.parse(start), Month.parse(end)
+        after = last.next()
+        bars = ParquetStore(data_dir).read(
+            symbol,
+            interval,
+            datetime(first.year, first.month, 1, tzinfo=UTC),
+            datetime(after.year, after.month, 1, tzinfo=UTC),
+        )
+        result = walk_forward(
+            key,
+            symbol.upper(),
+            bars,
+            interval,
+            cfg,
+            Decimal(str(cash)),
+            values,
+            start=first,
+            end=last,
+            train_months=train_months,
+            test_months=test_months,
+        )
+    except (HoldoutError, ConfigError, ValueError) as e:
+        typer.echo(str(e), err=True)
+        raise typer.Exit(code=1) from None
+    typer.echo(format_walk_forward(result))
+
+
+def _parse_grid(pairs: list[str]) -> dict[str, list[int]]:
+    out: dict[str, list[int]] = {}
+    for pair in pairs:
+        name, sep, raw = pair.partition("=")
+        parts = [v.strip() for v in raw.split(",")]
+        if not sep or not all(v.lstrip("-").isdigit() for v in parts):
+            raise ValueError(f"--grid must be name=<whole numbers, comma separated>, got {pair!r}")
+        out[name.strip()] = [int(v) for v in parts]
+    return out
 
 
 def _parse_params(pairs: list[str]) -> dict[str, int]:

@@ -8,34 +8,24 @@ missing costs. Each idea is rebuilt as a pre-registered research note
 
 Status as of 2026-11-11.
 
-## Ready to test (note drafted, code built and tested on synthetic data)
-
-Freeze the note on the Strategies tab, then run exactly what its falsification section
-says. Nothing below has been run on market data.
-
-| Idea | Note | Implementation | Test |
-|---|---|---|---|
-| Trend following with volatility targeting (new) | `trend-following-with-volatility-targeting-btc` | `trend-vol-target` | BTC and ETH **1d**, 2020-01 to 2025-10 |
-| S1 Monday range, stage 1: raw-effect study | `monday-range-pullback-aest` | `kestrel anchor-study` (CLI) | BTC and ETH 1h. A KILL rejects the note; stage 2 never runs |
-| S1 Monday range, stage 2: pullback to the midpoint | same note | `monday-pullback` | BTC and ETH 1h, only if stage 1 survives |
-| S2-C pivot reversal, no regime filter | `pivot-reversal-no-regime-filter-eth-btc-1h` | `pivot-reversal` | ETH and BTC 1h |
-| Horizontal level retest | `horizontal-level-retest-resistance-becomes` | `level-retest` vs `level-breakout` | BTC and ETH 4h |
-| Rising trendline bounce | `rising-trendline-bounce-in-an-uptrend` (freeze v2) | `trendline-bounce` vs `swing-pullback` | BTC and ETH 4h |
-| Falling trendline breakout | `falling-trendline-breakout` | `trendline-breakout` vs `channel-breakout` | BTC and ETH 4h |
-| Falling wedge breakout | `falling-wedge-breakout` | `wedge-breakout` vs `trendline-breakout` | BTC and ETH 4h |
-| Cross-sectional momentum (S4) | `cross-sectional-momentum-across-coins-top-5` | `xs-momentum` | All coins 1d (the delisted-inclusive universe), against BTC |
-
-Testing this many ideas at once is itself a multiple-testing problem: with seven
-hypotheses on two markets, one pass at the 90-95% level is expected by luck alone. Until
-P3's deflated Sharpe corrects for every trial, a single pass means "promising", nothing
-more.
-
 ## Decided
+
+Every idea tested so far has been rejected against rules set before its results were seen.
 
 | Idea | Outcome |
 |---|---|
-| Structure pullback (Craig Percoco setup) | **Rejected 2026-11-05.** 160 trades, +0.057R, P(>0) 63% against 90% required. |
-| Backtester sanity gate (backlog "Phase 2 gate") | **Passed.** Buy-and-hold matches the price return exactly; a strategy that looks ahead is refused; random signals average zero before costs and lose their costs after them (`tests/backtest/test_sanity.py`). |
+| Backtester sanity gate | **Passed.** Exact buy-and-hold, lookahead refused, random signals lose exactly their costs. |
+| Structure pullback | Rejected: +0.06R, P(>0) 63%. |
+| S1 Monday range | Rejected at the raw-effect study: Monday's range is no different from other days'. |
+| S2-C pivot reversal | Rejected: -0.14R / -0.10R; costs ate an edge of about zero. |
+| Level retest, trendline bounce, trendline breakout, wedge | Rejected; three of four lost to their plainer comparison. |
+| Trend + volatility targeting (2020-25) | Rejected: BTC drawdown -48% vs -38% limit; ETH passed. |
+| Trend + volatility targeting (2017-18, unseen) | Rejected: drawdown -35% / -44% vs -83% / -94%, but lost money in the bear market. |
+| Cross-sectional momentum | Rejected (v2): Sharpe 0.69 vs BTC 1.07, drawdown -92%. v1 void (faulty spread model). |
+| Channel breakout (engine test) | Fails walk-forward: out-of-sample Sharpe 0.41 (BTC), -0.58 (ETH). |
+
+With 31 trials logged, a Sharpe has to beat about 1.50 to stand out from luck (P3's
+deflated Sharpe).
 
 ## Waiting, and why
 

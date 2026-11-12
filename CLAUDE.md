@@ -44,7 +44,9 @@ cd frontend && npm test && npm run build
       `kestrel.config`, `kestrel.backtest.costs`),
       vectorised research engine, event-driven validation engine, metrics,
       Backtests page (equity, drawdown, cost attribution, blotter, run comparison)
-- [ ] P3 Validation: walk-forward, parameter robustness, trial log, deflated Sharpe
+- [ ] P3 Validation: ~~deflated Sharpe~~ (`kestrel.validation.deflated`, every run and
+      hypothesis, `/api/validation`), ~~walk-forward~~ (`kestrel walk-forward`), trial log
+      (walk-forward grid points aren't added to it automatically yet), parameter robustness
 - [ ] P4 Execution: ExecutionVenue adapters (sim, Binance testnet, live),
       reconciliation, risk limits, kill switch, alerting, parity tests
 - [ ] P5 Perps: funding, basis, margin. **Needs a rethink:** Binance perps aren't
@@ -175,6 +177,15 @@ Agreed with Luke; don't re-litigate without a reason.
   floor). Benchmark: BTC buy-and-hold. Tokenized stocks listed from June 2026
   (AAPLBUSDT...) aren't excluded yet; fix from Binance's metadata before any holdout run.
   This is a single strategy over many coins, not the parked multi-strategy allocator.
+- **Results so far (2026-11-12).** Every hypothesis tested has been rejected: structure
+  pullback, Monday range (study KILL), pivot reversal, the four chart patterns, trend +
+  vol target (2020-25: BTC drawdown; 2017-18 unseen: cut drawdowns by more than half but
+  lost money in the bear market), cross-sectional momentum (v2: -92% drawdown, Sharpe
+  0.69; v1 void, faulty spread model). Channel breakout, the best-looking engine test,
+  fails walk-forward on both coins. The consistent pattern: trend rules limit losses
+  relative to holding but haven't beaten holding; reversal and pattern rules fail. With
+  31 trials, a Sharpe must beat about 1.50 to stand out from luck. Don't rescue any of
+  these by tuning.
 - **Parked, P3+: multi-strategy portfolios.** Strategies emit *target positions*, never
   orders; an allocator owns the wallet, resolves conflicts and nets orders before the
   `ExecutionVenue`. Build P2 around this so single-strategy is a portfolio of one.
