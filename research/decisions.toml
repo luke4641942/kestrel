@@ -1,0 +1,107 @@
+# What to do with each strategy that has been tested: pursue, watch or drop.
+#
+# A decision is a judgement made from all the evidence (research notes, runs and
+# validation studies), recorded with its reason, like a note's rejection. The dashboard
+# shows this list first. Change an entry only with a new reason and today's date.
+#
+#   pursue  test it forward (paper trading); the only way left to learn more
+#   watch   interesting, but waiting on something specific before it can be pursued
+#   drop    the evidence says no; don't revive it by tuning
+
+[[decision]]
+strategy = "trend-vol-target"
+name = "Trend following with volatility targeting"
+market = "BTCUSDT 1d"
+decision = "pursue"
+decided = 2026-11-12
+reason = "The only strategy that held up on data it wasn't tuned on (walk-forward Sharpe 0.97, holding BTC 0.71) and wasn't sensitive to its settings. Could still be luck (deflated 34%), so it is paper-traded, not traded with money."
+evidence = ["trend-following-robustness-and-walk-forward-btc", "trend-following-with-volatility-targeting-btc", "trend-following-through-the-2018-crash-unseen"]
+
+[[decision]]
+strategy = "trend-vol-target"
+name = "Trend following with volatility targeting"
+market = "ETHUSDT 1d"
+decision = "drop"
+decided = 2026-11-12
+reason = "Not sensitive to its settings, but choosing them on past data didn't predict the next months (walk-forward Sharpe 0.28, a third of in-sample)."
+evidence = ["trend-following-robustness-and-walk-forward-btc"]
+
+[[decision]]
+strategy = "channel-breakout"
+name = "Channel breakout"
+market = "BTCUSDT and ETHUSDT 4h"
+decision = "drop"
+decided = 2026-11-12
+reason = "Reliable but weak: a Sharpe less than half of holding the coin, and it failed walk-forward on both coins."
+
+[[decision]]
+strategy = "xs-momentum"
+name = "Cross-sectional momentum (top 5 coins, weekly)"
+market = "All coins 1d"
+decision = "drop"
+decided = 2026-11-12
+reason = "Made money before costs but crashed with the market: a -92% drawdown and a Sharpe of 0.69 against holding BTC's 1.07."
+evidence = ["cross-sectional-momentum-across-coins-top-5"]
+
+[[decision]]
+strategy = "monday-pullback"
+name = "Monday range pullback"
+market = "BTCUSDT and ETHUSDT 1h"
+decision = "drop"
+decided = 2026-11-12
+reason = "Monday's range turned out no different from any other day's, so the strategy was never run."
+evidence = ["monday-range-pullback-aest"]
+
+[[decision]]
+strategy = "structure-pullback"
+name = "Structure pullback (Craig Percoco setup)"
+market = "BTCUSDT and ETHUSDT 4h"
+decision = "drop"
+decided = 2026-11-05
+reason = "About breakeven per trade (+0.06R) and only a 63% chance of being better than zero."
+evidence = ["structure-pullback-craig-percoco-setup"]
+
+[[decision]]
+strategy = "pivot-reversal"
+name = "Pivot reversal"
+market = "BTCUSDT and ETHUSDT 1h"
+decision = "drop"
+decided = 2026-11-11
+reason = "No edge before costs, and costs of 0.15R a trade made it a clear loser."
+evidence = ["pivot-reversal-no-regime-filter-eth-btc-1h"]
+
+[[decision]]
+strategy = "level-retest"
+name = "Horizontal level retest"
+market = "BTCUSDT and ETHUSDT 4h"
+decision = "drop"
+decided = 2026-11-11
+reason = "Lost money on average, and did worse than simply buying the breakout."
+evidence = ["horizontal-level-retest-resistance-becomes"]
+
+[[decision]]
+strategy = "trendline-bounce"
+name = "Rising trendline bounce"
+market = "BTCUSDT and ETHUSDT 4h"
+decision = "drop"
+decided = 2026-11-11
+reason = "Slightly positive but not convincing (83% chance against the 90% needed), and worse than the same trade without the line."
+evidence = ["rising-trendline-bounce-in-an-uptrend"]
+
+[[decision]]
+strategy = "trendline-breakout"
+name = "Falling trendline breakout"
+market = "BTCUSDT and ETHUSDT 4h"
+decision = "drop"
+decided = 2026-11-11
+reason = "Lost money on average, while a plain breakout of the recent high made money."
+evidence = ["falling-trendline-breakout"]
+
+[[decision]]
+strategy = "wedge-breakout"
+name = "Falling wedge breakout"
+market = "BTCUSDT and ETHUSDT 4h"
+decision = "drop"
+decided = 2026-11-11
+reason = "Came closest of the chart patterns (+0.17R a trade) but not convincing (86% chance against the 90% needed)."
+evidence = ["falling-wedge-breakout"]

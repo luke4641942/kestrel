@@ -32,6 +32,7 @@ from kestrel.api.models import (
     CreateResearch,
     CurvePoint,
     Dataset,
+    DecisionOut,
     EditNote,
     FillOut,
     Health,
@@ -67,6 +68,7 @@ from kestrel.data.binance_vision import BinanceVisionClient, Month, last_complet
 from kestrel.data.quality import check_klines
 from kestrel.data.schema import Interval
 from kestrel.data.store import ParquetStore
+from kestrel.decisions import DecisionError, load_decisions
 from kestrel.provenance import code_version
 from kestrel.research import (
     SECTIONS,
@@ -199,6 +201,15 @@ def create_app(
             return load_config(config_path)
         except ConfigError as e:
             raise HTTPException(status.HTTP_503_SERVICE_UNAVAILABLE, str(e)) from None
+
+    @api.get("/decisions")
+    def get_decisions() -> list[DecisionOut]:
+        """What to do with each tested strategy: pursue, watch or drop."""
+        try:
+            found = load_decisions(Path(research_dir) / "decisions.toml")
+        except DecisionError as e:
+            raise HTTPException(status.HTTP_503_SERVICE_UNAVAILABLE, str(e)) from None
+        return [DecisionOut.model_validate(asdict(d)) for d in found]
 
     def _rules(config: Config, symbol: str) -> InstrumentRules:
         try:

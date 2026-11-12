@@ -6,7 +6,7 @@ scripts and future tools all read from one documented interface.
 
 from __future__ import annotations
 
-from datetime import datetime
+from datetime import date, datetime
 from decimal import Decimal
 from typing import Any
 
@@ -581,6 +581,19 @@ class ResearchSummary(BaseModel):
     """Distinct configurations tested (identical re-runs are one trial)."""
     deflated_sharpe: float | None = None
     """The best deflated Sharpe among this hypothesis's trials."""
+
+
+class DecisionOut(BaseModel):
+    """What to do with a tested strategy (research/decisions.toml)."""
+
+    strategy: str
+    name: str
+    market: str
+    decision: str
+    """pursue, watch or drop."""
+    decided: date
+    reason: str
+    evidence: list[str]
 
 
 class LookOut(BaseModel):

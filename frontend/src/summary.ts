@@ -1,6 +1,6 @@
 // Plain logic behind the Backtests page: the verdict, the test-period wording and the
 // chart's trade markers. Kept out of components so it can be tested directly.
-import type { Dataset, ResearchStatus, Study, RunDetail, RunSummary, StrategyInfo, StrategyKind } from "./api";
+import type { Dataset, Decision, ResearchStatus, Study, RunDetail, RunSummary, StrategyInfo, StrategyKind } from "./api";
 import type { Tone } from "./components/ui";
 import type { TradeMarker } from "./components/EquityChart";
 
@@ -290,3 +290,11 @@ export function studyTone(verdict: string): Tone {
 export function studyTitle(s: Pick<Study, "kind" | "strategy">): string {
   return `${s.kind === "robustness" ? "Robustness" : "Walk-forward"} of ${s.strategy}`;
 }
+
+/** Pursue, watch or drop, as shown. Dropped is grey, not red: dropping a failed idea is
+ * the system working, not an alarm. */
+export const DECISION: Record<Decision["decision"], { tone: Tone; label: string }> = {
+  pursue: { tone: "ok", label: "Pursue" },
+  watch: { tone: "info", label: "Watch" },
+  drop: { tone: "neutral", label: "Drop" },
+};

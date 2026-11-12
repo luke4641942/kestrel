@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { studyTitle, studyTone, deflatedNote, spreadBands, DEFAULT_RUN_SORT, KIND_LABEL, UNIVERSE, marketLabel, marketsFor, defaultDataset, nextSort, sortRuns, fewTrades, signalsCaption, MAX_LABELLED_TRADES, MAX_MARKED_TRADES, costHeadroom, paramsText, runRole, tradeCount, heldAsset, money, span, trackRecord, tradeMarkers, verdict } from "./summary";
+import { DECISION, studyTitle, studyTone, deflatedNote, spreadBands, DEFAULT_RUN_SORT, KIND_LABEL, UNIVERSE, marketLabel, marketsFor, defaultDataset, nextSort, sortRuns, fewTrades, signalsCaption, MAX_LABELLED_TRADES, MAX_MARKED_TRADES, costHeadroom, paramsText, runRole, tradeCount, heldAsset, money, span, trackRecord, tradeMarkers, verdict } from "./summary";
 import { run, trade } from "./test/fixtures";
 
 describe("verdict", () => {
@@ -307,5 +307,13 @@ describe("validation studies", () => {
   it("are titled by kind and strategy", () => {
     expect(studyTitle({ kind: "robustness", strategy: "channel-breakout" })).toBe("Robustness of channel-breakout");
     expect(studyTitle({ kind: "walk-forward", strategy: "ma-trend" })).toBe("Walk-forward of ma-trend");
+  });
+});
+
+describe("decisions", () => {
+  it("label pursue, watch and drop", () => {
+    expect(DECISION.pursue).toEqual({ tone: "ok", label: "Pursue" });
+    expect(DECISION.watch.label).toBe("Watch");
+    expect(DECISION.drop.tone).toBe("neutral"); // dropping a failed idea isn't an alarm
   });
 });

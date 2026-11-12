@@ -190,6 +190,17 @@ export interface ResearchSummary {
   deflated_sharpe?: number | null;
 }
 
+/** What to do with a tested strategy (research/decisions.toml). */
+export interface Decision {
+  strategy: string;
+  name: string;
+  market: string;
+  decision: "pursue" | "watch" | "drop";
+  decided: string;
+  reason: string;
+  evidence: string[];
+}
+
 /** The trial log as a whole: what every result is corrected for (P3). */
 export interface Validation {
   /** Distinct configurations tried before the holdout, research or not. */
@@ -452,6 +463,7 @@ export const api = {
     request<Job>("/jobs/backtest", { method: "POST", body: JSON.stringify(body) }),
   backtests: () => request<RunSummary[]>("/backtests"),
   validation: () => request<Validation>("/validation"),
+  decisions: () => request<Decision[]>("/decisions"),
   backtest: (id: string) => request<RunDetail>(`/backtests/${enc(id)}`),
   costs: () => request<CostConfig>("/costs"),
   source: (key: string) => request<StrategySource>(`/strategies/${enc(key)}/source`),

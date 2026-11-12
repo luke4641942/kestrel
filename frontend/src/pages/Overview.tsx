@@ -1,7 +1,7 @@
 import { api, type Job } from "../api";
 import type { Route } from "../App";
-import { Empty, PageHeader, Panel, Section, Stat, Status } from "../components/ui";
-import { RESEARCH_STATUS, marketLabel, studyTitle, studyTone } from "../summary";
+import { Empty, PageHeader, Panel, Section, Status } from "../components/ui";
+import { DECISION, RESEARCH_STATUS, marketLabel, studyTitle, studyTone } from "../summary";
 import { ago, date, num } from "../format";
 import { useResource } from "../hooks";
 
@@ -27,14 +27,12 @@ const PHASE_STATUS: Record<PhaseState, { tone: "ok" | "info" | "neutral" | "warn
   rethink: { tone: "warn", label: "Rethink" },
 };
 
-const Pending = () => <span className="tertiary">—</span>;
-
 export function Overview({ jobs, go, openJobs }: { jobs: Job[]; go: (r: Route) => void; openJobs: () => void }) {
   return (
     <>
       <PageHeader
         title="Overview"
-        subtitle="Which strategies are earning their place, and whether paper trading matches the backtest."
+        subtitle="What to work on, and the evidence behind it."
         actions={
           <button className="btn btn-primary" onClick={() => go("data")}>
             Ingest data
@@ -43,51 +41,11 @@ export function Overview({ jobs, go, openJobs }: { jobs: Job[]; go: (r: Route) =
       />
 
       <Section
-        title="Portfolio"
-        description="All figures after fees, spread and slippage."
-        actions={<span className="small tertiary">From P4</span>}
+        title="What to pursue"
+        description="One decision per strategy, made from all the evidence below and recorded with its reason in research/decisions.toml."
       >
-        <Panel>
-          <div className="stats">
-            <Stat label="Equity" value={<Pending />} note="Paper account opens in P4" />
-            <Stat label="Return, 30 days" value={<Pending />} note="Shown against the backtest's expectation" />
-            <Stat label="Drawdown from peak" value={<Pending />} note="Shown against its risk limit" />
-            <Stat label="Costs, 30 days" value={<Pending />} note="Fees, spread and slippage paid" />
-          </div>
-        </Panel>
+        <DecisionsBoard />
       </Section>
-
-      <div className="split">
-        <Section title="Paper equity against the backtest" actions={<span className="small tertiary">From P4</span>}>
-          <Panel>
-            <Empty title="No paper trading yet">
-              <p>
-                Paper equity will be drawn over the backtest run on the same bars, with its expected range. If the two
-                drift apart, the backtest is missing something.
-              </p>
-            </Empty>
-          </Panel>
-        </Section>
-
-        <Section title="Risk" actions={<span className="small tertiary">From P4</span>}>
-          <Panel pad>
-            <dl className="dl">
-              <dt>Kill switch</dt>
-              <dd>
-                <Status>
-                  <span className="secondary">Not built</span>
-                </Status>
-              </dd>
-              <dt>Daily loss limit</dt>
-              <dd className="secondary">Not set</dd>
-              <dt>Largest position</dt>
-              <dd className="secondary">No positions</dd>
-              <dt>Exchange vs ledger</dt>
-              <dd className="secondary">Not connected</dd>
-            </dl>
-          </Panel>
-        </Section>
-      </div>
 
       <Section
         title="Research pipeline"
@@ -102,6 +60,10 @@ export function Overview({ jobs, go, openJobs }: { jobs: Job[]; go: (r: Route) =
       >
         <StudiesBoard />
       </Section>
+
+      <p className="small tertiary">
+        Paper trading (P4) adds live equity against the backtest, risk limits and a kill switch to this page.
+      </p>
 
       <div className="split">
         <Section title="Data">
@@ -290,6 +252,44 @@ function StudiesBoard() {
             </tbody>
           </table>
         </div>
+      )}
+    </Panel>
+  );
+}
+
+function DecisionsBoard() {
+  const decisions = useResource(api.decisions, []);
+  const list = decisions.data ?? [];
+  if (decisions.error) {
+    return (
+      <Panel>
+        <Empty title="Couldn't read the decisions">
+          <p>{decisions.error}</p>
+        </Empty>
+      </Panel>
+    );
+  }
+  return (
+    <Panel>
+      {list.length === 0 ? (
+        <Empty title={decisions.loading ? "Loading decisions" : "Nothing decided yet"}>
+          {!decisions.loading && <p>Record a decision for each tested strategy in research/decisions.toml.</p>}
+        </Empty>
+      ) : (
+        <ul className="decision-list">
+          {list.map((d) => (
+            <li key={`${d.strategy} ${d.market}`} className={`decision-${d.decision}`}>
+              <Status tone={DECISION[d.decision].tone}>{DECISION[d.decision].label}</Status>
+              <div>
+                <div className="decision-name">
+                  {d.name} <span className="mono small tertiary">{d.strategy}</span>
+                </div>
+                <div className="small secondary">{d.market}</div>
+                <p className="decision-reason">{d.reason}</p>
+              </div>
+            </li>
+          ))}
+        </ul>
       )}
     </Panel>
   );
