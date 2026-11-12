@@ -100,3 +100,9 @@ def test_curve_spans_the_fillable_range(client: TestClient) -> None:
         assert p["total_bps"] == pytest.approx(p["fee_bps"] + p["spread_bps"] + p["impact_bps"])
     # At the 1% cap impact is 100 bps * sqrt(0.01) = 10 bps.
     assert points[-1]["impact_bps"] == pytest.approx(10, rel=1e-3)
+
+
+def test_costs_include_the_universe_spread_bands(client: TestClient) -> None:
+    tiers = client.get("/api/costs").json()["spread_tiers"]
+    assert tiers[0] == [500_000_000, 1]
+    assert tiers[-1][0] == 0

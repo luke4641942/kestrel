@@ -60,7 +60,13 @@ step_size = "0.00000001"
 min_qty = "0.00000001"
 min_notional = "5"
 
-# Smaller coins quote much wider spreads than BTC's 1 bp. Each coin's spread is
-# estimated from its own last 30 daily bars (Abdi and Ranaldo 2017, from closes, highs
-# and lows), never below [costs] half_spread_bps.
-spread_window_days = 30
+# Smaller coins quote wider spreads than BTC. With no order-book history, each coin's
+# half-spread is an assumption set by its median daily quote volume (USDT) over the last
+# 30 days, known at the time: [minimum volume, half-spread in bps], highest volume first.
+# Below 20M a day a coin can't be bought by the momentum strategy, but a held coin can
+# fall there, so it gets the widest band. Rule of thumb, not a measurement: research
+# notes require the edge to survive twice the cost actually paid.
+# (Estimating spreads from daily highs and lows, Abdi and Ranaldo 2017, was tried and
+# dropped: on daily bars it gave BTC a median of 21 bps, against a real spread near 1.)
+volume_window_days = 30
+spread_tiers = [[500_000_000, 1], [100_000_000, 3], [20_000_000, 8], [0, 15]]

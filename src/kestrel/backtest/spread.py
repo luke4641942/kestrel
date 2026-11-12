@@ -1,41 +1,39 @@
-"""Each coin's bid-ask spread, estimated from its own daily bars.
+"""Each coin's bid-ask spread: an assumption banded by how much the coin trades.
 
-Kestrel has no order-book history, and a single assumed spread is wrong for most of a
-cross-sectional universe: BTC quotes about a basis point, a thin coin can quote fifty.
-Abdi and Ranaldo (2017) estimate the spread from close, high and low alone. With
-``c`` the log close and ``eta`` the log mid-range ``(log high + log low) / 2``:
+Kestrel has no order-book history, and one assumed spread is wrong for most of a
+cross-sectional universe: BTC quotes about a basis point, a mid-sized coin several. So a
+coin's half-spread is set by its median daily quote volume over the last
+``window`` days, known at that day's close and computed within one unbroken history (a
+gap starts a new history: Binance reuses symbols). The bands live in kestrel.toml
+([universe] spread_tiers); a coin too young to have a full window gets the widest band.
 
-    S^2 = 4 * E[(c_t - eta_t) * (c_t - eta_{t+1})]
-
-The close sits near the bid or the ask; the two mid-ranges bracket the efficient price,
-so the product isolates the bounce between them. Negative sample averages (noise) are
-set to zero, as in the paper. The half-spread paid per order is ``S / 2``.
-
-Point in time: the term for day t needs day t+1's range, so it is known at t+1's close.
-The estimate at a day's close uses terms known by then only, averaged over the last
-``window`` days of one unbroken history (a gap starts a new history: Binance reuses
-symbols). It is never below ``floor``.
+Not a measurement. Estimating spreads from daily highs and lows (Abdi and Ranaldo 2017)
+was tried first and dropped: on daily bars a coin's daily range is hundreds of times its
+spread, so the estimate is mostly noise, and clipping negative readings to zero biases it
+upward. It gave BTC a median of 21 bps, against a real spread near 1, and charged a
+momentum backtest about 47 bps per side. Research notes guard against these bands being
+too low by requiring an edge to survive twice the cost actually paid.
 """
 
 from __future__ import annotations
 
+from collections.abc import Sequence
+
 import polars as pl
 
 
-def with_half_spread(frame: pl.DataFrame, window: int, floor: float, by: list[str]) -> pl.DataFrame:
+def with_half_spread(
+    frame: pl.DataFrame, window: int, tiers: Sequence[tuple[float, float]], by: list[str]
+) -> pl.DataFrame:
     """Add ``half_spread`` (a fraction) known at each row's close, per group ``by``.
 
-    The frame must be sorted by ``by`` then time, with ``high``, ``low`` and ``close``."""
-    c = pl.col("close").log()
-    eta = (pl.col("high").log() + pl.col("low").log()) / 2
-    term = 4 * (c.shift(1) - eta.shift(1)) * (c.shift(1) - eta)  # known at this row's close
-    return (
-        frame.with_columns(_ar_term=term.over(by))
-        .with_columns(_ar_mean=pl.col("_ar_term").rolling_mean(window, min_samples=window).over(by))
-        .with_columns(
-            half_spread=(pl.col("_ar_mean").clip(lower_bound=0).sqrt() / 2)
-            .clip(lower_bound=floor)
-            .fill_null(floor)
-        )
-        .drop("_ar_term", "_ar_mean")
+    ``tiers`` are (minimum median daily quote volume, half-spread as a fraction), highest
+    volume first, the last starting at 0. The frame must be sorted by ``by`` then time."""
+    volume = pl.col("quote_volume").rolling_median(window, min_samples=window).over(by)
+    widest = max(spread for _, spread in tiers)
+    band: pl.Expr = pl.lit(widest)
+    for floor, spread in reversed(tiers):
+        band = pl.when(volume >= floor).then(pl.lit(spread)).otherwise(band)
+    return frame.with_columns(
+        half_spread=pl.when(volume.is_null()).then(pl.lit(widest)).otherwise(band)
     )

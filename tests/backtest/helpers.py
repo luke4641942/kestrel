@@ -69,7 +69,12 @@ def config(
                 "step_size": "0.00000001",
                 "min_qty": "0.00000001",
                 "min_notional": "5",
-                "spread_window_days": 30,
+                "volume_window_days": 30,
+                "spread_tiers": (
+                    [[500_000_000, 1], [100_000_000, 3], [20_000_000, 8], [0, 15]]
+                    if costs
+                    else [[0, 0]]
+                ),
             },
         }
     )

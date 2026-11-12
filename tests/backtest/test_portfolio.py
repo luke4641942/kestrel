@@ -5,7 +5,6 @@ and, with zero costs, every number can be checked by hand. Prices move between b
 
 from __future__ import annotations
 
-import math
 from datetime import UTC, datetime, timedelta
 from decimal import Decimal
 
@@ -132,44 +131,18 @@ def test_a_coin_whose_bars_stop_is_sold_at_its_last_close() -> None:
     assert r.equity["equity"][-1] == pytest.approx(400 + 500)
 
 
-def test_each_coin_pays_its_own_estimated_spread() -> None:
-    # A's closes bounce between bid and ask around a steady price (a half-spread of
-    # about 0.5%); B is quiet (the 1 bp floor). Equal buys, very different spread costs.
-    n = 40
-    bounce = [100 * math.exp(0.005 if i % 2 else -0.005) for i in range(n)]
-    rows = []
-    for i in range(n):
-        day = T0 + i * DAY
-        rows.append(
-            {
-                "symbol": "A",
-                "open_time": day,
-                "open": bounce[i],
-                "high": 101.0,
-                "low": 100**2 / 101,
-                "close": bounce[i],
-                "quote_volume": 1e9,
-            }
-        )
-        rows.append(
-            {
-                "symbol": "B",
-                "open_time": day,
-                "open": 50.0,
-                "high": 50.0,
-                "low": 50.0,
-                "close": 50.0,
-                "quote_volume": 1e9,
-            }
-        )
-    p = with_histories(pl.DataFrame(rows), D1)
+def test_each_coin_pays_the_spread_of_its_volume_band() -> None:
+    # A trades 2 billion USDT a day (the 1 bp band); B trades 50 million (8 bps).
+    p = pl.concat([panel({"A": [100] * 40}), panel({"B": [50] * 40}, volume=5e7)]).sort(
+        "symbol", "open_time"
+    )
     r = run(p, {35: {"A": 0.4, "B": 0.4}}, costs=True)
     by = {f.fill.symbol: f.fill for f in r.fills}
-    a, b = by["A"], by["B"]
-    a_notional = a.quantity * a.reference_price
-    b_notional = b.quantity * b.reference_price
-    assert float(a.spread_cost / a_notional) == pytest.approx(0.005, rel=0.02)
-    assert float(b.spread_cost / b_notional) == pytest.approx(0.0001)
+    for symbol, half in (("A", 0.0001), ("B", 0.0008)):
+        fill = by[symbol]
+        assert float(fill.spread_cost / (fill.quantity * fill.reference_price)) == pytest.approx(
+            half
+        )
 
 
 def test_the_holdout_is_refused() -> None:

@@ -1,4 +1,5 @@
 import { useState, type PointerEvent, type ReactNode } from "react";
+import { spreadBands } from "../summary";
 import { api, type CostConfig, type CostCurve, type Quote, type Side } from "../api";
 import { Empty, PageHeader, Panel, Section } from "../components/ui";
 import { useDebounced, useResource } from "../hooks";
@@ -579,6 +580,7 @@ function FrequencyChart({ roundTripBps }: { roundTripBps: number }) {
 
 // ---------- decisions ----------
 
+
 type Kind = "decided" | "assumption" | "verify";
 const KIND_LABEL: Record<Kind, string> = { decided: "Decided", assumption: "Assumption", verify: "To verify" };
 
@@ -589,6 +591,11 @@ function Decisions({ cfg }: { cfg: CostConfig }) {
     ["decided", "Costs are in basis points everywhere", "One unit for fee, spread and impact. Mixing fractions and bps in one file is how factor-of-100 bugs happen."],
     ["decided", `Fee: ${c.taker_fee_bps} bps per side`, "Binance's base tier, paying fees without BNB. The BNB discount would flatter results, so it stays off."],
     ["assumption", `Spread: ${c.half_spread_bps} bp per side`, "There is no order-book history yet. BTC usually quotes far tighter, so this errs on the expensive side."],
+    [
+      "assumption",
+      `Other coins' spreads: ${spreadBands(cfg.spread_tiers)}`,
+      "For strategies that rank many coins. A coin's band is set by its median daily volume over the last 30 days, known at the time. An estimate from daily highs and lows was tried and dropped: it gave BTC 21 bps against a real spread near 1.",
+    ],
     ["assumption", `Impact: ${c.impact_coef_bps} bps × √(order ÷ bar volume)`, "The square-root law is the standard market-impact model. At A$500 it is almost zero; it matters for big orders and thin markets."],
     ["decided", "Impact uses the last closed bar's volume", "An order filled at the next bar's open can't know that bar's volume yet. Using it would be lookahead."],
     ["decided", `Orders over ${fmt(c.max_participation * 100, 0)}% of a bar's volume are rejected`, "Rather than fill at a price the market could not have offered. Rejections are recorded with the reason."],

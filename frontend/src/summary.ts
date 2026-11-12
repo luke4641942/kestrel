@@ -264,3 +264,10 @@ export function sortRuns(runs: RunSummary[], sort: RunSort): RunSummary[] {
 export function nextSort(current: RunSort, key: RunSortKey): RunSort {
   return current.key === key ? { key, dir: current.dir === "desc" ? "asc" : "desc" } : { key, dir: "desc" };
 }
+
+/** The universe spread bands in words: "1 bp over 500M a day, 3 bps over 100M a day, …, else 15 bps". */
+export function spreadBands(tiers: [number, number][]): string {
+  const bps = (b: number) => `${b} bp${b === 1 ? "" : "s"}`;
+  const short = (v: number) => (v >= 1e9 ? `${v / 1e9}B` : `${v / 1e6}M`);
+  return tiers.map(([v, b]) => (v > 0 ? `${bps(b)} over ${short(v)} a day` : `else ${bps(b)}`)).join(", ");
+}

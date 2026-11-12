@@ -85,6 +85,8 @@ export interface CostConfig {
   };
   backtest: { no_trade_band: number; holdout_start: string };
   instruments: { symbol: string; step_size: number; min_qty: number; min_notional: number }[];
+  /** Half-spread bands for the coin universe: [minimum median daily USDT volume, bps]. */
+  spread_tiers: [number, number][];
 }
 
 /** One simulated market order. Cost fields are null when `filled` is false. */

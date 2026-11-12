@@ -187,12 +187,15 @@ class CostConfigOut(BaseModel):
     costs: CostSettings
     backtest: BacktestSettings
     instruments: list[InstrumentOut]
+    spread_tiers: list[tuple[float, float]] = Field(default_factory=list)
+    """[universe] spread_tiers: (minimum median daily volume in USDT, half-spread in bps)."""
 
     @classmethod
     def from_config(cls, c: Config) -> CostConfigOut:
         return cls(
             account_currency=c.account_currency,
             fingerprint=c.fingerprint(),
+            spread_tiers=[(float(v), float(b)) for v, b in c.universe.spread_tiers],
             costs=CostSettings(
                 taker_fee_bps=float(c.costs.taker_fee_bps),
                 half_spread_bps=float(c.costs.half_spread_bps),

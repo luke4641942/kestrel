@@ -35,7 +35,8 @@ def document() -> dict[str, Any]:
             "step_size": "0.00000001",
             "min_qty": "0.00000001",
             "min_notional": "5",
-            "spread_window_days": 30,
+            "volume_window_days": 30,
+            "spread_tiers": [[500_000_000, 1], [100_000_000, 3], [20_000_000, 8], [0, 15]],
         },
     }
 
@@ -108,13 +109,32 @@ def test_coins_without_their_own_rules_use_the_universe_rules(document: dict[str
     assert config.rules_for("btcusdt").step_size == Decimal("0.00001")  # its own entry
     sol = config.rules_for("SOLUSDT")
     assert (sol.symbol, sol.step_size, sol.min_notional) == ("SOLUSDT", Decimal("1e-8"), Decimal(5))
-    assert config.universe.spread_window_days == 30
+    assert config.universe.volume_window_days == 30
+    assert config.universe.spread_tiers[0] == (Decimal(500_000_000), Decimal(1))
 
 
 @pytest.mark.parametrize("window", [1, 366, 2.5, True, "30"])
-def test_the_spread_window_must_be_whole_days(document: dict[str, Any], window: object) -> None:
-    document["universe"]["spread_window_days"] = window
-    with pytest.raises(ConfigError, match="spread_window_days"):
+def test_the_volume_window_must_be_whole_days(document: dict[str, Any], window: object) -> None:
+    document["universe"]["volume_window_days"] = window
+    with pytest.raises(ConfigError, match="volume_window_days"):
+        parse_config(document)
+
+
+@pytest.mark.parametrize(
+    ("tiers", "message"),
+    [
+        ([], "list of"),
+        ("1bp", "list of"),
+        ([[0, 15, 3]], "each tier"),
+        ([[0, 15], [100, 3]], "highest volume down"),
+        ([[100, 3], [100, 5], [0, 15]], "highest volume down"),
+        ([[100, 3], [10, 15]], "must start at 0"),
+        ([[0, -1]], "must be >= 0"),
+    ],
+)
+def test_spread_tiers_are_checked(document: dict[str, Any], tiers: object, message: str) -> None:
+    document["universe"]["spread_tiers"] = tiers
+    with pytest.raises(ConfigError, match=message):
         parse_config(document)
 
 

@@ -64,8 +64,11 @@ class UniverseConfig:
     step_size: Decimal
     min_qty: Decimal
     min_notional: Decimal
-    spread_window_days: int
-    """Days of bars that estimate each coin's spread (see kestrel.backtest.spread)."""
+    volume_window_days: int
+    """Days whose median quote volume sets a coin's spread band."""
+    spread_tiers: tuple[tuple[Decimal, Decimal], ...]
+    """(minimum median daily quote volume, half-spread in bps), highest volume first,
+    ending at a minimum of 0 (see kestrel.backtest.spread)."""
 
 
 @dataclass(frozen=True)
@@ -171,19 +174,22 @@ def parse_config(document: dict[str, Any]) -> Config:
 
     raw_u = _table(document, "universe")
     _expect_keys(
-        raw_u, {"step_size", "min_qty", "min_notional", "spread_window_days"}, "[universe]"
+        raw_u,
+        {"step_size", "min_qty", "min_notional", "volume_window_days", "spread_tiers"},
+        "[universe]",
     )
-    window = raw_u["spread_window_days"]
+    window = raw_u["volume_window_days"]
     if isinstance(window, bool) or not isinstance(window, int) or not 2 <= window <= 365:
         raise ConfigError(
-            "[universe] spread_window_days must be a whole number of days from 2 to 365, "
+            "[universe] volume_window_days must be a whole number of days from 2 to 365, "
             f"got {window!r}"
         )
     universe = UniverseConfig(
         step_size=_decimal(raw_u, "step_size", "[universe]", low=0, low_inclusive=False),
         min_qty=_decimal(raw_u, "min_qty", "[universe]", low=0),
         min_notional=_decimal(raw_u, "min_notional", "[universe]", low=0),
-        spread_window_days=window,
+        volume_window_days=window,
+        spread_tiers=_spread_tiers(raw_u["spread_tiers"]),
     )
 
     return Config(
@@ -194,6 +200,28 @@ def parse_config(document: dict[str, Any]) -> Config:
         universe=universe,
         document=document,
     )
+
+
+def _spread_tiers(raw: Any) -> tuple[tuple[Decimal, Decimal], ...]:
+    where = "[universe] spread_tiers"
+    if not isinstance(raw, list) or not raw:
+        raise ConfigError(f"{where} must be a list of [min_volume_usdt, half_spread_bps] pairs")
+    tiers = []
+    for pair in raw:
+        if not isinstance(pair, list) or len(pair) != 2:
+            raise ConfigError(
+                f"{where}: each tier is [min_volume_usdt, half_spread_bps], got {pair!r}"
+            )
+        row = {"volume": pair[0], "bps": pair[1]}
+        tiers.append(
+            (_decimal(row, "volume", where, low=0), _decimal(row, "bps", where, low=0, high=1000))
+        )
+    volumes = [v for v, _ in tiers]
+    if volumes != sorted(volumes, reverse=True) or len(set(volumes)) != len(volumes):
+        raise ConfigError(f"{where}: list tiers from the highest volume down, each once")
+    if volumes[-1] != 0:
+        raise ConfigError(f"{where}: the last tier must start at 0 so every coin has a spread")
+    return tuple(tiers)
 
 
 def _table(document: dict[str, Any], key: str) -> dict[str, Any]:

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { DEFAULT_RUN_SORT, KIND_LABEL, UNIVERSE, marketLabel, marketsFor, defaultDataset, nextSort, sortRuns, fewTrades, signalsCaption, MAX_LABELLED_TRADES, MAX_MARKED_TRADES, costHeadroom, paramsText, runRole, tradeCount, heldAsset, money, span, trackRecord, tradeMarkers, verdict } from "./summary";
+import { spreadBands, DEFAULT_RUN_SORT, KIND_LABEL, UNIVERSE, marketLabel, marketsFor, defaultDataset, nextSort, sortRuns, fewTrades, signalsCaption, MAX_LABELLED_TRADES, MAX_MARKED_TRADES, costHeadroom, paramsText, runRole, tradeCount, heldAsset, money, span, trackRecord, tradeMarkers, verdict } from "./summary";
 import { run, trade } from "./test/fixtures";
 
 describe("verdict", () => {
@@ -268,5 +268,14 @@ describe("cross-sectional runs", () => {
     expect(marketsFor({ universe: true }, [ds("ETHUSDT", "1d")])).toEqual([]); // no BTC daily: can't run
     expect(marketsFor({ universe: false }, stored)).toBe(stored);
     expect(marketsFor(undefined, stored)).toBe(stored);
+  });
+});
+
+describe("spreadBands", () => {
+  it("says the universe spread assumption in words", () => {
+    expect(spreadBands([[5e8, 1], [1e8, 3], [2e7, 8], [0, 15]])).toBe(
+      "1 bp over 500M a day, 3 bps over 100M a day, 8 bps over 20M a day, else 15 bps",
+    );
+    expect(spreadBands([[2e9, 1], [0, 5]])).toBe("1 bp over 2B a day, else 5 bps");
   });
 });

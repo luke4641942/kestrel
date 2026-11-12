@@ -1,8 +1,8 @@
 """Portfolio engine: one strategy holding several coins at once (cross-sectional).
 
 Same timing as the single-coin engine: a decision at day t's close fills at day t+1's
-open, with market impact sized from each coin's last closed bar and its own estimated
-spread (kestrel.backtest.spread). Orders go through the same ``SimVenue``.
+open, with market impact sized from each coin's last closed bar and a spread set by how
+much the coin trades (kestrel.backtest.spread). Orders go through the same ``SimVenue``.
 
 Decisions, not daily targets. A strategy returns rows (open_time, symbol, weight): each
 open_time present is a decision (a rebalance), and coins it doesn't list are sold; a row
@@ -117,8 +117,8 @@ def run_portfolio(
     decisions = validated_decisions(strategy, panel)
     priced = with_half_spread(
         panel,
-        config.universe.spread_window_days,
-        float(config.costs.half_spread_bps) / 1e4,
+        config.universe.volume_window_days,
+        [(float(v), float(bps) / 1e4) for v, bps in config.universe.spread_tiers],
         ["symbol", "history"],
     )
     # Per coin: each bar's prices, and the volume and spread known at its close.
