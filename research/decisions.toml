@@ -105,3 +105,12 @@ decision = "drop"
 decided = 2026-11-11
 reason = "Came closest of the chart patterns (+0.17R a trade) but not convincing (86% chance against the 90% needed)."
 evidence = ["falling-wedge-breakout"]
+
+[[decision]]
+strategy = "fear-greed"
+name = "Fear & Greed contrarian"
+market = "BTCUSDT and ETHUSDT 1d"
+decision = "drop"
+decided = 2026-11-12
+reason = "Sold the start of bull runs and bought the start of bear markets: +20% on BTC against +1,087% for holding, and -86% on ETH."
+evidence = ["fear-greed-contrarian-btc-eth-daily"]
