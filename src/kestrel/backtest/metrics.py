@@ -270,7 +270,15 @@ def _norm_cdf(x: float) -> float:
     return 0.5 * (1 + math.erf(x / math.sqrt(2)))
 
 
-def format_report(result: BacktestResult, m: Metrics, analysis: Analysis | None = None) -> str:
+def format_report(
+    result: BacktestResult,
+    m: Metrics,
+    analysis: Analysis | None = None,
+    benchmark_asset: str | None = None,
+) -> str:
+    """The text report. ``benchmark_asset`` names what the benchmark held when it isn't
+    the run's own market (a cross-sectional run is compared with BTC)."""
+
     def pct(x: float) -> str:
         return "n/a" if math.isnan(x) else f"{x:+.2%}"
 
@@ -306,7 +314,7 @@ def format_report(result: BacktestResult, m: Metrics, analysis: Analysis | None 
         f"  Simulator         {m.rejections} rejected orders, {m.band_skips} rebalances "
         "skipped by the no-trade band",
         "",
-        *(_analysis_lines(analysis, result.asset) if analysis else []),
+        *(_analysis_lines(analysis, benchmark_asset or result.asset) if analysis else []),
         f"  Config {result.config_fingerprint}  ·  code {version}"
         + ("  ·  HOLDOUT DATA USED" if result.used_holdout else ""),
         "  Confidence intervals assume this was the only strategy tried.",

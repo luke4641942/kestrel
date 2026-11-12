@@ -196,3 +196,15 @@ def test_a_failed_trial_is_not_logged_and_does_not_say_it_was(tmp_path: Path) ->
     assert "ingest-universe" in job["error"]
     assert not any(line.split(" ", 1)[1].startswith("Logged as a trial") for line in job["logs"])
     assert client.get(f"/api/research/{note['slug']}").json()["trials"] == 0
+
+
+def test_the_report_names_btc_as_the_benchmark(tmp_path: Path) -> None:
+    # Regression: the text report said "vs UNIVERSE" for a cross-sectional run.
+    from kestrel.backtest.metrics import format_report
+
+    outcome = execute(_request(), _store_universe(tmp_path), load_config(REPO_CONFIG))
+    report = format_report(
+        outcome.result, outcome.metrics, outcome.analysis, outcome.benchmark.asset
+    )
+    assert "vs BTC" in report
+    assert "vs UNIVERSE" not in report
