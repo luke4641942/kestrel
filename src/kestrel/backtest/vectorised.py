@@ -48,6 +48,11 @@ def run_vectorised(
             "the vectorised engine runs weight strategies only; stops and targets are "
             "path-dependent, so use the event engine"
         )
+    if strategy.symbol.upper() not in config.instruments:
+        raise ValueError(
+            f"{strategy.symbol} has no [instruments] entry, so its spread depends on its "
+            "volume; use the event engine"
+        )
     used_holdout = check_inputs(bars, config, strategy.name, strategy.symbol, allow_holdout)
     if (bars["quote_volume"] <= 0).any():
         raise ValueError("bars with no volume can't be traded; use the event engine")

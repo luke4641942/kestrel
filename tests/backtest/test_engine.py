@@ -159,3 +159,50 @@ def test_result_records_provenance() -> None:
     result = run_backtest(BuyAndHold(), bars([100] * 3), H4, config(), D(1000))
     assert len(result.config_fingerprint) == 12
     assert result.code is not None
+
+
+def test_a_coin_without_its_own_rules_pays_the_spread_of_its_volume_band() -> None:
+    # Regression: SOLUSDT failed with "no [instruments.SOLUSDT] in config". A coin without
+    # its own entry uses the universe's order rules and the spread band for its volume:
+    # 50M USDT a day is the 8 bp band (BTC keeps its configured 1 bp).
+    from tests.backtest.helpers import FixedWeights
+
+    weights = [0.0] * 35 + [1.0] * 5
+    frame = bars([100.0] * 40, quote_volume=5e7)
+    result = run_backtest(
+        FixedWeights(weights, "SOLUSDT"), frame, Interval.H4, config(), Decimal(1000)
+    )
+    (fill,) = [r.fill for r in result.fills]
+    assert fill.symbol == "SOLUSDT"
+    assert float(fill.spread_cost / (fill.quantity * fill.reference_price)) == pytest.approx(0.0008)
+
+    btc = run_backtest(FixedWeights(weights), frame, Interval.H4, config(), Decimal(1000))
+    (btc_fill,) = [r.fill for r in btc.fills]
+    assert float(
+        btc_fill.spread_cost / (btc_fill.quantity * btc_fill.reference_price)
+    ) == pytest.approx(0.0001)
+
+
+def test_a_coin_too_young_for_a_volume_window_pays_the_widest_band() -> None:
+    from tests.backtest.helpers import FixedWeights
+
+    frame = bars([100.0] * 5, quote_volume=2e9)
+    result = run_backtest(
+        FixedWeights([1.0] * 5, "SOLUSDT"), frame, Interval.H4, config(), Decimal(1000)
+    )
+    fill = result.fills[0].fill
+    assert float(fill.spread_cost / (fill.quantity * fill.reference_price)) == pytest.approx(0.0015)
+
+
+def test_the_vectorised_engine_refuses_coins_without_their_own_rules() -> None:
+    from kestrel.backtest.vectorised import run_vectorised
+    from tests.backtest.helpers import FixedWeights
+
+    with pytest.raises(ValueError, match="use the event engine"):
+        run_vectorised(
+            FixedWeights([1.0] * 5, "SOLUSDT"),
+            bars([100.0] * 5),
+            Interval.H4,
+            config(),
+            Decimal(1000),
+        )

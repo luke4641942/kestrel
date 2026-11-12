@@ -38,6 +38,7 @@ from typing import Literal
 import polars as pl
 
 from kestrel.backtest.costs import CostModel, Fill, Rejection, Side
+from kestrel.backtest.spread import with_half_spread
 from kestrel.config import Config
 from kestrel.data.schema import Interval
 from kestrel.execution.venue import SimVenue
@@ -166,7 +167,8 @@ def run_backtest(
     """Run ``strategy`` over ``bars`` (canonical kline schema, one symbol, sorted)."""
     used_holdout = check_inputs(bars, config, strategy.name, strategy.symbol, allow_holdout)
     symbol = strategy.symbol
-    venue = SimVenue(config, initial_cash)
+    venue = SimVenue(config, initial_cash, rules=config.rules_for)
+    spreads = half_spreads(bars, config, symbol)
     result = BacktestResult(
         strategy=strategy.name,
         symbol=symbol,
@@ -181,9 +183,9 @@ def run_backtest(
     )
     if isinstance(strategy, BracketStrategy):
         result.style = "brackets"
-        rows = _run_brackets(strategy, bars, venue, config, result)
+        rows = _run_brackets(strategy, bars, venue, config, result, spreads)
     else:
-        rows = _run_weights(strategy, bars, venue, config, result)
+        rows = _run_weights(strategy, bars, venue, config, result, spreads)
 
     close_times = bars["open_time"] + interval.duration
     result.equity = pl.DataFrame(
@@ -222,6 +224,22 @@ def check_inputs(
     return used_holdout
 
 
+def half_spreads(bars: pl.DataFrame, config: Config, symbol: str) -> list[Decimal | None]:
+    """The half-spread each bar's orders pay, known at that bar's close. None means the
+    configured [costs] half_spread_bps: a coin with its own [instruments] entry (BTC, ETH)
+    keeps it. Any other coin pays the band for its trading volume, as in the portfolio
+    engine (kestrel.backtest.spread)."""
+    if symbol.upper() in config.instruments:
+        return [None] * bars.height
+    banded = with_half_spread(
+        bars.select("quote_volume").with_columns(_coin=pl.lit(0)),
+        config.universe.volume_window_days,
+        [(float(v), float(bps) / 1e4) for v, bps in config.universe.spread_tiers],
+        ["_coin"],
+    )
+    return [Decimal(str(h)) for h in banded["half_spread"]]
+
+
 Row = tuple[Decimal, Decimal, Decimal]
 """(equity, cash, position) at a bar's close."""
 
@@ -232,6 +250,7 @@ def _run_weights(
     venue: SimVenue,
     config: Config,
     result: BacktestResult,
+    spreads: list[Decimal | None],
 ) -> list[Row]:
     weights = validated_weights(strategy, bars)
     symbol = strategy.symbol
@@ -246,12 +265,14 @@ def _run_weights(
     rows: list[Row] = [(result.initial_cash, result.initial_cash, Decimal(0))]
     for i in range(1, bars.height):
         price, target = opens[i], targets[i - 1]
-        venue.set_market(symbol, price, volumes[i - 1])
+        venue.set_market(symbol, price, volumes[i - 1], spreads[i - 1])
         held = venue.position(symbol)
         equity = venue.cash() + held * price
         current = held * price / equity
         if abs(target - current) > band:
-            order = _rebalance(venue, model, symbol, target, current, equity, price, volumes[i - 1])
+            order = _rebalance(
+                venue, model, symbol, target, current, equity, price, volumes[i - 1], spreads[i - 1]
+            )
             if isinstance(order, Fill):
                 result.fills.append(FillRecord(times[i], order))
             else:
@@ -279,6 +300,7 @@ def _run_brackets(
     venue: SimVenue,
     config: Config,
     result: BacktestResult,
+    spreads: list[Decimal | None],
 ) -> list[Row]:
     frame = validated_brackets(strategy, bars)
     symbol = strategy.symbol
@@ -320,11 +342,11 @@ def _run_brackets(
     rows: list[Row] = [(result.initial_cash, result.initial_cash, Decimal(0))]
     for i in range(1, bars.height):
         o, h, lo, c = opens[i], highs[i], lows[i], closes[i]
-        last_volume = volumes[i - 1]
+        last_volume, last_spread = volumes[i - 1], spreads[i - 1]
 
         # 0. An exit signalled at the previous close sells at this open.
         if open_trade is not None and exits[i - 1]:
-            venue.set_market(symbol, o, last_volume)
+            venue.set_market(symbol, o, last_volume, last_spread)
             sell = venue.submit_market(symbol, Side.SELL, venue.position(symbol))
             if isinstance(sell, Fill):
                 close_trade(open_trade, sell, times[i], "signal")
@@ -354,12 +376,12 @@ def _run_brackets(
                 cash = venue.cash()
                 wanted = risk_fraction * cash / (o - stop)
                 rate = (
-                    model.cost_rate(Side.BUY, min(wanted * o, cash), last_volume)
+                    model.cost_rate(Side.BUY, min(wanted * o, cash), last_volume, last_spread)
                     if last_volume > 0
                     else Decimal(0)
                 )
                 affordable = cash / (1 + rate) / o
-                venue.set_market(symbol, o, last_volume)
+                venue.set_market(symbol, o, last_volume, last_spread)
                 order = venue.submit_market(symbol, Side.BUY, min(wanted, affordable))
                 if isinstance(order, Fill):
                     result.fills.append(FillRecord(times[i], order))
@@ -384,7 +406,7 @@ def _run_brackets(
             elif open_trade.target is not None and h >= open_trade.target:
                 exit_at, reason = (o if o >= open_trade.target else open_trade.target), "target"
             if exit_at is not None:
-                venue.set_market(symbol, exit_at, last_volume)
+                venue.set_market(symbol, exit_at, last_volume, last_spread)
                 sell = venue.submit_market(symbol, Side.SELL, venue.position(symbol))
                 if isinstance(sell, Fill):
                     close_trade(open_trade, sell, times[i], reason)
@@ -400,7 +422,7 @@ def _run_brackets(
         last = bars.height - 1
         final = closes[last]
         closed_at = times[last] + result.interval.duration  # sold at the close, not the open
-        venue.set_market(symbol, final, volumes[last])
+        venue.set_market(symbol, final, volumes[last], spreads[last])
         sell = venue.submit_market(symbol, Side.SELL, venue.position(symbol))
         if isinstance(sell, Fill):
             close_trade(open_trade, sell, closed_at, "end of data")
@@ -419,6 +441,7 @@ def _rebalance(
     equity: Decimal,
     price: Decimal,
     last_volume: Decimal,
+    half_spread: Decimal | None = None,
 ) -> Fill | Rejection:
     """One market order moving the position from ``current`` to ``target`` weight."""
     if target < current:
@@ -430,5 +453,9 @@ def _rebalance(
     # use the rate for the intended size (it only shrinks the order, never grows it).
     # Cash is positive whenever current < target (current = 1 - cash / equity).
     notional = min((target - current) * equity, venue.cash())
-    rate = model.cost_rate(Side.BUY, notional, last_volume) if last_volume > 0 else Decimal(0)
+    rate = (
+        model.cost_rate(Side.BUY, notional, last_volume, half_spread)
+        if last_volume > 0
+        else Decimal(0)
+    )
     return venue.submit_market(symbol, Side.BUY, notional / (1 + rate) / price)
