@@ -7,10 +7,12 @@ kestrel list BTCUSDT --interval 1h
 kestrel backtest BTCUSDT --interval 4h --start 2022-01 --end 2025-10
 kestrel anchor-study BTCUSDT --start 2020-01 --end 2025-10
 kestrel walk-forward BTCUSDT --strategy ma-trend --grid fast=10,20 --grid slow=50,100 ...
+kestrel robustness BTCUSDT --strategy channel-breakout --interval 4h --start ... --end ...
 """
 
 from __future__ import annotations
 
+from collections.abc import Callable
 from datetime import UTC, datetime
 from decimal import Decimal
 from pathlib import Path
@@ -19,9 +21,10 @@ from typing import Annotated
 import polars as pl
 import typer
 
-from kestrel.backtest.engine import HoldoutError
-from kestrel.backtest.metrics import format_report
-from kestrel.backtest.runs import RunRequest, RunStore, execute
+from kestrel.backtest.engine import HoldoutError, run_backtest
+from kestrel.backtest.metrics import Metrics, compute_metrics, format_report
+from kestrel.backtest.portfolio import run_portfolio
+from kestrel.backtest.runs import RunRequest, RunStore, execute, universe_panel
 from kestrel.config import ConfigError, load_config
 from kestrel.data.binance_vision import BinanceVisionClient, Month, last_complete_month
 from kestrel.data.quality import check_klines
@@ -29,8 +32,16 @@ from kestrel.data.schema import Interval
 from kestrel.data.store import ParquetStore
 from kestrel.data.universe import ArchiveListing, CoinIngest, ingest_universe, manifest_path
 from kestrel.research import ResearchStore, run_target
-from kestrel.strategy import STRATEGIES, resolve_params
+from kestrel.strategy import (
+    STRATEGIES,
+    make_portfolio_strategy,
+    make_strategy,
+    resolve_params,
+    spec_for,
+)
 from kestrel.studies.anchor_day import format_study, run_study
+from kestrel.validation.log import Look, Study, ValidationLog
+from kestrel.validation.robustness import check_robustness, format_robustness
 from kestrel.validation.walkforward import format_walk_forward, walk_forward
 
 app = typer.Typer(help="Kestrel trading platform.", no_args_is_help=True)
@@ -301,6 +312,104 @@ def walk_forward_cmd(
         typer.echo(str(e), err=True)
         raise typer.Exit(code=1) from None
     typer.echo(format_walk_forward(result))
+    study = Study(
+        kind="walk-forward",
+        strategy=key,
+        symbol=symbol.upper(),
+        interval=interval.value,
+        start=start,
+        end=end,
+        looks=[Look(params, sharpe) for params, sharpe in result.looks],
+        verdict="SURVIVES" if result.survives else "KILL",
+        detail={
+            "is_sharpe": result.is_sharpe,
+            "oos_sharpe": result.oos_sharpe,
+            "oos_return": result.oos_return,
+            "benchmark_return": result.benchmark_return,
+            "folds": len(result.folds),
+        },
+    )
+    typer.echo(f"Saved as study {ValidationLog(data_dir).save(study)}")
+
+
+@app.command()
+def robustness(
+    symbol: str,
+    start: Annotated[str, typer.Option(help="First month, YYYY-MM.")],
+    end: Annotated[str, typer.Option(help="Last month, YYYY-MM (inclusive).")],
+    strategy: Annotated[str, typer.Option(help="Strategy key.")],
+    interval: IntervalOpt = Interval.H4,
+    param: Annotated[
+        list[str] | None,
+        typer.Option(help="Starting setting as name=value; repeatable. Default: the defaults."),
+    ] = None,
+    cash: Annotated[float, typer.Option(help="Starting cash in USDT.")] = 330.0,
+    research: Annotated[
+        str | None,
+        typer.Option(help="Research strategy slug: its frozen note must name the strategy."),
+    ] = None,
+    research_dir: ResearchDir = Path("research"),
+    data_dir: DataDir = Path("data"),
+    config: Annotated[
+        Path, typer.Option("--config", envvar="KESTREL_CONFIG", help="Config file.")
+    ] = Path("kestrel.toml"),
+) -> None:
+    """Move each parameter around its setting and check the result survives: a plateau
+    or a lucky peak? (P3). Every setting is saved as a trial. Never uses the holdout."""
+    store = ParquetStore(data_dir)
+    money = Decimal(str(cash))
+    try:
+        key, _ = run_target(ResearchStore(research_dir), strategy, research)
+        spec = spec_for(key)
+        center = resolve_params(key, _parse_params(param or []))
+        cfg = load_config(config)
+        first, last = Month.parse(start), Month.parse(end)
+        evaluate: Callable[[dict[str, int]], Metrics]
+        if spec.universe:
+            panel = universe_panel(store, interval, first, last)
+
+            def evaluate(p: dict[str, int]) -> Metrics:
+                strategy_ = make_portfolio_strategy(key, p)
+                return compute_metrics(run_portfolio(strategy_, panel, interval, cfg, money))
+        else:
+            after = last.next()
+            bars = store.read(
+                symbol,
+                interval,
+                datetime(first.year, first.month, 1, tzinfo=UTC),
+                datetime(after.year, after.month, 1, tzinfo=UTC),
+            )
+            if bars.height < 2:
+                raise ValueError(f"no stored {symbol.upper()} {interval.value} bars in that range")
+
+            def evaluate(p: dict[str, int]) -> Metrics:
+                strategy_ = make_strategy(key, symbol, p)
+                return compute_metrics(run_backtest(strategy_, bars, interval, cfg, money))
+
+        result = check_robustness(key, spec.params, center, evaluate)
+    except (HoldoutError, ConfigError, ValueError) as e:
+        typer.echo(str(e), err=True)
+        raise typer.Exit(code=1) from None
+    market = f"{symbol.upper()} {interval.value}, {start} to {end}"
+    typer.echo(format_robustness(result, market))
+    settings = [result.center, *result.neighbours]
+    study = Study(
+        kind="robustness",
+        strategy=key,
+        symbol=symbol.upper(),
+        interval=interval.value,
+        start=start,
+        end=end,
+        looks=[Look(s.params, s.sharpe) for s in settings if s.error is None],
+        verdict=result.verdict,
+        detail={
+            "center": result.center.params,
+            "positive_share": result.positive_share,
+            "median_sharpe": result.median_sharpe,
+            "center_sharpe": result.center.sharpe,
+        },
+    )
+    typer.echo(f"Saved as study {ValidationLog(data_dir).save(study)}")
 
 
 def _parse_grid(pairs: list[str]) -> dict[str, list[int]]:

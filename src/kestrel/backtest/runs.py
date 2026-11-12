@@ -134,22 +134,30 @@ def execute(request: RunRequest, store: ParquetStore, config: Config) -> RunOutc
     )
 
 
+def universe_panel(
+    store: ParquetStore, interval: Interval, start: Month, end: Month
+) -> pl.DataFrame:
+    """Every stored coin in the universe manifest, ``start..end``."""
+    path = manifest_path(store, interval)
+    if not path.exists():
+        raise ValueError(
+            f"no {interval.value} coin universe stored; run "
+            f"kestrel ingest-universe --interval {interval.value} first"
+        )
+    coins = sorted(json.loads(path.read_text())["coins"])
+    panel = load_panel(store, coins, interval, start, end)
+    if panel.is_empty():
+        raise ValueError(f"no universe bars stored for {start}..{end}")
+    return panel
+
+
 def _execute_universe(request: RunRequest, store: ParquetStore, config: Config) -> RunOutcome:
     strategy = make_portfolio_strategy(request.strategy, request.params)
     if request.symbol.upper() != UNIVERSE:
         raise ValueError(f"{request.strategy} runs on {UNIVERSE}, not {request.symbol}")
     if request.engine != "event":
         raise ValueError("cross-sectional strategies run on the event engine only")
-    path = manifest_path(store, request.interval)
-    if not path.exists():
-        raise ValueError(
-            f"no {request.interval.value} coin universe stored; run "
-            f"kestrel ingest-universe --interval {request.interval.value} first"
-        )
-    coins = sorted(json.loads(path.read_text())["coins"])
-    panel = load_panel(store, coins, request.interval, request.start, request.end)
-    if panel.is_empty():
-        raise ValueError(f"no universe bars stored for {request.start}..{request.end}")
+    panel = universe_panel(store, request.interval, request.start, request.end)
     result = run_portfolio(
         strategy,
         panel,

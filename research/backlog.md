@@ -22,10 +22,10 @@ Every idea tested so far has been rejected against rules set before its results 
 | Trend + volatility targeting (2020-25) | Rejected: BTC drawdown -48% vs -38% limit; ETH passed. |
 | Trend + volatility targeting (2017-18, unseen) | Rejected: drawdown -35% / -44% vs -83% / -94%, but lost money in the bear market. |
 | Cross-sectional momentum | Rejected (v2): Sharpe 0.69 vs BTC 1.07, drawdown -92%. v1 void (faulty spread model). |
-| Channel breakout (engine test) | Fails walk-forward: out-of-sample Sharpe 0.41 (BTC), -0.58 (ETH). |
+| Channel breakout (engine test) | Robust to its settings on 2020-25 (every neighbour positive), but fails walk-forward: out-of-sample Sharpe 0.41 (BTC), -0.58 (ETH). Deflated Sharpe 2-3%. |
 
-With 31 trials logged, a Sharpe has to beat about 1.50 to stand out from luck (P3's
-deflated Sharpe).
+With 73 trials logged (runs plus every setting a validation study tried), a Sharpe has
+to beat about 1.26 to stand out from luck (P3's deflated Sharpe).
 
 ## Waiting, and why
 

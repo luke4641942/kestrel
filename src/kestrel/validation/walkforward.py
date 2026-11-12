@@ -18,8 +18,8 @@ warm when the test window opens; only the test window's daily returns count. A p
 it already holds at the window's start carries in at that day's mark (its entry cost
 fell in training).
 
-Every grid point is a trial. Walk-forward results are not yet added to the trial log
-automatically; count them when judging a deflated Sharpe.
+Every grid point is a trial: each is saved with its average training Sharpe
+(kestrel.validation.log) and counted by the deflated Sharpe.
 """
 
 from __future__ import annotations
@@ -64,6 +64,9 @@ class WalkForward:
     interval: Interval
     grid: dict[str, list[int]]
     folds: list[Fold]
+    looks: list[tuple[dict[str, int], float]]
+    """Every grid point tried, with its average training Sharpe across folds: each is a
+    look at the data, saved as a trial (kestrel.validation.log)."""
 
     @property
     def configurations(self) -> int:
@@ -148,6 +151,7 @@ def walk_forward(
     points = [dict(zip(grid, values, strict=True)) for values in itertools.product(*grid.values())]
     stop = _month_start(end.next())
     folds: list[Fold] = []
+    tried: dict[tuple[tuple[str, int], ...], list[float]] = {}
     train = start
     while _month_start(_add(train, train_months + test_months)) <= stop:
         t0 = _month_start(train)
@@ -165,7 +169,10 @@ def walk_forward(
             sharpe = compute_metrics(
                 run_backtest(strategy, train_bars, interval, config, cash)
             ).sharpe
-            if not math.isnan(sharpe) and (best is None or sharpe > best[0]):
+            if math.isnan(sharpe):
+                continue
+            tried.setdefault(tuple(point.items()), []).append(sharpe)
+            if best is None or sharpe > best[0]:
                 best = (sharpe, point)
         if best is None:
             raise ValueError(f"no grid point produced a Sharpe in the window from {train}")
@@ -187,7 +194,8 @@ def walk_forward(
         train = _add(train, test_months)
     if not folds:
         raise ValueError("the range is shorter than one training plus one test window")
-    return WalkForward(key, symbol, interval, grid, folds)
+    looks = [(dict(point), sum(v) / len(v)) for point, v in tried.items()]
+    return WalkForward(key, symbol, interval, grid, folds, looks)
 
 
 def format_walk_forward(wf: WalkForward) -> str:
@@ -225,7 +233,6 @@ def format_walk_forward(wf: WalkForward) -> str:
             if wf.survives
             else "KILL: the out-of-sample Sharpe is under half the in-sample one."
         ),
-        f"  Every grid point is a trial: {wf.configurations} configurations, not yet added to "
-        "the trial log automatically.",
+        f"  Every grid point is a trial: {len(wf.looks)} saved to the trial log.",
     ]
     return "\n".join(lines)

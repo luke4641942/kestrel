@@ -96,7 +96,9 @@ def test_the_verdict_follows_the_backlogs_rule() -> None:
     def wf(train_sharpe: float, test: list[float]) -> WalkForward:
         t = datetime(2023, 1, 1, tzinfo=UTC)
         fold = Fold(t, t, t, {"fast": 3}, train_sharpe, test, [0.0, 0.01])
-        return WalkForward("ma-trend", "BTCUSDT", D1, {"fast": [3]}, [fold])
+        return WalkForward(
+            "ma-trend", "BTCUSDT", D1, {"fast": [3]}, [fold], [({"fast": 3}, train_sharpe)]
+        )
 
     steady = [0.01, 0.012, 0.009, 0.011] * 20  # a high out-of-sample Sharpe
     assert wf(2.0, steady).survives
@@ -233,3 +235,15 @@ def test_the_cli_refuses_bad_requests(tmp_path: Path, extra: list[str], message:
     )
     assert result.exit_code == 1
     assert message in result.output
+
+
+def test_a_grid_point_that_never_trades_is_skipped_not_chosen() -> None:
+    # A 300-day slow average never fills in a 3-month window: no trades, flat equity, no
+    # Sharpe. It is neither chosen nor counted as a look.
+    wf = walk_forward(
+        "ma-trend", "BTCUSDT", daily(), D1, config(costs=False), Decimal(1000),
+        {"fast": [3], "slow": [10, 300]},
+        start=Month.parse("2023-01"), end=Month.parse("2023-12"), train_months=3, test_months=2,
+    )  # fmt: skip
+    assert all(f.chosen["slow"] == 10 for f in wf.folds)
+    assert [p for p, _ in wf.looks] == [{"fast": 3, "slow": 10}]

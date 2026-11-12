@@ -16,11 +16,12 @@ the PSR measured against SR0 instead of zero:
 with SR, skew and kurtosis (not excess) of daily returns and n the number of days.
 
 What counts as a trial: every distinct configuration (strategy, parameters, market, bar
-size, period, cash, note version) run on data before the holdout, research or not. An
-engine test looked at six times is six looks. Buy-and-hold is the benchmark, not a try.
-Identical re-runs count once. Trials are treated as independent, which they aren't
-(many share markets and periods): correlated trials make the true correction smaller,
-so this errs on the strict side.
+size, period, cash, note version) run on data before the holdout, research or not, and
+every setting a validation study tried (kestrel.validation.log). An engine test looked
+at six times is six looks. Buy-and-hold is the benchmark, not a try. Identical re-runs
+count once; a study setting identical to a saved run may count twice. Trials are treated
+as independent, which they aren't (many share markets and periods): correlated trials
+make the true correction smaller. Both err on the strict side.
 """
 
 from __future__ import annotations
@@ -65,14 +66,28 @@ def counts_as_trial(run: dict[str, Any]) -> bool:
     return run["strategy"] != "buy-and-hold" and not run.get("used_holdout", False)
 
 
-def trial_set(runs: Iterable[dict[str, Any]]) -> TrialSet:
-    """The trials among saved runs (``RunStore.summaries()``): one Sharpe per distinct
-    configuration, the latest run of each."""
+def trial_set(runs: Iterable[dict[str, Any]], studies: Iterable[dict[str, Any]] = ()) -> TrialSet:
+    """The trials among saved runs (``RunStore.summaries()``) and validation studies
+    (``ValidationLog.studies()``): one Sharpe per distinct configuration, the latest of
+    each."""
     latest: dict[tuple[Any, ...], float] = {}
     for run in sorted(runs, key=lambda r: r["created_at"]):
         sharpe = run["metrics"].get("sharpe")
         if counts_as_trial(run) and sharpe is not None:
             latest[trial_key(run)] = sharpe / math.sqrt(DAYS_PER_YEAR)
+    for study in sorted(studies, key=lambda s: s["created_at"]):
+        for look in study["looks"]:
+            if look["sharpe"] is not None:
+                key = (
+                    "study",
+                    study["strategy"],
+                    tuple(sorted(look["params"].items())),
+                    study["symbol"],
+                    study["interval"],
+                    study["start"],
+                    study["end"],
+                )
+                latest[key] = look["sharpe"] / math.sqrt(DAYS_PER_YEAR)
     values = list(latest.values())
     return TrialSet(len(values), stdev(values) if len(values) > 1 else 0.0)
 

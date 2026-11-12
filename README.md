@@ -142,7 +142,7 @@ data.binance.vision ──► BinanceVisionClient ──► parse_archive ──
 | `kestrel.backtest.metrics` | Daily-marked metrics with uncertainty: Sharpe CI, probabilistic Sharpe, drawdown, costs |
 | `kestrel.strategies` | Research strategies and the plainer controls each must beat; `geometry` holds ATR, swings known without hindsight, and lines through them |
 | `kestrel.studies` | Raw-effect studies run before any trading rule, such as the anchor-day range study (`kestrel anchor-study`) |
-| `kestrel.validation` | P3: deflated Sharpe (corrected for every strategy tried) and walk-forward testing (`kestrel walk-forward`) |
+| `kestrel.validation` | P3: deflated Sharpe (corrected for every strategy tried), walk-forward (`kestrel walk-forward`), parameter robustness (`kestrel robustness`), and the log of every validation study |
 | `kestrel.backtest.portfolio` | One strategy holding several coins, with each coin's spread banded by its volume |
 | `kestrel.research` | Versioned research notes with enforced pre-registration, and the single rule set for starting a backtest |
 | `kestrel.assistant` | Research assistant on Claude, given the note and code only, never results |

@@ -53,6 +53,7 @@ from kestrel.api.models import (
     SourceOut,
     StatusChangeOut,
     StrategyOut,
+    StudyOut,
     TradeOut,
     ValidationOut,
 )
@@ -85,6 +86,7 @@ from kestrel.strategy import (
     validated_weights,
 )
 from kestrel.validation.deflated import TrialSet, counts_as_trial, deflated_sharpe, trial_set
+from kestrel.validation.log import ValidationLog
 
 STATIC_DIR = Path(__file__).parent / "static"
 MAX_BARS = 20_000
@@ -102,6 +104,7 @@ def create_app(
 ) -> FastAPI:
     store = ParquetStore(data_dir)
     runs = RunStore(data_dir)
+    studies = ValidationLog(data_dir)
     research = ResearchStore(research_dir)
     jobs = JobManager()
 
@@ -421,16 +424,17 @@ def create_app(
 
     @api.get("/validation")
     def get_validation() -> ValidationOut:
-        t = trial_set(runs.summaries())
+        t = trial_set(runs.summaries(), studies.studies())
         return ValidationOut(
             trials=t.count,
             sharpe_std=t.sharpe_std * math.sqrt(DAYS_PER_YEAR),
             expected_max_sharpe=t.expected_max_sharpe_annual,
+            studies=[StudyOut.model_validate(x) for x in studies.studies()],
         )
 
     def _deflated(metas: list[dict[str, Any]], trials: TrialSet | None = None) -> list[RunSummary]:
         """Run summaries with each one's Sharpe deflated for every strategy tried."""
-        t = trials or trial_set(runs.summaries())
+        t = trials or trial_set(runs.summaries(), studies.studies())
         out = []
         for meta in metas:
             m = meta["metrics"]

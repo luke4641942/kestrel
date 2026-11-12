@@ -583,6 +583,27 @@ class ResearchSummary(BaseModel):
     """The best deflated Sharpe among this hypothesis's trials."""
 
 
+class LookOut(BaseModel):
+    params: dict[str, int]
+    sharpe: float | None
+
+
+class StudyOut(BaseModel):
+    """A robustness check or walk-forward (kestrel.validation.log)."""
+
+    id: str
+    created_at: datetime
+    kind: str
+    strategy: str
+    symbol: str
+    interval: str
+    start: str
+    end: str
+    looks: list[LookOut]
+    verdict: str
+    detail: dict[str, Any] = Field(default_factory=dict)
+
+
 class ValidationOut(BaseModel):
     """The trial log as a whole: what every result is corrected for."""
 
@@ -592,6 +613,8 @@ class ValidationOut(BaseModel):
     """Standard deviation of their annual Sharpe ratios."""
     expected_max_sharpe: float
     """Annual Sharpe the best of that many worthless strategies would reach by luck."""
+    studies: list[StudyOut] = Field(default_factory=list)
+    """Every validation study, newest first; their settings count as trials."""
 
 
 class ChatMessage(BaseModel):

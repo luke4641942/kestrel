@@ -1,7 +1,7 @@
 import { api, type Job } from "../api";
 import type { Route } from "../App";
 import { Empty, PageHeader, Panel, Section, Stat, Status } from "../components/ui";
-import { RESEARCH_STATUS } from "../summary";
+import { RESEARCH_STATUS, marketLabel, studyTitle, studyTone } from "../summary";
 import { ago, date, num } from "../format";
 import { useResource } from "../hooks";
 
@@ -94,6 +94,13 @@ export function Overview({ jobs, go, openJobs }: { jobs: Job[]; go: (r: Route) =
         description="Every hypothesis and where it stands. Performance joins this table only once a strategy has out-of-sample results (P3), deflated for every trial logged against it."
       >
         <ResearchBoard />
+      </Section>
+
+      <Section
+        title="Validation"
+        description="Robustness checks and walk-forwards. Every setting they tried counts as a trial in the deflated Sharpe."
+      >
+        <StudiesBoard />
       </Section>
 
       <div className="split">
@@ -236,6 +243,54 @@ function ResearchBoard() {
         <span>In-sample results never appear on this page.</span>
         <span>The holdout period stays untouched until a strategy is final.</span>
       </div>
+    </Panel>
+  );
+}
+
+function StudiesBoard() {
+  const validation = useResource(api.validation, []);
+  const studies = validation.data?.studies ?? [];
+  return (
+    <Panel>
+      {studies.length === 0 ? (
+        <Empty title={validation.loading ? "Loading studies" : "No studies yet"}>
+          {!validation.loading && (
+            <p>
+              Run <span className="mono">kestrel robustness</span> or <span className="mono">kestrel walk-forward</span>{" "}
+              on a strategy; each study appears here.
+            </p>
+          )}
+        </Empty>
+      ) : (
+        <div className="table-wrap">
+          <table className="table">
+            <thead>
+              <tr>
+                <th>Study</th>
+                <th>Market</th>
+                <th>Period</th>
+                <th className="num">Settings tried</th>
+                <th>Verdict</th>
+              </tr>
+            </thead>
+            <tbody>
+              {studies.map((s) => (
+                <tr key={s.id}>
+                  <td style={{ fontWeight: 500 }}>{studyTitle(s)}</td>
+                  <td className="nw">{marketLabel(s)}</td>
+                  <td className="nw secondary">
+                    {s.start} to {s.end}
+                  </td>
+                  <td className="num">{num(s.looks.length)}</td>
+                  <td className="nw">
+                    <Status tone={studyTone(s.verdict)}>{s.verdict}</Status>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
     </Panel>
   );
 }

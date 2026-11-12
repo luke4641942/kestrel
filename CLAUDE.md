@@ -44,9 +44,10 @@ cd frontend && npm test && npm run build
       `kestrel.config`, `kestrel.backtest.costs`),
       vectorised research engine, event-driven validation engine, metrics,
       Backtests page (equity, drawdown, cost attribution, blotter, run comparison)
-- [ ] P3 Validation: ~~deflated Sharpe~~ (`kestrel.validation.deflated`, every run and
-      hypothesis, `/api/validation`), ~~walk-forward~~ (`kestrel walk-forward`), trial log
-      (walk-forward grid points aren't added to it automatically yet), parameter robustness
+- [x] P3 Validation: deflated Sharpe (`kestrel.validation.deflated`, every run and
+      hypothesis, `/api/validation`), walk-forward (`kestrel walk-forward`), parameter
+      robustness (`kestrel robustness`), and a trial log that counts every setting a study
+      tries (`kestrel.validation.log`, `data/validation/`, listed on the Overview)
 - [ ] P4 Execution: ExecutionVenue adapters (sim, Binance testnet, live),
       reconciliation, risk limits, kill switch, alerting, parity tests
 - [ ] P5 Perps: funding, basis, margin. **Needs a rethink:** Binance perps aren't
@@ -183,8 +184,10 @@ Agreed with Luke; don't re-litigate without a reason.
   lost money in the bear market), cross-sectional momentum (v2: -92% drawdown, Sharpe
   0.69; v1 void, faulty spread model). Channel breakout, the best-looking engine test,
   fails walk-forward on both coins. The consistent pattern: trend rules limit losses
-  relative to holding but haven't beaten holding; reversal and pattern rules fail. With
-  31 trials, a Sharpe must beat about 1.50 to stand out from luck. Don't rescue any of
+  relative to holding but haven't beaten holding; reversal and pattern rules fail. Channel
+  breakout is robust to its settings (a plateau) but fails walk-forward. With 73 trials,
+  a Sharpe must beat about 1.26 to stand out from luck; the best so far (trend, 1.21/1.23)
+  deflates to about 47%. Don't rescue any of
   these by tuning.
 - **Parked, P3+: multi-strategy portfolios.** Strategies emit *target positions*, never
   orders; an allocator owns the wallet, resolves conflicts and nets orders before the

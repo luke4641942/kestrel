@@ -1,6 +1,6 @@
 // Plain logic behind the Backtests page: the verdict, the test-period wording and the
 // chart's trade markers. Kept out of components so it can be tested directly.
-import type { Dataset, ResearchStatus, RunDetail, RunSummary, StrategyInfo, StrategyKind } from "./api";
+import type { Dataset, ResearchStatus, Study, RunDetail, RunSummary, StrategyInfo, StrategyKind } from "./api";
 import type { Tone } from "./components/ui";
 import type { TradeMarker } from "./components/EquityChart";
 
@@ -277,4 +277,16 @@ export function spreadBands(tiers: [number, number][]): string {
 export function deflatedNote(r: Pick<RunSummary, "deflated_sharpe" | "deflated_trials">): string {
   if (r.deflated_sharpe == null || !r.deflated_trials || r.deflated_trials < 2) return "";
   return ` After ${r.deflated_trials} strategies tried: ${Math.round(r.deflated_sharpe * 100)}% chance it beats the best of them by luck.`;
+}
+
+/** How a validation study's verdict reads: passed, failed, or nothing to test. */
+export function studyTone(verdict: string): Tone {
+  if (verdict === "ROBUST" || verdict === "SURVIVES") return "ok";
+  if (verdict === "NO EDGE") return "neutral";
+  return "bad";
+}
+
+/** "Robustness of channel-breakout" / "Walk-forward of ma-trend". */
+export function studyTitle(s: Pick<Study, "kind" | "strategy">): string {
+  return `${s.kind === "robustness" ? "Robustness" : "Walk-forward"} of ${s.strategy}`;
 }

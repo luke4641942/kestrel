@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { deflatedNote, spreadBands, DEFAULT_RUN_SORT, KIND_LABEL, UNIVERSE, marketLabel, marketsFor, defaultDataset, nextSort, sortRuns, fewTrades, signalsCaption, MAX_LABELLED_TRADES, MAX_MARKED_TRADES, costHeadroom, paramsText, runRole, tradeCount, heldAsset, money, span, trackRecord, tradeMarkers, verdict } from "./summary";
+import { studyTitle, studyTone, deflatedNote, spreadBands, DEFAULT_RUN_SORT, KIND_LABEL, UNIVERSE, marketLabel, marketsFor, defaultDataset, nextSort, sortRuns, fewTrades, signalsCaption, MAX_LABELLED_TRADES, MAX_MARKED_TRADES, costHeadroom, paramsText, runRole, tradeCount, heldAsset, money, span, trackRecord, tradeMarkers, verdict } from "./summary";
 import { run, trade } from "./test/fixtures";
 
 describe("verdict", () => {
@@ -292,5 +292,20 @@ describe("deflated Sharpe in the verdict", () => {
     expect(deflatedNote({ deflated_sharpe: null, deflated_trials: null })).toBe("");
     expect(deflatedNote({ deflated_sharpe: 0.9, deflated_trials: 1 })).toBe("");
     expect(deflatedNote({})).toBe("");
+  });
+});
+
+describe("validation studies", () => {
+  it("read their verdicts as pass, fail or nothing to test", () => {
+    expect(studyTone("ROBUST")).toBe("ok");
+    expect(studyTone("SURVIVES")).toBe("ok");
+    expect(studyTone("FRAGILE")).toBe("bad");
+    expect(studyTone("KILL")).toBe("bad");
+    expect(studyTone("NO EDGE")).toBe("neutral");
+  });
+
+  it("are titled by kind and strategy", () => {
+    expect(studyTitle({ kind: "robustness", strategy: "channel-breakout" })).toBe("Robustness of channel-breakout");
+    expect(studyTitle({ kind: "walk-forward", strategy: "ma-trend" })).toBe("Walk-forward of ma-trend");
   });
 });

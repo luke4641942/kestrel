@@ -197,6 +197,22 @@ export interface Validation {
   sharpe_std: number;
   /** Annual Sharpe the best of that many worthless strategies would reach by luck. */
   expected_max_sharpe: number;
+  /** Robustness checks and walk-forwards, newest first; their settings count as trials. */
+  studies: Study[];
+}
+
+export interface Study {
+  id: string;
+  created_at: string;
+  kind: "robustness" | "walk-forward";
+  strategy: string;
+  symbol: string;
+  interval: Interval;
+  start: string;
+  end: string;
+  looks: { params: Record<string, number>; sharpe: number | null }[];
+  /** ROBUST, FRAGILE or NO EDGE (robustness); SURVIVES or KILL (walk-forward). */
+  verdict: string;
 }
 
 export interface Note {
