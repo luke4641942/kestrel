@@ -174,6 +174,8 @@ function DataSummary({ jobs, openJobs }: { jobs: Job[]; openJobs: () => void }) 
 
 function ResearchBoard() {
   const research = useResource(api.researchList, []);
+  const validation = useResource(api.validation, []);
+  const v = validation.data;
   const list = research.data ?? [];
   const open = (slug: string) => {
     window.location.hash = `/strategies/${slug}`;
@@ -198,6 +200,11 @@ function ResearchBoard() {
                     Trials
                   </abbr>
                 </th>
+                <th className="num">
+                  <abbr title="Deflated Sharpe: chance the best trial's true Sharpe beats the best of every strategy tried by luck">
+                    Deflated
+                  </abbr>
+                </th>
               </tr>
             </thead>
             <tbody>
@@ -212,6 +219,7 @@ function ResearchBoard() {
                   </td>
                   <td className="mono small">{r.implementation ?? <span className="tertiary">not chosen</span>}</td>
                   <td className="num">{num(r.trials)}</td>
+                  <td className="num">{r.deflated_sharpe == null ? <span className="tertiary">—</span> : `${Math.round(r.deflated_sharpe * 100)}%`}</td>
                 </tr>
               ))}
             </tbody>
@@ -219,6 +227,12 @@ function ResearchBoard() {
         </div>
       )}
       <div className="board-foot">
+        {v && v.trials > 1 && (
+          <span>
+            {v.trials} strategies tried so far: by luck alone the best of them would reach a Sharpe of about{" "}
+            {v.expected_max_sharpe.toFixed(2)}, so a result has to beat that to stand out.
+          </span>
+        )}
         <span>In-sample results never appear on this page.</span>
         <span>The holdout period stays untouched until a strategy is final.</span>
       </div>

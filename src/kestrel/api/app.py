@@ -7,6 +7,7 @@ scripts and tests without a web server.
 
 from __future__ import annotations
 
+import math
 from collections.abc import AsyncIterator, Callable
 from contextlib import asynccontextmanager
 from dataclasses import asdict
@@ -53,10 +54,12 @@ from kestrel.api.models import (
     StatusChangeOut,
     StrategyOut,
     TradeOut,
+    ValidationOut,
 )
 from kestrel.assistant import AssistantError, ResearchAssistant, chat_record, credentials_hint
 from kestrel.backtest.costs import CostModel, Fill, Side
 from kestrel.backtest.engine import HoldoutError
+from kestrel.backtest.metrics import DAYS_PER_YEAR
 from kestrel.backtest.runs import RunRequest, RunStore, count_trials, execute
 from kestrel.config import Config, ConfigError, InstrumentRules, load_config
 from kestrel.data.binance_vision import BinanceVisionClient, Month, last_complete_month
@@ -81,6 +84,7 @@ from kestrel.strategy import (
     validated_brackets,
     validated_weights,
 )
+from kestrel.validation.deflated import TrialSet, counts_as_trial, deflated_sharpe, trial_set
 
 STATIC_DIR = Path(__file__).parent / "static"
 MAX_BARS = 20_000
@@ -413,7 +417,38 @@ def create_app(
 
     @api.get("/backtests")
     def list_backtests() -> list[RunSummary]:
-        return [RunSummary.model_validate(meta) for meta in runs.summaries()]
+        return _deflated(runs.summaries())
+
+    @api.get("/validation")
+    def get_validation() -> ValidationOut:
+        t = trial_set(runs.summaries())
+        return ValidationOut(
+            trials=t.count,
+            sharpe_std=t.sharpe_std * math.sqrt(DAYS_PER_YEAR),
+            expected_max_sharpe=t.expected_max_sharpe_annual,
+        )
+
+    def _deflated(metas: list[dict[str, Any]], trials: TrialSet | None = None) -> list[RunSummary]:
+        """Run summaries with each one's Sharpe deflated for every strategy tried."""
+        t = trials or trial_set(runs.summaries())
+        out = []
+        for meta in metas:
+            m = meta["metrics"]
+            dsr = (
+                deflated_sharpe(m.get("sharpe"), m["days"], m.get("skew"), m.get("kurtosis"), t)
+                if counts_as_trial(meta)
+                else None
+            )
+            out.append(
+                RunSummary.model_validate(
+                    {
+                        **meta,
+                        "deflated_sharpe": dsr,
+                        "deflated_trials": t.count if dsr is not None else None,
+                    }
+                )
+            )
+        return out
 
     @api.get("/backtests/{run_id}")
     def get_backtest(run_id: str) -> RunDetail:
@@ -421,9 +456,12 @@ def create_app(
             saved = runs.load(run_id)
         except KeyError:
             raise HTTPException(status.HTTP_404_NOT_FOUND, "run not found") from None
+        (summary,) = _deflated([saved.meta])
         return RunDetail.model_validate(
             {
                 **saved.meta,
+                "deflated_sharpe": summary.deflated_sharpe,
+                "deflated_trials": summary.deflated_trials,
                 "equity": _series(saved.equity),
                 "benchmark": _series(saved.benchmark),
                 "fills": [FillOut.model_validate(r) for r in saved.fills.iter_rows(named=True)],
@@ -438,6 +476,7 @@ def create_app(
 
     def _summary(s: ResearchStrategy) -> ResearchSummary:
         logged = runs.trials(s.slug)
+        scored = [r.deflated_sharpe for r in _deflated(logged) if r.deflated_sharpe is not None]
         return ResearchSummary(
             slug=s.slug,
             name=s.name,
@@ -448,6 +487,7 @@ def create_app(
             implementation=s.latest.implementation,
             runs=len(logged),
             trials=count_trials(logged),
+            deflated_sharpe=max(scored) if scored else None,
         )
 
     def _detail(slug: str) -> ResearchDetail:
@@ -460,7 +500,7 @@ def create_app(
             sections=SECTIONS,
             notes=[NoteOut.model_validate(asdict(n)) for n in s.notes],
             history=[StatusChangeOut.model_validate(asdict(h)) for h in s.history],
-            trial_log=[RunSummary.model_validate(r) for r in runs.trials(slug)],
+            trial_log=_deflated(runs.trials(slug)),
             chat=[ChatMessage.model_validate(m) for m in research.chat(slug)],
             assistant_available=assistant is not None,
             assistant_hint=credentials_hint() if assistant is not None else None,

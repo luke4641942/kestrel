@@ -444,6 +444,11 @@ class RunSummary(BaseModel):
     universe_coins: int | None = None
     """Coins ranked, for a cross-sectional run."""
     forced_exits: int = 0
+    deflated_sharpe: float | None = None
+    """Probability the true Sharpe beats the best of every strategy tried by luck (P3).
+    None for the benchmark and for runs on the holdout."""
+    deflated_trials: int | None = None
+    """How many distinct configurations it was deflated against."""
     interval: Interval
     start: str
     end: str
@@ -574,6 +579,19 @@ class ResearchSummary(BaseModel):
     runs: int
     trials: int
     """Distinct configurations tested (identical re-runs are one trial)."""
+    deflated_sharpe: float | None = None
+    """The best deflated Sharpe among this hypothesis's trials."""
+
+
+class ValidationOut(BaseModel):
+    """The trial log as a whole: what every result is corrected for."""
+
+    trials: int
+    """Distinct configurations tried on data before the holdout, research or not."""
+    sharpe_std: float
+    """Standard deviation of their annual Sharpe ratios."""
+    expected_max_sharpe: float
+    """Annual Sharpe the best of that many worthless strategies would reach by luck."""
 
 
 class ChatMessage(BaseModel):

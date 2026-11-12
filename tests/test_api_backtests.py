@@ -170,3 +170,19 @@ def test_runs_saved_before_the_analysis_still_load(client: TestClient, tmp_path:
     del meta["analysis"]
     path.write_text(json.dumps(meta))
     assert client.get(f"/api/backtests/{run_id}").json()["analysis"] is None
+
+
+def test_runs_are_deflated_for_every_strategy_tried(client: TestClient) -> None:
+    for fast in (3, 4):
+        _finish(client, {**BODY, "strategy": "ma-trend", "params": {"fast": fast, "slow": 12}})
+    _finish(client, BODY)  # buy-and-hold: the benchmark, not a trial
+    validation = client.get("/api/validation").json()
+    assert validation["trials"] == 2
+    assert validation["expected_max_sharpe"] >= 0
+    listed = client.get("/api/backtests").json()
+    by = {r["strategy"]: r for r in listed}
+    assert by["buy-and-hold"]["deflated_sharpe"] is None
+    tried = [r for r in listed if r["strategy"] == "ma-trend"]
+    assert all(r["deflated_trials"] == 2 for r in tried)
+    detail = client.get(f"/api/backtests/{tried[0]['id']}").json()
+    assert detail["deflated_trials"] == 2

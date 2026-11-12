@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { spreadBands, DEFAULT_RUN_SORT, KIND_LABEL, UNIVERSE, marketLabel, marketsFor, defaultDataset, nextSort, sortRuns, fewTrades, signalsCaption, MAX_LABELLED_TRADES, MAX_MARKED_TRADES, costHeadroom, paramsText, runRole, tradeCount, heldAsset, money, span, trackRecord, tradeMarkers, verdict } from "./summary";
+import { deflatedNote, spreadBands, DEFAULT_RUN_SORT, KIND_LABEL, UNIVERSE, marketLabel, marketsFor, defaultDataset, nextSort, sortRuns, fewTrades, signalsCaption, MAX_LABELLED_TRADES, MAX_MARKED_TRADES, costHeadroom, paramsText, runRole, tradeCount, heldAsset, money, span, trackRecord, tradeMarkers, verdict } from "./summary";
 import { run, trade } from "./test/fixtures";
 
 describe("verdict", () => {
@@ -277,5 +277,20 @@ describe("spreadBands", () => {
       "1 bp over 500M a day, 3 bps over 100M a day, 8 bps over 20M a day, else 15 bps",
     );
     expect(spreadBands([[2e9, 1], [0, 5]])).toBe("1 bp over 2B a day, else 5 bps");
+  });
+});
+
+describe("deflated Sharpe in the verdict", () => {
+  it("says how the result looks after every strategy tried", () => {
+    const r = run({ deflated_sharpe: 0.04, deflated_trials: 31 }, { psr: 0.97 });
+    expect(verdict(r).trust).toBe(
+      "Statistically convincing: 97% confidence the true Sharpe is above zero, before correcting for variants tried. After 31 strategies tried: 4% chance it beats the best of them by luck.",
+    );
+  });
+
+  it("says nothing when there is nothing to correct for", () => {
+    expect(deflatedNote({ deflated_sharpe: null, deflated_trials: null })).toBe("");
+    expect(deflatedNote({ deflated_sharpe: 0.9, deflated_trials: 1 })).toBe("");
+    expect(deflatedNote({})).toBe("");
   });
 });

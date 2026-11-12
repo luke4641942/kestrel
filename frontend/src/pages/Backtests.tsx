@@ -583,6 +583,11 @@ function StatisticsTab({ run: r }: { run: RunDetail }) {
                     ] as [string, string][])
                   : []),
                 ["Paper trading needed to trust it", trackRecord(a.min_track_record_days)],
+                ...(r.deflated_sharpe != null && r.deflated_trials
+                  ? ([
+                      [`Chance it's real after ${r.deflated_trials} strategies tried`, prob(r.deflated_sharpe)],
+                    ] as [string, string][])
+                  : []),
               ]}
             />
             <p className="small tertiary panel-foot">

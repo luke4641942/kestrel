@@ -186,6 +186,17 @@ export interface ResearchSummary {
   runs: number;
   /** Distinct configurations tested; identical re-runs count once. */
   trials: number;
+  /** The best deflated Sharpe among this hypothesis's trials. */
+  deflated_sharpe?: number | null;
+}
+
+/** The trial log as a whole: what every result is corrected for (P3). */
+export interface Validation {
+  /** Distinct configurations tried before the holdout, research or not. */
+  trials: number;
+  sharpe_std: number;
+  /** Annual Sharpe the best of that many worthless strategies would reach by luck. */
+  expected_max_sharpe: number;
 }
 
 export interface Note {
@@ -281,6 +292,9 @@ export interface RunSummary {
   /** Coins ranked, for a cross-sectional run. */
   universe_coins?: number | null;
   forced_exits?: number;
+  /** P(true Sharpe beats the best of every strategy tried by luck); null for the benchmark. */
+  deflated_sharpe?: number | null;
+  deflated_trials?: number | null;
   interval: Interval;
   start: string;
   end: string;
@@ -421,6 +435,7 @@ export const api = {
   startBacktest: (body: BacktestRequest) =>
     request<Job>("/jobs/backtest", { method: "POST", body: JSON.stringify(body) }),
   backtests: () => request<RunSummary[]>("/backtests"),
+  validation: () => request<Validation>("/validation"),
   backtest: (id: string) => request<RunDetail>(`/backtests/${enc(id)}`),
   costs: () => request<CostConfig>("/costs"),
   source: (key: string) => request<StrategySource>(`/strategies/${enc(key)}/source`),

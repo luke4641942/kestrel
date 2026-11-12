@@ -130,6 +130,7 @@ export function verdict(r: RunDetail): Verdict {
     if (m.psr >= 0.95) trust = `Statistically convincing: ${conf}, before correcting for variants tried.`;
     else if (m.psr >= 0.8) trust = `Promising but not proven: ${conf}.`;
     else trust = `Not convincing: only ${conf}. This could easily be luck.`;
+    trust += deflatedNote(r);
   }
   return { tone, headline, trust, profit, btcProfit, vsBtc, isBenchmark, trades, wins };
 }
@@ -270,4 +271,10 @@ export function spreadBands(tiers: [number, number][]): string {
   const bps = (b: number) => `${b} bp${b === 1 ? "" : "s"}`;
   const short = (v: number) => (v >= 1e9 ? `${v / 1e9}B` : `${v / 1e6}M`);
   return tiers.map(([v, b]) => (v > 0 ? `${bps(b)} over ${short(v)} a day` : `else ${bps(b)}`)).join(", ");
+}
+
+/** " After 31 strategies tried, 4% chance it beats the best of them by luck." */
+export function deflatedNote(r: Pick<RunSummary, "deflated_sharpe" | "deflated_trials">): string {
+  if (r.deflated_sharpe == null || !r.deflated_trials || r.deflated_trials < 2) return "";
+  return ` After ${r.deflated_trials} strategies tried: ${Math.round(r.deflated_sharpe * 100)}% chance it beats the best of them by luck.`;
 }
