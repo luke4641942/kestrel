@@ -24,6 +24,7 @@ import polars as pl
 from kestrel.strategies.levels import LevelBreakout, LevelRetest
 from kestrel.strategies.momentum import CrossSectionalMomentum
 from kestrel.strategies.pivots import PivotReversal
+from kestrel.strategies.sentiment import FearGreedContrarian
 from kestrel.strategies.structure import StructurePullback
 from kestrel.strategies.trend import TrendVolTarget
 from kestrel.strategies.trendlines import (
@@ -172,6 +173,8 @@ class StrategySpec:
     params: tuple[Param, ...] = ()
     universe: bool = False
     """Ranks the whole coin universe (a PortfolioStrategy) instead of trading one market."""
+    features: tuple[str, ...] = ()
+    """Information beyond prices it needs on its bars (kestrel.data.features)."""
 
 
 STRATEGIES: dict[str, StrategySpec] = {
@@ -409,6 +412,19 @@ STRATEGIES: dict[str, StrategySpec] = {
                 Param("min_volume_musd", 20, 1, 500, "Median daily volume needed, in million USDT"),
             ),
             universe=True,
+        ),
+        StrategySpec(
+            "fear-greed",
+            "research",
+            "Buy when the Crypto Fear & Greed Index reads Extreme Fear (25 or below), sell "
+            "when it reads Extreme Greed (76 or above), hold in between. Uses the latest "
+            "value known by each close. Research: runs only through its frozen note.",
+            FearGreedContrarian,
+            (
+                Param("fear_max", 25, 5, 49, "Buy at or below this reading"),
+                Param("greed_min", 76, 51, 95, "Sell at or above this reading"),
+            ),
+            features=("fear_greed",),
         ),
         StrategySpec(
             "ma-trend",

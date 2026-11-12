@@ -41,6 +41,7 @@ from kestrel.backtest.portfolio import run_portfolio
 from kestrel.backtest.vectorised import run_vectorised
 from kestrel.config import Config
 from kestrel.data.binance_vision import Month
+from kestrel.data.features import attach_features
 from kestrel.data.panel import load_panel
 from kestrel.data.schema import Interval
 from kestrel.data.store import ParquetStore
@@ -109,6 +110,7 @@ def execute(request: RunRequest, store: ParquetStore, config: Config) -> RunOutc
             f"no stored {symbol} {request.interval.value} bars for "
             f"{request.start}..{request.end}; ingest them first"
         )
+    bars = attach_features(bars, spec_for(request.strategy).features, request.interval, store.root)
 
     engine = run_vectorised if request.engine == "vectorised" else run_backtest
 

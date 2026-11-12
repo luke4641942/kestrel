@@ -65,6 +65,7 @@ from kestrel.backtest.metrics import DAYS_PER_YEAR
 from kestrel.backtest.runs import RunRequest, RunStore, count_trials, execute
 from kestrel.config import Config, ConfigError, InstrumentRules, load_config
 from kestrel.data.binance_vision import BinanceVisionClient, Month, last_complete_month
+from kestrel.data.features import attach_features
 from kestrel.data.quality import check_klines
 from kestrel.data.schema import Interval
 from kestrel.data.store import ParquetStore
@@ -83,6 +84,7 @@ from kestrel.strategy import (
     StrategySpec,
     make_strategy,
     resolve_params,
+    spec_for,
     strategy_source,
     validated_brackets,
     validated_weights,
@@ -365,6 +367,7 @@ def create_app(
         if bars.is_empty():
             raise HTTPException(status.HTTP_404_NOT_FOUND, "no stored bars in that range")
         try:
+            bars = attach_features(bars, spec_for(key).features, req.interval, data_dir)
             if isinstance(strategy, BracketStrategy):
                 kind = "entries"
                 weights = validated_brackets(strategy, bars)["enter"].cast(pl.Float64)

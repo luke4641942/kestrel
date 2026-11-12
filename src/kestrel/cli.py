@@ -2,6 +2,7 @@
 
 kestrel ingest BTCUSDT --interval 1h --start 2020-01
 kestrel ingest-universe --interval 1d --start 2020-01
+kestrel ingest-sentiment
 kestrel check BTCUSDT --interval 1h
 kestrel list BTCUSDT --interval 1h
 kestrel backtest BTCUSDT --interval 4h --start 2022-01 --end 2025-10
@@ -18,6 +19,7 @@ from decimal import Decimal
 from pathlib import Path
 from typing import Annotated
 
+import httpx
 import polars as pl
 import typer
 
@@ -26,7 +28,9 @@ from kestrel.backtest.metrics import Metrics, compute_metrics, format_report
 from kestrel.backtest.portfolio import run_portfolio
 from kestrel.backtest.runs import RunRequest, RunStore, execute, universe_panel
 from kestrel.config import ConfigError, load_config
+from kestrel.data import sentiment
 from kestrel.data.binance_vision import BinanceVisionClient, Month, last_complete_month
+from kestrel.data.features import attach_features
 from kestrel.data.quality import check_klines
 from kestrel.data.schema import Interval
 from kestrel.data.store import ParquetStore
@@ -115,6 +119,24 @@ def ingest_universe_cmd(
         f"({sum(r.fetched for r in results)} months fetched now); {len(excluded)} pairs "
         f"excluded. Manifest: {manifest_path(store, interval)}"
     )
+
+
+@app.command("ingest-sentiment")
+def ingest_sentiment(data_dir: DataDir = Path("data")) -> None:
+    """Download the full Crypto Fear & Greed Index history (alternative.me). Gaps in the
+    published series are reported, never filled."""
+    try:
+        history = sentiment.fetch()
+    except (httpx.HTTPError, ValueError) as e:
+        typer.echo(f"couldn't fetch the Fear & Greed history: {e}", err=True)
+        raise typer.Exit(code=1) from None
+    stored = sentiment.save(history, data_dir)
+    f = history.frame
+    first_day, last_day = f["date"][0], f["date"][-1]  # oldest first
+    typer.echo(f"{f.height} days of Fear & Greed, {first_day} to {last_day}: {stored}")
+    for first, last in history.gaps:
+        days = (last - first).days + 1
+        typer.echo(f"  gap: {first} to {last} ({days} day{'s' if days > 1 else ''} not published)")
 
 
 @app.command()
@@ -295,6 +317,7 @@ def walk_forward_cmd(
             datetime(first.year, first.month, 1, tzinfo=UTC),
             datetime(after.year, after.month, 1, tzinfo=UTC),
         )
+        bars = attach_features(bars, spec_for(key).features, interval, data_dir)
         result = walk_forward(
             key,
             symbol.upper(),
@@ -381,6 +404,7 @@ def robustness(
             )
             if bars.height < 2:
                 raise ValueError(f"no stored {symbol.upper()} {interval.value} bars in that range")
+            bars = attach_features(bars, spec.features, interval, data_dir)
 
             def evaluate(p: dict[str, int]) -> Metrics:
                 strategy_ = make_strategy(key, symbol, p)
