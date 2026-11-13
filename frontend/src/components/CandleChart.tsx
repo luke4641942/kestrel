@@ -30,6 +30,7 @@ function withAlpha(hex: string, alpha: number): string {
 export function CandleChart({ bars }: { bars: Bars }) {
   const el = useRef<HTMLDivElement>(null);
   const handles = useRef<Handles>();
+  const fitted = useRef<Bars>();
   const { theme } = useTheme();
 
   useEffect(() => {
@@ -102,7 +103,11 @@ export function CandleChart({ bars }: { bars: Bars }) {
         color: bars.close[i]! >= bars.open[i]! ? upVol : downVol,
       })),
     );
-    h.chart.timeScale().fitContent();
+    // Zoom to fit only for new bars, never on a theme switch: keep the user's zoom.
+    if (fitted.current !== bars) {
+      h.chart.timeScale().fitContent();
+      fitted.current = bars;
+    }
   }, [bars, theme]);
 
   return <div ref={el} className="chart" />;

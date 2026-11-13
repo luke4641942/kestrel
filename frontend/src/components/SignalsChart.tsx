@@ -30,6 +30,7 @@ interface Handles {
 export function SignalsChart({ signals }: { signals: Signals }) {
   const el = useRef<HTMLDivElement>(null);
   const handles = useRef<Handles>();
+  const fitted = useRef<Signals>();
   const { theme } = useTheme();
 
   useEffect(() => {
@@ -90,6 +91,12 @@ export function SignalsChart({ signals }: { signals: Signals }) {
     h.candles.applyOptions({ upColor: up, downColor: down, wickUpColor: up, wickDownColor: down });
     h.weight.applyOptions({ color: cssVar("--text-2") });
 
+    // Zoom to fit only for new signals, never on a theme switch: keep the user's zoom.
+    const fit = () => {
+      if (fitted.current === signals) return;
+      h.chart.timeScale().fitContent();
+      fitted.current = signals;
+    };
     const t = (i: number) => signals.time[i] as UTCTimestamp;
     h.candles.setData(
       signals.time.map((_, i) => ({
@@ -111,7 +118,7 @@ export function SignalsChart({ signals }: { signals: Signals }) {
         }
       }
       h.markers.setMarkers(markers);
-      h.chart.timeScale().fitContent();
+      fit();
       return;
     }
     for (let i = 1; i + 1 < signals.time.length; i++) {
@@ -129,7 +136,7 @@ export function SignalsChart({ signals }: { signals: Signals }) {
       });
     }
     h.markers.setMarkers(markers);
-    h.chart.timeScale().fitContent();
+    fit();
   }, [signals, theme]);
 
   return <div ref={el} className="chart signals-chart" />;

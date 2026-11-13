@@ -48,7 +48,8 @@ function withAlpha(hex: string, alpha: number): string {
  * Equity uses a log scale: a strategy and a benchmark that grew 15-fold can only share a
  * linear axis by flattening one of them.
  * Same lifetime model as CandleChart: one chart per mount; data or theme changes only
- * update options and series data.
+ * update options and series data. The view zooms to fit only when the equity data itself
+ * changes, so a re-render (new markers array, theme switch) never undoes the user's zoom.
  */
 export function EquityChart({
   equity,
@@ -61,6 +62,7 @@ export function EquityChart({
 }) {
   const el = useRef<HTMLDivElement>(null);
   const handles = useRef<Handles>();
+  const fitted = useRef<EquitySeries>();
   const { theme } = useTheme();
 
   useEffect(() => {
@@ -150,7 +152,10 @@ export function EquityChart({
           }),
         ),
     );
-    h.chart.timeScale().fitContent();
+    if (fitted.current !== equity) {
+      h.chart.timeScale().fitContent();
+      fitted.current = equity;
+    }
   }, [equity, benchmark, trades, theme]);
 
   return <div ref={el} className="chart equity-chart" />;
