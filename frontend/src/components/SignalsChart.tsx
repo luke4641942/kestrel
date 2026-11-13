@@ -11,8 +11,10 @@ import {
   type Time,
   type UTCTimestamp,
 } from "lightweight-charts";
-import { useEffect, useRef } from "react";
-import type { Signals } from "../api";
+import { useEffect, useRef, type CSSProperties } from "react";
+import type { Signals, IndicatorInfo } from "../api";
+import { INDICATOR_PANE_PX, indicatorPlan, ownPanes } from "../indicators";
+import { IndicatorLayer } from "./indicatorLayer";
 import { cssVar, useTheme } from "../theme";
 
 interface Handles {
@@ -27,9 +29,19 @@ interface Handles {
  * underneath. A weight decided at bar t's close fills at bar t+1's open, so markers sit
  * on bar t+1, where the engine would trade (before the no-trade band is applied).
  */
-export function SignalsChart({ signals }: { signals: Signals }) {
+export function SignalsChart({
+  signals,
+  menu = [],
+  indicators = [],
+}: {
+  signals: Signals;
+  /** The indicator menu, and the keys switched on (their values come with the signals). */
+  menu?: IndicatorInfo[];
+  indicators?: string[];
+}) {
   const el = useRef<HTMLDivElement>(null);
   const handles = useRef<Handles>();
+  const layer = useRef<IndicatorLayer>();
   const fitted = useRef<Signals>();
   const { theme } = useTheme();
 
@@ -67,10 +79,11 @@ export function SignalsChart({ signals }: { signals: Signals }) {
       },
       1,
     );
-    chart.panes()[1]?.setHeight(90);
     handles.current = { chart, candles, weight, markers: createSeriesMarkers(candles, []) };
+    layer.current = new IndicatorLayer(chart, [270, 90]);
     return () => {
       handles.current = undefined;
+      layer.current = undefined;
       chart.remove();
     };
   }, []);
@@ -139,5 +152,13 @@ export function SignalsChart({ signals }: { signals: Signals }) {
     fit();
   }, [signals, theme]);
 
-  return <div ref={el} className="chart signals-chart" />;
+
+  // Indicators are drawn after the signals, and redrawn when switched on or off. Drawing them
+  // never refits the zoom.
+  useEffect(() => {
+    layer.current?.draw(indicatorPlan(menu, indicators, 2), signals.time, signals.indicators);
+  }, [signals, menu, indicators, theme]);
+  // Each indicator pane adds height rather than squeezing the price pane.
+  const extra = ownPanes(menu, indicators) * INDICATOR_PANE_PX;
+  return <div ref={el} className="chart signals-chart" style={{ "--indicator-extra": `${extra}px` } as CSSProperties} />;
 }

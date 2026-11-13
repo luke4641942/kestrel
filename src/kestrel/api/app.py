@@ -14,7 +14,7 @@ from dataclasses import asdict
 from datetime import UTC, datetime
 from decimal import Decimal
 from pathlib import Path
-from typing import Any
+from typing import Annotated, Any
 
 import polars as pl
 from fastapi import APIRouter, FastAPI, HTTPException, Query, status
@@ -36,6 +36,8 @@ from kestrel.api.models import (
     EditNote,
     FillOut,
     Health,
+    IndicatorLines,
+    IndicatorOut,
     IngestRequest,
     JobOut,
     NoteOut,
@@ -71,6 +73,7 @@ from kestrel.data.quality import check_klines
 from kestrel.data.schema import Interval
 from kestrel.data.store import ParquetStore
 from kestrel.decisions import DecisionError, load_decisions
+from kestrel.indicators import PRESETS, compute_presets
 from kestrel.provenance import code_version
 from kestrel.research import (
     SECTIONS,
@@ -166,6 +169,41 @@ def create_app(
             )
         return out
 
+    @api.get("/indicators")
+    def list_indicators() -> list[IndicatorOut]:
+        return [
+            IndicatorOut(
+                key=p.key,
+                label=p.label,
+                pane=p.pane,
+                description=p.description,
+                lines=list(p.lines),
+                guides=list(p.guides),
+                percent=p.percent,
+            )
+            for p in PRESETS.values()
+        ]
+
+    def _indicator_lines(bars: pl.DataFrame, keys: list[str], shown: int) -> IndicatorLines:
+        """Presets computed over all of ``bars``; the last ``shown`` values of each line,
+        with NaN and infinities (0/0 volume, say) as None so they serialise."""
+        if not keys:
+            return {}
+        try:
+            computed = compute_presets(bars, keys)
+        except ValueError as e:
+            raise HTTPException(422, str(e)) from None
+
+        def clean(line: pl.Series) -> list[float | None]:
+            return [
+                v if v is not None and math.isfinite(v) else None
+                for v in line.tail(shown).to_list()
+            ]
+
+        return {
+            k: {name: clean(line) for name, line in lines.items()} for k, lines in computed.items()
+        }
+
     @api.get("/datasets/{symbol}/{interval}/bars")
     def get_bars(
         symbol: str,
@@ -173,12 +211,22 @@ def create_app(
         start: datetime | None = None,
         end: datetime | None = None,
         limit: int = Query(default=2_000, ge=1, le=MAX_BARS),
+        indicators: Annotated[list[str] | None, Query()] = None,
     ) -> Bars:
-        """Bars in ``[start, end)``; without a start, the most recent ``limit`` bars."""
+        """Bars in ``[start, end)``; without a start, the most recent ``limit`` bars. Any
+        ``indicators`` are computed over the stored history before the first bar shown,
+        so a long average isn't blank at the chart's left edge."""
         symbol = _require(symbol, interval)
+        indicators = indicators or []
+        history = store.read(symbol, interval, None, end) if indicators else None
         df = store.read(symbol, interval, start, end)
         df = df.head(limit) if start is not None else df.tail(limit)
+        lines: IndicatorLines = {}
+        if history is not None and df.height:
+            upto = history.filter(pl.col("open_time") <= df["open_time"].max())
+            lines = _indicator_lines(upto, indicators, df.height)
         return Bars(
+            indicators=lines,
             symbol=symbol,
             interval=interval,
             time=(df["open_time"].dt.epoch("s")).to_list(),
@@ -377,7 +425,7 @@ def create_app(
         except ValueError as e:
             raise HTTPException(422, str(e)) from None
         # Computed on the whole range, exactly as a backtest would; only drawing is capped.
-        total = bars.height
+        total, full = bars.height, bars
         bars, weights = bars.tail(MAX_BARS), weights.tail(MAX_BARS)
         return Signals(
             kind=kind,
@@ -388,6 +436,7 @@ def create_app(
             low=bars["low"].to_list(),
             close=bars["close"].to_list(),
             weight=weights.to_list(),
+            indicators=_indicator_lines(full, req.indicators, bars.height),
         )
 
     @api.post("/jobs/backtest", status_code=status.HTTP_202_ACCEPTED)

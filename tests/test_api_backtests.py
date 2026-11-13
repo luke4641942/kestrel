@@ -5,6 +5,7 @@ from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
+import polars as pl
 import pytest
 from fastapi.testclient import TestClient
 
@@ -202,3 +203,23 @@ def test_runs_are_deflated_for_every_strategy_tried(client: TestClient) -> None:
     assert all(r["deflated_trials"] == 2 for r in tried)
     detail = client.get(f"/api/backtests/{tried[0]['id']}").json()
     assert detail["deflated_trials"] == 2
+
+
+def test_signals_carry_indicators_over_the_same_bars(client: TestClient) -> None:
+    body = {**BODY, "indicators": ["ema20"]}
+    signals = client.post("/api/strategies/ma-trend/signals", json=body).json()
+    ema = signals["indicators"]["ema20"]["value"]
+    assert len(ema) == len(signals["time"])
+    assert ema[18] is None  # EMA 20 is ready from the 20th bar
+    assert ema[19] is not None
+
+
+def test_undefined_indicator_values_are_sent_as_null(tmp_path: Path) -> None:
+    # Zero volume everywhere: relative volume is 0 / 0, which must not reach JSON as NaN.
+    ParquetStore(tmp_path).write(
+        "BTCUSDT", Interval.H4, bars([100.0] * 60).with_columns(volume=pl.lit(0.0))
+    )
+    app = create_app(tmp_path, static_dir=None, config_path=REPO_CONFIG)
+    body = {**BODY, "indicators": ["rvol20"]}
+    signals = TestClient(app).post("/api/strategies/ma-trend/signals", json=body).json()
+    assert signals["indicators"]["rvol20"]["value"] == [None] * 60

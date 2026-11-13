@@ -7,8 +7,10 @@ import {
   type ISeriesApi,
   type UTCTimestamp,
 } from "lightweight-charts";
-import { useEffect, useRef } from "react";
-import type { Bars } from "../api";
+import { useEffect, useRef, type CSSProperties } from "react";
+import type { Bars, IndicatorInfo } from "../api";
+import { INDICATOR_PANE_PX, indicatorPlan, ownPanes } from "../indicators";
+import { IndicatorLayer } from "./indicatorLayer";
 import { cssVar, useTheme } from "../theme";
 
 interface Handles {
@@ -27,9 +29,19 @@ function withAlpha(hex: string, alpha: number): string {
  * The chart and its series share one lifetime; new bars or a theme change only update
  * options and data, so the chart is never torn down mid-session.
  */
-export function CandleChart({ bars }: { bars: Bars }) {
+export function CandleChart({
+  bars,
+  menu = [],
+  indicators = [],
+}: {
+  bars: Bars;
+  /** The indicator menu, and the keys switched on (their values come with the bars). */
+  menu?: IndicatorInfo[];
+  indicators?: string[];
+}) {
   const el = useRef<HTMLDivElement>(null);
   const handles = useRef<Handles>();
+  const layer = useRef<IndicatorLayer>();
   const fitted = useRef<Bars>();
   const { theme } = useTheme();
 
@@ -59,9 +71,11 @@ export function CandleChart({ bars }: { bars: Bars }) {
     chart.priceScale("volume").applyOptions({ scaleMargins: { top: 0.84, bottom: 0 } });
     candles.priceScale().applyOptions({ scaleMargins: { top: 0.06, bottom: 0.2 } });
     handles.current = { chart, candles, volume };
+    layer.current = new IndicatorLayer(chart, [440]);
 
     return () => {
       handles.current = undefined;
+      layer.current = undefined;
       chart.remove();
     };
   }, []);
@@ -110,5 +124,13 @@ export function CandleChart({ bars }: { bars: Bars }) {
     }
   }, [bars, theme]);
 
-  return <div ref={el} className="chart" />;
+
+  // Indicators are drawn after the bars, and redrawn when switched on or off. Drawing them
+  // never refits the zoom.
+  useEffect(() => {
+    layer.current?.draw(indicatorPlan(menu, indicators, 1), bars.time, bars.indicators);
+  }, [bars, menu, indicators, theme]);
+  // Each indicator pane adds height rather than squeezing the price pane.
+  const extra = ownPanes(menu, indicators) * INDICATOR_PANE_PX;
+  return <div ref={el} className="chart" style={{ "--indicator-extra": `${extra}px` } as CSSProperties} />;
 }

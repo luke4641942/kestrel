@@ -20,6 +20,21 @@ export interface Dataset {
   last: string | null;
 }
 
+/** Preset key -> line name -> one value per bar (null while warming up). */
+export type IndicatorLines = Record<string, Record<string, (number | null)[]>>;
+
+/** One entry of the indicator menu (kestrel.indicators.PRESETS). */
+export interface IndicatorInfo {
+  key: string;
+  label: string;
+  /** "price": over the candles; "own": its own pane underneath. */
+  pane: "price" | "own";
+  description: string;
+  lines: string[];
+  guides: number[];
+  percent: boolean;
+}
+
 export interface Bars {
   symbol: string;
   interval: Interval;
@@ -29,6 +44,7 @@ export interface Bars {
   low: number[];
   close: number[];
   volume: number[];
+  indicators?: IndicatorLines;
 }
 
 export interface Gap {
@@ -158,6 +174,7 @@ export interface SignalsRequest {
   start: string;
   end: string;
   params: Record<string, number>;
+  indicators?: string[];
 }
 
 export interface Signals {
@@ -171,6 +188,7 @@ export interface Signals {
   low: number[];
   close: number[];
   weight: number[];
+  indicators?: IndicatorLines;
 }
 
 export type ResearchStatus = "idea" | "specified" | "backtested" | "validated" | "paper" | "live" | "rejected";
@@ -459,8 +477,11 @@ const query = (p: object) =>
 export const api = {
   health: () => request<Health>("/health"),
   datasets: () => request<Dataset[]>("/datasets"),
-  bars: (symbol: string, interval: Interval, limit = 2000) =>
-    request<Bars>(`/datasets/${enc(symbol)}/${interval}/bars?limit=${limit}`),
+  bars: (symbol: string, interval: Interval, limit = 2000, indicators: string[] = []) =>
+    request<Bars>(
+      `/datasets/${enc(symbol)}/${interval}/bars?limit=${limit}${indicators.map((k) => `&indicators=${enc(k)}`).join("")}`,
+    ),
+  indicators: () => request<IndicatorInfo[]>("/indicators"),
   quality: (symbol: string, interval: Interval) =>
     request<Quality>(`/datasets/${enc(symbol)}/${interval}/quality`),
   jobs: () => request<Job[]>("/jobs"),

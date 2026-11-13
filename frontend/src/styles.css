@@ -25,6 +25,10 @@
   --cost-spread: #eb6834;
   --cost-impact: #1baf7a;
   --cost-hatch: rgba(20, 22, 26, 0.06);
+  --ind-1: #2a78d6;
+  --ind-2: #d6582b;
+  --ind-3: #12996b;
+  --ind-4: #8a4fd8;
   color-scheme: light;
 }
 
@@ -48,6 +52,10 @@
   --cost-spread: #d95926;
   --cost-impact: #199e70;
   --cost-hatch: rgba(255, 255, 255, 0.05);
+  --ind-1: #5c9cf0;
+  --ind-2: #ef7a4c;
+  --ind-3: #37c08f;
+  --ind-4: #ad84f2;
   color-scheme: dark;
 }
 
@@ -1277,7 +1285,7 @@ p {
 }
 
 .signals-chart {
-  height: 360px;
+  height: calc(360px + var(--indicator-extra, 0px));
 }
 
 /* .seg.strat-tabs outranks the generic .seg (width: max-content) defined later. */
@@ -1770,7 +1778,7 @@ p {
 }
 
 .chart {
-  height: 440px;
+  height: calc(440px + var(--indicator-extra, 0px));
 }
 
 .banner {
@@ -1990,4 +1998,51 @@ p {
 
 .decision-list li.decision-drop .decision-name {
   color: var(--text-2);
+}
+
+/* Indicator picker: toggle chips above a chart. */
+.ind-picker {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 16px;
+  margin-bottom: 8px;
+}
+
+.ind-group {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+}
+
+.ind-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 3px 9px;
+  border: 1px solid var(--line-strong);
+  border-radius: 999px;
+  background: transparent;
+  color: var(--text-2);
+  font-size: 12px;
+  cursor: pointer;
+}
+
+.ind-chip:hover {
+  color: var(--text);
+}
+
+.ind-chip.on {
+  background: var(--surface-2);
+  color: var(--text);
+  border-color: var(--text-3);
+}
+
+.ind-chip:focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: 1px;
+}
+
+.chart-indicators {
+  padding: 10px 16px 0;
 }

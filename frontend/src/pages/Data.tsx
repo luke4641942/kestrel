@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { api, type Dataset, type Job } from "../api";
 import { CandleChart } from "../components/CandleChart";
+import { IndicatorPicker, useIndicatorSelection } from "../components/IndicatorPicker";
 import { IngestForm } from "../components/IngestForm";
 import { Empty, PageHeader, Panel, Section, Status } from "../components/ui";
 import { date, dateTime, num } from "../format";
@@ -88,7 +89,11 @@ const RANGES = [
 
 function DatasetDetail({ ds }: { ds: Dataset }) {
   const [limit, setLimit] = useState(1000);
-  const bars = useResource(() => api.bars(ds.symbol, ds.interval, limit), [ds.symbol, ds.interval, ds.rows, limit]);
+  const ind = useIndicatorSelection("kestrel.indicators.data");
+  const bars = useResource(
+    () => api.bars(ds.symbol, ds.interval, limit, ind.active),
+    [ds.symbol, ds.interval, ds.rows, limit, ind.active.join()],
+  );
   const quality = useResource(() => api.quality(ds.symbol, ds.interval), [ds.symbol, ds.interval, ds.rows]);
   const q = quality.data;
   const b = bars.data;
@@ -142,7 +147,10 @@ function DatasetDetail({ ds }: { ds: Dataset }) {
               ))}
             </select>
           </div>
-          {b ? <CandleChart bars={b} /> : <div className="chart" />}
+          <div className="chart-indicators">
+            <IndicatorPicker menu={ind.menu} selected={ind.active} onChange={ind.change} />
+          </div>
+          {b ? <CandleChart bars={b} menu={ind.menu} indicators={ind.active} /> : <div className="chart" />}
         </Panel>
 
         <Panel pad>

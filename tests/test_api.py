@@ -85,6 +85,32 @@ def test_bars_respects_start(seeded: Path) -> None:
     assert len(bars["time"]) == 3
 
 
+def test_indicator_menu(tmp_path: Path) -> None:
+    with TestClient(create_app(tmp_path, static_dir=None)) as client:
+        menu = {i["key"]: i for i in client.get("/api/indicators").json()}
+    assert menu["rsi14"]["pane"] == "own"
+    assert menu["rsi14"]["guides"] == [30, 70]
+    assert menu["bollinger"]["lines"] == ["upper", "middle", "lower"]
+    assert menu["sma200"]["pane"] == "price"
+
+
+def test_bars_carry_indicators_warmed_up_on_earlier_history(seeded: Path) -> None:
+    params: dict[str, Any] = {"limit": 10, "indicators": ["sma50", "rsi14"]}
+    with TestClient(create_app(seeded, static_dir=None)) as client:
+        bars = client.get("/api/datasets/BTCUSDT/1h/bars", params=params).json()
+        refused = client.get("/api/datasets/BTCUSDT/1h/bars", params={"indicators": ["rsi7"]})
+        plain = client.get("/api/datasets/BTCUSDT/1h/bars", params={"limit": 10}).json()
+    sma = bars["indicators"]["sma50"]["value"]
+    rsi = bars["indicators"]["rsi14"]["value"]
+    assert len(sma) == len(rsi) == 10
+    # 48 bars stored: the 10 shown are bars 38-47, so RSI 14 is warm and SMA 50 never is.
+    assert all(v is not None for v in rsi)
+    assert sma == [None] * 10
+    assert refused.status_code == 422
+    assert "unknown indicator" in refused.json()["detail"]
+    assert plain["indicators"] == {}
+
+
 def test_unknown_dataset_is_404(seeded: Path) -> None:
     with TestClient(create_app(seeded, static_dir=None)) as client:
         assert client.get("/api/datasets/ETHUSDT/1h/bars").status_code == 404

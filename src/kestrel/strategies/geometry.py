@@ -11,6 +11,8 @@ from __future__ import annotations
 
 from collections.abc import Sequence
 
+from kestrel.indicators import true_range, wilder
+
 ATR_BARS = 14
 
 Point = tuple[int, float]
@@ -20,23 +22,8 @@ Point = tuple[int, float]
 def atr(high: Sequence[float], low: Sequence[float], close: Sequence[float]) -> list[float | None]:
     """Wilder's average true range over ATR_BARS bars; None until enough bars have closed.
 
-    Each value uses only that bar and earlier ones."""
-    n = len(close)
-    out: list[float | None] = [None] * n
-    value: float | None = None
-    trs: list[float] = []
-    for t in range(n):
-        tr = high[t] - low[t]
-        if t > 0:
-            tr = max(tr, abs(high[t] - close[t - 1]), abs(low[t] - close[t - 1]))
-        if value is None:
-            trs.append(tr)
-            if len(trs) == ATR_BARS:
-                value = sum(trs) / ATR_BARS
-        else:
-            value = (value * (ATR_BARS - 1) + tr) / ATR_BARS
-        out[t] = value
-    return out
+    Each value uses only that bar and earlier ones (kestrel.indicators)."""
+    return wilder(list(true_range(high, low, close)), ATR_BARS)
 
 
 class Swings:

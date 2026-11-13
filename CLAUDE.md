@@ -198,6 +198,13 @@ Agreed with Luke; don't re-litigate without a reason.
   (vol-hold 0.93 vs 1.21); one-week momentum passed on ETH only. Universe strategies are
   judged against the `large-basket` control, never just BTC. At 330 USDT, multi-coin
   baskets hit the 5 USDT order minimum. Still only one Pursue: trend-vol-target on BTC.
+- **Indicators (built 2026-11-13): `kestrel.indicators`.** One tested implementation each
+  (SMA, EMA, RSI and ATR with Wilder's SMA-seeded smoothing, MACD, Bollinger, rate of change,
+  distance from an MA, realised volatility, relative volume, OBV), lookahead-checked. New
+  strategies use these rather than their own copies. The dashboard draws a fixed menu of
+  presets at textbook settings (`PRESETS`) on the Data and Strategies charts; there is
+  deliberately no UI to change lengths and no automatic combination search: indicators are
+  for building and inspecting ideas, and each strategy still gets one pre-registered note.
 - **Parked, P3+: multi-strategy portfolios.** Strategies emit *target positions*, never
   orders; an allocator owns the wallet, resolves conflicts and nets orders before the
   `ExecutionVenue`. Build P2 around this so single-strategy is a portfolio of one.

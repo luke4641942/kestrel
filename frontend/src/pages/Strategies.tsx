@@ -9,6 +9,7 @@ import {
   type StrategyInfo,
 } from "../api";
 import { ParamInputs, defaultParams } from "../components/ParamInputs";
+import { IndicatorPicker, useIndicatorSelection } from "../components/IndicatorPicker";
 import { SignalsChart } from "../components/SignalsChart";
 import { Empty, FoldToggle, PageHeader, Panel, Status } from "../components/ui";
 import { ago, dateTime, lastResearchMonth } from "../format";
@@ -579,12 +580,20 @@ function MarketSignals({ impl }: { impl: StrategyInfo }) {
     timer.current = window.setTimeout(() => setDebounced(params), 300);
   }, [params]);
 
+  const ind = useIndicatorSelection("kestrel.indicators.signals");
   const signals = useResource(
     () =>
       ds && range
-        ? api.signals(impl.key, { symbol: ds.symbol, interval: ds.interval, start: range[0], end: range[1], params: debounced })
+        ? api.signals(impl.key, {
+            symbol: ds.symbol,
+            interval: ds.interval,
+            start: range[0],
+            end: range[1],
+            params: debounced,
+            indicators: ind.active,
+          })
         : Promise.resolve(undefined),
-    [impl.key, ds?.symbol, ds?.interval, range?.[0], range?.[1], JSON.stringify(debounced)],
+    [impl.key, ds?.symbol, ds?.interval, range?.[0], range?.[1], JSON.stringify(debounced), ind.active.join()],
   );
 
   return (
@@ -614,8 +623,9 @@ function MarketSignals({ impl }: { impl: StrategyInfo }) {
             </div>
             <ParamInputs params={impl.params} values={params} onChange={setParams} idPrefix="sig" />
           </div>
+          <IndicatorPicker menu={ind.menu} selected={ind.active} onChange={ind.change} />
           {signals.data ? (
-            <SignalsChart signals={signals.data} />
+            <SignalsChart signals={signals.data} menu={ind.menu} indicators={ind.active} />
           ) : (
             <p className="secondary small">{signals.error ?? "Loading…"}</p>
           )}

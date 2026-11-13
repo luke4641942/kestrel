@@ -36,6 +36,23 @@ class Dataset(BaseModel):
     last: datetime | None
 
 
+IndicatorLines = dict[str, dict[str, list[float | None]]]
+"""Preset key -> line name -> one value per bar (None while warming up)."""
+
+
+class IndicatorOut(BaseModel):
+    """One entry of the dashboard's indicator menu (kestrel.indicators.PRESETS)."""
+
+    key: str
+    label: str
+    pane: str
+    """"price" (drawn over the candles) or "own" (its own pane underneath)."""
+    description: str
+    lines: list[str]
+    guides: list[float]
+    percent: bool
+
+
 class Bars(BaseModel):
     """Column-oriented OHLCV. ``time`` is epoch seconds (UTC), as charting libraries expect."""
 
@@ -47,6 +64,7 @@ class Bars(BaseModel):
     low: list[float]
     close: list[float]
     volume: list[float]
+    indicators: IndicatorLines = Field(default_factory=dict)
 
 
 class GapOut(BaseModel):
@@ -319,6 +337,8 @@ class SignalsRequest(BaseModel):
     start: str
     end: str
     params: dict[str, int] = Field(default_factory=dict)
+    indicators: list[str] = Field(default_factory=list)
+    """Preset keys (kestrel.indicators.PRESETS) to compute over the same bars."""
 
     @field_validator("symbol")
     @classmethod
@@ -347,6 +367,7 @@ class Signals(BaseModel):
     low: list[float]
     close: list[float]
     weight: list[float]
+    indicators: IndicatorLines = Field(default_factory=dict)
 
 
 class BacktestRequest(BaseModel):
