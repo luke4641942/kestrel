@@ -21,21 +21,27 @@ from typing import Literal, Protocol, cast, runtime_checkable
 
 import polars as pl
 
+from kestrel.strategies.anchor import HighAnchor
+from kestrel.strategies.basket import LargeCoinBasket
 from kestrel.strategies.funding import FundingHold, FundingTrend
 from kestrel.strategies.levels import LevelBreakout, LevelRetest
 from kestrel.strategies.momentum import CrossSectionalMomentum
 from kestrel.strategies.pivots import PivotReversal
 from kestrel.strategies.reversal import DropReversal
+from kestrel.strategies.rotation import DualMomentum
 from kestrel.strategies.sentiment import FearGreedContrarian
 from kestrel.strategies.structure import StructurePullback
 from kestrel.strategies.trend import TrendVolTarget
+from kestrel.strategies.trend_basket import TrendBasket
 from kestrel.strategies.trendlines import (
     SwingPullback,
     TrendlineBounce,
     TrendlineBreakout,
     WedgeBreakout,
 )
+from kestrel.strategies.volhold import VolManagedHold
 from kestrel.strategies.weekday import MondayMidPullback
+from kestrel.strategies.weekly import WeeklyMomentum
 
 
 class LookaheadError(ValueError):
@@ -460,6 +466,76 @@ STRATEGIES: dict[str, StrategySpec] = {
             FundingTrend,
             (Param("crowded_pct", 30, 5, 200, "Annualised 7-day funding that counts as crowded"),),
             features=("funding_7d",),
+        ),
+        StrategySpec(
+            "trend-basket",
+            "research",
+            "Trend-vol-target's rule on each of the 10 most-traded coins (weekly, delisted "
+            "coins included), each in a 1/10 slot sized by its own trend and volatility. "
+            "Research: runs only through its frozen note.",
+            TrendBasket,
+            (
+                Param("top_n", 10, 2, 30, "Coins in the basket, each with an equal slot"),
+                Param("min_history_days", 180, 120, 730, "Unbroken history a coin needs"),
+                Param("min_volume_musd", 20, 1, 500, "Median daily volume needed, in million USDT"),
+                Param("target_vol_pct", 50, 10, 150, "Annual volatility each coin is sized to, %"),
+            ),
+            universe=True,
+        ),
+        StrategySpec(
+            "vol-hold",
+            "research",
+            "Hold the coin sized by target volatility over its last 30 days' volatility, "
+            "capped at fully in; no trend rule. Trend-vol-target without the trend. "
+            "Research: runs only through its frozen note.",
+            VolManagedHold,
+            (
+                Param("vol_days", 30, 10, 90, "Days of returns that measure volatility"),
+                Param("target_vol_pct", 50, 10, 150, "Annual volatility to size towards, in %"),
+            ),
+        ),
+        StrategySpec(
+            "high-anchor",
+            "research",
+            "Every Sunday, hold the 3 of the 20 most-traded coins (a year of history each) "
+            "trading nearest their 52-week high, equally. Research: runs only through its "
+            "frozen note.",
+            HighAnchor,
+            (
+                Param("hold_n", 3, 1, 10, "Coins held, equally"),
+                Param("basket_n", 20, 2, 50, "Most-traded coins it chooses from"),
+                Param("min_volume_musd", 20, 1, 500, "Median daily volume needed, in million USDT"),
+            ),
+            universe=True,
+        ),
+        StrategySpec(
+            "large-basket",
+            "control",
+            "The basket strategies' comparison: the most-traded coins (weekly, delisted coins "
+            "included) held in equal weights, with no signal.",
+            LargeCoinBasket,
+            (
+                Param("top_n", 10, 1, 50, "Coins held, equally"),
+                Param("min_history_days", 180, 30, 730, "Unbroken history a coin needs"),
+                Param("min_volume_musd", 20, 1, 500, "Median daily volume needed, in million USDT"),
+            ),
+            universe=True,
+        ),
+        StrategySpec(
+            "weekly-momentum",
+            "research",
+            "Hold the coin next week if its Sunday-to-Sunday return was positive, else cash. "
+            "Research: runs only through its frozen note.",
+            WeeklyMomentum,
+        ),
+        StrategySpec(
+            "btc-eth-rotation",
+            "research",
+            "Every Sunday, hold whichever of BTC and ETH rose more over 90 days, if it rose "
+            "at all; otherwise cash. Research: runs only through its frozen note.",
+            DualMomentum,
+            (Param("lookback_days", 90, 20, 365, "Days of return compared"),),
+            universe=True,
         ),
         StrategySpec(
             "ma-trend",
