@@ -172,11 +172,11 @@ evidence = ["nearness-to-the-52-week-high-across-large-coins"]
 [[decision]]
 strategy = "weekly-momentum"
 name = "One-week momentum"
-market = "BTCUSDT and ETHUSDT 1d"
+market = "BTCUSDT, ETHUSDT and SOLUSDT 1d"
 decision = "drop"
 decided = 2026-11-13
-reason = "Passed every rule on ETH but its Sharpe on BTC (0.94) was below holding (1.07). The note required both; one market passing among many trials is what luck produces."
-evidence = ["one-week-momentum-btc-eth-daily"]
+reason = "Passed every rule on ETH 2020-25 but not on BTC; retested on ETH's unseen 2017-19 and on SOL, it didn't reproduce (Sharpe 0.13 vs 0.15 and 1.08 vs 1.24 for holding). It cuts drawdowns, as trend rules do here, but doesn't beat holding."
+evidence = ["one-week-momentum-btc-eth-daily", "weekly-momentum-on-btc-followers-eth-unseen"]
 
 [[decision]]
 strategy = "btc-eth-rotation"
