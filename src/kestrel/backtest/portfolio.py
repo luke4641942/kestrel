@@ -149,6 +149,7 @@ def run_portfolio(
         account_currency=config.account_currency,
     )
     last_bar: dict[str, datetime] = {}  # each held coin's latest bar
+    stranded: set[str] = set()  # held coins whose forced sale was refused; never retried
     rows: list[tuple[Decimal, Decimal, Decimal]] = [(initial_cash, initial_cash, Decimal(0))]
     previous: dict[str, Decimal] = {}
 
@@ -168,14 +169,17 @@ def run_portfolio(
         day, before = dates[i], dates[i - 1]
 
         # Forced exits: a held coin with no bar today is sold at its last close.
+        # A refused sale is recorded once: retrying at the same stale price can't succeed.
         for s, qty in venue.holdings().items():
-            if (s, day) not in bars:
+            if (s, day) not in bars and s not in stranded:
                 seen = last_bar[s]
                 close = bars[(s, seen)][1]
                 order = submit(s, Side.SELL, qty, close, seen + interval.duration, seen)
                 if isinstance(order, Fill):
                     result.forced_exits += 1
                     log.info("forced exit: %s had no bar on %s", s, day)
+                else:
+                    stranded.add(s)
 
         # A decision at yesterday's close trades at today's open.
         if before in targets:
@@ -185,8 +189,13 @@ def run_portfolio(
                 for s in set(target) | set(venue.holdings())
                 if (s, day) in bars
             }
-            equity = venue.cash() + sum(q * opens[s] for s, q in venue.holdings().items())
-            current = {s: q * opens[s] / equity for s, q in venue.holdings().items()}
+            # A stranded coin has no price today: it counts at its last close and can't trade.
+            holdings = venue.holdings()
+            equity = venue.cash() + sum(
+                q * (opens[s] if s in opens else bars[(s, last_bar[s])][1])
+                for s, q in holdings.items()
+            )
+            current = {s: q * opens[s] / equity for s, q in holdings.items() if s in opens}
             wanted = {
                 s: target.get(s, Decimal(0)) for s in set(target) | set(current) if s in opens
             }

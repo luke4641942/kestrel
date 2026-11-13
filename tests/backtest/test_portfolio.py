@@ -218,6 +218,19 @@ def test_a_forced_sale_the_exchange_refuses_keeps_the_coin_at_its_last_close() -
     assert r.forced_exits == 0
     assert "below the minimum" in r.rejections[0].rejection.reason
     assert r.equity["equity"][-1] == pytest.approx(0.3 * 10 + 10 * 50 + 470)
+    assert len(r.rejections) == 1  # tried once, not again every day at the same stale price
+
+
+def test_a_rebalance_after_a_refused_forced_sale_counts_the_stranded_coin() -> None:
+    # As above, then a decision on day 3, after A's bars stopped: A can't be priced or
+    # traded, so it counts at its last close (3 USDT) and B is sized from the rest.
+    p = panel({"A": [100, 100, 10, None, None, None], "B": [50] * 6})
+    r = run(p, {0: {"A": 0.03, "B": 0.5}, 3: {"B": 0.9}})
+    equity = 0.3 * 10 + 10 * 50 + 470
+    assert r.fills[-1].fill.side.value == "buy"
+    assert float(r.fills[-1].fill.quantity) * 50 == pytest.approx(0.9 * equity - 500)
+    assert len(r.rejections) == 1
+    assert r.equity["equity"][-1] == pytest.approx(equity)
 
 
 def test_a_buy_with_no_cash_left_is_skipped() -> None:
