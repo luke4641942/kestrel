@@ -24,6 +24,7 @@ import polars as pl
 from kestrel.strategies.levels import LevelBreakout, LevelRetest
 from kestrel.strategies.momentum import CrossSectionalMomentum
 from kestrel.strategies.pivots import PivotReversal
+from kestrel.strategies.reversal import DropReversal
 from kestrel.strategies.sentiment import FearGreedContrarian
 from kestrel.strategies.structure import StructurePullback
 from kestrel.strategies.trend import TrendVolTarget
@@ -425,6 +426,19 @@ STRATEGIES: dict[str, StrategySpec] = {
                 Param("greed_min", 76, 51, 95, "Sell at or above this reading"),
             ),
             features=("fear_greed",),
+        ),
+        StrategySpec(
+            "drop-reversal",
+            "research",
+            "Buy after a daily drop of more than 2 standard deviations of the previous 30 "
+            "days' returns, hold 3 days; another big drop restarts the clock. Research: runs "
+            "only through its frozen note.",
+            DropReversal,
+            (
+                Param("drop_sigma_pct", 200, 100, 500, "Drop size, in % of a standard deviation"),
+                Param("vol_days", 30, 10, 120, "Days of returns that set the standard deviation"),
+                Param("hold_days", 3, 1, 20, "Days held after a big drop"),
+            ),
         ),
         StrategySpec(
             "ma-trend",
