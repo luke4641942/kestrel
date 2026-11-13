@@ -367,7 +367,7 @@ def create_app(
         if bars.is_empty():
             raise HTTPException(status.HTTP_404_NOT_FOUND, "no stored bars in that range")
         try:
-            bars = attach_features(bars, spec_for(key).features, req.interval, data_dir)
+            bars = attach_features(bars, spec_for(key).features, req.symbol, req.interval, data_dir)
             if isinstance(strategy, BracketStrategy):
                 kind = "entries"
                 weights = validated_brackets(strategy, bars)["enter"].cast(pl.Float64)

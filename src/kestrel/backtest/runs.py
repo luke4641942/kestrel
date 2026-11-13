@@ -110,7 +110,9 @@ def execute(request: RunRequest, store: ParquetStore, config: Config) -> RunOutc
             f"no stored {symbol} {request.interval.value} bars for "
             f"{request.start}..{request.end}; ingest them first"
         )
-    bars = attach_features(bars, spec_for(request.strategy).features, request.interval, store.root)
+    bars = attach_features(
+        bars, spec_for(request.strategy).features, symbol, request.interval, store.root
+    )
 
     engine = run_vectorised if request.engine == "vectorised" else run_backtest
 

@@ -21,6 +21,7 @@ from typing import Literal, Protocol, cast, runtime_checkable
 
 import polars as pl
 
+from kestrel.strategies.funding import FundingHold, FundingTrend
 from kestrel.strategies.levels import LevelBreakout, LevelRetest
 from kestrel.strategies.momentum import CrossSectionalMomentum
 from kestrel.strategies.pivots import PivotReversal
@@ -439,6 +440,26 @@ STRATEGIES: dict[str, StrategySpec] = {
                 Param("vol_days", 30, 10, 120, "Days of returns that set the standard deviation"),
                 Param("hold_days", 3, 1, 20, "Days held after a big drop"),
             ),
+        ),
+        StrategySpec(
+            "funding-hold",
+            "research",
+            "Hold the coin, but go to cash while its perpetual futures funding over the last "
+            "7 days is 30% a year or more (crowded leveraged longs). Research: runs only "
+            "through its frozen note.",
+            FundingHold,
+            (Param("crowded_pct", 30, 5, 200, "Annualised 7-day funding that counts as crowded"),),
+            features=("funding_7d",),
+        ),
+        StrategySpec(
+            "funding-trend",
+            "research",
+            "Trend-vol-target with its default settings, but in cash while the coin's 7-day "
+            "perpetual funding is 30% a year or more. Research: runs only through its frozen "
+            "note.",
+            FundingTrend,
+            (Param("crowded_pct", 30, 5, 200, "Annualised 7-day funding that counts as crowded"),),
+            features=("funding_7d",),
         ),
         StrategySpec(
             "ma-trend",

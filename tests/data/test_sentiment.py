@@ -139,13 +139,14 @@ def test_bars_before_the_history_starts_have_no_reading() -> None:
 
 def test_attach_features(tmp_path: Path) -> None:
     sentiment.save(sentiment.parse(payload(days(10, 20))), tmp_path)
-    out = attach_features(daily_bars(2), ("fear_greed",), Interval.D1, tmp_path)
+    out = attach_features(daily_bars(2), ("fear_greed",), "BTCUSDT", Interval.D1, tmp_path)
     assert out["fear_greed"].to_list() == [10, 20]
     assert (
-        attach_features(daily_bars(2), (), Interval.D1, tmp_path).columns == daily_bars(2).columns
+        attach_features(daily_bars(2), (), "BTCUSDT", Interval.D1, tmp_path).columns
+        == daily_bars(2).columns
     )
     with pytest.raises(ValueError, match="unknown feature 'moon_phase'"):
-        attach_features(daily_bars(2), ("moon_phase",), Interval.D1, tmp_path)
+        attach_features(daily_bars(2), ("moon_phase",), "BTCUSDT", Interval.D1, tmp_path)
 
 
 # ---------- the command line ----------

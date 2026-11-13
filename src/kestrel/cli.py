@@ -3,6 +3,7 @@
 kestrel ingest BTCUSDT --interval 1h --start 2020-01
 kestrel ingest-universe --interval 1d --start 2020-01
 kestrel ingest-sentiment
+kestrel ingest-funding BTCUSDT ETHUSDT
 kestrel check BTCUSDT --interval 1h
 kestrel list BTCUSDT --interval 1h
 kestrel backtest BTCUSDT --interval 4h --start 2022-01 --end 2025-10
@@ -28,7 +29,7 @@ from kestrel.backtest.metrics import Metrics, compute_metrics, format_report
 from kestrel.backtest.portfolio import run_portfolio
 from kestrel.backtest.runs import RunRequest, RunStore, execute, universe_panel
 from kestrel.config import ConfigError, load_config
-from kestrel.data import sentiment
+from kestrel.data import funding, sentiment
 from kestrel.data.binance_vision import BinanceVisionClient, Month, last_complete_month
 from kestrel.data.features import attach_features
 from kestrel.data.quality import check_klines
@@ -137,6 +138,44 @@ def ingest_sentiment(data_dir: DataDir = Path("data")) -> None:
     for first, last in history.gaps:
         days = (last - first).days + 1
         typer.echo(f"  gap: {first} to {last} ({days} day{'s' if days > 1 else ''} not published)")
+
+
+@app.command("ingest-funding")
+def ingest_funding(
+    symbols: list[str],
+    start: Annotated[str, typer.Option(help="First month, YYYY-MM.")] = "2020-01",
+    end: Annotated[
+        str | None, typer.Option(help="Last month, YYYY-MM. Default: last complete.")
+    ] = None,
+    data_dir: DataDir = Path("data"),
+) -> None:
+    """Download perpetual futures funding rates (Binance's archive, checksums verified)
+    for each symbol. Read as information only; Kestrel never trades perpetuals. Gaps
+    between settlements are reported, never filled."""
+    first = Month.parse(start)
+    last = Month.parse(end) if end else last_complete_month(datetime.now(UTC).date())
+    failed = False
+    for symbol in symbols:
+        try:
+            history = funding.fetch(symbol, first, last)
+        except (httpx.HTTPError, ValueError) as e:
+            typer.echo(f"couldn't fetch {symbol.upper()} funding: {e}", err=True)
+            failed = True
+            continue
+        stored = funding.save(history, data_dir)
+        f = history.frame
+        typer.echo(
+            f"{f.height} {history.symbol} settlements, {f['time'][0]:%Y-%m-%d} to "
+            f"{f['time'][-1]:%Y-%m-%d}: {stored}"
+        )
+        for before, after in history.gaps:
+            typer.echo(
+                f"  gap: no settlement between {before:%Y-%m-%d %H:%M} and {after:%H:%M %Y-%m-%d}"
+            )
+        if history.not_found:
+            typer.echo(f"  not published by Binance: {', '.join(map(str, history.not_found))}")
+    if failed:
+        raise typer.Exit(code=1)
 
 
 @app.command()
@@ -317,7 +356,7 @@ def walk_forward_cmd(
             datetime(first.year, first.month, 1, tzinfo=UTC),
             datetime(after.year, after.month, 1, tzinfo=UTC),
         )
-        bars = attach_features(bars, spec_for(key).features, interval, data_dir)
+        bars = attach_features(bars, spec_for(key).features, symbol, interval, data_dir)
         result = walk_forward(
             key,
             symbol.upper(),
@@ -404,7 +443,7 @@ def robustness(
             )
             if bars.height < 2:
                 raise ValueError(f"no stored {symbol.upper()} {interval.value} bars in that range")
-            bars = attach_features(bars, spec.features, interval, data_dir)
+            bars = attach_features(bars, spec.features, symbol, interval, data_dir)
 
             def evaluate(p: dict[str, int]) -> Metrics:
                 strategy_ = make_strategy(key, symbol, p)
