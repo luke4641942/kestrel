@@ -7,17 +7,27 @@ from __future__ import annotations
 import math
 import random
 from datetime import timedelta
+from decimal import Decimal
+from pathlib import Path
 from statistics import stdev
 
+import polars as pl
 import pytest
 
+from kestrel.backtest.runs import RunRequest, execute
+from kestrel.config import load_config
+from kestrel.data.binance_vision import Month
+from kestrel.data.features import attach_features
+from kestrel.data.schema import Interval
+from kestrel.data.store import ParquetStore
 from kestrel.strategies.trend import TrendVolTarget
 from kestrel.strategies.volhold import VolManagedHold
-from kestrel.strategies.weekly import WeeklyMomentum
+from kestrel.strategies.weekly import BtcLedWeekly, WeeklyMomentum
 from kestrel.strategy import STRATEGIES, make_strategy, validated_weights
-from tests.backtest.helpers import bars
+from tests.backtest.helpers import T0, bars
 
 DAY = timedelta(days=1)
+REPO_CONFIG = Path(__file__).resolve().parents[1] / "kestrel.toml"
 
 
 def daily(log_returns: list[float], step: timedelta = DAY):  # type: ignore[no-untyped-def]
@@ -103,3 +113,76 @@ def test_no_lookahead_on_a_random_walk(key: str) -> None:
 def test_registered_as_research() -> None:
     for key in ("vol-hold", "weekly-momentum"):
         assert (STRATEGIES[key].kind, STRATEGIES[key].universe) == ("research", False)
+
+
+# ---------- trading a coin on BTC's week ----------
+
+
+def with_btc(coin_returns: list[float], btc_returns: list[float]):  # type: ignore[no-untyped-def]
+    btc = daily(btc_returns)["close"]
+    return daily(coin_returns).with_columns(btc_close=btc)
+
+
+def led(frame) -> list[float]:  # type: ignore[no-untyped-def]
+    return validated_weights(BtcLedWeekly(), frame).to_list()
+
+
+def test_follows_btcs_week_not_its_own() -> None:
+    # The coin falls every day, but BTC rises: hold the coin after BTC's rising week.
+    w = led(with_btc([-0.01] * 20, [0.01] * 20))
+    assert w[13:20] == [1.0] * 7
+    assert sum(led(with_btc([0.01] * 20, [-0.01] * 20))) == 0
+
+
+def test_a_missing_btc_close_means_no_signal() -> None:
+    frame = with_btc([0.01] * 20, [0.01] * 20)
+    gappy = frame.with_columns(
+        btc_close=pl.when(pl.int_range(pl.len()) == 6).then(None).otherwise(pl.col("btc_close"))
+    )
+    assert led(gappy)[13] == 0.0  # Sunday day 13's week starts at day 6, with no BTC close
+
+
+def test_btc_led_needs_the_feature_and_daily_bars() -> None:
+    with pytest.raises(ValueError, match="needs the btc_close feature"):
+        BtcLedWeekly().target_weights(daily([0.01] * 20))
+    four_hourly = daily([0.01] * 20, step=timedelta(hours=4)).with_columns(
+        btc_close=pl.col("close")
+    )
+    with pytest.raises(ValueError, match="daily bars"):
+        BtcLedWeekly().target_weights(four_hourly)
+
+
+def test_btc_led_has_no_lookahead() -> None:
+    rnd = random.Random(8)
+    frame = with_btc(
+        [rnd.gauss(0.0005, 0.04) for _ in range(800)], [rnd.gauss(0.0005, 0.03) for _ in range(800)]
+    )
+    w = validated_weights(make_strategy("btc-led-weekly", "ETHUSDT"), frame)  # type: ignore[arg-type]
+    assert 0 < w.sum() < len(w)
+    assert STRATEGIES["btc-led-weekly"].features == ("btc_close",)
+
+
+def test_the_feature_is_btcs_close_on_the_same_bar(tmp_path: Path) -> None:
+    store = ParquetStore(tmp_path)
+    btc = daily([0.01] * 9)  # 10 bars from 2024-01-01
+    store.write("BTCUSDT", Interval.D1, btc.filter(pl.int_range(pl.len()) != 4))  # day 4 missing
+    eth = daily([0.0] * 9)
+    out = attach_features(eth, ("btc_close",), "ETHUSDT", Interval.D1, tmp_path)
+    expected = btc["close"].to_list()
+    expected[4] = None
+    assert out["btc_close"].to_list() == expected
+    assert attach_features(eth.clear(), ("btc_close",), "ETHUSDT", Interval.D1, tmp_path).is_empty()
+    with pytest.raises(ValueError, match="no stored BTCUSDT 1d bars"):
+        attach_features(eth, ("btc_close",), "ETHUSDT", Interval.D1, tmp_path / "empty")
+
+
+def test_a_backtest_attaches_btc_itself(tmp_path: Path) -> None:
+    store = ParquetStore(tmp_path)
+    store.write("BTCUSDT", Interval.D1, daily([0.01] * 59))
+    store.write("ETHUSDT", Interval.D1, daily([-0.005] * 59))
+    request = RunRequest(
+        "btc-led-weekly", "ETHUSDT", Interval.D1, Month(2024, 1), Month(2024, 2), Decimal(1000)
+    )
+    outcome = execute(request, store, load_config(REPO_CONFIG))
+    assert outcome.result.fills[0].fill.side.value == "buy"  # ETH bought on BTC's rising week
+    assert outcome.result.fills[0].time == T0 + 14 * DAY  # after Sunday 14 Jan's close

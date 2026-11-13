@@ -41,7 +41,7 @@ from kestrel.strategies.trendlines import (
 )
 from kestrel.strategies.volhold import VolManagedHold
 from kestrel.strategies.weekday import MondayMidPullback
-from kestrel.strategies.weekly import WeeklyMomentum
+from kestrel.strategies.weekly import BtcLedWeekly, WeeklyMomentum
 
 
 class LookaheadError(ValueError):
@@ -527,6 +527,14 @@ STRATEGIES: dict[str, StrategySpec] = {
             "Hold the coin next week if its Sunday-to-Sunday return was positive, else cash. "
             "Research: runs only through its frozen note.",
             WeeklyMomentum,
+        ),
+        StrategySpec(
+            "btc-led-weekly",
+            "research",
+            "Hold the coin (ETH, SOL) next week if BTC's Sunday-to-Sunday return was positive, "
+            "else cash: BTC leads, the alts follow. Research: runs only through its frozen note.",
+            BtcLedWeekly,
+            features=("btc_close",),
         ),
         StrategySpec(
             "btc-eth-rotation",
