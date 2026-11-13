@@ -186,3 +186,12 @@ decision = "drop"
 decided = 2026-11-13
 reason = "Sharpe 1.06, level with BTC held (1.07) and below ETH (1.12), with the same drawdown (-77%)."
 evidence = ["btc-eth-dual-momentum"]
+
+[[decision]]
+strategy = "btc-led-weekly"
+name = "BTC-led weekly momentum"
+market = "ETHUSDT and SOLUSDT 1d"
+decision = "drop"
+decided = 2026-11-13
+reason = "Sharpe below holding on every window (0.10 vs 0.15, 1.07 vs 1.12, 1.08 vs 1.24), and BTC's week was no better a signal than the coin's own: no tradeable lag at a weekly horizon."
+evidence = ["btc-led-weekly-momentum-on-eth-and-sol"]
