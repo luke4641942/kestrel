@@ -7,8 +7,9 @@ from decimal import Decimal
 import polars as pl
 import pytest
 
-from kestrel.backtest.analysis import analyse
+from kestrel.backtest.analysis import analyse, start_dates
 from kestrel.backtest.engine import run_backtest
+from kestrel.backtest.metrics import compute_metrics, format_report
 from kestrel.data.schema import Interval
 from kestrel.strategy import BuyAndHold
 from tests.backtest.helpers import FixedBrackets, FixedWeights, bars, config
@@ -218,3 +219,64 @@ def test_an_eth_run_is_compared_with_holding_eth() -> None:
     report = format_report(r, compute_metrics(r), analyse(r, b))
     assert "vs ETH" in report
     assert "BTC" not in report
+
+
+# ---------- against holding, from every start date ----------
+
+
+def equity_frame(values: list[float], weights: list[float] | None = None) -> pl.DataFrame:
+    start = datetime(2020, 1, 1, tzinfo=UTC)
+    return pl.DataFrame(
+        {
+            "close_time": [start + i * DAY for i in range(len(values))],
+            "equity": values,
+            "weight": weights or [1.0] * len(values),
+        }
+    )
+
+
+def wavy(n: int, crash_at: int | None = None) -> list[float]:
+    """A noisy climb (+1%, -0.5%), with a 60% crash on one day if asked."""
+    out, v = [], 100.0
+    for i in range(n):
+        v *= 1.01 if i % 2 else 0.995
+        if i == crash_at:
+            v *= 0.4
+        out.append(v)
+    return out
+
+
+def test_holding_against_itself_never_wins() -> None:
+    hold = equity_frame(wavy(800))
+    rows = start_dates(hold, hold)
+    assert [(r.window_days, r.windows) for r in rows] == [(365, 15), (730, 3)]
+    assert all((r.sharpe, r.drawdown, r.total_return) == (0, 0, 0) for r in rows)
+
+
+def test_a_strategy_that_sidesteps_a_crash_wins_the_windows_containing_it() -> None:
+    hold = equity_frame(wavy(800, crash_at=400))
+    sidestep = [v * (2.5 if i >= 400 else 1) for i, v in enumerate(wavy(800, crash_at=400))]
+    row = start_dates(equity_frame(sidestep), hold)[0]
+    # Of 15 one-year starts (days 0, 30 ... 420), those from day 60 to 390 contain the crash.
+    assert row.drawdown == pytest.approx(12 / 15)
+    assert row.total_return == pytest.approx(12 / 15)
+
+
+def test_windows_start_once_the_strategy_is_invested() -> None:
+    values = wavy(800)
+    weights = [0.0] * 200 + [1.0] * 600
+    row = start_dates(equity_frame(values, weights), equity_frame(values))[0]
+    assert row.windows == len(range(199, 800 - 365, 30))
+    never = start_dates(equity_frame(values, [0.0] * 800), equity_frame(values))
+    assert [r.windows for r in never] == [0, 0]
+    assert never[0].sharpe is None
+
+
+def test_the_report_shows_start_dates_when_the_run_is_long_enough() -> None:
+    long_run = run(BuyAndHold("BTCUSDT"), rising(800))
+    a = analyse(long_run, long_run, resamples=50)
+    assert a.start_dates[0].windows > 0
+    report = format_report(long_run, compute_metrics(long_run), a)
+    assert "1-year starts    beats holding from 0% on Sharpe" in report
+    short = run(BuyAndHold("BTCUSDT"), rising(120))
+    assert "starts" not in format_report(short, compute_metrics(short), analyse(short, short))

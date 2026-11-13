@@ -1,7 +1,8 @@
+import { useState } from "react";
 import { api, type Job } from "../api";
 import type { Route } from "../App";
-import { Empty, PageHeader, Panel, Section, Status } from "../components/ui";
-import { DECISION, RESEARCH_STATUS, marketLabel, studyTitle, studyTone } from "../summary";
+import { Empty, FoldToggle, PageHeader, Panel, Section, Status } from "../components/ui";
+import { DECISION, RESEARCH_STATUS, marketLabel, splitClosed, studyTitle, studyTone } from "../summary";
 import { ago, date, num } from "../format";
 import { useResource } from "../hooks";
 
@@ -146,6 +147,8 @@ function ResearchBoard() {
   const validation = useResource(api.validation, []);
   const v = validation.data;
   const list = research.data ?? [];
+  const { live, closed } = splitClosed(list, (r) => r.status === "rejected");
+  const [showRejected, setShowRejected] = useState(false);
   const open = (slug: string) => {
     window.location.hash = `/strategies/${slug}`;
   };
@@ -177,7 +180,7 @@ function ResearchBoard() {
               </tr>
             </thead>
             <tbody>
-              {list.map((r) => (
+              {(showRejected ? [...live, ...closed] : live).map((r) => (
                 <tr key={r.slug} className="clickable" onClick={() => open(r.slug)}>
                   <td style={{ fontWeight: 500 }}>{r.name}</td>
                   <td className="nw">
@@ -193,6 +196,12 @@ function ResearchBoard() {
               ))}
             </tbody>
           </table>
+          <FoldToggle
+            count={closed.length}
+            noun={`rejected idea${closed.length === 1 ? "" : "s"}`}
+            open={showRejected}
+            onToggle={() => setShowRejected((v) => !v)}
+          />
         </div>
       )}
       <div className="board-foot">
@@ -260,6 +269,8 @@ function StudiesBoard() {
 function DecisionsBoard() {
   const decisions = useResource(api.decisions, []);
   const list = decisions.data ?? [];
+  const { live, closed } = splitClosed(list, (d) => d.decision === "drop");
+  const [showDropped, setShowDropped] = useState(false);
   if (decisions.error) {
     return (
       <Panel>
@@ -277,7 +288,7 @@ function DecisionsBoard() {
         </Empty>
       ) : (
         <ul className="decision-list">
-          {list.map((d) => (
+          {(showDropped ? [...live, ...closed] : live).map((d) => (
             <li key={`${d.strategy} ${d.market}`} className={`decision-${d.decision}`}>
               <Status tone={DECISION[d.decision].tone}>{DECISION[d.decision].label}</Status>
               <div>
@@ -291,6 +302,12 @@ function DecisionsBoard() {
           ))}
         </ul>
       )}
+      <FoldToggle
+        count={closed.length}
+        noun={`dropped strateg${closed.length === 1 ? "y" : "ies"}`}
+        open={showDropped}
+        onToggle={() => setShowDropped((v) => !v)}
+      />
     </Panel>
   );
 }

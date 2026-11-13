@@ -340,6 +340,14 @@ export interface EquitySeries {
   drawdown: number[];
 }
 
+export interface StartDateRow {
+  window_days: number;
+  windows: number;
+  sharpe: number | null;
+  drawdown: number | null;
+  total_return: number | null;
+}
+
 export interface Analysis {
   return_ci: (number | null)[];
   p_profit: number;
@@ -363,6 +371,7 @@ export interface Analysis {
   open_at_end: boolean;
   resamples: number;
   block_days: number;
+  start_dates: StartDateRow[];
 }
 
 export interface RunDetail extends RunSummary {

@@ -259,6 +259,13 @@ def _analysis_lines(a: Analysis, asset: str) -> list[str]:
             f"  vs {asset:<14} beta {a.beta:.2f}, correlation {a.correlation:.2f}; {asset} at "
             f"the same exposure {p(a.matched_btc_return)}"
         )
+    for row in a.start_dates:
+        if row.windows:
+            lines.append(
+                f"  {row.window_days // 365}-year starts    beats holding from {row.sharpe:.0%} on "
+                f"Sharpe, {row.drawdown:.0%} on drawdown, {row.total_return:.0%} on return "
+                f"({row.windows} starts)"
+            )
     lines.append(
         f"  Tails             worst day {a.worst_day:.1%}, worst month {a.worst_month:.1%}, "
         f"worst 5% of days average {a.expected_shortfall:.2%}"

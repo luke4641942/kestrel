@@ -10,9 +10,17 @@ import {
 } from "../api";
 import { ParamInputs, defaultParams } from "../components/ParamInputs";
 import { SignalsChart } from "../components/SignalsChart";
-import { Empty, PageHeader, Panel, Status } from "../components/ui";
+import { Empty, FoldToggle, PageHeader, Panel, Status } from "../components/ui";
 import { ago, dateTime, lastResearchMonth } from "../format";
-import { KIND_LABEL, RESEARCH_STATUS as STATUS, defaultDataset, marketLabel, marketsFor, signalsCaption } from "../summary";
+import {
+  KIND_LABEL,
+  RESEARCH_STATUS as STATUS,
+  defaultDataset,
+  marketLabel,
+  marketsFor,
+  signalsCaption,
+  splitClosed,
+} from "../summary";
 import { useResource } from "../hooks";
 
 
@@ -37,7 +45,14 @@ export function Strategies({ jobs, onJobStarted }: { jobs: Job[]; onJobStarted: 
     window.location.hash = `/strategies/${s}`;
   };
   const items = list.data ?? [];
-  const current = slug ?? items[0]?.slug;
+  const { live, closed } = splitClosed(items, (s) => s.status === "rejected");
+  const current = slug ?? live[0]?.slug ?? items[0]?.slug;
+  // Rejected ideas are folded away, but one that is open stays visible in the list.
+  const [showRejected, setShowRejected] = useState(false);
+  const currentRejected = closed.some((s) => s.slug === current);
+  useEffect(() => {
+    if (currentRejected) setShowRejected(true);
+  }, [currentRejected]);
 
   return (
     <>
@@ -59,11 +74,19 @@ export function Strategies({ jobs, onJobStarted }: { jobs: Job[]; onJobStarted: 
                 {!list.loading && <p>Start with an idea above. It stays a draft until you freeze it.</p>}
               </Empty>
             ) : (
-              <ul className="strat-items">
-                {items.map((s) => (
-                  <StrategyItem key={s.slug} s={s} active={s.slug === current} onSelect={() => select(s.slug)} />
-                ))}
-              </ul>
+              <>
+                <ul className="strat-items">
+                  {(showRejected ? [...live, ...closed] : live).map((s) => (
+                    <StrategyItem key={s.slug} s={s} active={s.slug === current} onSelect={() => select(s.slug)} />
+                  ))}
+                </ul>
+                <FoldToggle
+                  count={closed.length}
+                  noun={`rejected idea${closed.length === 1 ? "" : "s"}`}
+                  open={showRejected}
+                  onToggle={() => setShowRejected((v) => !v)}
+                />
+              </>
             )}
           </Panel>
         </aside>

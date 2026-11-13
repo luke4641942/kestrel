@@ -978,6 +978,10 @@ p {
   margin-top: 10px;
 }
 
+.panel-subtitle {
+  margin-top: 18px;
+}
+
 .r-stats {
   margin-top: 12px;
   border-top: 1px solid var(--line);

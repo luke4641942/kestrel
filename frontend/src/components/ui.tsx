@@ -140,3 +140,30 @@ export function ErrorBanner({ error }: { error?: string }) {
     </div>
   );
 }
+
+/** A count of folded-away items (rejected ideas, dropped strategies) and a button to
+ * show or hide them. Renders nothing when there are none. */
+export function FoldToggle({
+  count,
+  noun,
+  open,
+  onToggle,
+}: {
+  count: number;
+  noun: string;
+  open: boolean;
+  onToggle: () => void;
+}) {
+  if (count === 0) return null;
+  return (
+    <div className="table-more">
+      <span className="small secondary">
+        {count} {noun}
+        {open ? "" : " hidden"}.
+      </span>
+      <button type="button" className="link-btn" aria-expanded={open} onClick={onToggle}>
+        {open ? "Hide" : "Show"}
+      </button>
+    </div>
+  );
+}

@@ -172,6 +172,22 @@ def test_runs_saved_before_the_analysis_still_load(client: TestClient, tmp_path:
     assert client.get(f"/api/backtests/{run_id}").json()["analysis"] is None
 
 
+def test_runs_saved_before_start_dates_get_them_from_their_equity(
+    client: TestClient, tmp_path: Path
+) -> None:
+    import json
+
+    job = _finish(client, BODY)
+    run_id = job["result"]["run_id"]
+    path = tmp_path / "runs" / run_id / "run.json"
+    meta = json.loads(path.read_text())
+    stored = meta["analysis"].pop("start_dates")
+    path.write_text(json.dumps(meta))
+    a = client.get(f"/api/backtests/{run_id}").json()["analysis"]
+    assert a["start_dates"] == stored
+    assert [r["window_days"] for r in stored] == [365, 730]
+
+
 def test_runs_are_deflated_for_every_strategy_tried(client: TestClient) -> None:
     for fast in (3, 4):
         _finish(client, {**BODY, "strategy": "ma-trend", "params": {"fast": fast, "slow": 12}})

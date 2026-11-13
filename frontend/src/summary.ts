@@ -1,6 +1,6 @@
 // Plain logic behind the Backtests page: the verdict, the test-period wording and the
 // chart's trade markers. Kept out of components so it can be tested directly.
-import type { Dataset, Decision, ResearchStatus, Study, RunDetail, RunSummary, StrategyInfo, StrategyKind } from "./api";
+import type { Dataset, Decision, ResearchStatus, Study, RunDetail, RunSummary, StartDateRow, StrategyInfo, StrategyKind } from "./api";
 import type { Tone } from "./components/ui";
 import type { TradeMarker } from "./components/EquityChart";
 
@@ -298,3 +298,28 @@ export const DECISION: Record<Decision["decision"], { tone: Tone; label: string 
   watch: { tone: "info", label: "Watch" },
   drop: { tone: "neutral", label: "Drop" },
 };
+
+/** Split a list into what is still live and what is closed (rejected ideas, dropped
+ * strategies), each keeping its order. Closed items stay as evidence, folded away. */
+export function splitClosed<T>(items: T[], isClosed: (item: T) => boolean): { live: T[]; closed: T[] } {
+  return { live: items.filter((i) => !isClosed(i)), closed: items.filter(isClosed) };
+}
+
+/** "1 year", "2 years". */
+export const windowLabel = (days: number) => {
+  const years = Math.round(days / 365);
+  return `${years} year${years === 1 ? "" : "s"}`;
+};
+
+/** One line on how a strategy fares against holding from any start date, from the longest
+ * window the run is long enough for; null when it is too short for any. */
+export function startDateVerdict(rows: StartDateRow[]): string | null {
+  const usable = rows.filter((r) => r.windows > 0 && r.sharpe !== null);
+  const r = usable[usable.length - 1];
+  if (!r) return null;
+  const p = (x: number | null) => `${Math.round((x ?? 0) * 100)}%`;
+  return (
+    `Started on any of ${r.windows} dates and held for ${windowLabel(r.window_days)}, it beat holding on ` +
+    `Sharpe from ${p(r.sharpe)} of them, on drawdown from ${p(r.drawdown)} and on return from ${p(r.total_return)}.`
+  );
+}

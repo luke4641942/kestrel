@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, type FormEvent, type ReactNode } from "react";
+import { useEffect, useMemo, useRef, useState, type FormEvent, type ReactNode } from "react";
 import { api, type Dataset, type Job, type Metrics, type RunDetail, type RunSummary } from "../api";
 import { EquityChart } from "../components/EquityChart";
 import { ParamInputs, defaultParams } from "../components/ParamInputs";
@@ -22,12 +22,14 @@ import {
   type RunSort,
   type RunSortKey,
   span,
+  startDateVerdict,
   tooManyToMark,
   trackRecord,
   tradeCount,
   tradeMarkers,
   usdt,
   verdict,
+  windowLabel,
 } from "../summary";
 
 const pct = (x: number | null | undefined, digits = 1) =>
@@ -529,6 +531,8 @@ function RunSummaryPanel({ run: r }: { run: RunDetail }) {
 
 function ChartPanel({ run: r }: { run: RunDetail }) {
   const hidden = tooManyToMark(r);
+  // Built once per run: a new array every render would redraw the chart's markers.
+  const markers = useMemo(() => tradeMarkers(r), [r]);
   return (
     <Panel pad>
       <div className="chart-top">
@@ -544,7 +548,7 @@ function ChartPanel({ run: r }: { run: RunDetail }) {
           </span>
         </span>
       </div>
-      <EquityChart equity={r.equity} benchmark={r.benchmark} trades={tradeMarkers(r)} />
+      <EquityChart equity={r.equity} benchmark={r.benchmark} trades={markers} />
       <p className="small tertiary chart-foot">
         {hidden
           ? `Too many trades to mark without hiding the line; ${
@@ -661,6 +665,39 @@ function StatisticsTab({ run: r }: { run: RunDetail }) {
                 ))}
               </tbody>
             </table>
+            {r.strategy !== "buy-and-hold" && startDateVerdict(a.start_dates ?? []) && (
+              <>
+                <h3 className="panel-title panel-subtitle">From any start date</h3>
+                <table className="mini-table">
+                  <thead>
+                    <tr>
+                      <th>Held for</th>
+                      <th className="num">Starts</th>
+                      <th className="num">Better Sharpe</th>
+                      <th className="num">Smaller drawdown</th>
+                      <th className="num">Higher return</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {(a.start_dates ?? [])
+                      .filter((w) => w.windows > 0)
+                      .map((w) => (
+                        <tr key={w.window_days}>
+                          <td>{windowLabel(w.window_days)}</td>
+                          <td className="num mono">{num(w.windows)}</td>
+                          <td className="num mono">{pct(w.sharpe, 0)}</td>
+                          <td className="num mono">{pct(w.drawdown, 0)}</td>
+                          <td className="num mono">{pct(w.total_return, 0)}</td>
+                        </tr>
+                      ))}
+                  </tbody>
+                </table>
+                <p className="small tertiary panel-foot">
+                  {startDateVerdict(a.start_dates ?? [])} One test window is one sample: a result against holding
+                  depends on when it starts. Windows begin every 30 days from the first day the strategy is invested.
+                </p>
+              </>
+            )}
           </Panel>
         )}
       </div>

@@ -59,6 +59,7 @@ from kestrel.api.models import (
     ValidationOut,
 )
 from kestrel.assistant import AssistantError, ResearchAssistant, chat_record, credentials_hint
+from kestrel.backtest.analysis import start_dates
 from kestrel.backtest.costs import CostModel, Fill, Side
 from kestrel.backtest.engine import HoldoutError
 from kestrel.backtest.metrics import DAYS_PER_YEAR
@@ -475,9 +476,14 @@ def create_app(
         except KeyError:
             raise HTTPException(status.HTTP_404_NOT_FOUND, "run not found") from None
         (summary,) = _deflated([saved.meta])
+        analysis = saved.meta.get("analysis")
+        if analysis is not None and "start_dates" not in analysis:
+            rows = start_dates(saved.equity, saved.benchmark)
+            analysis = {**analysis, "start_dates": [asdict(r) for r in rows]}
         return RunDetail.model_validate(
             {
                 **saved.meta,
+                "analysis": analysis,
                 "deflated_sharpe": summary.deflated_sharpe,
                 "deflated_trials": summary.deflated_trials,
                 "equity": _series(saved.equity),

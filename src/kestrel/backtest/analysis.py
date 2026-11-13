@@ -10,12 +10,20 @@ additions. The seed is fixed, so a run always reports the same intervals.
 Caveat shown with every interval: they assume this was the only strategy tried. P3's
 deflated Sharpe corrects for every variant tested.
 
+Start dates: one backtest window is one sample, and a result against buy-and-hold depends
+heavily on when it starts (begin before a boom and holding looks unbeatable; begin at a
+top and it looks terrible). So every window of one and two years, starting every 30 days
+from the first day the strategy is invested (its warm-up in cash isn't held against it),
+is compared with holding over the same days: the share of starts where the strategy had
+the better Sharpe, the smaller max drawdown, and the higher return.
+
 Holding periods for the Australian tax view match sells to buys first-in first-out.
 Information only: the engine does not model tax, and this is not tax advice.
 """
 
 from __future__ import annotations
 
+import itertools
 import math
 import random
 from dataclasses import dataclass
@@ -29,6 +37,10 @@ from kestrel.backtest.metrics import compute_metrics, daily_equity
 RESAMPLES = 2000
 SEED = 20261105
 Z95_ONE_SIDED = 1.6448536269514722
+START_WINDOWS = (365, 730)
+"""Window lengths, in days, for the start-date comparison."""
+START_STEP = 30
+"""Days between window starts."""
 LONG_TERM = timedelta(days=365)
 """Australian CGT discount needs an asset held at least 12 months."""
 
@@ -38,6 +50,19 @@ class YearRow:
     year: int
     strategy: float
     btc: float
+
+
+@dataclass(frozen=True)
+class StartDateRow:
+    window_days: int
+    windows: int
+    """Window starts compared (0 when the run is shorter than the window)."""
+    sharpe: float | None
+    """Share of starts where the strategy's Sharpe beat holding's."""
+    drawdown: float | None
+    """Share where its max drawdown was smaller than holding's."""
+    total_return: float | None
+    """Share where its return was higher."""
 
 
 @dataclass(frozen=True)
@@ -86,6 +111,8 @@ class Analysis:
     """Some position was never sold, so its gain is unrealised."""
     resamples: int
     block_days: int
+    start_dates: list[StartDateRow]
+    """Against holding, from every start date; see the module docstring."""
 
 
 def analyse(
@@ -204,7 +231,61 @@ def analyse(
         open_at_end=open_at_end,
         resamples=resamples,
         block_days=block,
+        start_dates=start_dates(result.equity, benchmark.equity),
     )
+
+
+def start_dates(
+    equity: pl.DataFrame,
+    benchmark: pl.DataFrame,
+    windows: tuple[int, ...] = START_WINDOWS,
+    step: int = START_STEP,
+) -> list[StartDateRow]:
+    """Compare ``equity`` with ``benchmark`` (both with close_time, equity and weight, as
+    stored with a run) over every window; see the module docstring."""
+
+    def midnight(frame: pl.DataFrame) -> pl.DataFrame:
+        t = pl.col("close_time")
+        return frame.filter((t.dt.hour() == 0) & (t.dt.minute() == 0))
+
+    marks = (
+        midnight(equity)
+        .select("close_time", "equity", "weight")
+        .join(
+            midnight(benchmark).select("close_time", hold=pl.col("equity")),
+            on="close_time",
+        )
+        .sort("close_time")
+    )
+    invested = marks["weight"] > 0
+    # Start at the last close before the first invested one, so the first day counts.
+    first = max(0, int(invested.arg_max() or 0) - 1) if invested.any() else marks.height
+    strategy, hold = marks["equity"].to_list(), marks["hold"].to_list()
+    rows = []
+    for days in windows:
+        starts = range(first, len(strategy) - days, step)
+        wins = [0, 0, 0]
+        for i in starts:
+            s, h = _window(strategy[i : i + days + 1]), _window(hold[i : i + days + 1])
+            wins[0] += s[0] > h[0]
+            wins[1] += s[1] > h[1]  # drawdowns are negative: greater is smaller
+            wins[2] += s[2] > h[2]
+        n = len(starts)
+        shares: list[float | None] = [w / n if n else None for w in wins]
+        rows.append(StartDateRow(days, n, *shares))
+    return rows
+
+
+def _window(equity: list[float]) -> tuple[float, float, float]:
+    """Sharpe (unannualised; only compared), max drawdown and total return."""
+    rets = [b / a - 1 for a, b in itertools.pairwise(equity)]
+    mean = sum(rets) / len(rets)
+    sd = math.sqrt(sum((r - mean) ** 2 for r in rets) / (len(rets) - 1))
+    peak, worst = equity[0], 0.0
+    for v in equity:
+        peak = max(peak, v)
+        worst = min(worst, v / peak - 1)
+    return (mean / sd if sd > 0 else -math.inf), worst, equity[-1] / equity[0] - 1
 
 
 def _q(sorted_values: list[float], p: float) -> float:

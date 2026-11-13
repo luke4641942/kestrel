@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { DECISION, studyTitle, studyTone, deflatedNote, spreadBands, DEFAULT_RUN_SORT, KIND_LABEL, UNIVERSE, marketLabel, marketsFor, defaultDataset, nextSort, sortRuns, fewTrades, signalsCaption, MAX_LABELLED_TRADES, MAX_MARKED_TRADES, costHeadroom, paramsText, runRole, tradeCount, heldAsset, money, span, trackRecord, tradeMarkers, verdict } from "./summary";
+import { splitClosed, startDateVerdict, windowLabel, DECISION, studyTitle, studyTone, deflatedNote, spreadBands, DEFAULT_RUN_SORT, KIND_LABEL, UNIVERSE, marketLabel, marketsFor, defaultDataset, nextSort, sortRuns, fewTrades, signalsCaption, MAX_LABELLED_TRADES, MAX_MARKED_TRADES, costHeadroom, paramsText, runRole, tradeCount, heldAsset, money, span, trackRecord, tradeMarkers, verdict } from "./summary";
 import { run, trade } from "./test/fixtures";
 
 describe("verdict", () => {
@@ -315,5 +315,39 @@ describe("decisions", () => {
     expect(DECISION.pursue).toEqual({ tone: "ok", label: "Pursue" });
     expect(DECISION.watch.label).toBe("Watch");
     expect(DECISION.drop.tone).toBe("neutral"); // dropping a failed idea isn't an alarm
+  });
+});
+
+describe("splitClosed", () => {
+  it("keeps the order of both halves", () => {
+    const out = splitClosed([1, 2, 3, 4, 5], (n) => n % 2 === 0);
+    expect(out).toEqual({ live: [1, 3, 5], closed: [2, 4] });
+  });
+});
+
+describe("startDateVerdict", () => {
+  const row = (window_days: number, windows: number, sharpe: number | null) => ({
+    window_days,
+    windows,
+    sharpe,
+    drawdown: 1,
+    total_return: 0.31,
+  });
+
+  it("reads from the longest window the run is long enough for", () => {
+    expect(startDateVerdict([row(365, 55, 0.345), row(730, 43, 0.58)])).toBe(
+      "Started on any of 43 dates and held for 2 years, it beat holding on Sharpe from 58% of them, on drawdown from 100% and on return from 31%.",
+    );
+    expect(startDateVerdict([row(365, 5, 0.2), row(730, 0, null)])).toMatch(/^Started on any of 5 dates and held for 1 year,/);
+  });
+
+  it("says nothing when the run is too short for any window", () => {
+    expect(startDateVerdict([row(365, 0, null), row(730, 0, null)])).toBeNull();
+    expect(startDateVerdict([])).toBeNull();
+  });
+
+  it("names windows in years", () => {
+    expect(windowLabel(365)).toBe("1 year");
+    expect(windowLabel(730)).toBe("2 years");
   });
 });

@@ -512,6 +512,14 @@ class YearOut(BaseModel):
     btc: float | None
 
 
+class StartDateOut(BaseModel):
+    window_days: int
+    windows: int
+    sharpe: float | None
+    drawdown: float | None
+    total_return: float | None
+
+
 class AnalysisOut(BaseModel):
     """Deeper analysis; see kestrel.backtest.analysis. None where it doesn't apply."""
 
@@ -537,6 +545,9 @@ class AnalysisOut(BaseModel):
     open_at_end: bool
     resamples: int
     block_days: int
+    start_dates: list[StartDateOut] = Field(default_factory=list)
+    """Against holding from every start date. Runs saved before it existed get it
+    computed from their stored equity."""
 
 
 class RunDetail(RunSummary):
