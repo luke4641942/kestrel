@@ -114,3 +114,12 @@ decision = "drop"
 decided = 2026-11-12
 reason = "Sold the start of bull runs and bought the start of bear markets: +20% on BTC against +1,087% for holding, and -86% on ETH."
 evidence = ["fear-greed-contrarian-btc-eth-daily"]
+
+[[decision]]
+strategy = "drop-reversal"
+name = "Short-term reversal after big down days"
+market = "BTCUSDT and ETHUSDT 1d"
+decision = "drop"
+decided = 2026-11-13
+reason = "Earned less than holding the market for the same time: +21% vs +42% on BTC and +19% vs +60% on ETH, with P(profit) of 67% and 62%."
+evidence = ["short-term-reversal-after-big-down-days-btc-eth"]
