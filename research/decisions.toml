@@ -141,3 +141,48 @@ decision = "drop"
 decided = 2026-11-13
 reason = "Didn't improve trend-vol-target: on BTC a slightly higher Sharpe (1.27 vs 1.21) for 84% of the return, on ETH worse on every rule (Sharpe 1.09 vs 1.23)."
 evidence = ["funding-crowding-filter-on-trend-vol-target-btc"]
+
+[[decision]]
+strategy = "trend-basket"
+name = "Trend across a basket of large coins"
+market = "Top 10 coins by volume, 1d"
+decision = "drop"
+decided = 2026-11-13
+reason = "Halved the basket's drawdown (-41% vs -85%) but its Sharpe (0.95) stayed below BTC held alone (1.07), and ten slots are too small to trade at 330 USDT (13.6% of orders rejected)."
+evidence = ["trend-across-a-basket-of-large-coins"]
+
+[[decision]]
+strategy = "vol-hold"
+name = "Volatility-managed holding"
+market = "BTCUSDT and ETHUSDT 1d"
+decision = "drop"
+decided = 2026-11-13
+reason = "Earned less than the market at the same exposure on both coins. On BTC it shows trend-vol-target's edge comes from the trend votes (Sharpe 0.93 without them vs 1.21 with)."
+evidence = ["volatility-managed-holding-btc-eth-daily"]
+
+[[decision]]
+strategy = "high-anchor"
+name = "Nearness to the 52-week high"
+market = "Top 20 coins by volume, 1d"
+decision = "drop"
+decided = 2026-11-13
+reason = "Lost 64% against +10% for the same coins held equally: always invested, it rode the coins nearest their highs into the 2022 crash."
+evidence = ["nearness-to-the-52-week-high-across-large-coins"]
+
+[[decision]]
+strategy = "weekly-momentum"
+name = "One-week momentum"
+market = "BTCUSDT and ETHUSDT 1d"
+decision = "drop"
+decided = 2026-11-13
+reason = "Passed every rule on ETH but its Sharpe on BTC (0.94) was below holding (1.07). The note required both; one market passing among many trials is what luck produces."
+evidence = ["one-week-momentum-btc-eth-daily"]
+
+[[decision]]
+strategy = "btc-eth-rotation"
+name = "BTC/ETH dual momentum"
+market = "BTCUSDT and ETHUSDT 1d"
+decision = "drop"
+decided = 2026-11-13
+reason = "Sharpe 1.06, level with BTC held (1.07) and below ETH (1.12), with the same drawdown (-77%)."
+evidence = ["btc-eth-dual-momentum"]

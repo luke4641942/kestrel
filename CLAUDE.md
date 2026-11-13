@@ -189,6 +189,15 @@ Agreed with Luke; don't re-litigate without a reason.
   a Sharpe must beat about 1.26 to stand out from luck; the best so far (trend, 1.21/1.23)
   deflates to about 47%. Don't rescue any of
   these by tuning.
+- **Results, 2026-11-13.** Also rejected: Fear & Greed contrarian, drop reversal (buy big
+  down days), funding crowding filters (`kestrel.data.funding`, `kestrel ingest-funding`;
+  on holding and on trend-vol-target), and five momentum ideas: trend across a 10-coin
+  basket, vol-managed holding, 52-week-high nearness, one-week momentum, BTC/ETH rotation.
+  What they showed: trend halves a basket's drawdown but large-coin baskets are worse than
+  BTC alone; trend-vol-target's BTC edge comes from its trend votes, not its vol sizing
+  (vol-hold 0.93 vs 1.21); one-week momentum passed on ETH only. Universe strategies are
+  judged against the `large-basket` control, never just BTC. At 330 USDT, multi-coin
+  baskets hit the 5 USDT order minimum. Still only one Pursue: trend-vol-target on BTC.
 - **Parked, P3+: multi-strategy portfolios.** Strategies emit *target positions*, never
   orders; an allocator owns the wallet, resolves conflicts and nets orders before the
   `ExecutionVenue`. Build P2 around this so single-strategy is a portfolio of one.
