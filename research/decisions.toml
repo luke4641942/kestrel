@@ -123,3 +123,21 @@ decision = "drop"
 decided = 2026-11-13
 reason = "Earned less than holding the market for the same time: +21% vs +42% on BTC and +19% vs +60% on ETH, with P(profit) of 67% and 62%."
 evidence = ["short-term-reversal-after-big-down-days-btc-eth"]
+
+[[decision]]
+strategy = "funding-hold"
+name = "Funding crowding filter on buy-and-hold"
+market = "BTCUSDT and ETHUSDT 1d"
+decision = "drop"
+decided = 2026-11-13
+reason = "Indistinguishable from holding on BTC (Sharpe 1.07 vs 1.07) and worse on ETH (0.87 vs 1.12, +760% against +2,286% for ETH at the same exposure)."
+evidence = ["funding-crowding-filter-on-buy-and-hold-btc-eth"]
+
+[[decision]]
+strategy = "funding-trend"
+name = "Funding crowding filter on trend-vol-target"
+market = "BTCUSDT and ETHUSDT 1d"
+decision = "drop"
+decided = 2026-11-13
+reason = "Didn't improve trend-vol-target: on BTC a slightly higher Sharpe (1.27 vs 1.21) for 84% of the return, on ETH worse on every rule (Sharpe 1.09 vs 1.23)."
+evidence = ["funding-crowding-filter-on-trend-vol-target-btc"]
