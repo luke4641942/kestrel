@@ -41,6 +41,7 @@ from kestrel.strategies.trendlines import (
     TrendlineBreakout,
     WedgeBreakout,
 )
+from kestrel.strategies.volatile_macd import VolatileMacd
 from kestrel.strategies.volhold import VolManagedHold
 from kestrel.strategies.weekday import MondayMidPullback
 from kestrel.strategies.weekly import BtcLedWeekly, WeeklyMomentum
@@ -380,6 +381,16 @@ STRATEGIES: dict[str, StrategySpec] = {
                 Param("vol_days", 30, 10, 90, "Days of returns that measure volatility"),
                 Param("target_vol_pct", 50, 10, 150, "Annual volatility to size towards, in %"),
             ),
+        ),
+        StrategySpec(
+            "volatile-macd",
+            "research",
+            "In the regime model's volatile state, hold the coin for a week after the MACD "
+            "12/26/9 histogram turns or stays positive; cash otherwise. Research: runs only "
+            "through its frozen note.",
+            VolatileMacd,
+            (Param("hold_days", 7, 1, 30, "Days held after a signal (the study's horizon)"),),
+            features=("regime_volatile",),
         ),
         StrategySpec(
             "trend-vol-target-regime",
