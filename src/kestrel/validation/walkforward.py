@@ -151,7 +151,7 @@ def _add(m: Month, months: int) -> Month:
     return Month(index // 12, index % 12 + 1)
 
 
-def _window_returns(equity: pl.DataFrame, start: datetime, end: datetime) -> list[float]:
+def window_returns(equity: pl.DataFrame, start: datetime, end: datetime) -> list[float]:
     """Daily returns from the mark at ``start`` to the mark at ``end``."""
     marks = equity.filter((pl.col("close_time") >= start) & (pl.col("close_time") <= end))
     return marks["equity"].pct_change().drop_nulls().to_list()
@@ -217,8 +217,8 @@ def walk_forward(
                 test_end=t2,
                 chosen=best[1],
                 train_sharpe=best[0],
-                test_returns=_window_returns(tested, t1, t2),
-                benchmark_returns=_window_returns(held, t1, t2),
+                test_returns=window_returns(tested, t1, t2),
+                benchmark_returns=window_returns(held, t1, t2),
             )
         )
         train = _add(train, test_months)

@@ -47,6 +47,7 @@ from kestrel.strategy import (
     spec_for,
 )
 from kestrel.studies.anchor_day import format_study, run_study
+from kestrel.validation.holdout import HoldoutLog, format_holdout, holdout_test
 from kestrel.validation.log import Look, Study, ValidationLog
 from kestrel.validation.robustness import check_robustness, format_robustness
 from kestrel.validation.walkforward import format_walk_forward, walk_forward
@@ -358,6 +359,66 @@ def regimes(
         typer.echo(str(e), err=True)
         raise typer.Exit(code=1) from None
     typer.echo(format_regimes(result, bars, symbol.upper()))
+
+
+@app.command("holdout-test")
+def holdout_test_cmd(
+    symbol: str,
+    strategy: Annotated[str, typer.Option(help="The implementation the note names.")],
+    research: Annotated[str, typer.Option(help="The frozen research note that names this test.")],
+    warmup_start: Annotated[
+        str, typer.Option(help="First month the strategy runs (before the holdout), YYYY-MM.")
+    ],
+    start: Annotated[str, typer.Option(help="First scored month, YYYY-MM.")],
+    end: Annotated[str, typer.Option(help="Last scored month, YYYY-MM (inclusive).")],
+    interval: IntervalOpt = Interval.D1,
+    cash: Annotated[float, typer.Option(help="Starting cash in USDT.")] = 330.0,
+    research_dir: ResearchDir = Path("research"),
+    data_dir: DataDir = Path("data"),
+    config: Annotated[
+        Path, typer.Option("--config", envvar="KESTREL_CONFIG", help="Config file.")
+    ] = Path("kestrel.toml"),
+) -> None:
+    """The one look at the holdout, for a finished strategy's frozen note. Each note may
+    use it once; every run is recorded in <data>/holdout/. Never a trial."""
+    store = ResearchStore(research_dir)
+    log = HoldoutLog(data_dir)
+    try:
+        key, link = run_target(store, strategy, research)
+        if link is None:  # pragma: no cover - run_target always links a research slug
+            raise ValueError("the holdout is only for a frozen research note")
+        if key != strategy:
+            raise ValueError(f"{research} names {key}, not {strategy}")
+        if log.used(link[0]):
+            raise ValueError(f"{link[0]} has already used the holdout; it is used once")
+        cfg = load_config(config)
+        first, scored, last = Month.parse(warmup_start), Month.parse(start), Month.parse(end)
+        after = last.next()
+        begin = datetime(scored.year, scored.month, 1, tzinfo=UTC)
+        until = datetime(after.year, after.month, 1, tzinfo=UTC)
+        bars = ParquetStore(data_dir).read(
+            symbol, interval, datetime(first.year, first.month, 1, tzinfo=UTC), until
+        )
+        bars = attach_features(bars, spec_for(key).features, symbol, interval, data_dir)
+        typer.echo(f"HOLDOUT USED: {key} on {symbol.upper()} for {link[0]} v{link[1]}")
+        result = holdout_test(
+            key,
+            symbol.upper(),
+            bars,
+            interval,
+            cfg,
+            Decimal(str(cash)),
+            resolve_params(key, {}),
+            start=begin,
+            end=until,
+        )
+        log.record(link[0], link[1], result, datetime(first.year, first.month, 1, tzinfo=UTC))
+    except (ConfigError, ValueError) as e:
+        typer.echo(str(e), err=True)
+        raise typer.Exit(code=1) from None
+    store.mark_backtested(*link)
+    typer.echo(format_holdout(result))
+    typer.echo(f"Recorded in {log.root / (link[0] + '.json')}")
 
 
 @app.command("walk-forward")

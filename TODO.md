@@ -6,8 +6,9 @@ Decisions and rules live in CLAUDE.md; results in `research/findings.md`.
 ## Waiting on Luke
 - [ ] Trend-vol-target BTC walk-forward note failed its pre-registered rule (2 of 7 windows,
       4 needed). Its status is still frozen: reject it, or keep it open? Your call.
-- [ ] Holdout: a pre-registered note spending the year from 2025-11 on both strategies
-      (Claude drafts, Luke freezes), before P4.
+- [ ] Read and freeze the two holdout notes (`holdout-weekly-momentum-eth`,
+      `holdout-trend-vol-target-btc`, drafted 2026-11-14), then Claude runs
+      `kestrel holdout-test` once for each. Uses the holdout: once only.
 
 ## Next
 - [ ] P4 paper trading: sim venue, Binance testnet, reconciliation, risk limits, kill switch.
@@ -20,6 +21,7 @@ Decisions and rules live in CLAUDE.md; results in `research/findings.md`.
 - [ ] HMM regime filter (backlog S2) as a strategy: needs a note that passes the entry bar.
 
 ## Done recently
+- 2026-11-14 `kestrel holdout-test` built (synthetic tests only; the real holdout is untouched).
 - 2026-11-14 Trend-vol-target BTC moved from pursue to watch (Luke). Nothing is on pursue.
 - 2026-11-14 Trend-vol-target BTC walk-forward, window by window: beat holding in 2 of 7; fails test 3.
 - 2026-11-14 Charts page under More, with a plain-English card per indicator.

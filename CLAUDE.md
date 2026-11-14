@@ -114,6 +114,10 @@ Never pipe check output through `tail` or similar inside an `&&` chain: it hides
   research, tuning and validation use data before it. The engine refuses holdout data
   without the CLI's explicit flag and logs every such run; the dashboard and API can never
   use it. Used once, for a final verdict on a finished strategy. Never move this date.
+  The path for that verdict is `kestrel holdout-test` (`kestrel.validation.holdout`): a
+  frozen note only, a warm-up before 2025-11, the holdout year scored against holding
+  (returns at the same exposure in a falling year), recorded once per note in
+  `data/holdout/`, never a trial.
 - **Notes.** Research notes live in `research/strategies/<slug>/`. Backtesting a research
   strategy requires a frozen note; changes need a new version with a reason; rejection
   needs a reason and is final. `kestrel.research.run_target` is the one rule set for
