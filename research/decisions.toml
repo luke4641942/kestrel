@@ -14,8 +14,8 @@ name = "Trend following with volatility targeting"
 market = "BTCUSDT 1d"
 decision = "watch"
 decided = 2026-11-14
-reason = "Moved from pursue to watch by Luke on 2026-11-14, after the walk-forward result: watched like weekly momentum ETH, a candidate for the holdout test and paper trading, not a proven edge. Scorecard on BTC 2020-25 (completed 2026-11-14): passes edge (Sharpe 1.21 vs 1.07; +639% vs +423% at the same exposure), start dates, costs, trades, drawdown (-48%) and robustness; fails luck (deflated 28%) and out of sample (beat holding's Sharpe in only 2 of 7 six-month walk-forward windows, though its joined out-of-sample Sharpe was 0.97 vs 0.72)."
-evidence = ["trend-vol-target-btc-scorecard-walk-forward", "trend-following-robustness-and-walk-forward-btc", "trend-following-with-volatility-targeting-btc", "trend-following-through-the-2018-crash-unseen"]
+reason = "Moved from pursue to watch by Luke on 2026-11-14, after the walk-forward result: watched like weekly momentum ETH, a candidate for the holdout test and paper trading, not a proven edge. Scorecard on BTC 2020-25 (completed 2026-11-14): passes edge (Sharpe 1.21 vs 1.07; +639% vs +423% at the same exposure), start dates, costs, trades, drawdown (-48%) and robustness; fails luck (deflated 28%) and out of sample (beat holding's Sharpe in only 2 of 7 six-month walk-forward windows, though its joined out-of-sample Sharpe was 0.97 vs 0.72). Holdout (2025-11 to 2026-10, note holdout-trend-vol-target-btc): PASSED. In a falling year (BTC -29%) it returned -2.4% against -8.9% for BTC held at its 33% exposure; Sharpe -0.06 vs -0.57; drawdown -11% vs -47%. Its note's rule implies pursue; the label waits for Luke."
+evidence = ["holdout-trend-vol-target-btc", "trend-vol-target-btc-scorecard-walk-forward", "trend-following-robustness-and-walk-forward-btc", "trend-following-with-volatility-targeting-btc", "trend-following-through-the-2018-crash-unseen"]
 
 [[decision]]
 strategy = "trend-vol-target"
@@ -175,8 +175,8 @@ name = "One-week momentum"
 market = "ETHUSDT 1d"
 decision = "watch"
 decided = 2026-11-14
-reason = "Full scorecard on ETH 2020-25 (note weekly-momentum-eth-scorecard): passes every applicable test except luck. Edge: Sharpe 1.23 vs 1.12 (+2,318% vs +913% at the same exposure). Walk-forward: beat holding in 4 of 7 six-month windows, the minimum (out of sample +147% vs -32%). Start dates 83%, break-even 12x cost, 145 trades, drawdown -42%; robustness n/a (no settings). Luck: deflated 29%. On ETH's unseen 2017-19 it trailed holding slightly (0.13 vs 0.15). Watched, not passed: a candidate for paper trading beside trend-vol-target."
-evidence = ["weekly-momentum-eth-scorecard", "one-week-momentum-btc-eth-daily", "weekly-momentum-on-btc-followers-eth-unseen"]
+reason = "Full scorecard on ETH 2020-25 (note weekly-momentum-eth-scorecard): passes every applicable test except luck. Edge: Sharpe 1.23 vs 1.12 (+2,318% vs +913% at the same exposure). Walk-forward: beat holding in 4 of 7 six-month windows, the minimum (out of sample +147% vs -32%). Start dates 83%, break-even 12x cost, 145 trades, drawdown -42%; robustness n/a (no settings). Luck: deflated 29%. On ETH's unseen 2017-19 it trailed holding slightly (0.13 vs 0.15). Watched, not passed: a candidate for paper trading beside trend-vol-target. Holdout (2025-11 to 2026-10, note holdout-weekly-momentum-eth): FAILED. In a falling year (ETH -41%) it returned -25.1% against -16.7% for ETH held at its 43% exposure; Sharpe -0.74 vs -0.57; drawdown -35% vs -60%. Its note's rule implies drop; the label waits for Luke."
+evidence = ["holdout-weekly-momentum-eth", "weekly-momentum-eth-scorecard", "one-week-momentum-btc-eth-daily", "weekly-momentum-on-btc-followers-eth-unseen"]
 
 [[decision]]
 strategy = "weekly-momentum"

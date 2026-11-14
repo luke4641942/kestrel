@@ -102,6 +102,22 @@ paper trading (P4), labelled risk-managed holding rather than a proven edge.
    moved drawdowns. Most trips sold a dip that recovered; crypto's normal swings are wider
    than a stop that tight, and the strategies' own exits already do the job.
 
+## The holdout year (2025-11 to 2026-10)
+
+Reserved on 2026-10-31, before any research, and read once on 2026-11-14 for the two watched
+strategies, under rules frozen in advance (notes `holdout-weekly-momentum-eth`,
+`holdout-trend-vol-target-btc`). Both coins fell, so each strategy's return was compared with
+holding the same coin at the strategy's average exposure.
+
+| Strategy | Return | Holding at same exposure | Worst drawdown | Holding's drawdown | Verdict |
+|---|---|---|---|---|---|
+| Trend-vol-target, BTC | -2.4% | -8.9% (33%) | -11% | -47% | Pass |
+| Weekly momentum, ETH | -25.1% | -16.7% (43%) | -35% | -60% | Fail |
+
+On Sharpe the verdicts are the same (trend -0.06 vs -0.57 for holding; weekly -0.74 vs -0.57).
+One falling year is a small sample: the pass is support for paper trading, not proof of an
+edge, and the holdout can't be used again for either strategy.
+
 ## Every hypothesis
 
 | Strategy | Market | Result | Decision |

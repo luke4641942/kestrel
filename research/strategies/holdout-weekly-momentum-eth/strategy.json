@@ -1,0 +1,23 @@
+{
+  "slug": "holdout-weekly-momentum-eth",
+  "name": "Holdout: weekly momentum ETH",
+  "created_at": "2026-11-14T10:13:53.034167+00:00",
+  "status": "backtested",
+  "history": [
+    {
+      "status": "idea",
+      "at": "2026-11-14T10:13:53.034167+00:00",
+      "reason": "Created"
+    },
+    {
+      "status": "specified",
+      "at": "2026-11-14T10:22:18.569694+00:00",
+      "reason": "v1 frozen"
+    },
+    {
+      "status": "backtested",
+      "at": "2026-11-14T10:22:52.251365+00:00",
+      "reason": "first run on v1"
+    }
+  ]
+}

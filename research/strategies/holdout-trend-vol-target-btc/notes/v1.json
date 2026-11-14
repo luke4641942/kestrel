@@ -1,0 +1,15 @@
+{
+  "version": 1,
+  "created_at": "2026-11-14T10:13:53.036004+00:00",
+  "sections": {
+    "hypothesis": "Trend-vol-target on BTC keeps beating BTC held at the same exposure on a year it has never seen: 2025-11 to 2026-10, the holdout.",
+    "rationale": "Watched since 2026-11-14: on BTC 2020-25 it passes edge, start dates, costs, trades, drawdown and robustness, and fails luck (deflated 28%) and the window-by-window walk-forward (2 of 7). More tests on 2020-25 can't settle luck; unseen data can. The holdout was reserved on 2026-10-31 for one final test of a finished strategy; this one runs at its pre-registered defaults. The falling-year rule comes from the 2026-11-14 walk-forward: comparing Sharpes when returns are negative scores a strategy that lost far less than holding as worse, because lower volatility makes a negative Sharpe more negative. It is fixed here, before the holdout has been looked at.",
+    "rules": "Implementation trend-vol-target at its defaults (20/60/120-day votes, 30-day volatility, 50% target), BTCUSDT 1d, 330 USDT. Warm-up from 2025-05-01 so the 120-day votes and the volatility window are filled when the holdout starts; scored from 2025-11-01 to 2026-10-31. A position held on 2025-11-01 carries in at that day's mark, as in walk-forward. Run with the CLI's holdout test (kestrel holdout-test BTCUSDT --strategy trend-vol-target --research <this note> --warmup-start 2025-05 --start 2025-11 --end 2026-10), the only path that may read the holdout.",
+    "falsification": "Scored on 2025-11-01 to 2026-10-31 only, against holding the same coin over the same days. Earns a recommendation of pursue only if both hold: (1) the edge: if holding's Sharpe over the year is positive, the strategy's Sharpe is at least holding's; if holding's Sharpe is zero or negative (a falling year), the strategy's return beats holding at the strategy's average exposure (holding's daily returns scaled by that exposure); (2) the worst drawdown inside the year is no deeper than 50%. Otherwise Claude recommends drop and Luke decides. One year is short: a pass is support for paper trading, not proof. Run once; the holdout is never used for this strategy again.",
+    "parameters": "fast_days 20, mid_days 60, slow_days 120, vol_days 30, target_vol_pct 50 (the defaults; not tuned).",
+    "costs": "Costs from kestrel.toml (about 22-23 bps a round trip), as in every earlier run. Runs on the holdout are not counted as trials and are logged."
+  },
+  "implementation": "trend-vol-target",
+  "frozen_at": "2026-11-14T10:22:22.714130+00:00",
+  "change_reason": null
+}
