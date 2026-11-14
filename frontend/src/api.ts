@@ -483,11 +483,12 @@ export interface RunDetail extends RunSummary {
   scorecard: Scorecard | null;
 }
 
-export type GradeStatus = "pass" | "fail" | "not run";
+/** n/a: robustness, for a strategy with no settings to tune. */
+export type GradeStatus = "pass" | "fail" | "not run" | "n/a";
 
 /** The run graded against the scorecard (kestrel.validation.scorecard). */
 export interface Scorecard {
-  /** pass: all eight pass; fail: any fails; incomplete: a validation study is missing. */
+  /** pass: all eight pass or don't apply; fail: any fails; incomplete: a study is missing. */
   verdict: "pass" | "fail" | "incomplete";
   failed: number;
   not_run: number;

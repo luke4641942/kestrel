@@ -554,7 +554,7 @@ function ScorecardPanel({ card }: { card: Scorecard }) {
       </div>
       <ol className="scorecard scorecard-graded">
         {card.grades.map((g) => (
-          <li key={g.name} className={`grade-${g.status.replace(" ", "-")}`}>
+          <li key={g.name} className={`grade-${g.status.replace(/[^a-z]+/g, "-")}`}>
             <span className="scorecard-name">{g.name}</span>
             <div>
               <div className="scorecard-rule">{g.measured}</div>

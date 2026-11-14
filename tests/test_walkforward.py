@@ -144,21 +144,27 @@ def test_bad_windows(over: dict[str, object], message: str) -> None:
         run(**over)
 
 
-def test_a_grid_is_required_and_impossible_points_are_skipped() -> None:
-    with pytest.raises(ValueError, match="grid"):
-        walk_forward(
-            "ma-trend",
-            "BTCUSDT",
-            daily(),
-            D1,
-            config(),
-            Decimal(1000),
-            {},
-            start=Month.parse("2023-01"),
-            end=Month.parse("2023-12"),
-            train_months=3,
-            test_months=2,
-        )
+def test_without_a_grid_the_fixed_rule_is_judged_window_by_window() -> None:
+    def fixed(train_months: int) -> WalkForward:
+        return walk_forward(
+            "ma-trend", "BTCUSDT", daily(), D1, config(costs=False), Decimal(1000), {},
+            start=Month.parse("2023-01"), end=Month.parse("2023-12"),
+            train_months=train_months, test_months=2,
+        )  # fmt: skip
+
+    wf = fixed(6)  # long enough for the default 100-day average to score training
+    assert [f.chosen for f in wf.folds] == [{}] * 3  # nothing chosen: the defaults throughout
+    assert [p for p, _ in wf.looks] == [{}]  # one look, not one per window
+    assert any(f.test_returns for f in wf.folds)
+    # A 3-month training window can't fill a 100-day average, so it has no Sharpe; with
+    # nothing to choose between, the test windows are still judged.
+    short = fixed(3)
+    assert len(short.folds) == 4
+    assert all(math.isnan(f.train_sharpe) for f in short.folds)
+    assert short.looks == []
+
+
+def test_impossible_grid_points_are_refused() -> None:
     with pytest.raises(ValueError, match="no grid point"):
         walk_forward(
             "ma-trend",

@@ -1,7 +1,8 @@
 """Grading a saved run against the scorecard (kestrel.validation.rules).
 
-Each of the eight tests comes out pass, fail or not run, with what was measured. A run
-passes only when all eight pass; one failure fails it; otherwise it is incomplete (a
+Each of the eight tests comes out pass, fail, not run or n/a (robustness, for a strategy
+with no settings to tune), with what was measured. A run passes only when all eight pass
+or don't apply; one failure fails it; otherwise it is incomplete (a
 validation study is missing). Everything is read from what is already stored: the run's
 metrics and analysis, its deflated Sharpe, and the validation studies on the same
 strategy, market and period.
@@ -26,7 +27,7 @@ from typing import Any, Literal
 from kestrel.validation import rules
 from kestrel.validation.deflated import counts_as_trial
 
-Status = Literal["pass", "fail", "not run"]
+Status = Literal["pass", "fail", "not run", "n/a"]
 Verdict = Literal["pass", "fail", "incomplete"]
 
 START_WINDOW_DAYS = 730
@@ -52,7 +53,7 @@ class Scorecard:
         statuses = [g.status for g in self.grades]
         if "fail" in statuses:
             return "fail"
-        return "pass" if all(s == "pass" for s in statuses) else "incomplete"
+        return "pass" if all(s in ("pass", "n/a") for s in statuses) else "incomplete"
 
     @property
     def failed(self) -> int:
@@ -174,6 +175,10 @@ def _drawdown(metrics: dict[str, Any]) -> Grade:
 
 def _robustness(study: dict[str, Any] | None, params: dict[str, Any], held: float | None) -> Grade:
     rule = rules.SCORECARD[7]
+    if not params:
+        return Grade(
+            rule.name, rule.rule, "n/a", "No settings to tune, so none could be fitted to the past."
+        )
     if study is None or study["detail"].get("center") != params:
         return Grade(rule.name, rule.rule, "not run", "No robustness check around these settings.")
     if held is None:

@@ -393,3 +393,13 @@ describe("datasetsLine", () => {
     expect(datasetsLine(many, ["1d"])).toBe("C0USDT, C1000USDT, C1001USDT and 1,197 more at 1d");
   });
 });
+
+describe("a scorecard with a test that doesn't apply", () => {
+  it("passes when the rest pass", () => {
+    const grades = (["pass", "n/a"] as const).map((status) => ({ name: status, rule: "", status, measured: "" }));
+    expect(scorecardHeadline({ verdict: "pass", failed: 0, not_run: 0, grades })).toEqual({
+      tone: "ok",
+      text: "Passes every test that applies.",
+    });
+  });
+});

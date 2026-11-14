@@ -334,6 +334,7 @@ export const GRADE: Record<GradeStatus, { tone: Tone; label: string }> = {
   pass: { tone: "ok", label: "Pass" },
   fail: { tone: "bad", label: "Fail" },
   "not run": { tone: "neutral", label: "Not run" },
+  "n/a": { tone: "neutral", label: "Doesn't apply" },
 };
 
 /** The scorecard's verdict in one sentence, naming the tests that failed or didn't run. */
@@ -342,7 +343,7 @@ export function scorecardHeadline(card: Scorecard): { tone: Tone; text: string }
     card.grades.filter((g) => g.status === status).map((g) => g.name.toLowerCase());
   const list = (names: string[]) =>
     names.length < 2 ? names.join("") : `${names.slice(0, -1).join(", ")} and ${names[names.length - 1]}`;
-  if (card.verdict === "pass") return { tone: "ok", text: "Passes all eight tests." };
+  if (card.verdict === "pass") return { tone: "ok", text: "Passes every test that applies." };
   const missing = named("not run");
   const pending = missing.length ? ` Not yet run: ${list(missing)}.` : "";
   if (card.verdict === "fail") {

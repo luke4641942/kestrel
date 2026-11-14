@@ -367,8 +367,12 @@ def walk_forward_cmd(
     end: Annotated[str, typer.Option(help="Last month, YYYY-MM (inclusive).")],
     strategy: Annotated[str, typer.Option(help="Strategy key.")],
     grid: Annotated[
-        list[str], typer.Option(help="A parameter's values as name=a,b,c; repeatable.")
-    ],
+        list[str] | None,
+        typer.Option(
+            help="A parameter's values as name=a,b,c; repeatable. Leave out to judge the "
+            "fixed rule (its defaults) window by window."
+        ),
+    ] = None,
     interval: IntervalOpt = Interval.H4,
     train_months: Annotated[int, typer.Option(help="Months each choice is made on.")] = 24,
     test_months: Annotated[int, typer.Option(help="Months each choice is judged on.")] = 6,
@@ -387,7 +391,7 @@ def walk_forward_cmd(
     (P3). Never uses the holdout."""
     try:
         key, _ = run_target(ResearchStore(research_dir), strategy, research)
-        values = _parse_grid(grid)
+        values = _parse_grid(grid or [])
         cfg = load_config(config)
         first, last = Month.parse(start), Month.parse(end)
         after = last.next()

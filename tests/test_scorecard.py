@@ -193,3 +193,15 @@ def test_a_given_analysis_overrides_the_stored_one() -> None:
 def test_benchmark_and_holdout_runs_are_not_graded() -> None:
     assert grade(run(strategy="buy-and-hold"), None, []) is None
     assert grade(run(used_holdout=True), None, []) is None
+
+
+def test_robustness_does_not_apply_to_a_strategy_with_no_settings() -> None:
+    card = grade(run(params={}), 0.97, [walk_forward(5)])
+    assert card is not None
+    robust = next(g for g in card.grades if g.name == "Robustness")
+    assert (robust.status, robust.measured) == (
+        "n/a",
+        "No settings to tune, so none could be fitted to the past.",
+    )
+    assert card.verdict == "pass"  # n/a doesn't hold a pass back
+    assert card.not_run == 0

@@ -22,7 +22,8 @@ it already holds at the window's start carries in at that day's mark (its entry 
 fell in training).
 
 Every grid point is a trial: each is saved with its average training Sharpe
-(kestrel.validation.log) and counted by the deflated Sharpe.
+(kestrel.validation.log) and counted by the deflated Sharpe. With no grid, nothing is
+chosen: the fixed rule is judged window by window (one look).
 """
 
 from __future__ import annotations
@@ -173,8 +174,8 @@ def walk_forward(
     """Walk ``key`` forward over ``bars`` from ``start`` to ``end`` (inclusive months)."""
     if train_months < 1 or test_months < 1:
         raise ValueError("train and test windows must be at least a month")
-    if not grid:
-        raise ValueError("give at least one parameter to choose (a grid)")
+    # No grid: nothing is chosen, and each test window simply judges the fixed rule (its
+    # defaults, or a strategy with no settings at all).
     points = [dict(zip(grid, values, strict=True)) for values in itertools.product(*grid.values())]
     stop = _month_start(end.next())
     folds: list[Fold] = []
@@ -197,6 +198,8 @@ def walk_forward(
                 run_backtest(strategy, train_bars, interval, config, cash)
             ).sharpe
             if math.isnan(sharpe):
+                if len(points) == 1:  # a fixed rule is tested even if training can't score it
+                    best = (sharpe, point)
                 continue
             tried.setdefault(tuple(point.items()), []).append(sharpe)
             if best is None or sharpe > best[0]:
