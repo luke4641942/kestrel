@@ -27,7 +27,7 @@ RISE = [100.0 + i for i in range(10)]  # 100..109
 
 
 def test_buys_a_sharp_dip_and_sells_the_first_close_above_yesterdays_high() -> None:
-    w = weights(RISE + [104.0, 100.0, 101.0, 103.0], trend_days=0)
+    w = weights([*RISE, 104.0, 100.0, 101.0, 103.0], trend_days=0)
     assert w[:11] == [0.0] * 11  # one down day: RSI(2) 16.7, not below 10
     assert w[11] == 1.0  # the second: RSI(2) 7.1
     assert w[12] == 1.0  # 101 isn't above yesterday's high (104, the bar's open)
@@ -35,7 +35,7 @@ def test_buys_a_sharp_dip_and_sells_the_first_close_above_yesterdays_high() -> N
 
 
 def test_the_trend_filter_blocks_dips_below_the_average() -> None:
-    dip = RISE + [104.0, 100.0]
+    dip = [*RISE, 104.0, 100.0]
     assert weights(dip, trend_days=5)[11] == 0.0  # 100 is under the 5-day average (105.6)
     assert weights(dip, trend_days=0)[11] == 1.0
 
