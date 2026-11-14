@@ -22,7 +22,8 @@ scorecard against exposure-matched holding.
 Tools first: done 2026-11-15 (see Done recently).
 
 Strategies, most to least promising:
-- [ ] 1. Turn of the month, BTC 1d (batch 2 A3): hold from the last day's close to the
+- [ ] 1. READY TO FREEZE: note `turn-of-the-month-on-btc` (strategy `turn-of-month`).
+      Turn of the month, BTC 1d (batch 2 A3): hold from the last day's close to the
       first day's close; variant: the last 5 days plus the first 3. Compare with random
       days of the same count. New family (calendar), no twin, cheap: 2 trials. Needs a
       crypto reason in the note (the equity reason is month-end pay and fund flows).

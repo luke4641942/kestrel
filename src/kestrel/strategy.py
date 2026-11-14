@@ -41,6 +41,7 @@ from kestrel.strategies.trendlines import (
     TrendlineBreakout,
     WedgeBreakout,
 )
+from kestrel.strategies.turn_of_month import TurnOfMonth
 from kestrel.strategies.volatile_macd import VolatileMacd
 from kestrel.strategies.volhold import VolManagedHold
 from kestrel.strategies.weekday import MondayMidPullback
@@ -566,6 +567,17 @@ STRATEGIES: dict[str, StrategySpec] = {
                 Param("min_volume_musd", 20, 1, 500, "Median daily volume needed, in million USDT"),
             ),
             universe=True,
+        ),
+        StrategySpec(
+            "turn-of-month",
+            "research",
+            "Hold the coin only over the change of month: the last last_days days and the "
+            "first first_days days, cash otherwise. Research: runs only through its frozen note.",
+            TurnOfMonth,
+            (
+                Param("last_days", 0, 0, 10, "Days held at the end of the month"),
+                Param("first_days", 1, 0, 10, "Days held at the start of the next month"),
+            ),
         ),
         StrategySpec(
             "weekly-momentum",
