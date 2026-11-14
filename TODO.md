@@ -4,14 +4,23 @@ The active list. Claude keeps it up to date in the same commit as the work (see 
 Decisions and rules live in CLAUDE.md; results in `research/findings.md`.
 
 ## Waiting on Luke
+- [ ] Binance Spot Testnet API keys (testnet.binance.vision) in environment variables, by
+      P4 session 3. Never in code or the UI.
 - [ ] Trend-vol-target BTC walk-forward note failed its pre-registered rule (2 of 7 windows,
       4 needed). Its status is still frozen: reject it, or keep it open? Your call.
 - [ ] Weekly momentum ETH's notes (`holdout-weekly-momentum-eth`, `weekly-momentum-eth-scorecard`)
       are still open after its drop: reject them, or leave them? Your call.
 
 ## Next
-- [ ] P4 paper trading: sim venue, Binance testnet, reconciliation, risk limits, kill switch.
-      First strategies: trend-vol-target BTC (pursue) and weekly momentum ETH (watch).
+- [ ] P4 paper trading, trend-vol-target BTC first (plan agreed 2026-11-14):
+  - [ ] S1 One shared "decide and rebalance" step for engine and runner; a live feed of the
+        latest closed bars (offline tests). Engine parity tests unchanged.
+  - [ ] S2 Paper runner on the simulated venue, with an append-only ledger; a day-by-day
+        replay of 2025 reproduces the backtest exactly.
+  - [ ] S3 Binance Spot Testnet venue (signed orders, exchange filters, order status).
+  - [ ] S4 Reconciliation (halt on mismatch), risk limits, stale-data refusal, `kestrel kill`.
+  - [ ] S5 Daily schedule with catch-up, the Trading page, a paper-vs-backtest tracking
+        report. Then a paper-trading note fixes success criteria; run ~20 months.
 
 ## Later
 - [ ] Exclude tokenized stocks (AAPLBUSDT...) from the universe before any holdout run.
