@@ -73,7 +73,10 @@ Never pipe check output through `tail` or similar inside an `&&` chain: it hides
 - [ ] P4 Execution: ExecutionVenue adapters (sim, Binance testnet, live), reconciliation,
       risk limits, kill switch, alerting, parity tests. Plan and progress in TODO.md. The
       backtest and the paper runner share one rebalance step (`kestrel.execution.rebalance`);
-      the latest closed bars come from `kestrel.data.live` (`kestrel update`). First strategy: trend-vol-target on
+      the latest closed bars come from `kestrel.data.live` (`kestrel update`). The paper
+      runner (`kestrel.execution.paper`) handles each closed bar like the engine (mark, decide,
+      trade at the next open) and writes an append-only ledger in `data/paper/<account>/`; a
+      day-by-day replay must reproduce the backtest exactly (`tests/test_paper.py`). First strategy: trend-vol-target on
       BTC (pursue), as risk-managed holding, to prove the plumbing.
 - Parked: P5 perps (see Parked), multi-strategy portfolios, Settings page.
 

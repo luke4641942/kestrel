@@ -36,6 +36,7 @@ from kestrel.data.quality import check_klines
 from kestrel.data.schema import Interval
 from kestrel.data.store import ParquetStore
 from kestrel.data.universe import ArchiveListing, CoinIngest, ingest_universe, manifest_path
+from kestrel.execution import paper as paper_trading
 from kestrel.regimes import format_regimes
 from kestrel.regimes import walk_forward as walk_regimes
 from kestrel.research import ResearchStore, run_target
@@ -632,6 +633,114 @@ def _parse_params(pairs: list[str]) -> dict[str, int]:
             raise ValueError(f"--param must be name=<whole number>, got {pair!r}")
         out[name.strip()] = int(value)
     return out
+
+
+paper_app = typer.Typer(help="Paper trading on the simulated venue (P4).", no_args_is_help=True)
+app.add_typer(paper_app, name="paper")
+
+
+@paper_app.command("open")
+def paper_open(
+    name: str,
+    symbol: Annotated[str, typer.Option(help="Market to trade.")],
+    strategy: Annotated[str, typer.Option(help=f"One of: {', '.join(STRATEGIES)}.")],
+    research: Annotated[
+        str | None, typer.Option(help="Research note a research strategy runs under.")
+    ] = None,
+    interval: IntervalOpt = Interval.D1,
+    cash: Annotated[float, typer.Option(help="Starting cash in USDT.")] = 330.0,
+    research_dir: ResearchDir = Path("research"),
+    data_dir: DataDir = Path("data"),
+) -> None:
+    """Open a paper account. Its first decision is on the last bar closed now; the strategy
+    runs at the settings its note (or its defaults) fix, and the terms never change."""
+    try:
+        key, link = run_target(ResearchStore(research_dir), strategy, research)
+        now = datetime.now(UTC)
+        step = interval.duration
+        # The bar that closed most recently: its close is the first decision.
+        first = datetime.fromtimestamp(
+            (now.timestamp() // step.total_seconds() - 1) * step.total_seconds(), UTC
+        )
+        terms = paper_trading.Terms(
+            name, key, symbol.upper(), interval, resolve_params(key, {}), Decimal(str(cash)), first,
+            link[0] if link else None,
+        )  # fmt: skip
+        paper_trading.PaperAccount.open(data_dir, terms)
+    except ValueError as e:
+        typer.echo(str(e), err=True)
+        raise typer.Exit(code=1) from None
+    typer.echo(f"Opened paper account {name}: {key} on {terms.symbol} {interval.value}, "
+               f"{cash:g} USDT, first decision on the {first:%Y-%m-%d %H:%M} UTC bar")  # fmt: skip
+
+
+@paper_app.command("run")
+def paper_run(
+    name: str,
+    data_dir: DataDir = Path("data"),
+    config: Annotated[
+        Path, typer.Option("--config", envvar="KESTREL_CONFIG", help="Config file.")
+    ] = Path("kestrel.toml"),
+) -> None:
+    """Bring the market up to date, then handle every closed bar the account hasn't:
+    mark, decide, and trade at the next open. Refuses to trade on data with problems."""
+    account = paper_trading.PaperAccount(data_dir, name)
+    try:
+        terms = account.terms()
+        cfg = load_config(config)
+        store = ParquetStore(data_dir)
+        with httpx.Client(timeout=30) as http:
+            up = live.update(store, terms.symbol, terms.interval, http)
+            if not up.quality.is_clean:
+                raise ValueError(
+                    f"{terms.symbol} data has problems; not trading:\n{up.quality.summary()}"
+                )
+            bars = store.read(terms.symbol, terms.interval)
+            bars = attach_features(
+                bars, spec_for(terms.strategy).features, terms.symbol, terms.interval, data_dir
+            )
+            handled = paper_trading.run(
+                account, bars, cfg, lambda at: live.open_of(terms.symbol, terms.interval, at, http)
+            )
+    except (ValueError, ConfigError, httpx.HTTPError) as e:
+        typer.echo(str(e), err=True)
+        raise typer.Exit(code=1) from None
+    if not handled:
+        typer.echo(f"{name}: nothing new (the next bar hasn't closed)")
+    for h in handled:
+        outcome = (
+            "within the band, no trade" if h.order is None
+            else f"{h.order.side.value} {h.order.quantity} at {h.order.price:.2f}"
+            if isinstance(h.order, paper_trading.Fill)
+            else f"REJECTED: {h.order.reason}"
+        )  # fmt: skip
+        typer.echo(
+            f"{h.bar:%Y-%m-%d}: equity {h.equity:.2f}, target {float(h.target):.0%}: {outcome}"
+        )
+
+
+@paper_app.command("status")
+def paper_status(name: str, data_dir: DataDir = Path("data")) -> None:
+    """Where a paper account stands."""
+    account = paper_trading.PaperAccount(data_dir, name)
+    try:
+        terms, state = account.terms(), account.state()
+    except ValueError as e:
+        typer.echo(str(e), err=True)
+        raise typer.Exit(code=1) from None
+    events = account.ledger.events()
+    marks = [e for e in events if e["type"] == "mark"]
+    fills = sum(e["type"] == "fill" for e in events)
+    last = (
+        f"{float(marks[-1]['equity']):.2f} USDT on {marks[-1]['bar'][:10]}"
+        if marks
+        else "not yet marked"
+    )
+    typer.echo(f"{name}: {terms.strategy} on {terms.symbol} {terms.interval.value}"
+               + (f" (note {terms.research})" if terms.research else ""))  # fmt: skip
+    typer.echo(f"  started with {terms.initial_cash} USDT; equity {last}")
+    typer.echo(f"  holding {state.position} {terms.symbol}, cash {state.cash:.2f}; {fills} fills; "
+               f"{len(marks)} days handled")  # fmt: skip
 
 
 @app.command()

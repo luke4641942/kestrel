@@ -57,6 +57,13 @@ class SimVenue:
     ) -> None:
         self._market[symbol] = (reference_price, last_bar_volume, half_spread)
 
+    def restore(self, cash: Decimal, positions: dict[str, Decimal]) -> None:
+        """Resume an account from its ledger: the cash and coins it held."""
+        if cash < 0 or any(q < 0 for q in positions.values()):
+            raise ValueError("a spot account can't hold negative cash or coins")
+        self._cash = cash
+        self._positions = dict(positions)
+
     def holdings(self) -> dict[str, Decimal]:
         """Every coin held, by symbol (positions of zero dropped)."""
         return {s: q for s, q in self._positions.items() if q > 0}

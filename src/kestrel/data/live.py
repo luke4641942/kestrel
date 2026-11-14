@@ -17,6 +17,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from datetime import UTC, datetime
+from decimal import Decimal
 
 import httpx
 import polars as pl
@@ -133,3 +134,20 @@ def update(
         merged["open_time"].max(),  # type: ignore[arg-type]
         check_klines(touched, interval),
     )
+
+
+def open_of(symbol: str, interval: Interval, at: datetime, http: httpx.Client) -> Decimal | None:
+    """The open price of the bar starting at ``at``, once it has started (it is still
+    forming, so only its open is final); None if Binance has no bar there yet."""
+    params: dict[str, str | int] = {
+        "symbol": symbol.upper(),
+        "interval": interval.value,
+        "startTime": int(at.timestamp() * 1000),
+        "limit": 1,
+    }
+    response = http.get(REST_URL, params=params)
+    response.raise_for_status()
+    rows = response.json()
+    if not rows or int(rows[0][0]) != int(at.timestamp() * 1000):
+        return None
+    return Decimal(str(rows[0][1]))

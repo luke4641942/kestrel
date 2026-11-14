@@ -4,6 +4,7 @@ fake of Binance's REST endpoint, plus one network check of the real one."""
 from __future__ import annotations
 
 from datetime import UTC, datetime, timedelta
+from decimal import Decimal
 from pathlib import Path
 
 import httpx
@@ -22,7 +23,7 @@ T0 = datetime(2024, 1, 1, tzinfo=UTC)
 def rest_row(open_time: datetime, close: float) -> list[object]:
     ms = int(open_time.timestamp() * 1000)
     return [ms, "100.0", str(close + 1), "99.0", str(close), "10.5", ms + 86_399_999,
-            "1050.0", 42, "5.0", "500.0", "0"]  # fmt: skip
+            "500000000.0", 42, "5.0", "500.0", "0"]  # fmt: skip
 
 
 class FakeBinance:
@@ -46,7 +47,7 @@ class FakeBinance:
 def test_rest_rows_become_canonical_bars() -> None:
     df = live.parse_rest([rest_row(T0, 123.5)])
     assert df["open_time"].to_list() == [T0]
-    assert (df["close"][0], df["high"][0], df["quote_volume"][0]) == (123.5, 124.5, 1050.0)
+    assert (df["close"][0], df["high"][0], df["quote_volume"][0]) == (123.5, 124.5, 500_000_000.0)
     assert live.parse_rest([]).is_empty()
     assert live.parse_rest([]).columns == df.columns
 
@@ -133,3 +134,9 @@ class _Frozen(datetime):
     @classmethod
     def now(cls, tz=None):  # type: ignore[no-untyped-def,override]
         return datetime(2024, 1, 9, 1, tzinfo=UTC)
+
+
+def test_the_open_of_the_bar_now_forming() -> None:
+    fake = FakeBinance(days=5)
+    assert live.open_of("btcusdt", D1, T0 + 4 * DAY, fake.client()) == Decimal("100.0")
+    assert live.open_of("BTCUSDT", D1, T0 + 5 * DAY, fake.client()) is None  # not started
