@@ -1,0 +1,15 @@
+{
+  "version": 1,
+  "created_at": "2026-11-14T12:38:14.853992+00:00",
+  "sections": {
+    "hypothesis": "Trend-vol-target on BTC earns more per unit of risk if it steps into cash on days the regime model says the market is in its most volatile state.",
+    "rationale": "Economic reason: trend rules lose most in panicky, high-volatility markets that whip back and forth, where a trend signal turns too late. Outside evidence: Daniel and Moskowitz (Momentum Crashes, JFE 2016) find momentum crashes cluster in high-volatility panic states after declines, are partly forecastable, and that timing them roughly doubles momentum's Sharpe; that is cross-sectional momentum, so it is indirect evidence for this time-series rule. Not a rejected family: it is a filter on the one strategy on pursue. The regime model (kestrel.regimes, 3 states, fixed preset, filtered probabilities from monthly refits on the four years before) was built and fixed before this note; on BTC its volatile state averaged 85% annual volatility and lasted weeks. Risk: the crash brake, which sold on a single close, made trend-vol-target worse; this reacts to persistent states, but it may fail the same way. Written after trend-vol-target's 2020-25 and holdout results were seen.",
+    "rules": "Implementation trend-vol-target-regime at trend-vol-target's defaults, BTCUSDT 1d, 2021-05 to 2025-10 (every day has a regime state: the first fit needs four years of data from 2017-08), 330 USDT, costs from kestrel.toml. Two runs: kestrel backtest BTCUSDT --strategy trend-vol-target-regime --research <this note> --interval 1d --start 2021-05 --end 2025-10 --cash 330 (filter on), and the same with --param regime_filter=0 (the plain rule, the comparison).",
+    "falsification": "The filter is adopted only if, against the plain rule on the same period: (1) its Sharpe is higher; (2) its worst drawdown is no deeper; and (3) it fails no scorecard test the plain rule passes. Otherwise the note is rejected (with Luke's say-so) and trend-vol-target stays as it is. If adopted, it replaces nothing yet: it goes through the scorecard and joins paper trading as its own account. Run once.",
+    "parameters": "fast_days 20, mid_days 60, slow_days 120, vol_days 30, target_vol_pct 50 (trend-vol-target's defaults); regime_filter 1 (on) or 0 (comparison). The regime preset: 3 states, inputs log return and log 20-day volatility, 4-year training, monthly refits, seed 0.",
+    "costs": "About 22 bps a round trip. The filter adds a sale on entering the volatile state and a purchase on leaving it; it must earn those back. Two runs, two trials."
+  },
+  "implementation": "trend-vol-target-regime",
+  "frozen_at": "2026-11-14T12:44:03.604583+00:00",
+  "change_reason": null
+}

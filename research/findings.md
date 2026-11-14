@@ -101,6 +101,10 @@ risk-managed holding rather than a proven edge.
    and trend-vol-target (BTC) lowered both Sharpes (1.23 to 1.21, 1.21 to 0.91) and barely
    moved drawdowns. Most trips sold a dip that recovered; crypto's normal swings are wider
    than a stop that tight, and the strategies' own exits already do the job.
+8. **Trend-vol-target already avoids volatile markets.** A filter that stepped out whenever
+   the regime model (an HMM) said the market was in its volatile state lowered the Sharpe
+   (0.64 vs 0.69): on those days the strategy already held 13% on average, against 54% on
+   others, because its trend votes and volatility sizing do the same job.
 
 ## The holdout year (2025-11 to 2026-10)
 
@@ -146,6 +150,7 @@ edge, and the holdout can't be used again for either strategy.
 | BTC-led weekly momentum | ETH, SOL 1d | Below holding on every window | Drop |
 | Crash brake on weekly momentum | ETH 1d | Sharpe 1.21 vs 1.23 without it; drawdown -41.4% vs -41.6%; 16 of 29 trips sold a dip that recovered | Drop |
 | Crash brake on trend-vol-target | BTC 1d | Sharpe 0.91 vs 1.21; return +272% vs +639%; drawdown -45.9% vs -48.3% | Drop |
+| Regime filter on trend-vol-target | BTC 1d | Sharpe 0.64 vs 0.69 (2021-05 to 2025-10); the plain rule already holds 13% in volatile spells | Drop |
 
 Each strategy was judged by its own note's pass test, written before it ran. From
 2026-11-14 every strategy is judged on one scorecard instead.

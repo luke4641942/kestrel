@@ -222,3 +222,12 @@ decision = "drop"
 decided = 2026-11-14
 reason = "A 2 ATR trailing brake cut the Sharpe from 1.21 to 0.91 and the return from +639% to +272%, for a slightly shallower drawdown (-45.9% vs -48.3%). It tripped 49 times and bought back higher in 28: the trend votes already exit, and the brake paid to duplicate them."
 evidence = ["crash-brake-on-trend-vol-target-btc"]
+
+[[decision]]
+strategy = "trend-vol-target-regime"
+name = "Trend following with a regime filter"
+market = "BTCUSDT 1d"
+decision = "drop"
+decided = 2026-11-14
+reason = "Stepping out in the HMM's volatile state lowered the Sharpe (0.64 vs 0.69, 2021-05 to 2025-10) and the return (+90% vs +105%) for a barely shallower drawdown. Trend-vol-target already holds little in volatile spells (13% vs 54% on other days), so the filter had almost nothing left to remove."
+evidence = ["regime-filter-on-trend-vol-target-btc"]

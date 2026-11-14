@@ -1,0 +1,28 @@
+{
+  "slug": "regime-filter-on-trend-vol-target-btc",
+  "name": "Regime filter on trend-vol-target BTC",
+  "created_at": "2026-11-14T12:38:14.853992+00:00",
+  "status": "rejected",
+  "history": [
+    {
+      "status": "idea",
+      "at": "2026-11-14T12:38:14.853992+00:00",
+      "reason": "Created"
+    },
+    {
+      "status": "specified",
+      "at": "2026-11-14T12:44:03.604605+00:00",
+      "reason": "v1 frozen"
+    },
+    {
+      "status": "backtested",
+      "at": "2026-11-14T12:45:50.720676+00:00",
+      "reason": "first run on v1"
+    },
+    {
+      "status": "rejected",
+      "at": "2026-11-14T12:50:04.975778+00:00",
+      "reason": "Failed its pre-registered rule (rejected with Luke's say-so, 2026-11-14): Sharpe 0.64 with the filter against 0.69 without, BTC 2021-05 to 2025-10 (runs 20261114-124550-9267e1 and -124551-620d04); return +90% vs +105%; drawdown -47.0% vs -48.2%. The plain rule already holds 13% on volatile days against 54% on others, so the filter changed a position on only 66 of 1,645 days."
+    }
+  ]
+}
