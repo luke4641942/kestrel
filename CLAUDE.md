@@ -81,11 +81,13 @@ Never pipe check output through `tail` or similar inside an `&&` chain: it hides
   6. At least 30 trades.
   7. Max drawdown <= 50%.
   8. Neighbouring settings also pass test 1 (a plateau, not a peak).
-- **Risk-managed holding** is a separate category for a strategy Luke may run because it
-  smooths the ride. It is labelled "not an edge" and never counts as a pass.
+- **Risk-managed holding** is a separate category for a strategy that hasn't passed but
+  Luke may run because it smooths the ride. It is labelled "not a proven edge" and never
+  counts as a pass.
 - **Decisions** (`research/decisions.toml`, one per strategy and market): `pursue` means
   carry on to paper trading, not "passed"; `watch`; `drop` (final). Trend-vol-target on
-  BTC is the only pursue, as risk-managed holding.
+  BTC is the only pursue, as risk-managed holding: it beats exposure-matched holding
+  (Sharpe 1.21 vs 1.07) but deflates to 28% at 172 trials.
 - **Entry bar for a new idea.** Its note states who pays you and why (an economic reason,
   not a chart pattern), outside evidence (published or out-of-sample elsewhere), that it
   is not a variant of a rejected family (pullbacks, chart patterns, reversals), and how
