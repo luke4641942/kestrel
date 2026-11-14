@@ -1,0 +1,15 @@
+{
+  "version": 1,
+  "created_at": "2026-11-13T08:44:36.989402+00:00",
+  "sections": {
+    "hypothesis": "BTC leads and the large alts follow with a lag, so BTC's week predicts ETH's and SOL's next week: holding ETH or SOL for the week after BTC's Sunday-to-Sunday return was positive, and cash otherwise, beats holding the coin on risk-adjusted return after costs, and beats trading the coin on its own weekly return.",
+    "rationale": "Luke's idea: ETH and SOL move on BTC's moves, not the other way round. Lead-lag between large and small assets is a long-documented effect in equities (large stocks' returns lead small stocks'), and crypto's market is dominated by BTC. The idea was stated as a follow-up in the weekly-momentum-on-btc-followers note (rejected 2026-11-13), whose own-coin version cut drawdowns but didn't beat holding on ETH 2017-19 or SOL. Formed after seeing those results, so it is a new trial, tested on windows where the own-coin version has already been run, for a like-for-like comparison. Weak points: if BTC and ETH/SOL move together within the same day rather than with a lag, BTC's week adds nothing the coin's own week doesn't already show; SOL's 2020-25 period is the one the earlier idea was formed on; after about 155 trials, a pass is modest evidence. Expected odds: low.",
+    "rules": "Implementation btc-led-weekly. Daily bars of the traded coin, with BTCUSDT's close on the same bar attached (btc_close, matched by open time). At each Sunday's close (UTC), BTC's week is its close over its close exactly 7 days earlier (by date; a missing BTC close at either end means no signal, cash). Positive: hold the coin fully until the next Sunday's close; otherwise cash. Decide at the close, trade at the next open; 2% no-trade band; long only, spot; 10 bps fee, 1 bp half-spread, square-root impact.",
+    "falsification": "Three runs, once each, 330 USDT: ETHUSDT 1d 2017-08 to 2019-12; ETHUSDT 1d 2020-01 to 2025-10; SOLUSDT 1d 2020-08 to 2025-10. Reject unless, on all three: (1) Sharpe above buy-and-hold's; (2) total return beats the coin held at the strategy's average exposure; (3) max drawdown smaller than buy-and-hold's; (4) break-even cost at least twice the cost paid; (5) better Sharpe than holding from at least 60% of 1-year start dates. Mechanism, decided now: the lead-lag story is supported only if Sharpe is also above the coin's own weekly momentum on the same window in all three (runs 20261113-083106-e305a6 ETH 2017-19 Sharpe 0.13, 20261113-075823-b9bc01 ETH 2020-25 Sharpe 1.23, 20261113-083106-c0e1a0 SOL Sharpe 1.08). A pass moves it to Watch, not Pursue; the holdout (from 2025-11) stays untouched.",
+    "parameters": "None: one-week horizon, BTC as the leader.",
+    "costs": "About 15-25 round trips a year at about 22-26 bps each (SOL's spread is wider), 3-6% a year."
+  },
+  "implementation": "btc-led-weekly",
+  "frozen_at": "2026-11-13T08:44:36.991782+00:00",
+  "change_reason": null
+}

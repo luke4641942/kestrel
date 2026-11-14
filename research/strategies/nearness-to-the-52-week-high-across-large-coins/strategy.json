@@ -1,0 +1,28 @@
+{
+  "slug": "nearness-to-the-52-week-high-across-large-coins",
+  "name": "Nearness to the 52-week high across large coins",
+  "created_at": "2026-11-13T07:54:34.478291+00:00",
+  "status": "rejected",
+  "history": [
+    {
+      "status": "idea",
+      "at": "2026-11-13T07:54:34.478291+00:00",
+      "reason": "Created"
+    },
+    {
+      "status": "specified",
+      "at": "2026-11-13T07:54:34.479662+00:00",
+      "reason": "v1 frozen"
+    },
+    {
+      "status": "backtested",
+      "at": "2026-11-13T07:58:05.572956+00:00",
+      "reason": "first run on v1"
+    },
+    {
+      "status": "rejected",
+      "at": "2026-11-13T08:00:25.558682+00:00",
+      "reason": "Pre-registered test (UNIVERSE 1d, 2020-01..2025-10, defaults; run 20261113-075805-71f073; control large-basket top 20 / 365 days, run 20261113-075811-402ccb). Failed every rule: -64% vs +10% for the control, Sharpe 0.11 vs 0.38, drawdown -96% vs -87%, break-even 0 bps. Equity rose from 330 to 722 USDT in 2021 and fell 91% in 2022: always invested, it held the coins nearest their highs (LUNA, NEAR, MATIC) into the crash. 214 orders were rejected, nearly all small rebalances below the 5 USDT minimum after equity had collapsed."
+    }
+  ]
+}

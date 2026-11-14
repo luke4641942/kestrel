@@ -1,0 +1,15 @@
+{
+  "version": 1,
+  "created_at": "2026-11-13T07:54:34.478291+00:00",
+  "sections": {
+    "hypothesis": "Among the 20 most-traded coins, the 3 trading nearest their 52-week high outperform the 20 held equally, because investors anchor on the high and price news in slowly as it approaches.",
+    "rationale": "Jia, Simkins, Yan, Zhang and Zhao (Journal of Banking & Finance, 2026) report that cryptocurrencies closer to their 52-week high earn higher returns the following week, beyond short- and medium-term momentum, with a value-weighted long-short spread of about 130 bps a week. In equities George and Hwang (2004) found the 52-week high subsumes much of ordinary momentum. Weak points: the published result is long-short, and its long side alone may be much weaker; only the abstract has been read, not the robustness tests or sample; it is cross-sectional, the family that failed here before; and holding 3 coins is concentrated. Context: after 139+ trials every bet against the trend has failed, cross-sectional momentum over small coins failed (-92% drawdown), and the one strategy marked Pursue is trend-vol-target on BTC daily (Sharpe 1.21 vs 1.07 for holding on the current config, but +639% vs +1,420% return). This note is one of five momentum ideas tested together on 2026-11-13; five ideas at once are five or more trials, so a single pass is weaker evidence than it looks.",
+    "rules": "Daily bars, whole coin universe (as trend-basket). Every Sunday's close (UTC): eligible coins have 365+ days of unbroken history and 20M USDT+ 30-day median daily volume; the 20 most traded form the basket. Each coin's nearness = close / highest high of its last 365 daily bars (today's included). The 3 nearest are held at 1/3 each; always invested once the basket exists. Decide at the close, trade at the next open; 2% no-trade band; long only, spot; 10 bps fee, square-root impact; spread 1 bp for single-coin runs, by the coin's volume band for universe runs. Every strategy starts cold at the first month: cash until its lookbacks fill, the same convention as every earlier test.",
+    "falsification": "UNIVERSE 1d, 2020-01 to 2025-10, defaults, 330 USDT, run once. Comparison: the control large-basket with top_n 20 and min_history_days 365 (the same basket held equally), run once on the same window and cash. Reject unless all hold: (1) Sharpe above the control's; (2) total return above the control's; (3) max drawdown no worse than the control's; (4) break-even cost at least twice the cost paid. Beating BTC is not required or sufficient: the question is whether nearness to the high picks better coins than the basket.",
+    "parameters": "hold_n 3, basket_n 20, min_volume_musd 20 (history fixed at 365 days). Only these are pre-registered.",
+    "costs": "Weekly, at most 3 coins swapped; perhaps 20-40x turnover a year at 1-15 bps spread plus 10 bps fee a side."
+  },
+  "implementation": "high-anchor",
+  "frozen_at": "2026-11-13T07:54:34.479659+00:00",
+  "change_reason": null
+}

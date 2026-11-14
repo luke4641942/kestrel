@@ -1,0 +1,28 @@
+{
+  "slug": "weekly-momentum-on-btc-followers-eth-unseen",
+  "name": "Weekly momentum on BTC followers (ETH unseen years, SOL)",
+  "created_at": "2026-11-13T08:31:00.095613+00:00",
+  "status": "rejected",
+  "history": [
+    {
+      "status": "idea",
+      "at": "2026-11-13T08:31:00.095613+00:00",
+      "reason": "Created"
+    },
+    {
+      "status": "specified",
+      "at": "2026-11-13T08:31:00.098172+00:00",
+      "reason": "v1 frozen"
+    },
+    {
+      "status": "backtested",
+      "at": "2026-11-13T08:31:06.014985+00:00",
+      "reason": "first run on v1"
+    },
+    {
+      "status": "rejected",
+      "at": "2026-11-13T08:31:37.755196+00:00",
+      "reason": "Pre-registered test (ETHUSDT 1d 2017-08..2019-12, run 20261113-083106-e305a6; SOLUSDT 1d 2020-08..2025-10, run 20261113-083106-c0e1a0). Did not reproduce. ETH failed rules 1, 2, 4 and 5: Sharpe 0.13 vs 0.15, -32% against -10% for ETH at the same 48% exposure, break-even 0 bps, better Sharpe from 53% of 1-year starts; passed rule 3 (drawdown -78% vs -94%). SOL failed rules 1 and 5: Sharpe 1.08 vs 1.24, better Sharpe from 43% of 1-year starts; passed 2-4 (+1,884% vs +1,756% at the same exposure, drawdown -67% vs -96%, break-even 170 bps vs 26). The smaller drawdown replicated; the edge over holding did not. The ETH 2020-25 result is best read as luck in that period. The BTC-leads variant (trade ETH or SOL on BTC's weekly return) remains untested and would be a new note and new trials."
+    }
+  ]
+}

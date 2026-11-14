@@ -1,0 +1,28 @@
+{
+  "slug": "one-week-momentum-btc-eth-daily",
+  "name": "One-week momentum (BTC, ETH daily)",
+  "created_at": "2026-11-13T07:54:34.480224+00:00",
+  "status": "rejected",
+  "history": [
+    {
+      "status": "idea",
+      "at": "2026-11-13T07:54:34.480224+00:00",
+      "reason": "Created"
+    },
+    {
+      "status": "specified",
+      "at": "2026-11-13T07:54:34.481598+00:00",
+      "reason": "v1 frozen"
+    },
+    {
+      "status": "backtested",
+      "at": "2026-11-13T07:58:22.652215+00:00",
+      "reason": "first run on v1"
+    },
+    {
+      "status": "rejected",
+      "at": "2026-11-13T08:00:25.559643+00:00",
+      "reason": "Pre-registered test (BTCUSDT and ETHUSDT 1d, 2020-01..2025-10; runs 20261113-075822-a08b72 and 20261113-075823-b9bc01). BTC failed rule 4: Sharpe 0.94 vs 1.07 (it passed 1-3: +546% against +478% at the same 54% exposure, P(profit) 96%, break-even 196 bps vs 22). ETH passed all four: +2,318% against +913% at the same exposure, Sharpe 1.23 vs 1.12, drawdown -42% vs -79%. The note required both. Testing ETH alone would be a choice made from these results; one market passing among many trials is the kind of result luck produces."
+    }
+  ]
+}

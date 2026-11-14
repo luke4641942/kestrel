@@ -1,0 +1,23 @@
+{
+  "slug": "trend-following-robustness-and-walk-forward-btc",
+  "name": "Trend following: robustness and walk-forward (BTC, ETH 1d)",
+  "created_at": "2026-11-12T06:22:36.593627+00:00",
+  "status": "rejected",
+  "history": [
+    {
+      "status": "idea",
+      "at": "2026-11-12T06:22:36.593627+00:00",
+      "reason": "Created"
+    },
+    {
+      "status": "specified",
+      "at": "2026-11-12T06:22:36.595098+00:00",
+      "reason": "v1 frozen"
+    },
+    {
+      "status": "rejected",
+      "at": "2026-11-12T06:23:30.536363+00:00",
+      "reason": "Pre-registered validation, 1d 2020-01..2025-10. Robustness: ROBUST on both (all 20 neighbouring settings positive; median Sharpe 1.22 BTC, 1.21 ETH vs 1.21/1.23 at the defaults). Walk-forward (slow 90/120/180 x target vol 30/50/70%, 24-month training, 6-month tests, 7 folds): BTC survives (out-of-sample Sharpe 0.97, 92% of in-sample 1.06; holding BTC over the same windows: Sharpe 0.71, drawdown -67%); ETH fails (0.28, 32% of in-sample 0.88). Both markets had to pass, so rejected. 'BTC only' is not a rescue: it was chosen after seeing ETH fail. Studies 20261112-062244/062245/062255/062256."
+    }
+  ]
+}

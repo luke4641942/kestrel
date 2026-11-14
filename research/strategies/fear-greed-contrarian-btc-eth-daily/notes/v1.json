@@ -1,0 +1,15 @@
+{
+  "version": 1,
+  "created_at": "2026-11-12T13:28:49.042726+00:00",
+  "sections": {
+    "hypothesis": "Crowd sentiment overshoots. Buying BTC or ETH when the Crypto Fear & Greed Index reads Extreme Fear (25 or below) and selling when it reads Extreme Greed (76 or above) earns a better risk-adjusted return than holding, after costs.",
+    "rationale": "The index (alternative.me, daily since 2018-02-01) combines volatility, momentum, volume, social media, Bitcoin dominance and search trends into one score: information that isn't simply the price chart. Every price-only idea in the trial log has failed or turned out to be trend following, so this tests a different source. The story: panic sells below fair value and euphoria buys above it, and retail-heavy crypto markets may overshoot more than most. Weak points: the index is partly built from price momentum and volatility, so it may just be a slow, noisy price signal; extreme fear can last through a whole bear market (2018, 2022), so buying it early may mean riding a deep drawdown; and with only a handful of fear-to-greed cycles since 2018, the sample of trades is small. Suggested by Luke's earlier notebook, which used the index as a model feature; that notebook's results don't count (lookahead in its pivots, shuffled train/test splits).",
+    "rules": "Daily bars. Each bar gets the latest index value known by its close: a value stamped day D is treated as known from the end of day D, and a value more than 3 days older than that is treated as unknown. In cash, buy fully when the reading is 25 or below; holding, sell fully when it is 76 or above; otherwise keep the current position. An unknown reading changes nothing. Decide at the close, trade at the next open; 2% no-trade band; long only, spot; 10 bps fee, 1 bp half-spread, square-root impact. The thresholds are the index's own published band edges (Extreme Fear 0-25, Extreme Greed 76-100), not values fitted to returns. BTC and ETH are run separately on the same index.",
+    "falsification": "BTCUSDT 1d and ETHUSDT 1d, 2018-02 to 2025-10 (the index starts 2018-02-01; the holdout starts 2025-11), default parameters, 330 USDT, run once each. Reject unless, on both markets: (1) Sharpe is above buy-and-hold's; (2) max drawdown is no worse than buy-and-hold's; (3) total return beats the market held at the strategy's average exposure (Statistics tab); (4) break-even cost is at least twice the cost paid; (5) at least 6 round trips (6 buys and 6 sells). A pass is not a decision to pursue: it would go to robustness and walk-forward first, against a deflated Sharpe that already counts more than 130 trials.",
+    "parameters": "fear_max 25, greed_min 76 (the index's band edges). Only these are pre-registered; other thresholds are new trials.",
+    "costs": "Very few trades: perhaps 1-3 round trips a year, so costs are tiny (well under 0.1% a year). The risk is not costs but timing: long holds through bear markets."
+  },
+  "implementation": "fear-greed",
+  "frozen_at": "2026-11-12T13:28:49.044270+00:00",
+  "change_reason": null
+}

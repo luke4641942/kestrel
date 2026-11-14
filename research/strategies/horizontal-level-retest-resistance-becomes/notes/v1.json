@@ -1,0 +1,15 @@
+{
+  "version": 1,
+  "created_at": "2026-11-05T03:28:47.987453+00:00",
+  "sections": {
+    "hypothesis": "After price closes above a horizontal level formed by at least two earlier swing highs, the first pullback that retests the level from above and holds is followed by a move up of at least 3R more often than its cost-adjusted break-even rate (about 26%).",
+    "rationale": "Classic 'role reversal'. Possible mechanisms: sellers who defended the level earlier leave, breakout buyers add on the retest, and traders who missed the breakout use the obvious level for their entries. Weak point: if it's this obvious, it may be crowded and arbitraged away, and stops clustered just below the level invite false breaks.",
+    "rules": "Shared definitions: 4h bars; swing high/low = a bar's high (low) beats the 3 bars before it and isn't beaten by the 3 bars after it, known only 3 bars later; ATR = 14-bar average true range at the signal bar. Lines and levels use only swings known at the signal bar. Buy at the next open; risk 1% per trade (spot, no leverage); one position at a time. Level: the most recent known swing high, together with every other known swing high from the last 120 bars within 0.5 ATR of it; with at least two, the level is their average. One setup per level. Breakout: a close more than 0.5 ATR above the level. Retest: within 30 bars of the breakout, a bar whose low comes within 0.25 ATR of the level (or below it) and that closes above the level. That close is the signal. Stop: level minus 1 ATR. Target: 3R from the signal close. A close below the stop level before a retest cancels the setup.",
+    "falsification": "BTCUSDT and ETHUSDT 4h, 2020-01 to 2025-10 (before the holdout), default parameters, run once. Reject if, pooled across both markets: net expectancy after costs is 0R or below; or P(expectancy > 0) is under 90%; or fewer than 50 trades; or it doesn't beat the same breakout without waiting for a retest (enter on the breakout close itself, same stop rule and 3R): the retest is the claimed edge, so it has to add something.",
+    "parameters": "swing_bars 3 (2-5); level_tol_atr_pct 50 (25-100); breakout_atr_pct 50; touch_atr_pct 25; retest_bars 30 (10-60); lookback_bars 120; target_r 3 (2-4). Comparison: level-breakout with the same values. Only the defaults are pre-registered.",
+    "costs": "Stops of about 1-1.5 ATR on 4h are typically 2-5% away, so a 22 bps round trip is roughly 0.05-0.1R. At 3R that lifts break-even from 25% to about 26-27%. Expect few setups: perhaps 1-2 a month per market."
+  },
+  "implementation": "level-retest",
+  "frozen_at": "2026-11-11T13:05:56.788681+00:00",
+  "change_reason": null
+}

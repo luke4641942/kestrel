@@ -1,0 +1,15 @@
+{
+  "version": 1,
+  "created_at": "2026-11-13T07:54:34.480224+00:00",
+  "sections": {
+    "hypothesis": "Holding BTC or ETH for the week after a rising week, and cash after a falling one, earns more than the market held for the same share of time, after costs.",
+    "rationale": "Liu and Tsyvinski (NBER w24877) report significant time-series momentum in cryptocurrency returns at daily and weekly horizons. Kestrel has only tested 20-120 day trends; this tests the much shorter horizon in its plainest form, with nothing to tune. Weak points: about one switch every two to three weeks at about 22 bps a round trip, so the edge has to be large; the cited result is from an earlier, smaller crypto market (to 2018); and Kestrel's drop-reversal test found a small bounce after big down days, which works against one-week continuation. Context: after 139+ trials every bet against the trend has failed, cross-sectional momentum over small coins failed (-92% drawdown), and the one strategy marked Pursue is trend-vol-target on BTC daily (Sharpe 1.21 vs 1.07 for holding on the current config, but +639% vs +1,420% return). This note is one of five momentum ideas tested together on 2026-11-13; five ideas at once are five or more trials, so a single pass is weaker evidence than it looks.",
+    "rules": "Daily bars. At each Sunday's close (UTC), the week's return is the close over the close exactly 7 days earlier (looked up by date; a missing start bar means no signal, cash). Positive: target weight 1 until the next Sunday's close; otherwise 0. Decide at the close, trade at the next open; 2% no-trade band; long only, spot; 10 bps fee, square-root impact; spread 1 bp for single-coin runs, by the coin's volume band for universe runs. Every strategy starts cold at the first month: cash until its lookbacks fill, the same convention as every earlier test.",
+    "falsification": "BTCUSDT 1d and ETHUSDT 1d, 2020-01 to 2025-10, 330 USDT, run once each. Reject unless, on both: (1) total return beats the market held at the strategy's average exposure; (2) P(profit after costs) at least 90%; (3) break-even cost at least twice the cost paid; (4) Sharpe above buy-and-hold's.",
+    "parameters": "None: the one-week horizon is the hypothesis.",
+    "costs": "Perhaps 15-25 round trips a year at about 22 bps each, 3-6% a year: the main risk."
+  },
+  "implementation": "weekly-momentum",
+  "frozen_at": "2026-11-13T07:54:34.481594+00:00",
+  "change_reason": null
+}

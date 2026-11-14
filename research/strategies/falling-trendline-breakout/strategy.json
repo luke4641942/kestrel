@@ -1,0 +1,23 @@
+{
+  "slug": "falling-trendline-breakout",
+  "name": "Falling trendline breakout",
+  "created_at": "2026-11-05T03:28:30.567298+00:00",
+  "status": "backtested",
+  "history": [
+    {
+      "status": "idea",
+      "at": "2026-11-05T03:28:30.567298+00:00",
+      "reason": "Created"
+    },
+    {
+      "status": "specified",
+      "at": "2026-11-11T13:05:25.568637+00:00",
+      "reason": "v1 frozen"
+    },
+    {
+      "status": "backtested",
+      "at": "2026-11-11T13:05:30.590128+00:00",
+      "reason": "first run on v1"
+    }
+  ]
+}

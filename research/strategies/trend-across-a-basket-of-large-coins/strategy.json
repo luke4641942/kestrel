@@ -1,0 +1,28 @@
+{
+  "slug": "trend-across-a-basket-of-large-coins",
+  "name": "Trend across a basket of large coins",
+  "created_at": "2026-11-13T07:54:34.473418+00:00",
+  "status": "rejected",
+  "history": [
+    {
+      "status": "idea",
+      "at": "2026-11-13T07:54:34.473418+00:00",
+      "reason": "Created"
+    },
+    {
+      "status": "specified",
+      "at": "2026-11-13T07:54:34.475766+00:00",
+      "reason": "v1 frozen"
+    },
+    {
+      "status": "backtested",
+      "at": "2026-11-13T07:55:00.215778+00:00",
+      "reason": "first run on v1"
+    },
+    {
+      "status": "rejected",
+      "at": "2026-11-13T08:00:25.556005+00:00",
+      "reason": "Pre-registered test (UNIVERSE 1d, 2020-01..2025-10, defaults, 330 USDT; run 20261113-075500-c11ec7, repeated by mistake as 20261113-075724-de8612 with identical results; control large-basket run 20261113-075717-a565e2). Failed rules 1 and 5: Sharpe 0.95 vs 1.07 for BTC buy-and-hold, and 152 of 1,118 orders (13.6%) rejected by the exchange minimum against 10% allowed. Passed 2-4: Sharpe above the control's 0.79, max drawdown -41% (control -85%), break-even 650 bps vs 28 paid. Trend cut the basket's drawdown by half and raised its Sharpe, but the basket of large coins is worse than BTC alone. At 330 USDT ten slots are too small to trade."
+    }
+  ]
+}

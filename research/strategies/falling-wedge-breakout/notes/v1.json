@@ -1,0 +1,15 @@
+{
+  "version": 1,
+  "created_at": "2026-11-05T03:28:30.568386+00:00",
+  "sections": {
+    "hypothesis": "A breakout above a falling wedge (falling highs and falling lows that converge) reaches 3R more often than both its cost-adjusted break-even rate and a breakout of a falling line without the converging lower line.",
+    "rationale": "Chart-pattern lore (e.g. Bulkowski) calls the falling wedge a bullish reversal. A plausible mechanism is volatility contraction: shrinking swings mean sellers are exhausting, and contraction tends to be followed by expansion. Weak point: pattern studies are mostly hand-labelled after the fact, and wedges are rare once the definition leaves no room for judgement.",
+    "rules": "Shared definitions: 4h bars; swing high/low = a bar's high (low) beats the 3 bars before it and isn't beaten by the 3 bars after it, known only 3 bars later; ATR = 14-bar average true range at the signal bar. Lines and levels use only swings known at the signal bar. Buy at the next open; risk 1% per trade (spot, no leverage); one position at a time. Upper line: through the two most recent known swing highs, the later one lower. Lower line: through the two most recent known swing lows, the later one lower. Wedge: both lines fall, and the gap between them at the latest swing is at most 60% of the gap at the earliest of the four swings (converging). Breakout: a close more than 0.5 ATR above the projected upper line. A close below the projected lower line first spends the wedge. One entry per wedge. That close is the signal. Stop: the latest swing low. Target: 3R.",
+    "falsification": "BTCUSDT and ETHUSDT 4h, 2020-01 to 2025-10 (before the holdout), default parameters, run once. Reject if, pooled across both markets: net expectancy after costs is 0R or below; or P(expectancy > 0) is under 90%; or fewer than 50 trades; or it doesn't beat the falling trendline breakout (the note above) on the same data: convergence is the claimed edge, so the wedge must add something over the line alone.",
+    "parameters": "swing_bars 3 (2-5); converge_pct 60 (40-80); breakout_atr_pct 50 (25-100); target_r 3 (2-4). Comparison: trendline-breakout with swing_bars 3, breakout_atr_pct 50, target_r 3. Only the defaults are pre-registered.",
+    "costs": "Stops at the latest swing low, often 4-8% on 4h, so about 0.03-0.06R per round trip. The main risk is too few trades: strict wedges may give well under 50 across both markets, in which case the note's own rule rejects it as untestable."
+  },
+  "implementation": "wedge-breakout",
+  "frozen_at": "2026-11-11T13:05:40.336107+00:00",
+  "change_reason": null
+}

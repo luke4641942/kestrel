@@ -1,0 +1,15 @@
+{
+  "version": 1,
+  "created_at": "2026-11-12T05:30:20.374939+00:00",
+  "sections": {
+    "hypothesis": "The trend-following rule with volatility targeting (trend-vol-target, default parameters) protects against a crash on data it has never been tested on: through BTC's and ETH's 2018 bear market it keeps the maximum drawdown to at most half of buy-and-hold's, with a better Sharpe, after costs.",
+    "rationale": "The same rule was tested on 2020-01..2025-10 and rejected: ETH passed all five rules, BTC failed only on drawdown (-48% vs a -38% limit). That result is not being revisited. This is a separate test of whether its crash protection holds on independent data: Binance's BTC and ETH history from August 2017 to December 2018, which no Kestrel strategy has been run on and which was not downloaded when this note was frozen. It includes the December 2017 peak and the 2018 decline of about 84%, the hardest test a long-only rule could face. Disclosure: this note was written after the 2020-2025 results were seen; its parameters are the original pre-registered defaults, unchanged. One bear market is one data point: a pass would support trend following as a direction for P3, not prove it.",
+    "rules": "Exactly those of trend-vol-target with default parameters: daily bars; at each close a vote of 1 for each of the 20, 60 and 120-day lookbacks whose close is above the close that many days earlier; trend = average vote; volatility = 30-day standard deviation of daily log returns x sqrt(365); target weight = trend x min(1, 50% / volatility); cash until 120 days of history. Decide at the close, trade at the next open; 2% no-trade band; long only, spot, never above fully invested; 10 bps fee, 1 bp half-spread, square-root impact. BTC and ETH are run separately.",
+    "falsification": "BTCUSDT 1d and ETHUSDT 1d, 2017-08 to 2018-12, default parameters, 330 USDT, run once each. Reject unless, on BOTH markets: (1) Sharpe is above buy-and-hold's; (2) max drawdown is no worse than half of buy-and-hold's; (3) total return beats the same market held at the strategy's average exposure; (4) break-even cost is at least twice the cost paid; (5) at least 20 orders (17 months, the first 4 of them warm-up, so fewer than the 30 required over six years).",
+    "parameters": "fast_days 20, mid_days 60, slow_days 120, vol_days 30, target_vol_pct 50: the original defaults. No other values will be tested on this period.",
+    "costs": "As in the 2020-2025 test: roughly 85-100 orders a year, about 22 bps per round trip, a drag well under 1% a year. Costs are not expected to decide this test; drawdown is."
+  },
+  "implementation": "trend-vol-target",
+  "frozen_at": "2026-11-12T05:30:20.377652+00:00",
+  "change_reason": null
+}

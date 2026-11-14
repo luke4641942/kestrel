@@ -1,0 +1,28 @@
+{
+  "slug": "trend-following-through-the-2018-crash-unseen",
+  "name": "Trend following through the 2018 crash (unseen data)",
+  "created_at": "2026-11-12T05:30:20.374939+00:00",
+  "status": "rejected",
+  "history": [
+    {
+      "status": "idea",
+      "at": "2026-11-12T05:30:20.374939+00:00",
+      "reason": "Created"
+    },
+    {
+      "status": "specified",
+      "at": "2026-11-12T05:30:20.377695+00:00",
+      "reason": "v1 frozen"
+    },
+    {
+      "status": "backtested",
+      "at": "2026-11-12T05:32:04.185680+00:00",
+      "reason": "first run on v1"
+    },
+    {
+      "status": "rejected",
+      "at": "2026-11-12T05:32:54.970438+00:00",
+      "reason": "Pre-registered test on unseen data (BTCUSDT and ETHUSDT 1d, 2017-08..2018-12, defaults; runs 20261112-053204-23e434 and -45258f). Rule 2 passed on both: max drawdown -35% vs -83% (BTC) and -44% vs -94% (ETH), so the crash protection held out of sample. Failed rules 1, 3 and 4 on both: Sharpe -1.44 vs 0.34 and -0.96 vs 0.03; return -32% vs +5% and -25% vs -1% for the market held at the same exposure; break-even 0. In 2018 it lost 24-26% while about 11-15% invested on average: bear-market rallies triggered entries that failed (whipsaw). Caveat on the design: the 120-day warm-up kept it out of the Aug-Dec 2017 rally that buy-and-hold had (Binance data starts 2017-08), which makes rules 1 and 3 harsh; the 2018 loss stands regardless. Conclusion: it limits losses relative to holding but does not make money in a bear market."
+    }
+  ]
+}

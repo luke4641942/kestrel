@@ -1,0 +1,15 @@
+{
+  "version": 1,
+  "created_at": "2026-11-13T03:13:25.436361+00:00",
+  "sections": {
+    "hypothesis": "Sharp one-day drops in BTC and ETH partly reverse over the next few days. Buying at the open after a daily drop of more than 2 standard deviations of the previous 30 days' returns and holding 3 days earns more than the market does over the same amount of time invested, after costs.",
+    "rationale": "The story: big down days are often forced selling (liquidations, margin calls, stop cascades) rather than new information, and prices bounce once that selling is done. Short-term reversal is a long-documented effect in equities at weekly and monthly horizons. Weak points: every bet against the trend in the trial log has failed (structure pullback, pivot reversal, Fear & Greed contrarian), and crypto's daily returns lean towards momentum rather than reversal; a big drop can be the first day of a crash (2020-03, 2021-05, 2022-06, 2022-11), and holding through those days could wipe out many small bounces; and 22+ bps per round trip has to come out of a 3-day move. Expected to fail; tested because Luke proposed it and a fair pre-registered test is still informative. Price only, no new information source.",
+    "rules": "Daily bars. A bar's log return (close over previous close) counts as a big drop when it is below -2 times the standard deviation of the 30 daily log returns before it (the day itself is left out of the window). At that bar's close the target weight is 1, and it stays 1 for the next 2 closes: buy at the next open, sell 3 opens later. Another big drop while holding restarts the 3 days. Cash otherwise, and until 31 returns exist. Fully in or fully out; long only, spot; decide at the close, trade at the next open; 2% no-trade band; 10 bps fee, 1 bp half-spread, square-root impact. No stop: the time exit is the whole exit rule.",
+    "falsification": "BTCUSDT 1d and ETHUSDT 1d, 2020-01 to 2025-10 (the holdout starts 2025-11), default parameters, 330 USDT, run once each. Reject unless, on both markets: (1) P(profit after costs) is at least 90%; (2) total return beats the market held at the strategy's average exposure (the report's 'at the same exposure' line); (3) break-even cost is at least twice the cost paid per round trip; (4) at least 30 buys. The strategy is in the market only a small share of the time, so it is not required to beat buy-and-hold outright; a pass would make it a candidate add-on, sent to robustness and walk-forward first, against a deflated Sharpe that counts every trial so far.",
+    "parameters": "drop_sigma_pct 200 (2 standard deviations), vol_days 30, hold_days 3. Round, common choices set before any run. Only these are pre-registered; other settings are new trials.",
+    "costs": "Perhaps 10-20 round trips per coin a year at about 22 bps each, so 2-5% a year of the capital that is traded. Each trade's 3-day bounce has to clear that."
+  },
+  "implementation": "drop-reversal",
+  "frozen_at": "2026-11-13T03:13:40.791796+00:00",
+  "change_reason": null
+}

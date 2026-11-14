@@ -1,0 +1,28 @@
+{
+  "slug": "volatility-managed-holding-btc-eth-daily",
+  "name": "Volatility-managed holding (BTC, ETH daily)",
+  "created_at": "2026-11-13T07:54:34.476311+00:00",
+  "status": "rejected",
+  "history": [
+    {
+      "status": "idea",
+      "at": "2026-11-13T07:54:34.476311+00:00",
+      "reason": "Created"
+    },
+    {
+      "status": "specified",
+      "at": "2026-11-13T07:54:34.477756+00:00",
+      "reason": "v1 frozen"
+    },
+    {
+      "status": "backtested",
+      "at": "2026-11-13T07:57:48.637559+00:00",
+      "reason": "first run on v1"
+    },
+    {
+      "status": "rejected",
+      "at": "2026-11-13T08:00:25.557717+00:00",
+      "reason": "Pre-registered test (BTCUSDT and ETHUSDT 1d, 2020-01..2025-10, defaults; runs 20261113-075748-2747f1 and 20261113-075749-8b1d2c). BTC failed rules 1 and 3: Sharpe 0.93 vs 1.07, +607% against +1,053% for BTC at the same 84% exposure (drawdown -72% vs -77%). ETH failed rule 3: Sharpe 1.14 vs 1.12 and drawdown -65% vs -79%, but +1,378% against +1,560% at the same exposure. Attribution as pre-registered: on BTC, 0.93 vs trend-vol-target's 1.21, so the trend votes do the work; on ETH, 1.14 vs 1.23 (within 0.10), so there the trend votes add little."
+    }
+  ]
+}

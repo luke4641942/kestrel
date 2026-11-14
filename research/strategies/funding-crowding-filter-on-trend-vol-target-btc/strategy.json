@@ -1,0 +1,28 @@
+{
+  "slug": "funding-crowding-filter-on-trend-vol-target-btc",
+  "name": "Funding crowding filter on trend-vol-target (BTC, ETH daily)",
+  "created_at": "2026-11-13T07:36:03.083177+00:00",
+  "status": "rejected",
+  "history": [
+    {
+      "status": "idea",
+      "at": "2026-11-13T07:36:03.083177+00:00",
+      "reason": "Created"
+    },
+    {
+      "status": "specified",
+      "at": "2026-11-13T07:36:03.084695+00:00",
+      "reason": "v1 frozen"
+    },
+    {
+      "status": "backtested",
+      "at": "2026-11-13T07:37:55.282725+00:00",
+      "reason": "first run on v1"
+    },
+    {
+      "status": "rejected",
+      "at": "2026-11-13T07:42:02.086446+00:00",
+      "reason": "Pre-registered test (BTCUSDT and ETHUSDT 1d, 2020-01..2025-10, crowded_pct 30; runs 20261113-073755-8fc78a and 20261113-073757-8f513d, against trend-vol-target re-run on the current config: 20261113-073755-da13da and 20261113-073757-155a79). BTC failed rule 3: Sharpe 1.27 vs 1.21 and drawdown -44.9% vs -48.3% (both better), but +537% vs +639%, 84% of trend-vol-target's return against 90% required. ETH failed rules 1-3: Sharpe 1.09 vs 1.23, drawdown -38.5% vs -38.4%, +455% vs +871%. The filter cut exposure (44% vs 50% on BTC, 34% vs 41% on ETH) more than it cut risk. Trend-vol-target stays as it was."
+    }
+  ]
+}

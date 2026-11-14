@@ -1,0 +1,23 @@
+{
+  "slug": "horizontal-level-retest-resistance-becomes",
+  "name": "Horizontal level retest (resistance becomes support)",
+  "created_at": "2026-11-05T03:28:47.987453+00:00",
+  "status": "backtested",
+  "history": [
+    {
+      "status": "idea",
+      "at": "2026-11-05T03:28:47.987453+00:00",
+      "reason": "Created"
+    },
+    {
+      "status": "specified",
+      "at": "2026-11-11T13:05:56.788710+00:00",
+      "reason": "v1 frozen"
+    },
+    {
+      "status": "backtested",
+      "at": "2026-11-11T13:06:00.893094+00:00",
+      "reason": "first run on v1"
+    }
+  ]
+}

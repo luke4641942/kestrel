@@ -1,0 +1,28 @@
+{
+  "slug": "cross-sectional-momentum-across-coins-top-5",
+  "name": "Cross-sectional momentum across coins (top 5, weekly)",
+  "created_at": "2026-11-11T13:40:31.273211+00:00",
+  "status": "rejected",
+  "history": [
+    {
+      "status": "idea",
+      "at": "2026-11-11T13:40:31.273211+00:00",
+      "reason": "Created"
+    },
+    {
+      "status": "specified",
+      "at": "2026-11-11T13:45:32.595575+00:00",
+      "reason": "v1 frozen"
+    },
+    {
+      "status": "backtested",
+      "at": "2026-11-11T14:02:18.107295+00:00",
+      "reason": "first run on v1"
+    },
+    {
+      "status": "rejected",
+      "at": "2026-11-12T05:29:30.868851+00:00",
+      "reason": "Pre-registered test (v2, defaults, all coins 1d, 2020-01..2025-10, 557 coins incl. delisted; run 20261112-003419-b2fc4e). Failed rules 1, 3, 4 and 5: Sharpe 0.69 vs BTC 1.07; max drawdown -92% vs BTC -77%; +268% vs BTC held at the same exposure +807%; break-even 60 bps vs 33 paid (1.8x, needs 2x). Passed 2 (PSR 95%) and 6 (1,574 orders). Before costs +1,960 USDT, so there is a raw effect, but it is a momentum-crash profile: +514% in 2021, -78% in 2022, then -20% in 2024 while BTC rose 120%. v1's run (2019-01 start, faulty spread model) is void, not counted as evidence either way."
+    }
+  ]
+}

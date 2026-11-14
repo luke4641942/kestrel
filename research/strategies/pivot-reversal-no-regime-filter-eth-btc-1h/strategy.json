@@ -1,0 +1,23 @@
+{
+  "slug": "pivot-reversal-no-regime-filter-eth-btc-1h",
+  "name": "Pivot reversal, no regime filter (ETH, BTC 1h)",
+  "created_at": "2026-11-11T12:44:34.547309+00:00",
+  "status": "backtested",
+  "history": [
+    {
+      "status": "idea",
+      "at": "2026-11-11T12:44:34.547309+00:00",
+      "reason": "Created"
+    },
+    {
+      "status": "specified",
+      "at": "2026-11-11T12:57:28.311192+00:00",
+      "reason": "v1 frozen"
+    },
+    {
+      "status": "backtested",
+      "at": "2026-11-11T12:57:42.864101+00:00",
+      "reason": "first run on v1"
+    }
+  ]
+}

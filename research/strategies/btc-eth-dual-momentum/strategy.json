@@ -1,0 +1,28 @@
+{
+  "slug": "btc-eth-dual-momentum",
+  "name": "BTC/ETH dual momentum",
+  "created_at": "2026-11-13T07:54:34.482075+00:00",
+  "status": "rejected",
+  "history": [
+    {
+      "status": "idea",
+      "at": "2026-11-13T07:54:34.482075+00:00",
+      "reason": "Created"
+    },
+    {
+      "status": "specified",
+      "at": "2026-11-13T07:54:34.484699+00:00",
+      "reason": "v1 frozen"
+    },
+    {
+      "status": "backtested",
+      "at": "2026-11-13T07:58:30.168405+00:00",
+      "reason": "first run on v1"
+    },
+    {
+      "status": "rejected",
+      "at": "2026-11-13T08:00:25.560734+00:00",
+      "reason": "Pre-registered test (UNIVERSE 1d, 2020-01..2025-10, lookback 90; run 20261113-075830-087aa2). Failed rules 1 and 2: Sharpe 1.06 vs 1.07 for BTC and 1.12 for ETH buy-and-hold; drawdown -76.9% vs -76.6% for BTC. Passed 3 and 4: +1,334% against +727% for BTC at the same 68% exposure; break-even 665 bps vs 22."
+    }
+  ]
+}

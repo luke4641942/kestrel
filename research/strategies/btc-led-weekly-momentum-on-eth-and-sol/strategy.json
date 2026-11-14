@@ -1,0 +1,28 @@
+{
+  "slug": "btc-led-weekly-momentum-on-eth-and-sol",
+  "name": "BTC-led weekly momentum on ETH and SOL",
+  "created_at": "2026-11-13T08:44:36.989402+00:00",
+  "status": "rejected",
+  "history": [
+    {
+      "status": "idea",
+      "at": "2026-11-13T08:44:36.989402+00:00",
+      "reason": "Created"
+    },
+    {
+      "status": "specified",
+      "at": "2026-11-13T08:44:36.991800+00:00",
+      "reason": "v1 frozen"
+    },
+    {
+      "status": "backtested",
+      "at": "2026-11-13T08:44:57.754874+00:00",
+      "reason": "first run on v1"
+    },
+    {
+      "status": "rejected",
+      "at": "2026-11-13T08:45:18.438533+00:00",
+      "reason": "Pre-registered test (runs 20261113-084457-8068a1 ETH 2017-19, 20261113-084458-e5610f ETH 2020-25, 20261113-084458-c3c7f4 SOL 2020-25). Failed rule 1 on all three: Sharpe 0.10 vs 0.15, 1.07 vs 1.12 and 1.08 vs 1.24 for holding; rule 5 on ETH 2017-19 (29%) and SOL (35%); rule 4 on ETH 2017-19 (break-even 0); rule 2 on ETH 2017-19 (-37% vs -15%) and SOL (+1,901% vs +2,047%). Passed rule 3 on all three (smaller drawdown). Mechanism not supported: BTC's week as the signal did no better than the coin's own week (0.10 vs 0.13, 1.07 vs 1.23, 1.08 vs 1.08), so in daily data the alts don't lag BTC by enough to trade at a weekly horizon."
+    }
+  ]
+}
