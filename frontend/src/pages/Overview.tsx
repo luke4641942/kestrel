@@ -6,16 +6,17 @@ import { DECISION, RESEARCH_STATUS, marketLabel, splitClosed, studyTitle, studyT
 import { ago, date, num } from "../format";
 import { useResource } from "../hooks";
 
-type PhaseState = "done" | "active" | "planned" | "parked" | "rethink";
+type PhaseState = "done" | "active" | "planned" | "parked";
 
 // Parked items are agreed ideas waiting on an earlier phase; `id` says which.
 const PHASES: { id: string; name: string; state: PhaseState }[] = [
   { id: "P1", name: "Data infrastructure", state: "done" },
   { id: "P1.5", name: "API and dashboard", state: "done" },
-  { id: "P2", name: "Backtester and cost model", state: "active" },
-  { id: "P3", name: "Validation", state: "planned" },
+  { id: "P2", name: "Backtester and cost model", state: "done" },
+  { id: "P3", name: "Validation", state: "done" },
+  { id: "Next", name: "One scorecard for every strategy", state: "active" },
   { id: "P4", name: "Paper and live execution", state: "planned" },
-  { id: "P5", name: "Perpetuals (not offered to AU retail)", state: "rethink" },
+  { id: "P5", name: "Perpetuals (not offered to AU retail)", state: "parked" },
   { id: "P3+", name: "Multi-strategy portfolios", state: "parked" },
   { id: "P4+", name: "Settings: risk limits, exchange", state: "parked" },
 ];
@@ -25,7 +26,6 @@ const PHASE_STATUS: Record<PhaseState, { tone: "ok" | "info" | "neutral" | "warn
   active: { tone: "info", label: "In progress" },
   planned: { tone: "neutral", label: "Planned" },
   parked: { tone: "neutral", label: "Parked" },
-  rethink: { tone: "warn", label: "Rethink" },
 };
 
 export function Overview({ jobs, go, openJobs }: { jobs: Job[]; go: (r: Route) => void; openJobs: () => void }) {
@@ -43,7 +43,13 @@ export function Overview({ jobs, go, openJobs }: { jobs: Job[]; go: (r: Route) =
 
       <Section
         title="What to pursue"
-        description="One decision per strategy, made from all the evidence below and recorded with its reason in research/decisions.toml."
+        description={
+          <>
+            One decision per strategy, made from all the evidence below and recorded with its reason in
+            research/decisions.toml. Pursue means carry on to paper trading; a pass needs the full{" "}
+            <a href="#/rules">scorecard</a>.
+          </>
+        }
       >
         <DecisionsBoard />
       </Section>

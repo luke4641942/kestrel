@@ -91,8 +91,9 @@ Never pipe check output through `tail` or similar inside an `&&` chain: it hides
   is not a variant of a rejected family (pullbacks, chart patterns, reversals), and how
   many runs it will use. More history (2017+) is preferred to more ideas.
 - **Trials.** Every setting tried counts (`kestrel.validation.log`, `data/validation/`).
-  72 trials by 2026-11-14, luck bar Sharpe ~1.67. It may be that nothing passes; that is
-  an acceptable result.
+  172 trials by 2026-11-14 (robustness grids count every setting), luck bar Sharpe ~1.45.
+  The bar depends on how spread out the trials' Sharpes are as well as their number. It may
+  be that nothing passes; that is an acceptable result.
 - **Don't rescue a strategy by tuning.** A setting chosen after seeing results is a new
   trial. A genuinely new reason means a new note version, and its runs count.
 - **Holdout starts 2025-11-01 00:00 UTC (fixed, pre-registered 2026-10-31).** All

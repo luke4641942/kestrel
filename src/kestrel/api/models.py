@@ -628,6 +628,31 @@ class DecisionOut(BaseModel):
     evidence: list[str]
 
 
+class ScorecardTestOut(BaseModel):
+    name: str
+    rule: str
+    why: str
+
+
+class LessonOut(BaseModel):
+    title: str
+    text: str
+
+
+class RulesOut(BaseModel):
+    """How strategies are judged (kestrel.validation.rules) and what the research found."""
+
+    reviewed: date
+    passing: str
+    """What a pass means."""
+    scorecard: list[ScorecardTestOut]
+    risk_managed: str
+    entry_bar: list[str]
+    account: str
+    lessons: list[LessonOut]
+    """From research/findings.md; empty when the file is missing."""
+
+
 class LookOut(BaseModel):
     params: dict[str, int]
     sharpe: float | None

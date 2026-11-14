@@ -40,6 +40,7 @@ from kestrel.api.models import (
     IndicatorOut,
     IngestRequest,
     JobOut,
+    LessonOut,
     NoteOut,
     ParamOut,
     QualityOut,
@@ -48,8 +49,10 @@ from kestrel.api.models import (
     RejectionOut,
     ResearchDetail,
     ResearchSummary,
+    RulesOut,
     RunDetail,
     RunSummary,
+    ScorecardTestOut,
     Series,
     Signals,
     SignalsRequest,
@@ -93,6 +96,7 @@ from kestrel.strategy import (
     validated_brackets,
     validated_weights,
 )
+from kestrel.validation import rules
 from kestrel.validation.deflated import TrialSet, counts_as_trial, deflated_sharpe, trial_set
 from kestrel.validation.log import ValidationLog
 
@@ -261,6 +265,24 @@ def create_app(
         except DecisionError as e:
             raise HTTPException(status.HTTP_503_SERVICE_UNAVAILABLE, str(e)) from None
         return [DecisionOut.model_validate(asdict(d)) for d in found]
+
+    @api.get("/rules")
+    def get_rules() -> RulesOut:
+        """The research rules every strategy is judged by, and the lessons so far."""
+        path = Path(research_dir) / "findings.md"
+        try:
+            found = rules.lessons(path.read_text()) if path.exists() else []
+        except ValueError as e:
+            raise HTTPException(status.HTTP_503_SERVICE_UNAVAILABLE, str(e)) from None
+        return RulesOut(
+            reviewed=rules.REVIEWED,
+            passing=rules.PASS,
+            scorecard=[ScorecardTestOut.model_validate(asdict(t)) for t in rules.SCORECARD],
+            risk_managed=rules.RISK_MANAGED,
+            entry_bar=list(rules.ENTRY_BAR),
+            account=rules.ACCOUNT,
+            lessons=[LessonOut.model_validate(asdict(x)) for x in found],
+        )
 
     def _rules(config: Config, symbol: str) -> InstrumentRules:
         try:

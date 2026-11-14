@@ -7,12 +7,13 @@ import { useResource } from "./hooks";
 import { Costs } from "./pages/Costs";
 import { Data } from "./pages/Data";
 import { Overview } from "./pages/Overview";
+import { Rules } from "./pages/Rules";
 import { Strategies } from "./pages/Strategies";
 import { Backtests } from "./pages/Backtests";
 import { Trading } from "./pages/Placeholders";
 import { useTheme } from "./theme";
 
-export type Route = "overview" | "strategies" | "data" | "costs" | "backtests" | "trading";
+export type Route = "overview" | "strategies" | "data" | "costs" | "rules" | "backtests" | "trading";
 
 // Main tabs are about strategies and trading; reference and data pages live under More.
 const NAV: { route: Route; label: string; later?: string; more?: boolean }[] = [
@@ -22,6 +23,7 @@ const NAV: { route: Route; label: string; later?: string; more?: boolean }[] = [
   { route: "trading", label: "Trading", later: "P4" },
   { route: "data", label: "Data", more: true },
   { route: "costs", label: "What a trade costs", more: true },
+  { route: "rules", label: "Rules", more: true },
 ];
 
 /** The page from `#/<route>` or `#/<route>/<id>`; the id is read by the page itself. */
@@ -187,6 +189,9 @@ export function App() {
       break;
     case "costs":
       page = <Costs />;
+      break;
+    case "rules":
+      page = <Rules />;
       break;
     case "strategies":
       page = <Strategies jobs={jobList} onJobStarted={onJobStarted} />;

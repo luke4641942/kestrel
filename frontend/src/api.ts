@@ -230,6 +230,19 @@ export interface Validation {
   studies: Study[];
 }
 
+/** How every strategy is judged (kestrel.validation.rules) and the lessons so far. */
+export interface Rules {
+  reviewed: string;
+  /** What a pass means. */
+  passing: string;
+  scorecard: { name: string; rule: string; why: string }[];
+  risk_managed: string;
+  entry_bar: string[];
+  account: string;
+  /** From research/findings.md. */
+  lessons: { title: string; text: string }[];
+}
+
 export interface Study {
   id: string;
   created_at: string;
@@ -494,6 +507,7 @@ export const api = {
   backtests: () => request<RunSummary[]>("/backtests"),
   validation: () => request<Validation>("/validation"),
   decisions: () => request<Decision[]>("/decisions"),
+  rules: () => request<Rules>("/rules"),
   backtest: (id: string) => request<RunDetail>(`/backtests/${enc(id)}`),
   costs: () => request<CostConfig>("/costs"),
   source: (key: string) => request<StrategySource>(`/strategies/${enc(key)}/source`),

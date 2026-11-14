@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { splitClosed, startDateVerdict, windowLabel, DECISION, studyTitle, studyTone, deflatedNote, spreadBands, DEFAULT_RUN_SORT, KIND_LABEL, UNIVERSE, marketLabel, marketsFor, defaultDataset, nextSort, sortRuns, fewTrades, signalsCaption, MAX_LABELLED_TRADES, MAX_MARKED_TRADES, costHeadroom, paramsText, runRole, tradeCount, heldAsset, money, span, trackRecord, tradeMarkers, verdict } from "./summary";
+import { luckBar, splitClosed, startDateVerdict, windowLabel, DECISION, studyTitle, studyTone, deflatedNote, spreadBands, DEFAULT_RUN_SORT, KIND_LABEL, UNIVERSE, marketLabel, marketsFor, defaultDataset, nextSort, sortRuns, fewTrades, signalsCaption, MAX_LABELLED_TRADES, MAX_MARKED_TRADES, costHeadroom, paramsText, runRole, tradeCount, heldAsset, money, span, trackRecord, tradeMarkers, verdict } from "./summary";
 import { run, trade } from "./test/fixtures";
 
 describe("verdict", () => {
@@ -349,5 +349,12 @@ describe("startDateVerdict", () => {
   it("names windows in years", () => {
     expect(windowLabel(365)).toBe("1 year");
     expect(windowLabel(730)).toBe("2 years");
+  });
+});
+
+describe("luckBar", () => {
+  it("states the Sharpe to beat, or that there is none yet", () => {
+    expect(luckBar(72, 1.6712)).toBe("72 trials so far: a backtest Sharpe has to beat about 1.67 before it stands out from luck.");
+    expect(luckBar(1, 0)).toMatch(/No trials/);
   });
 });

@@ -310,7 +310,9 @@ p {
 .section + .section,
 .section + .split,
 .split + .section,
-.split + .split {
+.split + .split,
+.section + .rules-pair,
+.rules-pair + .section {
   margin-top: 40px;
 }
 
@@ -1998,6 +2000,124 @@ p {
 
 .decision-list li.decision-drop .decision-name {
   color: var(--text-2);
+}
+
+/* ---------- rules ---------- */
+
+.rules-lead {
+  font-size: 16px;
+  line-height: 1.55;
+  max-width: 72ch;
+  text-wrap: pretty;
+}
+
+.rules-luck {
+  margin-top: 12px;
+  font-variant-numeric: tabular-nums;
+}
+
+.rules-text {
+  font-size: 13.5px;
+  line-height: 1.55;
+  max-width: 72ch;
+}
+
+.rules-text + .rules-text {
+  margin-top: 12px;
+}
+
+.rules-pair {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 24px;
+  align-items: start;
+}
+
+.rules-pair > .section {
+  margin-top: 0;
+}
+
+@media (max-width: 760px) {
+  .rules-pair {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+.rules-list {
+  margin: 0;
+  padding-left: 18px;
+  display: grid;
+  gap: 8px;
+  font-size: 13.5px;
+  line-height: 1.5;
+}
+
+/* The scorecard's numbers are its tests' names in CLAUDE.md and the notes ("test 4"). */
+.scorecard,
+.lessons {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  counter-reset: item;
+}
+
+.scorecard li,
+.lessons li {
+  counter-increment: item;
+  display: grid;
+  gap: 4px 16px;
+  padding: 14px 18px 14px 52px;
+  border-top: 1px solid var(--line);
+  position: relative;
+}
+
+.scorecard li {
+  grid-template-columns: 140px minmax(0, 1fr);
+}
+
+.scorecard li:first-child,
+.lessons li:first-child {
+  border-top: 0;
+}
+
+.scorecard li::before,
+.lessons li::before {
+  content: counter(item);
+  position: absolute;
+  left: 18px;
+  top: 14px;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: var(--surface-2);
+  color: var(--text-2);
+  font-size: 12px;
+  font-weight: 500;
+  display: grid;
+  place-items: center;
+  font-variant-numeric: tabular-nums;
+}
+
+.scorecard-name,
+.lesson-title {
+  font-weight: 500;
+  line-height: 22px;
+}
+
+.scorecard-rule {
+  line-height: 22px;
+}
+
+.scorecard li p,
+.lessons li p {
+  max-width: 72ch;
+  margin-top: 2px;
+}
+
+@media (max-width: 600px) {
+  .scorecard li {
+    grid-template-columns: minmax(0, 1fr);
+  }
 }
 
 /* Indicator picker: toggle chips above a chart. */

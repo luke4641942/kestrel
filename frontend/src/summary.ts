@@ -323,3 +323,9 @@ export function startDateVerdict(rows: StartDateRow[]): string | null {
     `Sharpe from ${p(r.sharpe)} of them, on drawdown from ${p(r.drawdown)} and on return from ${p(r.total_return)}.`
   );
 }
+
+/** The luck bar in words: what a backtest Sharpe must beat after this many trials. */
+export function luckBar(trials: number, expectedMax: number): string {
+  if (trials < 2) return "No trials logged yet, so there is no luck bar to beat.";
+  return `${trials.toLocaleString("en-AU")} trials so far: a backtest Sharpe has to beat about ${expectedMax.toFixed(2)} before it stands out from luck.`;
+}

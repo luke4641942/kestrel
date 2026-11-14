@@ -15,8 +15,9 @@ before the strategy was run.
 - **Data before the holdout.** Mostly 2020-01 to 2025-10. Data from 2025-11-01 is held out,
   untouched, for one final verdict on a finished strategy. Some ideas were retested on
   2017-19, which the original tests never saw.
-- **Every trial counted.** 72 distinct settings had been tried by 2026-11-14. With that many,
-  the best backtest Sharpe you would expect from luck alone is about 1.67; the deflated
+- **Every trial counted.** 172 distinct settings had been tried by 2026-11-14, including every
+  setting of the robustness grids. With that many, the best backtest Sharpe you would expect
+  from luck alone is about 1.45; the deflated
   Sharpe measures each result against that bar.
 
 The results below were judged against each note's own pass test. From 2026-11-14 every
@@ -39,7 +40,7 @@ strategies below would pass it.
 4. **Results on one coin and period rarely repeat.** Weekly momentum passed every test on ETH
    2020-25, then failed on BTC, on ETH 2017-19 and on SOL. Channel breakout was robust to its
    settings but failed walk-forward on both coins.
-5. **Baskets of large coins are worse than BTC alone**, and at 330 USDT a basket's slots are
+5. **Baskets of large coins are worse than BTC alone.** And at 330 USDT a basket's slots are
    too small to trade (13.6% of the trend basket's orders were below Binance's minimum).
 6. **No lead from BTC at a weekly lag.** BTC's week was no better a signal for ETH or SOL than
    their own.
