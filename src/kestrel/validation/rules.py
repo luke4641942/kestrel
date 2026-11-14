@@ -20,6 +20,7 @@ MIN_TRADES = 30
 BREAK_EVEN_MULTIPLE = 2.0
 START_WINDOW_SHARE = 0.5
 MAX_COINS = 3
+RANDOM_BEAT_SHARE = 0.95
 
 PASS = (
     "A strategy passes only if it beats holding the same coin at the same average exposure "
@@ -85,6 +86,13 @@ SCORECARD: tuple[Test, ...] = (
         "Robustness",
         "Neighbouring settings also pass the edge test.",
         "A plateau of good settings is a pattern; a single peak is noise that was fitted.",
+    ),
+    Test(
+        "Random entry",
+        f"Bracket strategies: net expectancy per trade beats at least {RANDOM_BEAT_SHARE:.0%} "
+        "of random-entry paths with the same stops, targets and sizing.",
+        "A 4R win against a 1R loss looks good whatever picks the entry; only beating random "
+        "entries shows the entries matter. Added 2026-11-15 (Luke's YouTube spec).",
     ),
 )
 

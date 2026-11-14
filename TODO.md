@@ -35,8 +35,8 @@ holding.
 - [ ] C. Order flow (Fabio Valentino), BTC/ETH 1m-5m: delta, cumulative delta and the
       session volume profile, built from Binance spot aggTrades (they record which side
       was the aggressor). Model 2 first: a failed breakout returning to the point of
-      control. A new family. Behind the cost gate like batch 1, and harder (minute-long
-      holds against a 22 bps round trip). Needs trade-level data, not bars.
+      control. A new family. Needs trade-level data, not bars. Batch 1's cost gate found
+      1m stops of 6-19 bp against a 22 bp round trip; gate C's own stops before building.
 - D. Earnings IV-crush calendars: out of scope (US equity options). Not on the list.
 - [ ] Validation ideas from the 9,000-backtest video. We already have walk-forward, costs,
       drawdown, minimum trades, deflated Sharpe, robustness and a bootstrap. Not yet built:
@@ -46,26 +46,19 @@ holding.
       changes the rules (Luke). The video's own bar (Sharpe > 0.5, no comparison with
       holding) is weaker than ours on the edge test, so ours stays.
 
-## Top
-- [ ] Cost gate (from Luke's YouTube spec, 2026-11-15): before building any 1m/5m strategy,
-      measure on BTC/ETH/SOL 1m and 5m bars how wide FVG/zone stops are in bps and what a
-      22 bps round trip costs in R. Ingest 1m bars first (12+ months per coin). Decides
-      whether S2/S3 below can pay their fees at 330 USDT at all.
-- [ ] Random-entry control for every bracket strategy (from the same spec): run the same
-      stops, targets and sizing on random entry times and directions (long only here), and
-      require a strategy to beat it. Tests whether an edge is more than the payoff shape
-      (e.g. 4R wins against 1R losses). Becomes a scorecard input for bracket strategies.
-
-## YouTube strategies (Luke's test spec, 2026-11-15): on hold behind the cost gate
-Not ruled out, not yet built. Each waits for the cost gate's answer and Luke's decision on
-the entry-bar conflict below.
+## YouTube strategies batch 1 (Luke's test spec, 2026-11-15): cost gate FAILED, Luke to decide
+Not ruled out, not built. The cost gate (`kestrel cost-gate`, 2024-11 to 2025-10) measured
+S2's stops: median 6-19 bp on 1m and 15-45 bp on 5m, so a 22 bp round trip costs 0.5-3.9R
+a trade. FAILS on 17 of 18 rows; SOL 5m at the NY open is MARGINAL (0.49R, break-even win
+rate 30% at 4R). Luke's call: drop S2/S3, or test SOL 5m NY only (overriding the entry bar).
+S1 (4H/1H) has wider stops and wasn't gated.
 Source: "YouTube Trading Strategies — Test Spec" (13 videos, 3 strategies). All three must be
 adapted to Kestrel's rules: spot, long-only, 330 USDT, Binance data, costs on every fill.
 Each gets its own frozen note and the scorecard; every setting tried is a trial.
 - [ ] 1. S2, CHoCH + FVG (Craig Percoco): NY open, 1m change of character, limit at the FVG
       midpoint, stop beyond FVG candle 1, 4R target. Long setups only. Most codeable.
       Spec defaults: pivot N 3, gap >= 0.3 x ATR(14, 1m), 30-min order expiry, 3 trades/day.
-      Judged against the random-entry control above.
+      Would be judged against the random-entry control (scorecard test 9).
 - [ ] 2. S3, market shift (Brad Goh): 1H bias / 15m zones / 5m sweep + body-close shift,
       enter the shift's zone, 2R or next zone, premium/discount filter. Reuses S2's swing,
       sweep and shift code. Long setups only; test only if S2's core holds up.
@@ -109,6 +102,10 @@ Each gets its own frozen note and the scorecard; every setting tried is a trial.
 - [ ] HMM regime filter (backlog S2) as a strategy: needs a note that passes the entry bar.
 
 ## Done recently
+- 2026-11-15 Random-entry control built: `kestrel random-entry`, scorecard test 9 for bracket
+  strategies (beat 95% of random-entry paths with the same stops, targets and sizing).
+- 2026-11-15 Cost gate built and run on BTC/ETH/SOL 1m and 5m (12 months each ingested):
+  FAILS 17 of 18, SOL 5m NY open MARGINAL.
 - 2026-11-14 Attention and extreme-fear studies: both KILL; rejected (Luke).
 - 2026-11-14 P4 paper trading built: sessions S1-S5 (details in CLAUDE.md's roadmap).
 - 2026-11-14 volatile-macd backtested: fails the scorecard on BTC and ETH; rejected (Luke).

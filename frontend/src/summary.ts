@@ -281,14 +281,20 @@ export function deflatedNote(r: Pick<RunSummary, "deflated_sharpe" | "deflated_t
 
 /** How a validation study's verdict reads: passed, failed, or nothing to test. */
 export function studyTone(verdict: string): Tone {
-  if (verdict === "ROBUST" || verdict === "SURVIVES") return "ok";
-  if (verdict === "NO EDGE") return "neutral";
+  if (verdict === "ROBUST" || verdict === "SURVIVES" || verdict === "BEATS RANDOM") return "ok";
+  if (verdict === "NO EDGE" || verdict === "NO TRADES") return "neutral";
   return "bad";
 }
 
+const STUDY_KINDS: Record<Study["kind"], string> = {
+  robustness: "Robustness",
+  "walk-forward": "Walk-forward",
+  "random-entry": "Random-entry control",
+};
+
 /** "Robustness of channel-breakout" / "Walk-forward of ma-trend". */
 export function studyTitle(s: Pick<Study, "kind" | "strategy">): string {
-  return `${s.kind === "robustness" ? "Robustness" : "Walk-forward"} of ${s.strategy}`;
+  return `${STUDY_KINDS[s.kind]} of ${s.strategy}`;
 }
 
 /** Pursue, watch or drop, as shown. Dropped is grey, not red: dropping a failed idea is

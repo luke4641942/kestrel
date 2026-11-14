@@ -361,14 +361,15 @@ export interface PaperDetail extends PaperSummary {
 export interface Study {
   id: string;
   created_at: string;
-  kind: "robustness" | "walk-forward";
+  kind: "robustness" | "walk-forward" | "random-entry";
   strategy: string;
   symbol: string;
   interval: Interval;
   start: string;
   end: string;
   looks: { params: Record<string, number>; sharpe: number | null }[];
-  /** ROBUST, FRAGILE or NO EDGE (robustness); SURVIVES or KILL (walk-forward). */
+  /** ROBUST, FRAGILE or NO EDGE (robustness); SURVIVES or KILL (walk-forward); BEATS RANDOM,
+   * NO BETTER THAN RANDOM or NO TRADES (random-entry). */
   verdict: string;
 }
 

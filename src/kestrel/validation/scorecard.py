@@ -1,7 +1,8 @@
 """Grading a saved run against the scorecard (kestrel.validation.rules).
 
-Each of the eight tests comes out pass, fail, not run or n/a (robustness, for a strategy
-with no settings to tune), with what was measured. A run passes only when all eight pass
+Each of the nine tests comes out pass, fail, not run or n/a (robustness, for a strategy
+with no settings to tune; random entry, for one holding weights rather than brackets), with
+what was measured. A run passes only when all nine pass
 or don't apply; one failure fails it; otherwise it is incomplete (a
 validation study is missing). Everything is read from what is already stored: the run's
 metrics and analysis, its deflated Sharpe, and the validation studies on the same
@@ -200,6 +201,26 @@ def _robustness(study: dict[str, Any] | None, params: dict[str, Any], held: floa
     )
 
 
+def _random_entry(study: dict[str, Any] | None, run: dict[str, Any]) -> Grade:
+    rule = rules.SCORECARD[8]
+    if run.get("style") != "brackets":
+        return Grade(
+            rule.name, rule.rule, "n/a", "Holds weights, not brackets: no payoff shape to copy."
+        )
+    params = run.get("params") or {}
+    if study is None or (study["detail"].get("params") or {}) != params:
+        return Grade(rule.name, rule.rule, "not run", "No random-entry control for these settings.")
+    share = study["detail"].get("beaten_share")
+    if share is None:
+        return Grade(rule.name, rule.rule, "fail", "No trades to compare with random entries.")
+    return Grade(
+        rule.name,
+        rule.rule,
+        _status(share >= rules.RANDOM_BEAT_SHARE),
+        f"Beat {share:.0%} of {study['detail']['paths']} random-entry paths",
+    )
+
+
 def grade(
     run: dict[str, Any],
     deflated: float | None,
@@ -229,5 +250,6 @@ def grade(
             _trades(metrics),
             _drawdown(metrics),
             _robustness(_latest(studies, "robustness", run), run.get("params") or {}, held),
+            _random_entry(_latest(studies, "random-entry", run), run),
         ]
     )

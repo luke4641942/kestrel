@@ -28,7 +28,7 @@ FINDINGS = """# Findings
 
 def test_the_scorecard_states_its_thresholds_from_the_constants() -> None:
     rules_text = " ".join(t.rule for t in rules.SCORECARD)
-    assert len(rules.SCORECARD) == 8
+    assert len(rules.SCORECARD) == 9  # test 9, random entry, added 2026-11-15
     assert "95%" in rules_text
     assert "50%" in rules_text
     assert "30 trades" in rules_text

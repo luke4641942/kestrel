@@ -65,7 +65,7 @@ def statuses(card: Any) -> dict[str, str]:
     return {g.name: g.status for g in card.grades}
 
 
-def test_all_eight_tests_in_the_rules_order() -> None:
+def test_all_nine_tests_in_the_rules_order() -> None:
     card = grade(run(), 0.97, [walk_forward(5), robustness([1.2] * 10)])
     assert card is not None
     assert [(g.name, g.rule) for g in card.grades] == [(t.name, t.rule) for t in rules.SCORECARD]
@@ -175,6 +175,7 @@ def test_missing_evidence_is_not_run_not_failed() -> None:
         "Enough trades": "pass",
         "Drawdown limit": "pass",
         "Robustness": "not run",
+        "Random entry": "n/a",
     }
     assert card.verdict == "incomplete"
     assert card.not_run == 5
@@ -205,3 +206,30 @@ def test_robustness_does_not_apply_to_a_strategy_with_no_settings() -> None:
     )
     assert card.verdict == "pass"  # n/a doesn't hold a pass back
     assert card.not_run == 0
+
+
+def control(beaten: float | None, params: dict[str, int] = PARAMS, **over: Any) -> dict[str, Any]:
+    return {
+        "kind": "random-entry", "strategy": "trend", "symbol": "BTCUSDT", "interval": "1d",
+        "start": "2020-01", "end": "2025-10", "created_at": "2026-11-15T00:00:00",
+        "looks": [], "detail": {"params": params, "paths": 200, "beaten_share": beaten}, **over,
+    }  # fmt: skip
+
+
+def test_random_entry_applies_only_to_bracket_strategies() -> None:
+    def card_for(style: str, studies: list[dict[str, Any]]) -> Any:
+        card = grade(run(style=style), 0.97, [walk_forward(5), robustness([1.2] * 10), *studies])
+        assert card is not None
+        return next(g for g in card.grades if g.name == "Random entry")
+
+    weights = card_for("weights", [control(0.2)])
+    assert (weights.status, weights.measured) == (
+        "n/a",
+        "Holds weights, not brackets: no payoff shape to copy.",
+    )
+    assert card_for("brackets", []).status == "not run"
+    assert card_for("brackets", [control(0.99, {"fast": 5, "slow": 120})]).status == "not run"
+    passed = card_for("brackets", [control(0.95)])
+    assert (passed.status, passed.measured) == ("pass", "Beat 95% of 200 random-entry paths")
+    assert card_for("brackets", [control(0.94)]).status == "fail"
+    assert card_for("brackets", [control(None)]).status == "fail"  # it never traded

@@ -10,6 +10,8 @@ kestrel backtest BTCUSDT --interval 4h --start 2022-01 --end 2025-10
 kestrel anchor-study BTCUSDT --start 2020-01 --end 2025-10
 kestrel walk-forward BTCUSDT --strategy ma-trend --grid fast=10,20 --grid slow=50,100 ...
 kestrel robustness BTCUSDT --strategy channel-breakout --interval 4h --start ... --end ...
+kestrel random-entry BTCUSDT --strategy structure-pullback --interval 4h --start ... --end ...
+kestrel cost-gate BTCUSDT ETHUSDT SOLUSDT --interval 1m
 """
 
 from __future__ import annotations
@@ -56,11 +58,13 @@ from kestrel.regimes import walk_forward as walk_regimes
 from kestrel.research import ResearchStore, run_target
 from kestrel.strategy import (
     STRATEGIES,
+    BracketStrategy,
     make_portfolio_strategy,
     make_strategy,
     resolve_params,
     spec_for,
 )
+from kestrel.studies import cost_gate
 from kestrel.studies.anchor_day import format_study, run_study
 from kestrel.studies.volatile_direction import format_study as format_volatile_study
 from kestrel.studies.volatile_direction import run_study as run_volatile_study
@@ -71,6 +75,7 @@ from kestrel.studies.weekly_signal import (
     news_flags,
     run_signal_study,
 )
+from kestrel.validation.control import PATHS, format_control, run_control
 from kestrel.validation.holdout import HoldoutLog, format_holdout, holdout_test
 from kestrel.validation.log import Look, Study, ValidationLog
 from kestrel.validation.robustness import check_robustness, format_robustness
@@ -776,6 +781,128 @@ def robustness(
         },
     )
     typer.echo(f"Saved as study {ValidationLog(data_dir).save(study)}")
+
+
+@app.command("random-entry")
+def random_entry(
+    symbol: str,
+    start: Annotated[str, typer.Option(help="First month, YYYY-MM.")],
+    end: Annotated[str, typer.Option(help="Last month, YYYY-MM (inclusive).")],
+    strategy: Annotated[str, typer.Option(help="Strategy key (a bracket strategy).")],
+    interval: IntervalOpt = Interval.H4,
+    param: Annotated[
+        list[str] | None,
+        typer.Option(help="Setting as name=value; repeatable. Default: the defaults."),
+    ] = None,
+    paths: Annotated[int, typer.Option(help="Random-entry copies to run.")] = PATHS,
+    cash: Annotated[float, typer.Option(help="Starting cash in USDT.")] = 330.0,
+    research: Annotated[
+        str | None,
+        typer.Option(help="Research strategy slug: its frozen note must name the strategy."),
+    ] = None,
+    research_dir: ResearchDir = Path("research"),
+    data_dir: DataDir = Path("data"),
+    config: Annotated[
+        Path, typer.Option("--config", envvar="KESTREL_CONFIG", help="Config file.")
+    ] = Path("kestrel.toml"),
+) -> None:
+    """Is a bracket strategy better than random entries with the same stops, targets and
+    sizing? Scorecard test 9. Saved as a study; never uses the holdout."""
+    try:
+        key, _ = run_target(ResearchStore(research_dir), strategy, research)
+        spec = spec_for(key)
+        settings = resolve_params(key, _parse_params(param or []))
+        if spec.universe:
+            raise ValueError(f"{key} ranks a universe; the control is for one-coin brackets")
+        made = make_strategy(key, symbol, settings)
+        if not isinstance(made, BracketStrategy):
+            raise ValueError(f"{key} holds weights, not brackets: there is no payoff shape to copy")
+        cfg = load_config(config)
+        first, last = Month.parse(start), Month.parse(end)
+        after = last.next()
+        bars = ParquetStore(data_dir).read(
+            symbol,
+            interval,
+            datetime(first.year, first.month, 1, tzinfo=UTC),
+            datetime(after.year, after.month, 1, tzinfo=UTC),
+        )
+        if bars.height < 2:
+            raise ValueError(f"no stored {symbol.upper()} {interval.value} bars in that range")
+        bars = attach_features(bars, spec.features, symbol, interval, data_dir)
+        tick = max(1, paths // 10)
+        result = run_control(
+            made,
+            bars,
+            interval,
+            cfg,
+            Decimal(str(cash)),
+            paths=paths,
+            on_path=lambda i: (
+                typer.echo(f"  {i}/{paths} paths", err=True) if i % tick == 0 else None
+            ),
+        )
+    except (HoldoutError, ConfigError, ValueError) as e:
+        typer.echo(str(e), err=True)
+        raise typer.Exit(code=1) from None
+    typer.echo(format_control(result, f"{symbol.upper()} {interval.value}, {start} to {end}"))
+    study = Study(
+        kind="random-entry",
+        strategy=key,
+        symbol=symbol.upper(),
+        interval=interval.value,
+        start=start,
+        end=end,
+        looks=[],  # random paths aren't settings chosen from the data: no trials
+        verdict=result.verdict,
+        detail={
+            "params": settings,
+            "paths": paths,
+            "expectancy_r": result.expectancy_r,
+            "trades": result.trades,
+            "beaten_share": result.beaten_share,
+            "random_median_r": result.quantile(0.5),
+            "random_p95_r": result.quantile(0.95),
+        },
+    )
+    typer.echo(f"Saved as study {ValidationLog(data_dir).save(study)}")
+
+
+@app.command("cost-gate")
+def cost_gate_cmd(
+    symbols: list[str],
+    interval: IntervalOpt = Interval.M1,
+    swing_bars: Annotated[int, typer.Option(help="Bars either side of a swing high.")] = 3,
+    data_dir: DataDir = Path("data"),
+    config: Annotated[
+        Path, typer.Option("--config", envvar="KESTREL_CONFIG", help="Config file.")
+    ] = Path("kestrel.toml"),
+) -> None:
+    """Can 1m/5m fair-value-gap stops carry a round trip's costs? Measures stop widths only
+    (no outcomes, not a trial), on all stored bars before the holdout."""
+    try:
+        cfg = load_config(config)
+        c = cfg.costs
+        round_trip = float(2 * (c.taker_fee_bps + c.half_spread_bps))
+        gates: list[cost_gate.Gate] = []
+        for symbol in symbols:
+            bars = ParquetStore(data_dir).read(symbol, interval, None, cfg.backtest.holdout_start)
+            if bars.is_empty():
+                raise ValueError(
+                    f"no stored {symbol.upper()} {interval.value} bars; ingest them first"
+                )
+            found = cost_gate.setups(bars, swing_bars=swing_bars)
+            first, last = bars["open_time"][0], bars["open_time"][-1]
+            market = f"{symbol.upper()} {interval.value}"
+            typer.echo(f"{market}: {bars.height} bars, {first:%Y-%m-%d} to {last:%Y-%m-%d}")
+            gates += [
+                cost_gate.measure(market, found, round_trip),
+                cost_gate.measure(market, found, round_trip, ny_only=True),
+            ]
+    except (ConfigError, ValueError) as e:
+        typer.echo(str(e), err=True)
+        raise typer.Exit(code=1) from None
+    typer.echo("")
+    typer.echo(cost_gate.format_gates(gates))
 
 
 def _parse_grid(pairs: list[str]) -> dict[str, list[int]]:

@@ -307,6 +307,9 @@ describe("validation studies", () => {
   it("are titled by kind and strategy", () => {
     expect(studyTitle({ kind: "robustness", strategy: "channel-breakout" })).toBe("Robustness of channel-breakout");
     expect(studyTitle({ kind: "walk-forward", strategy: "ma-trend" })).toBe("Walk-forward of ma-trend");
+    expect(studyTitle({ kind: "random-entry", strategy: "structure-pullback" })).toBe(
+      "Random-entry control of structure-pullback",
+    );
   });
 });
 

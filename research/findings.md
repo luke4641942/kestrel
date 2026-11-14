@@ -32,6 +32,10 @@ hypothesis, rules and pass test, written down before the strategy saw market dat
   every setting of the robustness grids. With that many, the best backtest Sharpe you would
   expect from luck alone is about 1.45. The deflated Sharpe (Bailey and López de Prado)
   measures each result against that bar, allowing for skew and fat tails.
+- **Costs checked before building.** A minute-chart idea first goes through a cost gate:
+  how wide its stops are against a 22 bp round trip, in R, measured without looking at
+  outcomes. A bracket strategy must also beat random entries with the same stops, targets
+  and sizing, so a 4R-win/1R-loss payoff shape can't pass as an edge.
 - **A fair benchmark.** Every result is compared with holding the same coin, and with
   holding it at the strategy's average exposure (rebalanced daily, without costs). Being in
   cash half the time halves drawdowns for free, so only beating the second is skill.
@@ -169,6 +173,7 @@ edge, and the holdout can't be used again for either strategy.
 | Study: rising attention (Wikipedia) | BTC, ETH 1d | Next week +0.65% after rising attention vs +0.74%; P 46%: KILL | Drop |
 | Study: extreme fear | BTC, ETH 1d | Next week +0.27% after Extreme Fear vs +0.59%; P 39%: KILL | Drop |
 | Ride volatile spells in MACD's direction | BTC, ETH 1d | Weekly hold: BTC Sharpe -0.13 vs 0.53 holding; ETH 0.42 vs 0.46; 0 and 1 of 5 walk-forward windows; 26 and 19 trades; robustness no edge / fragile. Daily switch no better | Drop |
+| Cost gate: 1m/5m change of character + fair value gap (YouTube S2/S3) | BTC, ETH, SOL 1m and 5m | Stops only, no outcomes (not a trial). Median stop 6-19 bp on 1m and 15-45 bp on 5m, so a 22 bp round trip costs 0.5-3.9R a trade; break-even win rate at 4R 30-97% instead of 20%. FAILS on 17 of 18 (coin x bar size x all hours / NY open); SOL 5m at the NY open MARGINAL (0.49R) | Not built (Luke's call) |
 
 Each strategy was judged by its own note's pass test, written before it ran. From
 2026-11-14 every strategy is judged on one scorecard instead.

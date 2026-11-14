@@ -107,6 +107,9 @@ Never pipe check output through `tail` or similar inside an `&&` chain: it hides
   6. At least 30 trades.
   7. Max drawdown <= 50%.
   8. Neighbouring settings also pass test 1 (a plateau, not a peak).
+  9. Bracket strategies only: net expectancy per trade beats 95% of random-entry paths
+     with the same stops, targets and sizing (`kestrel random-entry`,
+     `kestrel.validation.control`; added 2026-11-15). n/a for weight strategies.
 - **Risk-managed holding** is a separate category for a strategy that hasn't passed but
   Luke may run because it smooths the ride. It is labelled "not a proven edge" and never
   counts as a pass.
