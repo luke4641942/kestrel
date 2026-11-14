@@ -175,8 +175,8 @@ name = "One-week momentum"
 market = "ETHUSDT 1d"
 decision = "watch"
 decided = 2026-11-14
-reason = "Under the 2026-11-14 scorecard it passes the edge test on ETH 2020-25 (Sharpe 1.23 vs 1.12 for holding; +2,318% vs +913% at the same exposure), as trend-vol-target does on BTC, and fails the luck test (deflated 29%). On ETH's unseen 2017-19 it trailed holding slightly (Sharpe 0.13 vs 0.15). Watched, not passed: a candidate for paper trading beside trend-vol-target."
-evidence = ["one-week-momentum-btc-eth-daily", "weekly-momentum-on-btc-followers-eth-unseen"]
+reason = "Full scorecard on ETH 2020-25 (note weekly-momentum-eth-scorecard): passes every applicable test except luck. Edge: Sharpe 1.23 vs 1.12 (+2,318% vs +913% at the same exposure). Walk-forward: beat holding in 4 of 7 six-month windows, the minimum (out of sample +147% vs -32%). Start dates 83%, break-even 12x cost, 145 trades, drawdown -42%; robustness n/a (no settings). Luck: deflated 29%. On ETH's unseen 2017-19 it trailed holding slightly (0.13 vs 0.15). Watched, not passed: a candidate for paper trading beside trend-vol-target."
+evidence = ["weekly-momentum-eth-scorecard", "one-week-momentum-btc-eth-daily", "weekly-momentum-on-btc-followers-eth-unseen"]
 
 [[decision]]
 strategy = "weekly-momentum"

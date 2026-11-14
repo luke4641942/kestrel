@@ -9,13 +9,11 @@ Decisions and rules live in CLAUDE.md; results in `research/findings.md`.
 - [ ] Decide on stops and take-profits (proposal in the 2026-11-14 conversation): one
       pre-registered trailing-stop variant on weekly momentum ETH and trend-vol-target BTC,
       or leave exits to the signals.
-- [ ] Keep or delete `research/strategies/test/` (an empty "Test" idea from 4 Nov).
+- [ ] Commit the research notes changed in the 2026-11-14 clean-out (seven rejections and
+      the new `weekly-momentum-eth-scorecard`), so runs stop being stamped "uncommitted".
 
 ## Next
 - [ ] Run the walk-forward once the note is frozen; record the result in decisions and findings.
-- [ ] Scorecard for strategies without settings: weekly momentum has nothing to tune, so
-      tests 3 (walk-forward) and 8 (robustness) can never run. Grade test 3 from fixed
-      6-month windows and mark test 8 "not applicable".
 - [ ] Charts page under More: any market and interval, indicator chips, a plain-English
       panel per indicator.
 - [ ] P4 paper trading: sim venue, Binance testnet, reconciliation, risk limits, kill switch.
@@ -28,6 +26,9 @@ Decisions and rules live in CLAUDE.md; results in `research/findings.md`.
 - [ ] HMM regime filter (backlog S2) as a strategy: needs a note that passes the entry bar.
 
 ## Done recently
+- 2026-11-14 Weekly momentum ETH scorecard: passes all but luck (walk-forward 4 of 7); stays watch.
+- 2026-11-14 Scorecard for strategies with nothing to tune (fixed-rule walk-forward, robustness n/a).
+- 2026-11-14 Strategies cleaned out: seven tested notes rejected with their reasons; empty "Test" idea removed.
 - 2026-11-14 Weekly momentum ETH moved to "watch"; BTC and SOL stay dropped.
 - 2026-11-14 Overview: the datasets line no longer lists every coin.
 - 2026-11-14 Regimes page under More (HMM states, fitted as a job).
