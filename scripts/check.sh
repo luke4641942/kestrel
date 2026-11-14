@@ -8,6 +8,7 @@ ruff check .
 ruff format --check .
 mypy
 pytest -m "not network" -q
+python scripts/check_committed.py
 cd frontend
 npm test
 npm run build
