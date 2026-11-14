@@ -14,6 +14,7 @@ kestrel robustness BTCUSDT --strategy channel-breakout --interval 4h --start ...
 
 from __future__ import annotations
 
+import math
 import plistlib
 import shlex
 import sys
@@ -61,6 +62,8 @@ from kestrel.strategy import (
     spec_for,
 )
 from kestrel.studies.anchor_day import format_study, run_study
+from kestrel.studies.volatile_direction import format_study as format_volatile_study
+from kestrel.studies.volatile_direction import run_study as run_volatile_study
 from kestrel.validation.holdout import HoldoutLog, format_holdout, holdout_test
 from kestrel.validation.log import Look, Study, ValidationLog
 from kestrel.validation.robustness import check_robustness, format_robustness
@@ -403,6 +406,38 @@ def update(
             failed = failed or not up.quality.is_clean
     if failed:
         raise typer.Exit(code=1)
+
+
+@app.command("volatile-study")
+def volatile_study(
+    symbols: list[str],
+    horizon_days: Annotated[int, typer.Option(help="Days after the signal to measure.")] = 7,
+    data_dir: DataDir = Path("data"),
+    config: Annotated[
+        Path, typer.Option("--config", envvar="KESTREL_CONFIG", help="Config file.")
+    ] = Path("kestrel.toml"),
+) -> None:
+    """Which way do volatile spells go? MACD's direction on the regime model's volatile days
+    against the next week's return (a raw-effect study). Daily bars; never uses the holdout."""
+    try:
+        cfg = load_config(config)
+        markets = {}
+        for symbol in symbols:
+            bars = ParquetStore(data_dir).read(
+                symbol, Interval.D1, None, cfg.backtest.holdout_start
+            )
+            if bars.is_empty():
+                raise ValueError(f"no stored {symbol.upper()} 1d bars; ingest them first")
+            markets[symbol.upper()] = attach_features(
+                bars, ("regime_volatile",), symbol, Interval.D1, data_dir
+            )
+        c = cfg.costs
+        hurdle = math.log1p(float(2 * (c.taker_fee_bps + c.half_spread_bps)) / 1e4)
+        result = run_volatile_study(markets, horizon_days=horizon_days, hurdle=hurdle)
+    except (ConfigError, ValueError) as e:
+        typer.echo(str(e), err=True)
+        raise typer.Exit(code=1) from None
+    typer.echo(format_volatile_study(result))
 
 
 @app.command("holdout-test")
