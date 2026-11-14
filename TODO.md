@@ -9,8 +9,6 @@ Decisions and rules live in CLAUDE.md; results in `research/findings.md`.
 
 ## Next
 - [ ] Run the walk-forward once the note is frozen; record the result in decisions and findings.
-- [ ] Charts page under More: any market and interval, indicator chips, a plain-English
-      panel per indicator.
 - [ ] P4 paper trading: sim venue, Binance testnet, reconciliation, risk limits, kill switch.
       First strategies: trend-vol-target BTC (pursue) and weekly momentum ETH (watch).
 
@@ -21,6 +19,7 @@ Decisions and rules live in CLAUDE.md; results in `research/findings.md`.
 - [ ] HMM regime filter (backlog S2) as a strategy: needs a note that passes the entry bar.
 
 ## Done recently
+- 2026-11-14 Charts page under More, with a plain-English card per indicator.
 - 2026-11-14 Crash brake tested on both survivors: made both worse; rejected.
 - 2026-11-14 Weekly momentum ETH scorecard: passes all but luck (walk-forward 4 of 7); stays watch.
 - 2026-11-14 Scorecard for strategies with nothing to tune (fixed-rule walk-forward, robustness n/a).

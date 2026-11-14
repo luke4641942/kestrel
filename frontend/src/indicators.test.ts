@@ -10,6 +10,7 @@ const info = (key: string, pane: "price" | "own", lines = ["value"], guides: num
   lines,
   guides,
   percent: false,
+  reading: "",
 });
 
 const MENU = [

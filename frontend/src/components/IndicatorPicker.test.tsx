@@ -4,8 +4,8 @@ import type { IndicatorInfo } from "../api";
 import { IndicatorPicker } from "./IndicatorPicker";
 
 const menu: IndicatorInfo[] = [
-  { key: "sma200", label: "SMA 200", pane: "price", description: "Long-term trend.", lines: ["value"], guides: [], percent: false },
-  { key: "rsi14", label: "RSI 14", pane: "own", description: "0-100.", lines: ["value"], guides: [30, 70], percent: false },
+  { key: "sma200", label: "SMA 200", pane: "price", description: "Long-term trend.", lines: ["value"], guides: [], percent: false, reading: "" },
+  { key: "rsi14", label: "RSI 14", pane: "own", description: "0-100.", lines: ["value"], guides: [30, 70], percent: false, reading: "" },
 ];
 
 describe("IndicatorPicker", () => {

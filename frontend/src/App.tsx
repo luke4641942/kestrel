@@ -4,6 +4,7 @@ import { JobsDock } from "./components/JobsDock";
 import { ErrorBanner, Status } from "./components/ui";
 import { isActive } from "./format";
 import { useResource } from "./hooks";
+import { Charts } from "./pages/Charts";
 import { Costs } from "./pages/Costs";
 import { Data } from "./pages/Data";
 import { Overview } from "./pages/Overview";
@@ -14,7 +15,7 @@ import { Backtests } from "./pages/Backtests";
 import { Trading } from "./pages/Placeholders";
 import { useTheme } from "./theme";
 
-export type Route = "overview" | "strategies" | "data" | "costs" | "rules" | "regimes" | "backtests" | "trading";
+export type Route = "overview" | "strategies" | "data" | "costs" | "rules" | "regimes" | "charts" | "backtests" | "trading";
 
 // Main tabs are about strategies and trading; reference and data pages live under More.
 const NAV: { route: Route; label: string; later?: string; more?: boolean }[] = [
@@ -22,6 +23,7 @@ const NAV: { route: Route; label: string; later?: string; more?: boolean }[] = [
   { route: "strategies", label: "Strategies" },
   { route: "backtests", label: "Backtests" },
   { route: "trading", label: "Trading", later: "P4" },
+  { route: "charts", label: "Charts", more: true },
   { route: "data", label: "Data", more: true },
   { route: "costs", label: "What a trade costs", more: true },
   { route: "regimes", label: "Regimes", more: true },
@@ -191,6 +193,9 @@ export function App() {
       break;
     case "costs":
       page = <Costs />;
+      break;
+    case "charts":
+      page = <Charts />;
       break;
     case "regimes":
       page = <Regimes jobs={jobList} onJobStarted={onJobStarted} />;

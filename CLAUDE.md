@@ -68,8 +68,8 @@ Never pipe check output through `tail` or similar inside an `&&` chain: it hides
 - [x] HMM regimes (backlog S2/S3): `kestrel.regimes`, `kestrel regimes`, and the Regimes
       page under More (fitted as a job, stored in `data/regimes/`). Describes; never trades.
       A strategy using states (S2 as a filter) is a research note and the scorecard.
-- [ ] Charts page under More: any market and interval, indicator chips, a plain-English
-      panel per indicator (reuse CandleChart, IndicatorPicker, `/api/indicators`)
+- [x] Charts page under More: any market, bar size and range, the indicator chips, and a
+      plain-English card per indicator switched on (`Preset.reading`)
 - [ ] P4 Execution: ExecutionVenue adapters (sim, Binance testnet, live), reconciliation,
       risk limits, kill switch, alerting, parity tests. First run: trend-vol-target on BTC
       as risk-managed holding, to prove the plumbing.

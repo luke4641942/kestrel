@@ -924,6 +924,55 @@ p {
   height: 520px;
 }
 
+/* ---------- charts ---------- */
+
+.form-charts {
+  grid-template-columns: minmax(0, 240px) minmax(0, 120px) minmax(0, 180px);
+  justify-content: start;
+}
+
+@media (max-width: 600px) {
+  .form-charts {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+.chart-cap {
+  padding: 0 16px 12px;
+}
+
+.indicator-cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 16px;
+}
+
+.indicator-card-title {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 8px;
+  margin: 0 0 8px;
+  font-size: 15px;
+}
+
+.indicator-card-title .swatch {
+  width: 10px;
+  height: 10px;
+  border-radius: 2px;
+  display: inline-block;
+}
+
+.indicator-reading {
+  font-size: 13.5px;
+  line-height: 1.6;
+  max-width: 72ch;
+}
+
+.indicator-reading + p {
+  margin-top: 8px;
+}
+
 /* ---------- regimes ---------- */
 
 .form-regimes {

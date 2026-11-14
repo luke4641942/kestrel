@@ -33,6 +33,8 @@ export interface IndicatorInfo {
   lines: string[];
   guides: number[];
   percent: boolean;
+  /** How it's worked out and how people read it, in plain English. */
+  reading: string;
 }
 
 export interface Bars {

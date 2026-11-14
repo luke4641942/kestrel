@@ -51,6 +51,8 @@ class IndicatorOut(BaseModel):
     lines: list[str]
     guides: list[float]
     percent: bool
+    reading: str
+    """How it's worked out and how people read it, in plain English."""
 
 
 class Bars(BaseModel):

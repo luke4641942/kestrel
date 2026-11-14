@@ -193,6 +193,7 @@ def create_app(
                 lines=list(p.lines),
                 guides=list(p.guides),
                 percent=p.percent,
+                reading=p.reading,
             )
             for p in PRESETS.values()
         ]

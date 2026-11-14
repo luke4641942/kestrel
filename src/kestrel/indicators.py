@@ -205,6 +205,9 @@ class Preset:
     """Horizontal reference levels (RSI's 30 and 70)."""
     percent: bool = False
     """Values are fractions, shown as %."""
+    reading: str = ""
+    """How it's worked out and how people read it, in plain English, with what Kestrel's own
+    research found where that applies. Shown on the Charts page."""
 
 
 def _one(fn: Callable[[pl.DataFrame], pl.Series]) -> Callable[[pl.DataFrame], dict[str, pl.Series]]:
@@ -230,6 +233,11 @@ PRESETS: dict[str, Preset] = {
             "price",
             "Simple average of the last 50 closes.",
             _one(lambda b: sma(b["close"], 50)),
+            reading=(
+                "The average of the last 50 closes, redrawn each bar. Price above a rising 50 is "
+                "read as a healthy medium-term uptrend; a cross below is an early warning. It lags "
+                "by design: it smooths out noise by reacting late."
+            ),
         ),
         Preset(
             "sma200",
@@ -237,6 +245,14 @@ PRESETS: dict[str, Preset] = {
             "price",
             "Simple average of the last 200 closes: the long-term trend.",
             _one(lambda b: sma(b["close"], 200)),
+            reading=(
+                "The average of the last 200 closes: the most widely watched long-term trend line. "
+                "Above it is called a bull market, below it a bear market, and a cross often makes "
+                "headlines. On daily bars it reacts slowly, so it misses the first part of every "
+                "move. Kestrel's best result, trend-vol-target, uses a similar idea (is the close "
+                "above where it was 20, 60 and 120 days ago?) and cut drawdowns, but couldn't be "
+                "told apart from luck."
+            ),
         ),
         Preset(
             "ema20",
@@ -244,6 +260,12 @@ PRESETS: dict[str, Preset] = {
             "price",
             "Exponential average of the last 20 closes.",
             _one(lambda b: ema(b["close"], 20)),
+            reading=(
+                "Like a moving average, but recent closes count for more (each bar's weight is "
+                "2/21), so it turns sooner than a simple average of the same length. Traders use it"
+                " as a short-term trend line and a place pullbacks often pause. Turning sooner also"
+                " means more false turns."
+            ),
         ),
         Preset(
             "bollinger",
@@ -252,6 +274,13 @@ PRESETS: dict[str, Preset] = {
             "SMA 20 with bands 2 standard deviations either side: wide when the market is wild.",
             _bollinger,
             lines=("upper", "middle", "lower"),
+            reading=(
+                "A 20-bar average with bands two standard deviations above and below. The bands "
+                "widen when prices swing wildly and squeeze together when they're calm; a squeeze "
+                "is often followed by a big move, but not in a predictable direction. A close "
+                "outside a band is unusual, not a signal by itself: in a strong trend price can "
+                "ride the band for weeks."
+            ),
         ),
         Preset(
             "rsi14",
@@ -261,6 +290,13 @@ PRESETS: dict[str, Preset] = {
             "Above 70 is called overbought, below 30 oversold.",
             _one(lambda b: rsi(b["close"], 14)),
             guides=(30.0, 70.0),
+            reading=(
+                "Compares the size of recent up-moves with recent down-moves over 14 bars (Wilder's"
+                " smoothing) on a 0 to 100 scale: 100 means every move was up. Above 70 is called "
+                "overbought, below 30 oversold. In crypto trends RSI can stay overbought for "
+                "months, so 'overbought, sell' often sells early. Kestrel's buy-the-dip ideas "
+                "(reversals after big down days, Fear & Greed contrarian) lost to holding."
+            ),
         ),
         Preset(
             "macd",
@@ -270,6 +306,12 @@ PRESETS: dict[str, Preset] = {
             _macd,
             lines=("macd", "signal", "histogram"),
             guides=(0.0,),
+            reading=(
+                "The 12-bar EMA minus the 26-bar EMA (the MACD line), a 9-bar EMA of that line (the"
+                " signal), and their difference (the histogram). MACD above zero means the short-"
+                "term average is above the long-term one; crossing the signal line is read as "
+                "momentum turning. It's built from moving averages, so it lags like them."
+            ),
         ),
         Preset(
             "atr14",
@@ -277,6 +319,13 @@ PRESETS: dict[str, Preset] = {
             "own",
             "Average true range: how far the price typically moves in a bar.",
             _one(lambda b: atr(b, 14)),
+            reading=(
+                "Average true range: how far price typically travels in a bar, including gaps from "
+                "the previous close, smoothed over 14 bars. It doesn't say which way. It's used to "
+                "size positions and set stops at a distance the market's normal noise won't hit. "
+                "Kestrel's crash brake used 2 ATR; it was triggered by ordinary swings and made "
+                "both strategies worse."
+            ),
         ),
         Preset(
             "volatility30",
@@ -285,6 +334,12 @@ PRESETS: dict[str, Preset] = {
             "Annualised volatility of the last 30 days of returns.",
             _one(lambda b: realised_volatility(b, 30)),
             percent=True,
+            reading=(
+                "How much daily returns varied over the last 30 days, scaled to a year (annualised "
+                "standard deviation). Bitcoin usually runs between 40% and 80%. Trend-vol-target "
+                "holds less when this is high; the test showed its edge came from the trend votes, "
+                "not from this sizing."
+            ),
         ),
         Preset(
             "rvol20",
@@ -293,6 +348,12 @@ PRESETS: dict[str, Preset] = {
             "This bar's volume over the average of the 20 before it: 1 is normal, 3 is triple.",
             _one(lambda b: relative_volume(b["volume"], 20)),
             guides=(1.0,),
+            reading=(
+                "This bar's volume divided by the average volume of the 20 bars before it. 1 is a "
+                "normal bar, 3 is three times normal. Breakouts on high relative volume are read as"
+                " more convincing. Volume on one exchange is only part of the market, and big moves"
+                " bring volume whichever way they go."
+            ),
         ),
         Preset(
             "obv",
@@ -300,6 +361,12 @@ PRESETS: dict[str, Preset] = {
             "own",
             "Volume added on up closes, subtracted on down closes. Only its direction matters.",
             _one(lambda b: on_balance_volume(b["close"], b["volume"])),
+            reading=(
+                "A running total that adds a bar's volume when it closes up and subtracts it when "
+                "it closes down. The level means nothing (it depends on where the chart starts); "
+                "only its direction does. A rising OBV while price is flat is read as buyers "
+                "quietly accumulating."
+            ),
         ),
         Preset(
             "ma_distance200",
@@ -309,6 +376,12 @@ PRESETS: dict[str, Preset] = {
             _one(lambda b: ma_distance(b["close"], 200)),
             guides=(0.0,),
             percent=True,
+            reading=(
+                "How far the close is above (+) or below (-) its 200-bar average, as a percentage. "
+                "Big positive readings mean an extended run (often late in a rally); big negative "
+                "readings mean a deep drop below trend. Useful for comparing how stretched the "
+                "market is now with past peaks and troughs."
+            ),
         ),
     )
 }

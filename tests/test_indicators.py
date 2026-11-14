@@ -140,3 +140,9 @@ def test_no_preset_uses_the_future(key: str) -> None:
             assert line.to_list() == pytest.approx(full[name].head(cut).to_list(), nan_ok=True), (
                 f"{key}.{name} changes before bar {cut} when later bars are added"
             )
+
+
+def test_every_preset_explains_itself() -> None:
+    for p in ind.PRESETS.values():
+        assert len(p.reading) > 80, f"{p.key} needs a plain-English reading"
+        assert p.reading.endswith("."), p.key
