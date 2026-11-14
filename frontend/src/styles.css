@@ -2114,8 +2114,42 @@ p {
   margin-top: 2px;
 }
 
+/* A run's graded scorecard: the measured value leads, the rule sits under it, and the
+   result is a chip at the end of the row. */
+.scorecard-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px 16px;
+  padding: 16px 18px;
+  border-bottom: 1px solid var(--line);
+}
+
+.scorecard-head h3 {
+  margin: 0 0 4px;
+  font-size: 15px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.scorecard-graded li {
+  grid-template-columns: 140px minmax(0, 1fr) auto;
+  align-items: start;
+}
+
+.scorecard-graded li.grade-fail {
+  box-shadow: inset 3px 0 0 var(--down);
+}
+
+.scorecard-graded li.grade-not-run .scorecard-rule {
+  color: var(--text-2);
+}
+
 @media (max-width: 600px) {
-  .scorecard li {
+  .scorecard li,
+  .scorecard-graded li {
     grid-template-columns: minmax(0, 1fr);
   }
 }

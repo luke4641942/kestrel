@@ -145,6 +145,37 @@ describe("Runs and a run's detail", () => {
     expect(screen.queryByText("Against buy-and-hold")).not.toBeInTheDocument();
   });
 
+  it("shows the scorecard under the headline, naming what failed", async () => {
+    const grade = (name: string, status: "pass" | "fail" | "not run", measured: string) => ({ name, rule: `${name} rule`, status, measured });
+    api.backtest = vi.fn().mockResolvedValue(
+      run({
+        scorecard: {
+          verdict: "fail",
+          failed: 1,
+          not_run: 1,
+          grades: [
+            grade("Edge", "pass", "Sharpe 1.21 vs 1.07 for holding"),
+            grade("Luck", "fail", "Deflated Sharpe 28%"),
+            grade("Out of sample", "not run", "No walk-forward on this market and period."),
+          ],
+        },
+      }),
+    );
+    render(<Backtests jobs={[]} onJobStarted={() => {}} />);
+    expect(await screen.findByText("Fails one test: luck. Not yet run: out of sample.")).toBeInTheDocument();
+    const rows = [...document.querySelectorAll(".scorecard-graded > li")];
+    expect(rows.map((li) => li.className)).toEqual(["grade-pass", "grade-fail", "grade-not-run"]);
+    expect(within(rows[1] as HTMLElement).getByText("Deflated Sharpe 28%")).toBeInTheDocument();
+    expect(within(rows[1] as HTMLElement).getByText("Fail")).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "How strategies are judged" })).toHaveAttribute("href", "#/rules");
+  });
+
+  it("has no scorecard for runs that aren't graded", async () => {
+    render(<Backtests jobs={[]} onJobStarted={() => {}} />);
+    await screen.findByRole("tab", { name: "Statistics" });
+    expect(document.querySelector(".scorecard-graded")).toBeNull();
+  });
+
   it("leads with the headline numbers in the agreed order", async () => {
     render(<Backtests jobs={[]} onJobStarted={() => {}} />);
     await screen.findByRole("tab", { name: "Statistics" });

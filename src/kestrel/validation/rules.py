@@ -1,8 +1,8 @@
 """The research rules agreed in the 2026-11-14 review: what a pass means, the one scorecard
 every strategy is judged on, and the bar a new idea must clear before it costs a trial.
 
-This module is the single source for the dashboard's Rules page and, once the scorecard is
-graded in code, for that grading too; CLAUDE.md describes the same rules in prose. The
+This module is the single source for the dashboard's Rules page and for the grading
+(kestrel.validation.scorecard); CLAUDE.md describes the same rules in prose. The
 thresholds are constants so the grader and the page can't disagree.
 """
 

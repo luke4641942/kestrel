@@ -11,7 +11,10 @@ its Sharpe is flattered. Walk-forward separates the two. With rolling windows of
 Each fold's test window starts where its training window ends, and test windows follow
 one another, so joining them gives one out-of-sample record. It is compared with the
 in-sample Sharpe of the chosen points: the strategy backlog's kill rule is an
-out-of-sample Sharpe below half the in-sample one.
+out-of-sample Sharpe below half the in-sample one. Each test window is also compared with
+holding the coin over the same days: the scorecard (kestrel.validation.scorecard) asks that
+most windows beat it on Sharpe. Sharpe doesn't change with position size, so beating
+holding's Sharpe is the same as beating the coin held at the strategy's exposure.
 
 The chosen strategy runs on the training and test bars together, so its indicators are
 warm when the test window opens; only the test window's daily returns count. A position
@@ -56,6 +59,21 @@ class Fold:
     def test_return(self) -> float:
         return math.prod(1 + r for r in self.test_returns) - 1
 
+    @property
+    def test_sharpe(self) -> float | None:
+        return _sharpe(self.test_returns)
+
+    @property
+    def benchmark_sharpe(self) -> float | None:
+        return _sharpe(self.benchmark_returns)
+
+    @property
+    def beats_holding(self) -> bool:
+        """A better Sharpe than holding over the test window. No Sharpe (never invested,
+        or flat) never beats a market that moved; a flat market is beaten by any Sharpe."""
+        mine, held = self.test_sharpe, self.benchmark_sharpe
+        return mine is not None and (held is None or mine > held)
+
 
 @dataclass(frozen=True)
 class WalkForward:
@@ -87,6 +105,15 @@ class WalkForward:
     @property
     def benchmark_return(self) -> float:
         return math.prod(1 + r for f in self.folds for r in f.benchmark_returns) - 1
+
+    @property
+    def benchmark_sharpe(self) -> float | None:
+        """Holding's Sharpe over the joined test windows."""
+        return _sharpe([r for f in self.folds for r in f.benchmark_returns])
+
+    @property
+    def windows_beating_holding(self) -> int:
+        return sum(f.beats_holding for f in self.folds)
 
     @property
     def is_sharpe(self) -> float:
@@ -209,7 +236,8 @@ def format_walk_forward(wf: WalkForward) -> str:
         f"Walk-forward  ·  {wf.strategy}  ·  {wf.symbol} {wf.interval.value}  ·  "
         f"{len(wf.folds)} folds, {wf.configurations} grid points each",
         "",
-        f"  {'test window':<23} {'chosen':<32} {'train SR':>8} {'test':>8} {'holding':>8}",
+        f"  {'test window':<23} {'chosen':<32} {'train SR':>8} {'test':>8} {'holding':>8}"
+        f" {'test SR':>8} {'held SR':>8}",
     ]
     for f in wf.folds:
         chosen = " ".join(f"{k}={v}" for k, v in f.chosen.items())
@@ -217,6 +245,7 @@ def format_walk_forward(wf: WalkForward) -> str:
         lines.append(
             f"  {f.test_start:%Y-%m-%d} to {f.test_end:%Y-%m-%d}  {chosen:<32} "
             f"{f.train_sharpe:>8.2f} {pct(f.test_return):>8} {pct(held):>8}"
+            f" {num(f.test_sharpe):>8} {num(f.benchmark_sharpe):>8}"
         )
     ratio = wf.ratio
     lines += [
@@ -226,6 +255,8 @@ def format_walk_forward(wf: WalkForward) -> str:
         + (f"   ({ratio:.0%} of in-sample)" if ratio is not None else ""),
         f"  Out-of-sample return              {pct(wf.oos_return)}   "
         f"holding: {pct(wf.benchmark_return)}",
+        f"  Beats holding's Sharpe in         {wf.windows_beating_holding} of "
+        f"{len(wf.folds)} test windows   (holding's Sharpe {num(wf.benchmark_sharpe)})",
         "",
         "  Verdict: "
         + (

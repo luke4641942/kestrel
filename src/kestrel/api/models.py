@@ -571,6 +571,24 @@ class AnalysisOut(BaseModel):
     computed from their stored equity."""
 
 
+class GradeOut(BaseModel):
+    name: str
+    rule: str
+    status: str
+    """pass, fail or not run."""
+    measured: str
+
+
+class ScorecardOut(BaseModel):
+    """The run graded against the scorecard (kestrel.validation.scorecard)."""
+
+    verdict: str
+    """pass (all eight pass), fail (any fails) or incomplete (a study is missing)."""
+    failed: int
+    not_run: int
+    grades: list[GradeOut]
+
+
 class RunDetail(RunSummary):
     config: dict[str, Any]
     equity: Series
@@ -580,6 +598,8 @@ class RunDetail(RunSummary):
     trades: list[TradeOut] = Field(default_factory=list)
     analysis: AnalysisOut | None = None
     """Missing for runs saved before the analysis existed."""
+    scorecard: ScorecardOut | None = None
+    """None for buy-and-hold and holdout runs, which aren't graded."""
 
 
 # ---------- research ----------

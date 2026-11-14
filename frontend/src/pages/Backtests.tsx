@@ -1,11 +1,12 @@
 import { useEffect, useMemo, useRef, useState, type FormEvent, type ReactNode } from "react";
-import { api, type Dataset, type Job, type Metrics, type RunDetail, type RunSummary } from "../api";
+import { api, type Dataset, type Job, type Metrics, type RunDetail, type RunSummary, type Scorecard } from "../api";
 import { EquityChart } from "../components/EquityChart";
 import { ParamInputs, defaultParams } from "../components/ParamInputs";
 import { Empty, PageHeader, Panel, Section, Stat, Status, Tabs } from "../components/ui";
 import { ago, dateTime, lastResearchMonth, num } from "../format";
 import { useResource } from "../hooks";
 import {
+  GRADE,
   MAX_LABELLED_TRADES,
   DEFAULT_RUN_SORT,
   costHeadroom,
@@ -18,6 +19,7 @@ import {
   nextSort,
   paramsText,
   runRole,
+  scorecardHeadline,
   sortRuns,
   type RunSort,
   type RunSortKey,
@@ -414,6 +416,7 @@ function RunView({ id }: { id: string }) {
     >
       <div className="run-stack">
         <RunSummaryPanel run={r} />
+        {r.scorecard && <ScorecardPanel card={r.scorecard} />}
         <ChartPanel run={r} />
         <div>
           <Tabs label="Run detail" tabs={tabs} value={tab} onChange={setTab} />
@@ -426,8 +429,8 @@ function RunView({ id }: { id: string }) {
           </div>
         </div>
         <p className="small tertiary">
-          Confidence intervals and probabilities assume this was the only variant tried; P3's deflated Sharpe will correct
-          for every variant tested. Max drawdown is one history's worst case: treat it as a floor, not a forecast.
+          Confidence intervals and probabilities assume this was the only variant tried; the scorecard's luck test (deflated
+          Sharpe) corrects for every variant tested. Max drawdown is one history's worst case: treat it as a floor, not a forecast.
         </p>
       </div>
     </Section>
@@ -525,6 +528,42 @@ function RunSummaryPanel({ run: r }: { run: RunDetail }) {
         />
         <Stat label="Time in the market" value={`${Math.round(m.exposure * 100)}%`} note="Cash the rest of the time" />
       </div>
+    </Panel>
+  );
+}
+
+/**
+ * The run graded against the scorecard: the one verdict on whether a strategy passes.
+ * Grading happens in the engine (kestrel.validation.scorecard); this only shows it.
+ */
+function ScorecardPanel({ card }: { card: Scorecard }) {
+  const head = scorecardHeadline(card);
+  return (
+    <Panel>
+      <div className="scorecard-head">
+        <div>
+          <h3>
+            Scorecard{" "}
+            <Status tone={head.tone}>{card.verdict === "incomplete" ? "Incomplete" : GRADE[card.verdict].label}</Status>
+          </h3>
+          <p className="small secondary">{head.text}</p>
+        </div>
+        <a className="small" href="#/rules">
+          How strategies are judged
+        </a>
+      </div>
+      <ol className="scorecard scorecard-graded">
+        {card.grades.map((g) => (
+          <li key={g.name} className={`grade-${g.status.replace(" ", "-")}`}>
+            <span className="scorecard-name">{g.name}</span>
+            <div>
+              <div className="scorecard-rule">{g.measured}</div>
+              <p className="small tertiary">{g.rule}</p>
+            </div>
+            <Status tone={GRADE[g.status].tone}>{GRADE[g.status].label}</Status>
+          </li>
+        ))}
+      </ol>
     </Panel>
   );
 }

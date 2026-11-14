@@ -440,6 +440,19 @@ export interface RunDetail extends RunSummary {
   }[];
   /** Missing for runs saved before the analysis existed. */
   analysis: Analysis | null;
+  /** null for buy-and-hold and holdout runs, which aren't graded. */
+  scorecard: Scorecard | null;
+}
+
+export type GradeStatus = "pass" | "fail" | "not run";
+
+/** The run graded against the scorecard (kestrel.validation.scorecard). */
+export interface Scorecard {
+  /** pass: all eight pass; fail: any fails; incomplete: a validation study is missing. */
+  verdict: "pass" | "fail" | "incomplete";
+  failed: number;
+  not_run: number;
+  grades: { name: string; rule: string; status: GradeStatus; measured: string }[];
 }
 
 export interface IngestRequest {

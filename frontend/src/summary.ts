@@ -1,6 +1,6 @@
 // Plain logic behind the Backtests page: the verdict, the test-period wording and the
 // chart's trade markers. Kept out of components so it can be tested directly.
-import type { Dataset, Decision, ResearchStatus, Study, RunDetail, RunSummary, StartDateRow, StrategyInfo, StrategyKind } from "./api";
+import type { Dataset, Decision, GradeStatus, ResearchStatus, Scorecard, Study, RunDetail, RunSummary, StartDateRow, StrategyInfo, StrategyKind } from "./api";
 import type { Tone } from "./components/ui";
 import type { TradeMarker } from "./components/EquityChart";
 
@@ -328,4 +328,29 @@ export function startDateVerdict(rows: StartDateRow[]): string | null {
 export function luckBar(trials: number, expectedMax: number): string {
   if (trials < 2) return "No trials logged yet, so there is no luck bar to beat.";
   return `${trials.toLocaleString("en-AU")} trials so far: a backtest Sharpe has to beat about ${expectedMax.toFixed(2)} before it stands out from luck.`;
+}
+
+export const GRADE: Record<GradeStatus, { tone: Tone; label: string }> = {
+  pass: { tone: "ok", label: "Pass" },
+  fail: { tone: "bad", label: "Fail" },
+  "not run": { tone: "neutral", label: "Not run" },
+};
+
+/** The scorecard's verdict in one sentence, naming the tests that failed or didn't run. */
+export function scorecardHeadline(card: Scorecard): { tone: Tone; text: string } {
+  const named = (status: GradeStatus) =>
+    card.grades.filter((g) => g.status === status).map((g) => g.name.toLowerCase());
+  const list = (names: string[]) =>
+    names.length < 2 ? names.join("") : `${names.slice(0, -1).join(", ")} and ${names[names.length - 1]}`;
+  if (card.verdict === "pass") return { tone: "ok", text: "Passes all eight tests." };
+  const missing = named("not run");
+  const pending = missing.length ? ` Not yet run: ${list(missing)}.` : "";
+  if (card.verdict === "fail") {
+    const failed = named("fail");
+    return {
+      tone: "bad",
+      text: `Fails ${failed.length === 1 ? "one test" : `${failed.length} tests`}: ${list(failed)}.${pending}`,
+    };
+  }
+  return { tone: "warn", text: `Passes every test run so far.${pending}` };
 }

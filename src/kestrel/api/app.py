@@ -35,6 +35,7 @@ from kestrel.api.models import (
     DecisionOut,
     EditNote,
     FillOut,
+    GradeOut,
     Health,
     IndicatorLines,
     IndicatorOut,
@@ -52,6 +53,7 @@ from kestrel.api.models import (
     RulesOut,
     RunDetail,
     RunSummary,
+    ScorecardOut,
     ScorecardTestOut,
     Series,
     Signals,
@@ -99,6 +101,7 @@ from kestrel.strategy import (
 from kestrel.validation import rules
 from kestrel.validation.deflated import TrialSet, counts_as_trial, deflated_sharpe, trial_set
 from kestrel.validation.log import ValidationLog
+from kestrel.validation.scorecard import grade
 
 STATIC_DIR = Path(__file__).parent / "static"
 MAX_BARS = 20_000
@@ -551,12 +554,21 @@ def create_app(
         if analysis is not None and "start_dates" not in analysis:
             rows = start_dates(saved.equity, saved.benchmark)
             analysis = {**analysis, "start_dates": [asdict(r) for r in rows]}
+        card = grade(saved.meta, summary.deflated_sharpe, studies.studies(), analysis)
         return RunDetail.model_validate(
             {
                 **saved.meta,
                 "analysis": analysis,
                 "deflated_sharpe": summary.deflated_sharpe,
                 "deflated_trials": summary.deflated_trials,
+                "scorecard": None
+                if card is None
+                else ScorecardOut(
+                    verdict=card.verdict,
+                    failed=card.failed,
+                    not_run=card.not_run,
+                    grades=[GradeOut.model_validate(asdict(g)) for g in card.grades],
+                ),
                 "equity": _series(saved.equity),
                 "benchmark": _series(saved.benchmark),
                 "fills": [FillOut.model_validate(r) for r in saved.fills.iter_rows(named=True)],

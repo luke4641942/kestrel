@@ -37,7 +37,7 @@ bias, unrealistic fills, ignored costs, and research code that is rewritten
 | 1.5 Platform | FastAPI service, job runner, React dashboard | Done |
 | 2. Backtester | Vectorised research engine, event-driven validation engine, cost model, metrics, stops/targets with risk-based sizing | Done |
 | 3. Validation | Walk-forward, parameter robustness, trial log, deflated Sharpe | Done |
-| Next | One pass/fail scorecard for every strategy, judged against holding at the same exposure | Next |
+| 3.5 Scorecard | One pass/fail scorecard for every strategy, judged against holding at the same exposure, graded on every run | Done |
 | 4. Execution | `ExecutionVenue` adapters (sim, Binance testnet, live), reconciliation, kill switch, alerting | Planned |
 | Parked | Perps (Binance perps aren't available to Australian retail; ASIC caps retail crypto leverage at 2:1); multi-strategy portfolios; settings for risk limits and exchange status | Parked |
 

@@ -388,7 +388,9 @@ def walk_forward_cmd(
             "oos_sharpe": result.oos_sharpe,
             "oos_return": result.oos_return,
             "benchmark_return": result.benchmark_return,
+            "benchmark_sharpe": result.benchmark_sharpe,
             "folds": len(result.folds),
+            "windows_beating_holding": result.windows_beating_holding,
         },
     )
     typer.echo(f"Saved as study {ValidationLog(data_dir).save(study)}")

@@ -57,8 +57,9 @@ Never pipe check output through `tail` or similar inside an `&&` chain: it hides
       stops/targets and risk sizing, metrics and analysis, Backtests page. Left: expectancy
       by conviction bucket, once a strategy varies its sizing.
 - [x] P3 Validation: deflated Sharpe, walk-forward, parameter robustness, trial log
-- [ ] Next: the scorecard (below) in code: walk-forward and start dates against
-      exposure-matched holding, and a pass/fail scorecard panel on each backtest
+- [x] The scorecard (below) in code: `kestrel.validation.scorecard` grades every run from
+      its metrics, analysis, deflated Sharpe and studies on the same market and period;
+      shown on each backtest. Walk-forward studies record each test window against holding.
 - [ ] Charts page under More: any market and interval, indicator chips, a plain-English
       panel per indicator (reuse CandleChart, IndicatorPicker, `/api/indicators`)
 - [ ] P4 Execution: ExecutionVenue adapters (sim, Binance testnet, live), reconciliation,

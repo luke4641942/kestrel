@@ -19,6 +19,7 @@ from kestrel.data.binance_vision import Month
 from kestrel.data.schema import Interval
 from kestrel.data.store import ParquetStore
 from kestrel.strategy import make_strategy
+from kestrel.validation.log import ValidationLog
 from kestrel.validation.walkforward import Fold, WalkForward, format_walk_forward, walk_forward
 from tests.backtest.helpers import bars, config
 
@@ -110,6 +111,27 @@ def test_the_verdict_follows_the_backlogs_rule() -> None:
     assert wf(1.0, [0.0, 0.0]).oos_sharpe is None
 
 
+def test_each_test_window_is_compared_with_holding_on_sharpe() -> None:
+    t = datetime(2023, 1, 1, tzinfo=UTC)
+    steady = [0.01, 0.012, 0.009, 0.011] * 20  # high Sharpe
+    noisy = [0.02, -0.018] * 40  # low Sharpe, positive drift
+
+    def fold(test: list[float], held: list[float]) -> Fold:
+        return Fold(t, t, t, {"fast": 3}, 1.0, test, held)
+
+    assert fold(steady, noisy).beats_holding
+    assert not fold(noisy, steady).beats_holding
+    assert not fold([0.0] * 10, noisy).beats_holding  # in cash all window: no Sharpe
+    assert fold(noisy, [0.0] * 10).beats_holding  # a flat market is beaten by any Sharpe
+    folds = [fold(steady, noisy), fold(noisy, steady), fold(steady, noisy)]
+    wf = WalkForward("ma-trend", "BTCUSDT", D1, {"fast": [3]}, folds, [({"fast": 3}, 1.0)])
+    assert wf.windows_beating_holding == 2
+    assert wf.benchmark_sharpe == pytest.approx(
+        WalkForward("x", "B", D1, {}, [fold(noisy + steady + noisy, [])], []).oos_sharpe
+    )
+    assert "Beats holding's Sharpe in         2 of 3 test windows" in format_walk_forward(wf)
+
+
 @pytest.mark.parametrize(
     ("over", "message"),
     [
@@ -199,6 +221,9 @@ def test_the_cli(tmp_path: Path) -> None:
     assert result.exit_code == 0, result.output
     assert "4 folds, 4 grid points each" in result.output
     assert "Every grid point is a trial" in result.output
+    (study,) = ValidationLog(tmp_path).studies()
+    assert study["detail"]["windows_beating_holding"] == run().windows_beating_holding
+    assert study["detail"]["benchmark_sharpe"] == pytest.approx(run().benchmark_sharpe)
 
 
 @pytest.mark.parametrize(

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { luckBar, splitClosed, startDateVerdict, windowLabel, DECISION, studyTitle, studyTone, deflatedNote, spreadBands, DEFAULT_RUN_SORT, KIND_LABEL, UNIVERSE, marketLabel, marketsFor, defaultDataset, nextSort, sortRuns, fewTrades, signalsCaption, MAX_LABELLED_TRADES, MAX_MARKED_TRADES, costHeadroom, paramsText, runRole, tradeCount, heldAsset, money, span, trackRecord, tradeMarkers, verdict } from "./summary";
+import { scorecardHeadline, luckBar, splitClosed, startDateVerdict, windowLabel, DECISION, studyTitle, studyTone, deflatedNote, spreadBands, DEFAULT_RUN_SORT, KIND_LABEL, UNIVERSE, marketLabel, marketsFor, defaultDataset, nextSort, sortRuns, fewTrades, signalsCaption, MAX_LABELLED_TRADES, MAX_MARKED_TRADES, costHeadroom, paramsText, runRole, tradeCount, heldAsset, money, span, trackRecord, tradeMarkers, verdict } from "./summary";
 import { run, trade } from "./test/fixtures";
 
 describe("verdict", () => {
@@ -356,5 +356,29 @@ describe("luckBar", () => {
   it("states the Sharpe to beat, or that there is none yet", () => {
     expect(luckBar(72, 1.6712)).toBe("72 trials so far: a backtest Sharpe has to beat about 1.67 before it stands out from luck.");
     expect(luckBar(1, 0)).toMatch(/No trials/);
+  });
+});
+
+describe("scorecardHeadline", () => {
+  const card = (statuses: ("pass" | "fail" | "not run")[], verdict: "pass" | "fail" | "incomplete") => ({
+    verdict,
+    failed: statuses.filter((s) => s === "fail").length,
+    not_run: statuses.filter((s) => s === "not run").length,
+    grades: statuses.map((status, i) => ({ name: ["Edge", "Luck", "Out of sample", "Costs"][i]!, rule: "", status, measured: "" })),
+  });
+
+  it("names what failed and what is still to run", () => {
+    expect(scorecardHeadline(card(["pass", "fail", "not run", "pass"], "fail"))).toEqual({
+      tone: "bad",
+      text: "Fails one test: luck. Not yet run: out of sample.",
+    });
+    expect(scorecardHeadline(card(["fail", "fail", "pass", "fail"], "fail")).text).toBe(
+      "Fails 3 tests: edge, luck and costs.",
+    );
+    expect(scorecardHeadline(card(["pass", "not run", "not run", "pass"], "incomplete"))).toEqual({
+      tone: "warn",
+      text: "Passes every test run so far. Not yet run: luck and out of sample.",
+    });
+    expect(scorecardHeadline(card(["pass", "pass", "pass", "pass"], "pass")).tone).toBe("ok");
   });
 });

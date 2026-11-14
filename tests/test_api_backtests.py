@@ -223,3 +223,27 @@ def test_undefined_indicator_values_are_sent_as_null(tmp_path: Path) -> None:
     body = {**BODY, "indicators": ["rvol20"]}
     signals = TestClient(app).post("/api/strategies/ma-trend/signals", json=body).json()
     assert signals["indicators"]["rvol20"]["value"] == [None] * 60
+
+
+def test_run_detail_carries_its_scorecard(client: TestClient, tmp_path: Path) -> None:
+    from kestrel.validation.log import Look, Study, ValidationLog
+
+    held = _finish(client, BODY)
+    assert client.get(f"/api/backtests/{held['result']['run_id']}").json()["scorecard"] is None
+    params = {"fast": 3, "slow": 12}
+    job = _finish(client, {**BODY, "strategy": "ma-trend", "params": params})
+    run_id = job["result"]["run_id"]
+    card = client.get(f"/api/backtests/{run_id}").json()["scorecard"]
+    assert [g["name"] for g in card["grades"]][:2] == ["Edge", "Luck"]
+    by = {g["name"]: g for g in card["grades"]}
+    assert by["Out of sample"]["status"] == "not run"
+    assert by["Enough trades"]["status"] == "fail"  # a month of 4h bars
+    assert card["verdict"] == "fail"
+    # A walk-forward on the same market and period is picked up.
+    ValidationLog(tmp_path).save(
+        Study("walk-forward", "ma-trend", "BTCUSDT", "4h", "2024-01", "2024-01",
+              [Look(params, 0.5)], "SURVIVES", {"folds": 3, "windows_beating_holding": 2})
+    )  # fmt: skip
+    card = client.get(f"/api/backtests/{run_id}").json()["scorecard"]
+    out = next(g for g in card["grades"] if g["name"] == "Out of sample")
+    assert (out["status"], out["measured"]) == ("pass", "Beat holding in 2 of 3 test windows")
