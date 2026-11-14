@@ -4,9 +4,10 @@ A research-to-production platform for systematic crypto trading, built so that a
 strategy behaves the same way in research, backtest, paper trading and live
 trading.
 
-> **Status:** Data, API, dashboard and the backtester (two engines, costs, metrics,
-> bootstrap confidence) are built and validated against hand calculations. Research is
-> under way through pre-registered notes; the first hypothesis was tested and rejected.
+> **Status:** Data, API, dashboard, the backtester (two engines, costs, metrics,
+> bootstrap confidence) and validation (walk-forward, robustness, deflated Sharpe over
+> every trial) are built and tested. About 25 pre-registered hypotheses have been tested;
+> none has passed. See [research/findings.md](research/findings.md). Paper trading is next.
 > No strategy has yet earned real money, by design.
 
 ## Why this exists
@@ -34,11 +35,11 @@ bias, unrealistic fills, ignored costs, and research code that is rewritten
 |---|---|---|
 | 1. Data | Binance bulk ingestion, canonical schema, Parquet store, quality checks | Done |
 | 1.5 Platform | FastAPI service, job runner, React dashboard | Done |
-| 2. Backtester | Vectorised research engine, event-driven validation engine, cost model, metrics, stops/targets with risk-based sizing | In progress |
-| 3. Validation | Walk-forward, parameter robustness, trial log, deflated Sharpe | Planned |
+| 2. Backtester | Vectorised research engine, event-driven validation engine, cost model, metrics, stops/targets with risk-based sizing | Done |
+| 3. Validation | Walk-forward, parameter robustness, trial log, deflated Sharpe | Done |
+| Next | One pass/fail scorecard for every strategy, judged against holding at the same exposure | Next |
 | 4. Execution | `ExecutionVenue` adapters (sim, Binance testnet, live), reconciliation, kill switch, alerting | Planned |
-| 5. Perps | Funding, basis, margin model. Being rethought: Binance perps aren't available to Australian retail, and ASIC caps retail crypto leverage at 2:1 | Rethink |
-| Parked | Multi-strategy portfolios on one wallet (after P3); settings for risk limits and exchange status (after P4) | Parked |
+| Parked | Perps (Binance perps aren't available to Australian retail; ASIC caps retail crypto leverage at 2:1); multi-strategy portfolios; settings for risk limits and exchange status | Parked |
 
 ## Quick start
 
@@ -209,6 +210,8 @@ data.binance.vision ──► BinanceVisionClient ──► parse_archive ──
 ```bash
 kestrel serve --reload                  # API with auto-reload on :8000
 cd frontend && npm run dev              # dashboard with hot reload on :5173 (proxies /api)
+
+scripts/check.sh                        # everything below that CI runs; stops at the first failure
 
 ruff check . && ruff format --check .   # lint + format
 mypy                                    # strict type-checking
