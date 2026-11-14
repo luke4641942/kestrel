@@ -34,6 +34,8 @@ class FakeBinance:
         self.starts: list[int] = []
 
     def handler(self, request: httpx.Request) -> httpx.Response:
+        if request.url.path.endswith("/ticker/price"):
+            return httpx.Response(200, json={"symbol": "BTCUSDT", "price": "150.25"})
         start = int(request.url.params["startTime"])
         limit = int(request.url.params["limit"])
         self.starts.append(start)
@@ -140,3 +142,7 @@ def test_the_open_of_the_bar_now_forming() -> None:
     fake = FakeBinance(days=5)
     assert live.open_of("btcusdt", D1, T0 + 4 * DAY, fake.client()) == Decimal("100.0")
     assert live.open_of("BTCUSDT", D1, T0 + 5 * DAY, fake.client()) is None  # not started
+
+
+def test_the_last_traded_price() -> None:
+    assert live.last_price("btcusdt", FakeBinance(1).client()) == Decimal("150.25")

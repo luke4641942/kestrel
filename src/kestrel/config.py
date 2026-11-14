@@ -42,6 +42,18 @@ class BacktestConfig:
 
 
 @dataclass(frozen=True)
+class RiskConfig:
+    """Limits on paper and live trading (kestrel.execution.safety). Backtests ignore them."""
+
+    max_order_usdt: Decimal
+    """No single order above this notional."""
+    max_daily_loss: Decimal
+    """Halt when equity falls more than this fraction between two consecutive marks."""
+    max_drawdown: Decimal
+    """Halt when equity falls more than this fraction below its peak."""
+
+
+@dataclass(frozen=True)
 class InstrumentRules:
     """Exchange order constraints for one symbol."""
 
@@ -78,6 +90,7 @@ class Config:
     backtest: BacktestConfig
     instruments: dict[str, InstrumentRules]
     universe: UniverseConfig
+    risk: RiskConfig
     document: dict[str, Any]
 
     def rules_for(self, symbol: str) -> InstrumentRules:
@@ -116,7 +129,9 @@ def load_config(path: Path | str = "kestrel.toml") -> Config:
 
 def parse_config(document: dict[str, Any]) -> Config:
     _expect_keys(
-        document, {"account_currency", "costs", "backtest", "instruments", "universe"}, "top level"
+        document,
+        {"account_currency", "costs", "backtest", "instruments", "universe", "risk"},
+        "top level",
     )
 
     currency = document["account_currency"]
@@ -192,12 +207,25 @@ def parse_config(document: dict[str, Any]) -> Config:
         spread_tiers=_spread_tiers(raw_u["spread_tiers"]),
     )
 
+    raw_risk = _table(document, "risk")
+    _expect_keys(raw_risk, {"max_order_usdt", "max_daily_loss", "max_drawdown"}, "[risk]")
+    risk = RiskConfig(
+        max_order_usdt=_decimal(raw_risk, "max_order_usdt", "[risk]", low=0, low_inclusive=False),
+        max_daily_loss=_decimal(
+            raw_risk, "max_daily_loss", "[risk]", low=0, high=1, low_inclusive=False
+        ),
+        max_drawdown=_decimal(
+            raw_risk, "max_drawdown", "[risk]", low=0, high=1, low_inclusive=False
+        ),
+    )
+
     return Config(
         account_currency=currency,
         costs=costs,
         backtest=backtest,
         instruments=instruments,
         universe=universe,
+        risk=risk,
         document=document,
     )
 

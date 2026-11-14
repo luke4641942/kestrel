@@ -38,6 +38,7 @@ def document() -> dict[str, Any]:
             "volume_window_days": 30,
             "spread_tiers": [[500_000_000, 1], [100_000_000, 3], [20_000_000, 8], [0, 15]],
         },
+        "risk": {"max_order_usdt": "500", "max_daily_loss": 0.15, "max_drawdown": 0.5},
     }
 
 
@@ -49,6 +50,8 @@ def test_repo_config_loads() -> None:
     assert config.backtest.no_trade_band == Decimal("0.02")
     assert config.backtest.risk_per_trade == Decimal("0.01")
     assert config.backtest.holdout_start == datetime(2025, 11, 1, tzinfo=UTC)
+    assert config.risk.max_order_usdt == Decimal(500)
+    assert config.risk.max_drawdown == Decimal("0.5")
 
 
 def test_numbers_are_exact_decimals(document: dict[str, Any]) -> None:

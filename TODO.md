@@ -20,8 +20,10 @@ Decisions and rules live in CLAUDE.md; results in `research/findings.md`.
         testnet`): signed orders, exchange filters, real fills; a real testnet order filled
         2026-11-14. Testnet prices and fees aren't the real market's: it proves plumbing,
         not costs. Done 2026-11-14.
-  - [ ] S4 Reconciliation (halt on mismatch), risk limits, stale-data refusal (including a
-        gap in the latest bars: `is_clean` doesn't count gaps), `kestrel kill`.
+  - [x] S4 Safety (`kestrel.execution.safety`): halts lifted only by `kestrel paper resume`
+        with a reason; `[risk]` limits (order size, daily loss, drawdown); stale data and
+        recent gaps refused; testnet reconciliation; `kestrel kill`. Drilled for real on the
+        testnet. Done 2026-11-14.
   - [ ] S5 Daily schedule with catch-up, the Trading page, a paper-vs-backtest tracking
         report. Then a paper-trading note fixes success criteria; run ~20 months.
 
@@ -32,6 +34,7 @@ Decisions and rules live in CLAUDE.md; results in `research/findings.md`.
 - [ ] HMM regime filter (backlog S2) as a strategy: needs a note that passes the entry bar.
 
 ## Done recently
+- 2026-11-14 P4 S4: safety layer; a real kill-switch drill on the testnet.
 - 2026-11-14 P4 S3: Binance Spot Testnet venue; a real testnet order filled end to end.
 - 2026-11-14 P4 S2: paper runner on the simulated venue; replay identical to the backtest.
 - 2026-11-14 P4 S1: shared rebalance step (five real runs identical) and `kestrel update`.

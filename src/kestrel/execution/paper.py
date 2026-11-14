@@ -36,6 +36,7 @@ from kestrel.backtest.engine import half_spreads
 from kestrel.config import Config
 from kestrel.data.schema import Interval
 from kestrel.execution.rebalance import rebalance
+from kestrel.execution.safety import RiskGuard, check_mark, halt, halted, stale
 from kestrel.execution.venue import SimVenue
 from kestrel.strategy import Strategy, make_strategy
 
@@ -187,11 +188,22 @@ def run(
     next_open: NextOpen = lambda _: None,
     strategy: Strategy | None = None,
     venue: PaperVenue | None = None,
+    now: datetime | None = None,
 ) -> list[Handled]:
     """Handle every closed bar in ``bars`` (all of them closed, history included) that the
     account hasn't handled, oldest first, through ``venue`` (the simulated venue by
     default). A live venue fills now, so it can't trade a decision at a past open: an
-    account more than one bar behind on a live venue is refused, not traded late."""
+    account more than one bar behind on a live venue is refused, not traded late.
+
+    Safety (kestrel.execution.safety): a halted account is refused; with ``now`` (a live
+    run, not a replay) stale bars are refused; every order passes the ``[risk]`` order
+    limit and every mark the loss limits, and a breach halts the account before it trades."""
+    reason = halted(account)
+    if reason is not None:
+        raise ValueError(
+            f"{account.dir.name} is halted ({reason}); check it, then "
+            "kestrel paper resume NAME --reason ..."
+        )
     terms = account.terms()
     strategy = strategy or make_strategy(terms.strategy, terms.symbol, terms.params)  # type: ignore[assignment]
     assert strategy is not None
@@ -206,7 +218,14 @@ def run(
             f"{terms.name} is {len(pending)} bars behind; a live venue can only trade the "
             "latest decision (catching up is P4 S5)"
         )
-    venue = venue or SimVenue(config, terms.initial_cash, rules=config.rules_for)
+    if now is not None:
+        problem = stale(bars, terms.interval, now)
+        if problem:
+            raise ValueError(f"not trading on stale data: {problem}")
+    guard = RiskGuard(
+        venue or SimVenue(config, terms.initial_cash, rules=config.rules_for), config.risk
+    )
+    venue = guard
     venue.restore(state.cash, {terms.symbol: state.position} if state.position else {})
     model = venue.cost_model()
     band = config.backtest.no_trade_band
@@ -228,6 +247,13 @@ def run(
             break  # the next bar hasn't opened: pick up from here next run
         held = venue.position(terms.symbol)
         equity = venue.cash() + held * Decimal(str(closes[i]))
+        breach = check_mark(account, equity, config.risk)
+        if breach:
+            account.ledger.append(
+                {"type": "mark", "bar": t, "close": Decimal(str(closes[i])), "equity": equity}
+            )
+            halt(account, breach)
+            break
         weight = strategy.target_weights(bars.head(i + 1))[-1]
         target = Decimal(str(weight))
         venue.set_market(terms.symbol, price, Decimal(str(volumes[i])), spreads[i])
@@ -285,4 +311,7 @@ def run(
         )
         handled.append(Handled(t, equity, target, step.order))
         previous = target
+        if guard.tripped:
+            halt(account, guard.tripped)
+            break
     return handled

@@ -70,3 +70,18 @@ min_notional = "5"
 # dropped: on daily bars it gave BTC a median of 21 bps, against a real spread near 1.)
 volume_window_days = 30
 spread_tiers = [[500_000_000, 1], [100_000_000, 3], [20_000_000, 8], [0, 15]]
+
+[risk]
+# Limits on paper and live trading (kestrel.execution.safety); backtests ignore them.
+# Tripping one halts the account until it is resumed by hand, with a reason.
+
+# No single order above this notional (USDT). The account is ~330 USDT, so a bigger
+# order means something is wrong, not that the strategy wants more.
+max_order_usdt = "500"
+
+# Halt when equity falls more than this fraction between two consecutive daily marks.
+# At trend-vol-target's exposure that would be extreme: a human looks before it trades.
+max_daily_loss = 0.15
+
+# Halt when equity falls more than this fraction below its peak: the scorecard's limit.
+max_drawdown = 0.5

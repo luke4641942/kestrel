@@ -76,6 +76,8 @@ def config(
                     else [[0, 0]]
                 ),
             },
+            # Loose: backtests ignore [risk]; the safety tests set their own limits.
+            "risk": {"max_order_usdt": "1e12", "max_daily_loss": 0.99, "max_drawdown": 0.99},
         }
     )
 

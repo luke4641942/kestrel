@@ -29,7 +29,7 @@ from kestrel.backtest.engine import HoldoutError, run_backtest
 from kestrel.backtest.metrics import Metrics, compute_metrics, format_report
 from kestrel.backtest.portfolio import run_portfolio
 from kestrel.backtest.runs import RunRequest, RunStore, execute, universe_panel
-from kestrel.config import ConfigError, load_config
+from kestrel.config import Config, ConfigError, load_config
 from kestrel.data import funding, live, sentiment
 from kestrel.data.binance_vision import BinanceVisionClient, Month, last_complete_month
 from kestrel.data.features import attach_features
@@ -38,6 +38,7 @@ from kestrel.data.schema import Interval
 from kestrel.data.store import ParquetStore
 from kestrel.data.universe import ArchiveListing, CoinIngest, ingest_universe, manifest_path
 from kestrel.execution import paper as paper_trading
+from kestrel.execution import safety
 from kestrel.execution.binance import (
     TESTNET_URL,
     BinanceClient,
@@ -45,6 +46,7 @@ from kestrel.execution.binance import (
     BinanceVenue,
     Credentials,
 )
+from kestrel.execution.venue import SimVenue
 from kestrel.regimes import format_regimes
 from kestrel.regimes import walk_forward as walk_regimes
 from kestrel.research import ResearchStore, run_target
@@ -714,25 +716,19 @@ def paper_run(
             bars = attach_features(
                 bars, spec_for(terms.strategy).features, terms.symbol, terms.interval, data_dir
             )
-            venue = None
-            if terms.venue == "testnet":
-                client = BinanceClient(Credentials.from_env(), http, TESTNET_URL)
-                venue = BinanceVenue(
-                    client,
-                    terms.symbol,
-                    cfg.account_currency,
-                    CostModel(cfg.costs),
-                    terms.initial_cash,
-                )
+            venue = _paper_venue(terms, cfg, http)
+            _reconcile(account, venue, cfg)
             handled = paper_trading.run(
                 account, bars, cfg,
                 lambda at: live.open_of(terms.symbol, terms.interval, at, http),
-                venue=venue,
+                venue=venue, now=datetime.now(UTC),
             )  # fmt: skip
+            _reconcile(account, venue, cfg)
     except (ValueError, ConfigError, httpx.HTTPError, BinanceError) as e:
         typer.echo(str(e), err=True)
         raise typer.Exit(code=1) from None
-    if not handled:
+    halt_reason = safety.halted(account)
+    if not handled and halt_reason is None:
         typer.echo(f"{name}: nothing new (the next bar hasn't closed)")
     for h in handled:
         outcome = (
@@ -744,6 +740,85 @@ def paper_run(
         typer.echo(
             f"{h.bar:%Y-%m-%d}: equity {h.equity:.2f}, target {float(h.target):.0%}: {outcome}"
         )
+    if halt_reason is not None:
+        typer.echo(f"HALTED: {halt_reason}", err=True)
+        raise typer.Exit(code=1)
+
+
+def _paper_venue(
+    terms: paper_trading.Terms, cfg: Config, http: httpx.Client
+) -> BinanceVenue | None:
+    """The account's venue: None for the simulated one (the runner makes it)."""
+    if terms.venue != "testnet":
+        return None
+    client = BinanceClient(Credentials.from_env(), http, TESTNET_URL)
+    return BinanceVenue(
+        client, terms.symbol, cfg.account_currency, CostModel(cfg.costs), terms.initial_cash
+    )
+
+
+def _reconcile(
+    account: paper_trading.PaperAccount, venue: BinanceVenue | None, cfg: Config
+) -> None:
+    """An exchange account must hold at least what the ledger says; if not, halt."""
+    if venue is None or safety.halted(account) is not None:
+        return
+    state = account.state()
+    holdings = [(venue.base, state.position), (venue.quote, state.cash)]
+    short = safety.reconcile(holdings, venue.balances())
+    if short:
+        safety.halt(account, f"reconciliation failed: {safety.describe(short)}")
+
+
+@paper_app.command("resume")
+def paper_resume(
+    name: str,
+    reason: Annotated[str, typer.Option(help="Why it is safe to trade again (recorded).")],
+    data_dir: DataDir = Path("data"),
+) -> None:
+    """Let a halted account trade again. The reason goes in its ledger."""
+    account = paper_trading.PaperAccount(data_dir, name)
+    try:
+        account.terms()
+        was = safety.halted(account)
+        safety.resume(account, reason)
+    except ValueError as e:
+        typer.echo(str(e), err=True)
+        raise typer.Exit(code=1) from None
+    typer.echo(f"{name} resumed (was halted: {was})")
+
+
+@app.command()
+def kill(
+    name: str,
+    reason: Annotated[str, typer.Option(help="Why (recorded in the ledger).")],
+    data_dir: DataDir = Path("data"),
+    config: Annotated[
+        Path, typer.Option("--config", envvar="KESTREL_CONFIG", help="Config file.")
+    ] = Path("kestrel.toml"),
+) -> None:
+    """The kill switch: sell a paper account's whole position at market now, then halt it."""
+    account = paper_trading.PaperAccount(data_dir, name)
+    try:
+        terms = account.terms()
+        cfg = load_config(config)
+        stored = ParquetStore(data_dir).read(terms.symbol, terms.interval)
+        volume = Decimal(str(stored["quote_volume"][-1])) if stored.height else Decimal(0)
+        with httpx.Client(timeout=30) as http:
+            venue = _paper_venue(terms, cfg, http) or SimVenue(
+                cfg, terms.initial_cash, rules=cfg.rules_for
+            )
+            price = live.last_price(terms.symbol, http)
+            event = safety.kill(account, venue, price, volume, reason)
+    except (ValueError, ConfigError, httpx.HTTPError, BinanceError) as e:
+        typer.echo(str(e), err=True)
+        raise typer.Exit(code=1) from None
+    sold = (
+        f"sold {event['quantity']} at {Decimal(event['fill_price']):.2f}" if "quantity" in event
+        else f"SALE REJECTED: {event['rejected']}" if "rejected" in event
+        else "nothing held"
+    )  # fmt: skip
+    typer.echo(f"KILLED {name}: {sold}; halted until resumed")
 
 
 @paper_app.command("status")
@@ -757,7 +832,8 @@ def paper_status(name: str, data_dir: DataDir = Path("data")) -> None:
         raise typer.Exit(code=1) from None
     events = account.ledger.events()
     marks = [e for e in events if e["type"] == "mark"]
-    fills = sum(e["type"] == "fill" for e in events)
+    # A kill's sale is a fill too: it is recorded as its own event.
+    fills = sum(e["type"] == "fill" or (e["type"] == "kill" and "side" in e) for e in events)
     last = (
         f"{float(marks[-1]['equity']):.2f} USDT on {marks[-1]['bar'][:10]}"
         if marks
@@ -766,6 +842,9 @@ def paper_status(name: str, data_dir: DataDir = Path("data")) -> None:
     typer.echo(f"{name}: {terms.strategy} on {terms.symbol} {terms.interval.value}"
                + (f" (note {terms.research})" if terms.research else ""))  # fmt: skip
     typer.echo(f"  started with {terms.initial_cash} USDT; equity {last}")
+    reason = safety.halted(account)
+    if reason:
+        typer.echo(f"  HALTED: {reason}")
     typer.echo(f"  holding {state.position} {terms.symbol}, cash {state.cash:.2f}; {fills} fills; "
                f"{len(marks)} days handled")  # fmt: skip
 

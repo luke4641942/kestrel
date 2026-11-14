@@ -28,6 +28,7 @@ from kestrel.data.schema import Interval, conform
 from kestrel.data.store import ParquetStore
 
 REST_URL = "https://api.binance.com/api/v3/klines"
+TICKER_URL = "https://api.binance.com/api/v3/ticker/price"
 PAGE = 1000
 """Binance's maximum bars per request."""
 
@@ -151,3 +152,10 @@ def open_of(symbol: str, interval: Interval, at: datetime, http: httpx.Client) -
     if not rows or int(rows[0][0]) != int(at.timestamp() * 1000):
         return None
     return Decimal(str(rows[0][1]))
+
+
+def last_price(symbol: str, http: httpx.Client) -> Decimal:
+    """The latest traded price, for selling at market now (``kestrel kill``)."""
+    response = http.get(TICKER_URL, params={"symbol": symbol.upper()})
+    response.raise_for_status()
+    return Decimal(str(response.json()["price"]))
