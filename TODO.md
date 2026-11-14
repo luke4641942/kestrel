@@ -4,9 +4,6 @@ The active list. Claude keeps it up to date in the same commit as the work (see 
 Decisions and rules live in CLAUDE.md; results in `research/findings.md`.
 
 ## Waiting on Luke
-- [ ] `ride-volatile-spells-in-macd-s-direction` failed the scorecard on both coins (BTC
-      Sharpe -0.13 vs 0.53; ETH 0.42 vs 0.46; walk-forward 0/5 and 1/5; 26 and 19 trades;
-      robustness no edge / fragile). Its rule implies drop: reject it? Your call.
 - [ ] Read and freeze `paper-trading-trend-vol-target-btc` (drafted 2026-11-14). Then:
       `kestrel paper open tvt-btc ... --venue testnet` (the note's rules), `kestrel paper
       schedule tvt-btc`, and load the job with the launchctl command it prints. The
@@ -23,23 +20,6 @@ Decisions and rules live in CLAUDE.md; results in `research/findings.md`.
       and whether any rebound beats a small coin's costs, pre-holdout. Long-only can't take
       the short side; one study (Monero, 2024) found no rebound. Don't look at the delisted
       coins' prices before the study is written down.
-- [ ] P4 paper trading, trend-vol-target BTC first (plan agreed 2026-11-14):
-  - [x] S1 Shared rebalance step (`kestrel.execution.rebalance`); live feed of closed bars
-        (`kestrel.data.live`, `kestrel update`). Done 2026-11-14.
-  - [x] S2 Paper runner (`kestrel.execution.paper`, `kestrel paper open/run/status`) with an
-        append-only ledger; a day-by-day replay of BTC 2023-25 matches the backtest exactly
-        (205 fills, every daily mark). Done 2026-11-14. The real account opens after S5's note.
-  - [x] S3 Binance Spot Testnet venue (`kestrel.execution.binance`, `paper open --venue
-        testnet`): signed orders, exchange filters, real fills; a real testnet order filled
-        2026-11-14. Testnet prices and fees aren't the real market's: it proves plumbing,
-        not costs. Done 2026-11-14.
-  - [x] S4 Safety (`kestrel.execution.safety`): halts lifted only by `kestrel paper resume`
-        with a reason; `[risk]` limits (order size, daily loss, drawdown); stale data and
-        recent gaps refused; testnet reconciliation; `kestrel kill`. Drilled for real on the
-        testnet. Done 2026-11-14.
-  - [x] S5 Catch-up (missed days recorded, latest traded), `kestrel paper track` (paper vs
-        the model), `kestrel paper schedule` (launchd, hourly), the Trading page. Done
-        2026-11-14.
 
 ## Later
 - [ ] BTC's regime turning volatile before ETH's, as an early ETH trigger (Luke's idea,
@@ -51,7 +31,8 @@ Decisions and rules live in CLAUDE.md; results in `research/findings.md`.
 - [ ] HMM regime filter (backlog S2) as a strategy: needs a note that passes the entry bar.
 
 ## Done recently
-- 2026-11-14 volatile-macd backtested: fails the scorecard on BTC and ETH (awaiting Luke).
+- 2026-11-14 P4 paper trading built: sessions S1-S5 (details in CLAUDE.md's roadmap).
+- 2026-11-14 volatile-macd backtested: fails the scorecard on BTC and ETH; rejected (Luke).
 - 2026-11-14 Volatile-spell direction study: TREND (spread +3.70%/week, P 98%, 75 weeks).
 - 2026-11-14 Regime filter on trend-vol-target: failed (Sharpe 0.64 vs 0.69); rejected (Luke).
 - 2026-11-14 P4 S5: catch-up, tracking, schedule, Trading page; paper-trading note drafted.

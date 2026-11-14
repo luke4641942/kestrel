@@ -231,3 +231,12 @@ decision = "drop"
 decided = 2026-11-14
 reason = "Stepping out in the HMM's volatile state lowered the Sharpe (0.64 vs 0.69, 2021-05 to 2025-10) and the return (+90% vs +105%) for a barely shallower drawdown. Trend-vol-target already holds little in volatile spells (13% vs 54% on other days), so the filter had almost nothing left to remove."
 evidence = ["regime-filter-on-trend-vol-target-btc"]
+
+[[decision]]
+strategy = "volatile-macd"
+name = "Ride volatile spells in MACD's direction"
+market = "BTCUSDT and ETHUSDT 1d"
+decision = "drop"
+decided = 2026-11-14
+reason = "Failed the scorecard on both coins: BTC Sharpe -0.13 vs 0.53 for holding, ETH 0.42 vs 0.46; walk-forward 0 and 1 of 5 windows; 19-26 trades. The study behind it found MACD's direction continues in volatile spells, but most of that was the down weeks, which long-only can only sit out. Worth revisiting only with a short side."
+evidence = ["ride-volatile-spells-in-macd-s-direction", "which-way-do-volatile-spells-go-macd"]

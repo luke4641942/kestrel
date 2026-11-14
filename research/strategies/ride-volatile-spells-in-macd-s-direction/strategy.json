@@ -1,0 +1,28 @@
+{
+  "slug": "ride-volatile-spells-in-macd-s-direction",
+  "name": "Ride volatile spells in MACD's direction",
+  "created_at": "2026-11-14T13:22:04.348458+00:00",
+  "status": "rejected",
+  "history": [
+    {
+      "status": "idea",
+      "at": "2026-11-14T13:22:04.348458+00:00",
+      "reason": "Created"
+    },
+    {
+      "status": "specified",
+      "at": "2026-11-14T13:23:12.920541+00:00",
+      "reason": "v1 frozen"
+    },
+    {
+      "status": "backtested",
+      "at": "2026-11-14T13:23:31.923780+00:00",
+      "reason": "first run on v1"
+    },
+    {
+      "status": "rejected",
+      "at": "2026-11-14T13:28:40.205838+00:00",
+      "reason": "Failed the scorecard on both coins (rejected with Luke's say-so, 2026-11-14). Weekly hold: BTC Sharpe -0.13 vs 0.53 for holding, ETH 0.42 vs 0.46; walk-forward 0 and 1 of 5 windows; 26 and 19 trades; robustness no edge (BTC) and fragile (ETH). The daily switch was no better. Most of the study's spread was the down weeks, which a long-only account can only sit out."
+    }
+  ]
+}

@@ -160,7 +160,7 @@ edge, and the holdout can't be used again for either strategy.
 | Crash brake on trend-vol-target | BTC 1d | Sharpe 0.91 vs 1.21; return +272% vs +639%; drawdown -45.9% vs -48.3% | Drop |
 | Regime filter on trend-vol-target | BTC 1d | Sharpe 0.64 vs 0.69 (2021-05 to 2025-10); the plain rule already holds 13% in volatile spells | Drop |
 | Study: MACD direction in volatile spells | BTC, ETH 1d | Spread +3.70% a week (up +1.63%, down -2.00%), P = 98%: TREND | Study passed |
-| Ride volatile spells in MACD's direction | BTC, ETH 1d | Weekly hold: BTC Sharpe -0.13 vs 0.53 holding; ETH 0.42 vs 0.46; 0 and 1 of 5 walk-forward windows; 26 and 19 trades; robustness no edge / fragile. Daily switch no better | Pending Luke (rule implies drop) |
+| Ride volatile spells in MACD's direction | BTC, ETH 1d | Weekly hold: BTC Sharpe -0.13 vs 0.53 holding; ETH 0.42 vs 0.46; 0 and 1 of 5 walk-forward windows; 26 and 19 trades; robustness no edge / fragile. Daily switch no better | Drop |
 
 Each strategy was judged by its own note's pass test, written before it ran. From
 2026-11-14 every strategy is judged on one scorecard instead.
