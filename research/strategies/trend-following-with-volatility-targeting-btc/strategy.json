@@ -2,7 +2,7 @@
   "slug": "trend-following-with-volatility-targeting-btc",
   "name": "Trend following with volatility targeting (BTC, ETH daily)",
   "created_at": "2026-11-11T03:45:56.238356+00:00",
-  "status": "backtested",
+  "status": "rejected",
   "history": [
     {
       "status": "idea",
@@ -18,6 +18,11 @@
       "status": "backtested",
       "at": "2026-11-11T12:51:25.239071+00:00",
       "reason": "first run on v1"
+    },
+    {
+      "status": "rejected",
+      "at": "2026-11-14T08:43:25.511051+00:00",
+      "reason": "Failed its own pre-registered rule on BTC 2020-25: the drawdown test. The strategy itself continues through later notes and the decision file (pursue on BTC as risk-managed holding, 2026-11-14 scorecard: passes the edge test, fails luck). This note's verdict stands; closed in the 2026-11-14 clean-out."
     }
   ]
 }

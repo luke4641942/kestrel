@@ -2,12 +2,17 @@
   "slug": "monday-range-pullback-aest",
   "name": "Monday range pullback (AEST)",
   "created_at": "2026-11-11T12:43:31.408990+00:00",
-  "status": "idea",
+  "status": "rejected",
   "history": [
     {
       "status": "idea",
       "at": "2026-11-11T12:43:31.408990+00:00",
       "reason": "Created"
+    },
+    {
+      "status": "rejected",
+      "at": "2026-11-14T08:43:25.512051+00:00",
+      "reason": "Killed before any run: the raw-effect study (kestrel anchor-study) found Monday's range no different from any other day's, which the note set as the condition for testing the strategy. Closed in the 2026-11-14 clean-out."
     }
   ]
 }

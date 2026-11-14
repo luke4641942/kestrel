@@ -2,7 +2,7 @@
   "slug": "falling-trendline-breakout",
   "name": "Falling trendline breakout",
   "created_at": "2026-11-05T03:28:30.567298+00:00",
-  "status": "backtested",
+  "status": "rejected",
   "history": [
     {
       "status": "idea",
@@ -18,6 +18,11 @@
       "status": "backtested",
       "at": "2026-11-11T13:05:30.590128+00:00",
       "reason": "first run on v1"
+    },
+    {
+      "status": "rejected",
+      "at": "2026-11-14T08:43:25.507852+00:00",
+      "reason": "Tested 2026-11-05 on BTC and ETH 4h: lost money on average, while its control (a plain breakout of the recent high) made money. Recorded as drop; closed in the 2026-11-14 clean-out."
     }
   ]
 }

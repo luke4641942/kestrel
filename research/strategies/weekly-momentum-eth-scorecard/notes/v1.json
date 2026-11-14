@@ -1,0 +1,15 @@
+{
+  "version": 1,
+  "created_at": "2026-11-14T08:46:33.287658+00:00",
+  "sections": {
+    "hypothesis": "One-week momentum on ETH daily (hold the next week after a rising week, else cash) beats ETH held at the same average exposure on Sharpe, and does so out of sample, not only over 2020-25 as a whole.",
+    "rationale": "The earlier notes (one-week-momentum-btc-eth-daily, weekly-momentum-on-btc-followers-eth-unseen) were rejected under their own rules: it failed on BTC, on ETH's unseen 2017-19 (Sharpe 0.13 vs 0.15) and on SOL. Under the 2026-11-14 scorecard the ETH 2020-25 run passes the edge test (1.23 vs 1.12), so its decision was moved to watch. This note completes the scorecard once, on ETH only. Written after the ETH 2020-25 and 2017-19 results were seen, but before any window-by-window result. The rule has no settings, so nothing can be tuned.",
+    "rules": "Implementation weekly-momentum, ETHUSDT 1d, 2020-01 to 2025-10, 330 USDT, costs from kestrel.toml. (1) kestrel backtest ETHUSDT --strategy weekly-momentum --research <this note> --interval 1d --start 2020-01 --end 2025-10 --cash 330. (2) kestrel walk-forward ETHUSDT --strategy weekly-momentum --research <this note> --interval 1d --start 2020-01 --end 2025-10 --train-months 24 --test-months 6, with no grid: the fixed rule judged in each of 7 six-month windows.",
+    "falsification": "Graded on the scorecard. The luck test is expected to fail (deflated Sharpe about 29% at 172 trials), so the note cannot pass outright. It survives, and the ETH decision stays watch, only if every other applicable test passes: edge, walk-forward (beats holding in at least 4 of 7 windows), start dates (at least 50% of 2-year windows), costs (break-even at least 2x actual), at least 30 trades, drawdown no deeper than 50%. Robustness doesn't apply (no settings). Any other failure rejects the note and moves ETH to drop. Run once.",
+    "parameters": "None. The week is fixed at 7 calendar days, decided at Sunday's close.",
+    "costs": "About 23 bps a round trip on ETH; break-even was about 277 bps in the 2020-25 run. This run and the walk-forward's single look each count as a trial."
+  },
+  "implementation": "weekly-momentum",
+  "frozen_at": "2026-11-14T08:46:33.289528+00:00",
+  "change_reason": null
+}

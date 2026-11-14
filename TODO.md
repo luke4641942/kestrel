@@ -9,8 +9,6 @@ Decisions and rules live in CLAUDE.md; results in `research/findings.md`.
 - [ ] Decide on stops and take-profits (proposal in the 2026-11-14 conversation): one
       pre-registered trailing-stop variant on weekly momentum ETH and trend-vol-target BTC,
       or leave exits to the signals.
-- [ ] Commit the research notes changed in the 2026-11-14 clean-out (seven rejections and
-      the new `weekly-momentum-eth-scorecard`), so runs stop being stamped "uncommitted".
 
 ## Next
 - [ ] Run the walk-forward once the note is frozen; record the result in decisions and findings.
