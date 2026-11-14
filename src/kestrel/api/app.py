@@ -47,6 +47,9 @@ from kestrel.api.models import (
     QualityOut,
     Quote,
     Reason,
+    RegimeDetailOut,
+    RegimeRequest,
+    RegimeSummaryOut,
     RejectionOut,
     ResearchDetail,
     ResearchSummary,
@@ -80,6 +83,8 @@ from kestrel.data.store import ParquetStore
 from kestrel.decisions import DecisionError, load_decisions
 from kestrel.indicators import PRESETS, compute_presets
 from kestrel.provenance import code_version
+from kestrel.regimes import RegimeStore
+from kestrel.regimes import walk_forward as walk_regimes
 from kestrel.research import (
     SECTIONS,
     ResearchError,
@@ -121,6 +126,7 @@ def create_app(
     runs = RunStore(data_dir)
     studies = ValidationLog(data_dir)
     research = ResearchStore(research_dir)
+    regime_store = RegimeStore(data_dir)
     jobs = JobManager()
 
     @asynccontextmanager
@@ -506,6 +512,52 @@ def create_app(
 
         job = jobs.submit("backtest", {**req.model_dump(mode="json"), "strategy": key}, run)
         return JobOut.from_job(job)
+
+    # ---------- regimes ----------
+
+    @api.get("/regimes")
+    def list_regimes() -> list[RegimeSummaryOut]:
+        return [RegimeSummaryOut.model_validate(d) for d in regime_store.summaries()]
+
+    @api.get("/regimes/{symbol}")
+    def get_regimes(symbol: str) -> RegimeDetailOut:
+        try:
+            doc = regime_store.load(symbol.upper())
+        except KeyError:
+            raise HTTPException(status.HTTP_404_NOT_FOUND, "no regimes for this market") from None
+        return RegimeDetailOut.model_validate({**doc, "refits": len(doc["refits"])})
+
+    @api.post("/jobs/regimes", status_code=status.HTTP_202_ACCEPTED)
+    def start_regimes(req: RegimeRequest) -> JobOut:
+        symbol = req.symbol.upper()
+
+        def run(ctx: JobContext) -> dict[str, Any]:
+            try:
+                holdout = load_config(config_path).backtest.holdout_start
+            except ConfigError as e:
+                raise JobError(str(e)) from None
+            # Everything before the holdout, never the holdout itself.
+            bars = store.read(symbol, Interval.D1, datetime(2000, 1, 1, tzinfo=UTC), holdout)
+            if bars.height == 0:
+                raise JobError(f"no daily bars for {symbol}; ingest {symbol} 1d first")
+            ctx.log(f"Fitting regimes on {symbol} 1d, {bars.height} days before the holdout")
+
+            def month(done: int, total: int) -> None:
+                ctx.check_cancelled()
+                ctx.progress(0.95 * done / max(total, 1), f"Month {done + 1} of {total}")
+
+            try:
+                result = walk_regimes(bars, on_month=month)
+            except ValueError as e:
+                raise JobError(str(e)) from None
+            if not result.refits:
+                raise JobError(f"{symbol} has too little daily history for a first fit (4 years)")
+            ctx.progress(0.97, "Saving")
+            regime_store.save(symbol, result, bars)
+            ctx.log(f"Saved {len(result.refits)} monthly fits")
+            return {"symbol": symbol}
+
+        return JobOut.from_job(jobs.submit("regimes", {"symbol": symbol}, run))
 
     @api.get("/backtests")
     def list_backtests() -> list[RunSummary]:

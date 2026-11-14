@@ -243,6 +243,45 @@ export interface Rules {
   lessons: { title: string; text: string }[];
 }
 
+/** A saved regime fit (kestrel.regimes.RegimeStore), without its daily series. */
+export interface RegimeSummary {
+  symbol: string;
+  created_at: string;
+  first: string | null;
+  last: string | null;
+  /** Monthly refits: one model per month, fitted on the four years before it. */
+  refits: number;
+}
+
+export interface RegimeState {
+  /** 0 is the calmest (states are sorted by volatility after every fit). */
+  state: number;
+  /** Share of fitted days on which this was the most likely state. */
+  share: number;
+  /** Average daily log return on those days. */
+  mean_return: number | null;
+  /** Annualised volatility on those days. */
+  volatility: number | null;
+  /** Average unbroken spell, in days. */
+  average_run: number | null;
+  /** From the latest model's switching odds. */
+  expected_days: number;
+}
+
+export interface RegimeDetail extends RegimeSummary {
+  preset: Record<string, number>;
+  /** Epoch seconds, one per daily bar. */
+  time: number[];
+  close: number[];
+  /** Per day, P(each state) as the model believed it that day; null before the first fit. */
+  probabilities: (number[] | null)[];
+  state: (number | null)[];
+  states: RegimeState[];
+  /** Latest model: row = today, column = tomorrow. */
+  transitions: number[][] | null;
+  oos_log_likelihood: number;
+}
+
 export interface Study {
   id: string;
   created_at: string;
@@ -520,6 +559,9 @@ export const api = {
   backtests: () => request<RunSummary[]>("/backtests"),
   validation: () => request<Validation>("/validation"),
   decisions: () => request<Decision[]>("/decisions"),
+  regimes: () => request<RegimeSummary[]>("/regimes"),
+  regime: (symbol: string) => request<RegimeDetail>(`/regimes/${enc(symbol)}`),
+  startRegimes: (symbol: string) => request<Job>("/jobs/regimes", { method: "POST", body: JSON.stringify({ symbol }) }),
   rules: () => request<Rules>("/rules"),
   backtest: (id: string) => request<RunDetail>(`/backtests/${enc(id)}`),
   costs: () => request<CostConfig>("/costs"),

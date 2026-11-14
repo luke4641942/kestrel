@@ -193,7 +193,7 @@ def test_describing_the_states() -> None:
 def test_the_report() -> None:
     frame = regime_bars(560)
     r = rg.walk_forward(frame, FAST)
-    text = rg.format_regimes(r, frame, "BTCUSDT", FAST)
+    text = rg.format_regimes(r, frame, "BTCUSDT")
     assert f"{len(r.refits)} monthly refits from 2025-01, each on the 365 days before it" in text
     assert "Switching odds from the" in text
     assert "never by trading results" in text
@@ -210,3 +210,33 @@ def test_the_cli(tmp_path: Path) -> None:
     holdout = CliRunner().invoke(app, [*base, "--start", "2024-01", "--end", "2025-11"])
     assert holdout.exit_code == 1
     assert "studies never use it" in holdout.output
+
+
+def test_progress_is_reported_and_can_stop_the_fit() -> None:
+    frame = regime_bars(560)
+    seen: list[tuple[int, int]] = []
+    rg.walk_forward(frame, FAST, on_month=lambda done, total: seen.append((done, total)))
+    total = seen[0][1]
+    assert seen == [(i, total) for i in range(total)]
+
+    def stop(done: int, total: int) -> None:
+        if done == 2:
+            raise RuntimeError("cancelled")
+
+    with pytest.raises(RuntimeError, match="cancelled"):
+        rg.walk_forward(frame, FAST, on_month=stop)
+
+
+def test_the_store_keeps_the_latest_fit_per_market(tmp_path: Path) -> None:
+    store = rg.RegimeStore(tmp_path)
+    assert store.summaries() == []
+    frame = regime_bars(560)
+    r = rg.walk_forward(frame, FAST)
+    store.save("BTCUSDT", r, frame)
+    store.save("ETHUSDT", r, frame)
+    doc = store.save("BTCUSDT", r, frame)  # a refit replaces the file
+    assert [s["symbol"] for s in store.summaries()] == ["BTCUSDT", "ETHUSDT"]  # newest first
+    assert store.load("BTCUSDT")["created_at"] == doc["created_at"]
+    assert store.load("BTCUSDT")["preset"]["states"] == FAST.states
+    with pytest.raises(KeyError):
+        store.load("SOLUSDT")

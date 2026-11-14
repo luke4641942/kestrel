@@ -29,6 +29,10 @@
   --ind-2: #d6582b;
   --ind-3: #12996b;
   --ind-4: #8a4fd8;
+  /* Regimes: one hue, light to dark, calmest to most volatile. */
+  --regime-1: #86a9e0;
+  --regime-2: #3f6cc0;
+  --regime-3: #1b2f6b;
   color-scheme: light;
 }
 
@@ -56,6 +60,9 @@
   --ind-2: #ef7a4c;
   --ind-3: #37c08f;
   --ind-4: #ad84f2;
+  --regime-1: #3d5a8f;
+  --regime-2: #6f93dc;
+  --regime-3: #c3d3f7;
   color-scheme: dark;
 }
 
@@ -915,6 +922,85 @@ p {
 
 .equity-chart {
   height: 520px;
+}
+
+/* ---------- regimes ---------- */
+
+.form-regimes {
+  grid-template-columns: minmax(0, 260px) auto;
+  justify-content: start;
+}
+
+.regime-chart {
+  height: 560px;
+}
+
+.regime-reading {
+  font-size: 16px;
+}
+
+.regime-legend {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 18px;
+  padding: 12px 16px 0;
+}
+
+.regime-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  font-weight: 500;
+}
+
+.regime-swatch {
+  width: 12px;
+  height: 12px;
+  border-radius: 3px;
+  flex: none;
+}
+
+.regime-cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 16px;
+}
+
+.regime-card-title {
+  margin: 0 0 12px;
+  font-size: 15px;
+}
+
+.regime-facts {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 6px 16px;
+  margin: 0;
+  font-variant-numeric: tabular-nums;
+}
+
+.regime-facts dt {
+  color: var(--text-2);
+}
+
+.regime-facts dd {
+  margin: 0;
+  text-align: right;
+}
+
+.regime-switching caption {
+  caption-side: top;
+  text-align: left;
+  padding: 12px 16px 4px;
+}
+
+.regime-stay {
+  font-weight: 600;
+}
+
+.regime-note {
+  max-width: 90ch;
 }
 
 .swatch-dashed {

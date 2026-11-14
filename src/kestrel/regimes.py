@@ -34,9 +34,13 @@ means a research note, like any other setting.
 
 from __future__ import annotations
 
+import json
 import math
-from dataclasses import dataclass, replace
+from collections.abc import Callable
+from dataclasses import asdict, dataclass, replace
 from datetime import UTC, datetime, timedelta
+from pathlib import Path
+from typing import Any
 
 import numpy as np
 import polars as pl
@@ -245,6 +249,8 @@ class Regimes:
     """Per day, P(each state) from that day's model and inputs up to that day; None before
     the first fit."""
     refits: list[Refit]
+    preset: Preset = PRESET
+    """The settings the fit used."""
 
     @property
     def oos_log_likelihood(self) -> float:
@@ -265,32 +271,39 @@ def _month_starts(first: datetime, last: datetime) -> list[datetime]:
     return out
 
 
-def walk_forward(bars: pl.DataFrame, preset: Preset = PRESET) -> Regimes:
+def walk_forward(
+    bars: pl.DataFrame,
+    preset: Preset = PRESET,
+    on_month: Callable[[int, int], None] | None = None,
+) -> Regimes:
     """Refit at the start of each month on the ``train_days`` before it (once that much
-    history exists), and filter the month with that model."""
+    history exists), and filter the month with that model. ``on_month(done, total)`` is
+    called before each month, for progress; it may raise to stop the fit."""
     days = inputs(bars, preset.vol_days)
     ready = days.drop_nulls()
     times: list[datetime] = ready["open_time"].to_list()
     x = ready.select(FEATURES).to_numpy()
     probs: dict[datetime, list[float]] = {}
     refits: list[Refit] = []
-    if times:
-        for month in _month_starts(times[0], times[-1]):
-            after = datetime(month.year + month.month // 12, month.month % 12 + 1, 1, tzinfo=UTC)
-            since = month - timedelta(days=preset.train_days)
-            train = [i for i, t in enumerate(times) if since <= t < month]
-            test = [i for i, t in enumerate(times) if month <= t < after]
-            if not test or len(train) < 0.9 * preset.train_days:
-                continue
-            model = fit(x[train], preset.states, restarts=preset.restarts, seed=preset.seed)
-            span = x[train[0] : test[-1] + 1]
-            alpha, both = filtered(model, span)
-            for i, p in zip(test, alpha[len(train) :], strict=True):
-                probs[times[i]] = [float(v) for v in p]
-            oos = both - log_likelihood(model, x[train])
-            refits.append(Refit(month, model, oos))
+    months = _month_starts(times[0], times[-1]) if times else []
+    for done, month in enumerate(months):
+        if on_month is not None:
+            on_month(done, len(months))
+        after = datetime(month.year + month.month // 12, month.month % 12 + 1, 1, tzinfo=UTC)
+        since = month - timedelta(days=preset.train_days)
+        train = [i for i, t in enumerate(times) if since <= t < month]
+        test = [i for i, t in enumerate(times) if month <= t < after]
+        if not test or len(train) < 0.9 * preset.train_days:
+            continue
+        model = fit(x[train], preset.states, restarts=preset.restarts, seed=preset.seed)
+        span = x[train[0] : test[-1] + 1]
+        alpha, both = filtered(model, span)
+        for i, p in zip(test, alpha[len(train) :], strict=True):
+            probs[times[i]] = [float(v) for v in p]
+        oos = both - log_likelihood(model, x[train])
+        refits.append(Refit(month, model, oos))
     all_times: list[datetime] = days["open_time"].to_list()
-    return Regimes(all_times, [probs.get(t) for t in all_times], refits)
+    return Regimes(all_times, [probs.get(t) for t in all_times], refits, preset)
 
 
 # ---------- describing the states ----------
@@ -345,9 +358,7 @@ def describe(regimes: Regimes, bars: pl.DataFrame) -> list[StateSummary]:
     return out
 
 
-def format_regimes(
-    regimes: Regimes, bars: pl.DataFrame, symbol: str, preset: Preset = PRESET
-) -> str:
+def format_regimes(regimes: Regimes, bars: pl.DataFrame, symbol: str) -> str:
     """The CLI's report: each state as the model saw it, and the latest switching odds."""
     states = describe(regimes, bars)
     if not states:
@@ -359,7 +370,7 @@ def format_regimes(
     latest = regimes.refits[-1]
     lines = [
         f"Regimes  ·  {symbol} 1d  ·  {len(regimes.refits)} monthly refits from "
-        f"{regimes.refits[0].month:%Y-%m}, each on the {preset.train_days} days before it",
+        f"{regimes.refits[0].month:%Y-%m}, each on the {regimes.preset.train_days} days before it",
         "",
         f"  {'state':<7} {'share':>6} {'return/day':>11} {'volatility':>11} "
         f"{'avg spell':>10} {'expected':>9}",
@@ -382,3 +393,67 @@ def format_regimes(
         "(higher is better; compare inputs by this, never by trading results).",
     ]
     return "\n".join(lines)
+
+
+# ---------- storage ----------
+
+
+class RegimeStore:
+    """The latest fit per market, as the dashboard shows it:
+
+        <data>/regimes/<SYMBOL>.json
+
+    Refitting a market replaces its file (written atomically). A fit is a description,
+    not a trial: nothing here is traded or scored, so nothing is counted."""
+
+    def __init__(self, data_dir: Path | str) -> None:
+        self.root = Path(data_dir) / "regimes"
+
+    def save(self, symbol: str, regimes: Regimes, bars: pl.DataFrame) -> dict[str, Any]:
+        latest = regimes.refits[-1].model if regimes.refits else None
+        doc: dict[str, Any] = {
+            "symbol": symbol,
+            "created_at": datetime.now(UTC).isoformat(),
+            "preset": asdict(regimes.preset),
+            "first": regimes.open_time[0].isoformat() if regimes.open_time else None,
+            "last": regimes.open_time[-1].isoformat() if regimes.open_time else None,
+            "time": [int(t.timestamp()) for t in regimes.open_time],
+            "close": bars["close"].to_list(),
+            "probabilities": regimes.probabilities,
+            "state": regimes.states,
+            "states": [asdict(s) for s in describe(regimes, bars)],
+            "transitions": latest.trans.tolist() if latest is not None else None,
+            "refits": [
+                {"month": r.month.isoformat(), "oos_log_likelihood": r.oos_log_likelihood}
+                for r in regimes.refits
+            ],
+            "oos_log_likelihood": regimes.oos_log_likelihood,
+        }
+        self.root.mkdir(parents=True, exist_ok=True)
+        tmp = self.root / f".{symbol}.tmp"
+        tmp.write_text(json.dumps(doc))
+        tmp.replace(self.root / f"{symbol}.json")
+        return doc
+
+    def load(self, symbol: str) -> dict[str, Any]:
+        path = self.root / f"{symbol}.json"
+        if not path.exists():
+            raise KeyError(symbol)
+        doc: dict[str, Any] = json.loads(path.read_text())
+        return doc
+
+    def summaries(self) -> list[dict[str, Any]]:
+        """Every saved fit without its daily series, newest first."""
+        out = []
+        for path in sorted(self.root.glob("*.json")):
+            doc = json.loads(path.read_text())
+            out.append(
+                {
+                    "symbol": doc["symbol"],
+                    "created_at": doc["created_at"],
+                    "first": doc["first"],
+                    "last": doc["last"],
+                    "refits": len(doc["refits"]),
+                }
+            )
+        return sorted(out, key=lambda d: d["created_at"], reverse=True)

@@ -673,6 +673,46 @@ class RulesOut(BaseModel):
     """From research/findings.md; empty when the file is missing."""
 
 
+class RegimeRequest(BaseModel):
+    """Fit the regime model to a market's daily bars, up to the holdout."""
+
+    symbol: str = Field(min_length=2, max_length=20, examples=["BTCUSDT"])
+
+
+class RegimeSummaryOut(BaseModel):
+    symbol: str
+    created_at: datetime
+    first: datetime | None
+    last: datetime | None
+    refits: int
+
+
+class RegimeStateOut(BaseModel):
+    state: int
+    share: float
+    mean_return: float | None
+    volatility: float | None
+    average_run: float | None
+    expected_days: float
+
+
+class RegimeDetailOut(RegimeSummaryOut):
+    """A saved fit (kestrel.regimes.RegimeStore): every day's filtered probabilities, as
+    the model believed them that day."""
+
+    preset: dict[str, int]
+    time: list[int]
+    """Epoch seconds, one per daily bar."""
+    close: list[float]
+    probabilities: list[list[float] | None]
+    """None before the first fit."""
+    state: list[int | None]
+    states: list[RegimeStateOut]
+    transitions: list[list[float]] | None
+    """From the latest model: row = today, column = tomorrow."""
+    oos_log_likelihood: float
+
+
 class LookOut(BaseModel):
     params: dict[str, int]
     sharpe: float | None

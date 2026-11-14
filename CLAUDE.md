@@ -60,9 +60,9 @@ Never pipe check output through `tail` or similar inside an `&&` chain: it hides
 - [x] The scorecard (below) in code: `kestrel.validation.scorecard` grades every run from
       its metrics, analysis, deflated Sharpe and studies on the same market and period;
       shown on each backtest. Walk-forward studies record each test window against holding.
-- [ ] HMM regimes (backlog S2/S3): engine done (`kestrel.regimes`, `kestrel regimes`). Next:
-      a Regimes page under More (price shaded by state, state probabilities, a card per
-      state, switching odds), fitted as a job and stored. Describes; never trades.
+- [x] HMM regimes (backlog S2/S3): `kestrel.regimes`, `kestrel regimes`, and the Regimes
+      page under More (fitted as a job, stored in `data/regimes/`). Describes; never trades.
+      A strategy using states (S2 as a filter) is a research note and the scorecard.
 - [ ] Charts page under More: any market and interval, indicator chips, a plain-English
       panel per indicator (reuse CandleChart, IndicatorPicker, `/api/indicators`)
 - [ ] P4 Execution: ExecutionVenue adapters (sim, Binance testnet, live), reconciliation,
