@@ -3,20 +3,26 @@
 The active list. Claude keeps it up to date in the same commit as the work (see CLAUDE.md).
 Decisions and rules live in CLAUDE.md; results in `research/findings.md`.
 
-## Top: YouTube strategies (Luke's test spec, 2026-11-15)
+## Top
+- [ ] Cost gate (from Luke's YouTube spec, 2026-11-15): before building any 1m/5m strategy,
+      measure on BTC/ETH/SOL 1m and 5m bars how wide FVG/zone stops are in bps and what a
+      22 bps round trip costs in R. Ingest 1m bars first (12+ months per coin). Decides
+      whether S2/S3 below can pay their fees at 330 USDT at all.
+- [ ] Random-entry control for every bracket strategy (from the same spec): run the same
+      stops, targets and sizing on random entry times and directions (long only here), and
+      require a strategy to beat it. Tests whether an edge is more than the payoff shape
+      (e.g. 4R wins against 1R losses). Becomes a scorecard input for bracket strategies.
+
+## YouTube strategies (Luke's test spec, 2026-11-15): on hold behind the cost gate
+Not ruled out, not yet built. Each waits for the cost gate's answer and Luke's decision on
+the entry-bar conflict below.
 Source: "YouTube Trading Strategies — Test Spec" (13 videos, 3 strategies). All three must be
 adapted to Kestrel's rules: spot, long-only, 330 USDT, Binance data, costs on every fill.
 Each gets its own frozen note and the scorecard; every setting tried is a trial.
-- [ ] 0. Cost gate first (a raw-effect check, no strategy): on BTC/ETH/SOL 1m and 5m, how wide
-      are FVG/zone stops in bps? A round trip costs ~22 bps, so a 0.3% stop pays ~0.7R in
-      costs and lifts the break-even win rate at 4R from 20% to ~35%. If typical stops
-      can't carry the costs, S2 and S3 are dead at this account size before any build.
-      Needs 1m bars ingested (the archive has them; ~12+ months per coin).
 - [ ] 1. S2, CHoCH + FVG (Craig Percoco): NY open, 1m change of character, limit at the FVG
       midpoint, stop beyond FVG candle 1, 4R target. Long setups only. Most codeable.
       Spec defaults: pivot N 3, gap >= 0.3 x ATR(14, 1m), 30-min order expiry, 3 trades/day.
-      Include the spec's random-entry control (same exits, random entries/directions): it
-      tests whether any edge is more than the 4R/1R payoff shape.
+      Judged against the random-entry control above.
 - [ ] 2. S3, market shift (Brad Goh): 1H bias / 15m zones / 5m sweep + body-close shift,
       enter the shift's zone, 2R or next zone, premium/discount filter. Reuses S2's swing,
       sweep and shift code. Long setups only; test only if S2's core holds up.
