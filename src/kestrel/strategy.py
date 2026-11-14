@@ -29,6 +29,7 @@ from kestrel.strategies.funding import FundingHold, FundingTrend
 from kestrel.strategies.levels import LevelBreakout, LevelRetest
 from kestrel.strategies.momentum import CrossSectionalMomentum
 from kestrel.strategies.monthly_rotation import MonthlyRotation
+from kestrel.strategies.pattern_macd import PatternMacd
 from kestrel.strategies.pivots import PivotReversal
 from kestrel.strategies.regime import TrendVolTargetRegime
 from kestrel.strategies.reversal import DropReversal
@@ -571,6 +572,19 @@ STRATEGIES: dict[str, StrategySpec] = {
                 Param("min_volume_musd", 20, 1, 500, "Median daily volume needed, in million USDT"),
             ),
             universe=True,
+        ),
+        StrategySpec(
+            "pattern-macd",
+            "research",
+            "A pin, inside, outside or engulfing bar at a swing low, then a close above it "
+            "within expiry_bars as MACD's histogram rises; stop at the pattern's low, "
+            "target_r target. Research: runs only through its frozen note.",
+            PatternMacd,
+            (
+                Param("swing_bars", 10, 3, 50, "Bars the pattern's low must be lowest of"),
+                Param("expiry_bars", 3, 1, 10, "Bars a pattern waits for its breakout"),
+                Param("target_r", 2, 1, 6, "Target as a multiple of the risk to the stop"),
+            ),
         ),
         StrategySpec(
             "rsi-dip",

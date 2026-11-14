@@ -63,7 +63,8 @@ Strategies, most to least promising:
       strategy `xs-momentum`, no new code). Cross-sectional momentum, long the top 3 by 1-3 month return (batch 2). Twin:
       top 5 (dropped, -92% drawdown). The video's version is long-short; we only get the
       long half.
-- [ ] 9. Price action + MACD (batch 3 G5): candle pattern at a swing, breakout, MACD
+- [ ] 9. READY TO FREEZE: note `candle-pattern-and-macd-turn-on-btc-and-eth` (strategy
+      `pattern-macd`, a bracket strategy: test 9 applies). Price action + MACD (batch 3 G5): candle pattern at a swing, breakout, MACD
       turn. No stop in the original (its 87% win rate likely hides large losses). Chart
       pattern family; every pattern we tested failed.
 - [ ] 10. Set and Forget (batch 1 S1): W/D/4H structure, zones with 3+ touches, 1H
