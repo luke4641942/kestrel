@@ -14,8 +14,6 @@ Decisions and rules live in CLAUDE.md; results in `research/findings.md`.
       are still open after its drop: reject them, or leave them? Your call.
 
 ## Next
-- [ ] Strategy note for the volatile-spell MACD finding (TREND, 2026-11-14): design to agree
-      with Luke, then build, scorecard, and paper trading as its own account.
 - [ ] Delistings (Luke's idea, 2026-11-14): a raw-effect study before any strategy.
       Needs Binance delisting announcement dates (no official history: scrape the public
       announcements catalog, "Delistings"). Measure the path from announcement to removal
