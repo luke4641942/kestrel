@@ -60,6 +60,9 @@ Never pipe check output through `tail` or similar inside an `&&` chain: it hides
 - [x] The scorecard (below) in code: `kestrel.validation.scorecard` grades every run from
       its metrics, analysis, deflated Sharpe and studies on the same market and period;
       shown on each backtest. Walk-forward studies record each test window against holding.
+- [ ] HMM regimes (backlog S2/S3): engine done (`kestrel.regimes`, `kestrel regimes`). Next:
+      a Regimes page under More (price shaded by state, state probabilities, a card per
+      state, switching odds), fitted as a job and stored. Describes; never trades.
 - [ ] Charts page under More: any market and interval, indicator chips, a plain-English
       panel per indicator (reuse CandleChart, IndicatorPicker, `/api/indicators`)
 - [ ] P4 Execution: ExecutionVenue adapters (sim, Binance testnet, live), reconciliation,
@@ -139,6 +142,12 @@ Agreed with Luke; don't re-litigate without a reason.
   spread (`kestrel.backtest.spread`, Abdi-Ranaldo, 1 bp floor). Tokenized stocks listed
   from June 2026 (AAPLBUSDT...) aren't excluded yet; fix from Binance's metadata before
   any holdout run.
+- **Regimes** (`kestrel.regimes`): Gaussian HMM written here on numpy (no hmmlearn: its
+  `predict`/`predict_proba` smooth over the whole sequence). Probabilities are always
+  *filtered* (inputs up to t only); refitted monthly on the 4 years before, states sorted
+  calmest first after every fit. Fixed `PRESET` (3 states; log return and log 20-day
+  volatility). Other inputs are compared by out-of-sample log-likelihood, never by trading
+  results. A strategy that trades on states needs its own note and the scorecard.
 - **Features** (`kestrel.data.features`: Fear & Greed, funding, BTC's close) are joined on
   `open_time` and must be known by the bar's close.
 - **Metrics.** Headline row, in order: return vs buy-and-hold of the same market · Sharpe

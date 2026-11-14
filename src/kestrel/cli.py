@@ -36,6 +36,8 @@ from kestrel.data.quality import check_klines
 from kestrel.data.schema import Interval
 from kestrel.data.store import ParquetStore
 from kestrel.data.universe import ArchiveListing, CoinIngest, ingest_universe, manifest_path
+from kestrel.regimes import format_regimes
+from kestrel.regimes import walk_forward as walk_regimes
 from kestrel.research import ResearchStore, run_target
 from kestrel.strategy import (
     STRATEGIES,
@@ -317,6 +319,45 @@ def anchor_study(
         typer.echo(str(e), err=True)
         raise typer.Exit(code=1) from None
     typer.echo(format_study(result))
+
+
+@app.command()
+def regimes(
+    symbol: str,
+    start: Annotated[str, typer.Option(help="First month, YYYY-MM.")] = "2017-08",
+    end: Annotated[str, typer.Option(help="Last month, YYYY-MM (inclusive).")] = "2025-10",
+    data_dir: DataDir = Path("data"),
+    config: Annotated[
+        Path, typer.Option("--config", envvar="KESTREL_CONFIG", help="Config file.")
+    ] = Path("kestrel.toml"),
+) -> None:
+    """Market regimes from a hidden Markov model refitted monthly on past data only.
+
+    Describes the states; it doesn't trade them. Daily bars; never uses the holdout."""
+    try:
+        cfg = load_config(config)
+    except ConfigError as e:
+        typer.echo(str(e), err=True)
+        raise typer.Exit(code=1) from None
+    first, after = Month.parse(start), Month.parse(end).next()
+    until = datetime(after.year, after.month, 1, tzinfo=UTC)
+    if until > cfg.backtest.holdout_start:
+        typer.echo(
+            f"the range reaches the holdout (from {cfg.backtest.holdout_start:%Y-%m-%d}); "
+            "studies never use it",
+            err=True,
+        )
+        raise typer.Exit(code=1)
+    bars = ParquetStore(data_dir).read(
+        symbol, Interval.D1, datetime(first.year, first.month, 1, tzinfo=UTC), until
+    )
+    typer.echo(f"Fitting {symbol.upper()} month by month; this takes a minute or two...")
+    try:
+        result = walk_regimes(bars)
+    except ValueError as e:
+        typer.echo(str(e), err=True)
+        raise typer.Exit(code=1) from None
+    typer.echo(format_regimes(result, bars, symbol.upper()))
 
 
 @app.command("walk-forward")
