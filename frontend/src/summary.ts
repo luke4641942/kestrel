@@ -1,6 +1,6 @@
 // Plain logic behind the Backtests page: the verdict, the test-period wording and the
 // chart's trade markers. Kept out of components so it can be tested directly.
-import type { Dataset, Decision, GradeStatus, ResearchStatus, Scorecard, Study, RunDetail, RunSummary, StartDateRow, StrategyInfo, StrategyKind } from "./api";
+import type { Dataset, Decision, GradeStatus, HoldoutRecord, ResearchStatus, Scorecard, Study, RunDetail, RunSummary, StartDateRow, StrategyInfo, StrategyKind } from "./api";
 import type { Tone } from "./components/ui";
 import type { TradeMarker } from "./components/EquityChart";
 
@@ -366,4 +366,16 @@ export function datasetsLine(symbols: string[], intervals: string[], shown = 3):
   const rest = ordered.length - shown;
   const coins = rest > 0 ? `${names} and ${rest.toLocaleString("en-AU")} more` : names;
   return `${coins} at ${intervals.join(", ")}`;
+}
+
+const signedPct = (x: number) => `${x >= 0 ? "+" : "−"}${Math.abs(x * 100).toFixed(1)}%`;
+
+/** How a holdout test judged the edge, in the terms its note fixed: Sharpe against holding
+ * in a rising year; return against holding at the same exposure in a falling one. */
+export function holdoutEdge(r: HoldoutRecord): string {
+  if (r.falling_year) {
+    return `${signedPct(r.mine.total_return)} vs ${signedPct(r.matched_return)} for holding at its ${Math.round(r.exposure * 100)}% exposure`;
+  }
+  const sr = (x: number | null) => (x === null ? "n/a" : x.toFixed(2));
+  return `Sharpe ${sr(r.mine.sharpe)} vs ${sr(r.held.sharpe)} for holding`;
 }

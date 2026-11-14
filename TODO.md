@@ -6,8 +6,8 @@ Decisions and rules live in CLAUDE.md; results in `research/findings.md`.
 ## Waiting on Luke
 - [ ] Trend-vol-target BTC walk-forward note failed its pre-registered rule (2 of 7 windows,
       4 needed). Its status is still frozen: reject it, or keep it open? Your call.
-- [ ] Holdout results are in. Trend-vol-target BTC PASSED (its note implies pursue); weekly
-      momentum ETH FAILED (its note implies drop). Both labels are still "watch": your call.
+- [ ] Weekly momentum ETH's notes (`holdout-weekly-momentum-eth`, `weekly-momentum-eth-scorecard`)
+      are still open after its drop: reject them, or leave them? Your call.
 
 ## Next
 - [ ] P4 paper trading: sim venue, Binance testnet, reconciliation, risk limits, kill switch.
@@ -20,6 +20,8 @@ Decisions and rules live in CLAUDE.md; results in `research/findings.md`.
 - [ ] HMM regime filter (backlog S2) as a strategy: needs a note that passes the entry bar.
 
 ## Done recently
+- 2026-11-14 Holdout tests shown on the Overview (read-only, `/api/holdout`).
+- 2026-11-14 Labels (Luke): trend-vol-target BTC pursue; weekly momentum ETH drop.
 - 2026-11-14 Holdout used once: trend-vol-target BTC passed, weekly momentum ETH failed.
 - 2026-11-14 `kestrel holdout-test` built (synthetic tests only; the real holdout is untouched).
 - 2026-11-14 Trend-vol-target BTC moved from pursue to watch (Luke). Nothing is on pursue.

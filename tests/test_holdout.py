@@ -169,3 +169,25 @@ def test_no_bars_in_the_scored_period() -> None:
     early = daily().filter(daily()["open_time"] < START)
     with pytest.raises(ValueError, match="no stored bars in the scored period"):
         run(early)
+
+
+def test_the_api_lists_records_and_cannot_run_one(tmp_path: Path) -> None:
+    from fastapi.testclient import TestClient
+
+    from kestrel.api.app import create_app
+
+    client = TestClient(create_app(tmp_path, static_dir=None))
+    assert client.get("/api/holdout").json() == []
+    log = HoldoutLog(tmp_path)
+    log.record("older", 1, result(Scored(1.0, 0.1, -0.1), Scored(0.5, 0.1, -0.2)), START)
+    falling = result(Scored(-2.0, -0.1, -0.15), Scored(-1.5, -0.5, -0.6), matched=-0.25)
+    log.record("newer", 1, falling, START)
+    listed = client.get("/api/holdout").json()
+    assert [r["research"] for r in listed] == ["newer", "older"]
+    assert listed[0]["falling_year"] is True
+    assert listed[0]["edge_passes"] is True
+    assert listed[0]["mine"]["total_return"] == pytest.approx(-0.1)
+    # Read-only: no route runs a holdout test.
+    assert client.post("/api/holdout", json={}).status_code == 405
+    paths = [getattr(r, "path", "") for r in client.app.routes]  # type: ignore[attr-defined]
+    assert not [p for p in paths if "holdout" in p and "jobs" in p]

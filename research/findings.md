@@ -74,8 +74,8 @@ of 172 worthless strategies would often reach. Its record outside 2020-25 is mix
 from -83% to -35% yet lost 32% overall, more than holding's 14%. On
 ETH it did well in-sample but failed walk-forward (out-of-sample Sharpe 0.28).
 
-It is watched, like weekly momentum on ETH: a candidate for the one-off holdout test and then
-paper trading (P4), labelled risk-managed holding rather than a proven edge.
+It then passed the one-off holdout test (below) and goes to paper trading (P4), labelled
+risk-managed holding rather than a proven edge.
 
 ## What the evidence says
 
@@ -122,7 +122,7 @@ edge, and the holdout can't be used again for either strategy.
 
 | Strategy | Market | Result | Decision |
 |---|---|---|---|
-| Trend following + volatility targeting | BTC 1d | Beat exposure-matched holding (Sharpe 1.21 vs 1.07); beat holding in only 2 of 7 walk-forward windows; deflated 28% | Watch |
+| Trend following + volatility targeting | BTC 1d | Beat exposure-matched holding (Sharpe 1.21 vs 1.07); beat holding in only 2 of 7 walk-forward windows; deflated 28%; passed the holdout | Pursue (paper trading) |
 | Trend following + volatility targeting | ETH 1d | Walk-forward Sharpe 0.28, a third of in-sample | Drop |
 | Channel breakout | BTC, ETH 4h | Sharpe under half of holding; failed walk-forward on both | Drop |
 | Structure pullback | BTC, ETH 4h | +0.06R a trade, P(> 0) 63% against 90% needed | Drop |
@@ -140,7 +140,7 @@ edge, and the holdout can't be used again for either strategy.
 | Trend across a 10-coin basket | Top 10 coins 1d | Drawdown -41% vs -85%, Sharpe 0.95 vs 1.07 for BTC | Drop |
 | Volatility-managed holding | BTC, ETH 1d | Below the market at the same exposure on both | Drop |
 | Nearness to the 52-week high | Top 20 coins 1d | -64% vs +10% for the same coins held equally | Drop |
-| One-week momentum | ETH 1d | Full scorecard: passes all but luck. Beat exposure-matched holding (Sharpe 1.23 vs 1.12); walk-forward beat holding in 4 of 7 windows; deflated 29%; slightly below holding on unseen ETH 2017-19 (0.13 vs 0.15) | Watch |
+| One-week momentum | ETH 1d | Full scorecard: passes all but luck. Beat exposure-matched holding (Sharpe 1.23 vs 1.12); walk-forward beat holding in 4 of 7 windows; deflated 29%; slightly below holding on unseen ETH 2017-19 (0.13 vs 0.15); failed the holdout | Drop |
 | One-week momentum | BTC, SOL 1d | Below holding on both (BTC 0.94 vs 1.07, SOL 1.08 vs 1.24) | Drop |
 | BTC/ETH rotation | BTC, ETH 1d | Sharpe 1.06 vs 1.07 for BTC, same drawdown | Drop |
 | BTC-led weekly momentum | ETH, SOL 1d | Below holding on every window | Drop |

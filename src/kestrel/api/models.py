@@ -715,6 +715,34 @@ class RegimeDetailOut(RegimeSummaryOut):
     oos_log_likelihood: float
 
 
+class HoldoutScoreOut(BaseModel):
+    sharpe: float | None
+    total_return: float
+    max_drawdown: float
+
+
+class HoldoutOut(BaseModel):
+    """One recorded holdout test (kestrel.validation.holdout): read-only. The dashboard can
+    show what the one look found; it can never run one."""
+
+    research: str
+    version: int
+    recorded_at: datetime
+    strategy: str
+    symbol: str
+    start: datetime
+    end: datetime
+    """Exclusive."""
+    exposure: float
+    mine: HoldoutScoreOut
+    held: HoldoutScoreOut
+    matched_return: float
+    falling_year: bool
+    edge_passes: bool
+    drawdown_passes: bool
+    passes: bool
+
+
 class LookOut(BaseModel):
     params: dict[str, int]
     sharpe: float | None

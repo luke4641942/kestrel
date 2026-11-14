@@ -2,7 +2,7 @@ import { useState } from "react";
 import { api, type Job } from "../api";
 import type { Route } from "../App";
 import { Empty, FoldToggle, PageHeader, Panel, Section, Status } from "../components/ui";
-import { DECISION, RESEARCH_STATUS, datasetsLine, marketLabel, splitClosed, studyTitle, studyTone } from "../summary";
+import { DECISION, RESEARCH_STATUS, datasetsLine, holdoutEdge, marketLabel, splitClosed, studyTitle, studyTone } from "../summary";
 import { ago, date, num } from "../format";
 import { useResource } from "../hooks";
 
@@ -53,6 +53,13 @@ export function Overview({ jobs, go, openJobs }: { jobs: Job[]; go: (r: Route) =
         }
       >
         <DecisionsBoard />
+      </Section>
+
+      <Section
+        title="Holdout tests"
+        description="The one look at the year reserved before any research (from 2025-11-01), for a finished strategy, under rules frozen in its note. Run once from the CLI; shown here, never run here."
+      >
+        <HoldoutBoard />
       </Section>
 
       <Section
@@ -219,7 +226,7 @@ function ResearchBoard() {
           </span>
         )}
         <span>In-sample results never appear on this page.</span>
-        <span>The holdout period stays untouched until a strategy is final.</span>
+        <span>The holdout is used once per finished strategy; see Holdout tests above.</span>
       </div>
     </Panel>
   );
@@ -315,6 +322,74 @@ function DecisionsBoard() {
         open={showDropped}
         onToggle={() => setShowDropped((v) => !v)}
       />
+    </Panel>
+  );
+}
+
+function HoldoutBoard() {
+  const tests = useResource(api.holdout, []);
+  const list = tests.data ?? [];
+  if (tests.error) {
+    return (
+      <Panel>
+        <Empty title="Couldn't read the holdout records">
+          <p>{tests.error}</p>
+        </Empty>
+      </Panel>
+    );
+  }
+  return (
+    <Panel>
+      {list.length === 0 ? (
+        <Empty title={tests.loading ? "Loading holdout tests" : "The holdout hasn't been used"}>
+          {!tests.loading && <p>It is reserved for one final test of a finished strategy.</p>}
+        </Empty>
+      ) : (
+        <div className="table-wrap">
+          <table className="table holdout-table">
+            <thead>
+              <tr>
+                <th>Strategy</th>
+                <th>Market</th>
+                <th>Year scored</th>
+                <th className="num">Return</th>
+                <th>Edge</th>
+                <th className="num">Worst drawdown</th>
+                <th>Verdict</th>
+              </tr>
+            </thead>
+            <tbody>
+              {list.map((r) => (
+                <tr key={r.research}>
+                  <td>
+                    <div style={{ fontWeight: 500 }}>{r.strategy}</div>
+                    <div className="mono small tertiary">{r.research}</div>
+                  </td>
+                  <td className="nw">{r.symbol}</td>
+                  <td className="nw secondary">
+                    {date(r.start)} to {date(new Date(new Date(r.end).getTime() - 86_400_000).toISOString())}
+                  </td>
+                  <td className="num nw">
+                    {(r.mine.total_return * 100).toFixed(1)}%
+                    <div className="small tertiary">holding {(r.held.total_return * 100).toFixed(1)}%</div>
+                  </td>
+                  <td>
+                    <Status tone={r.edge_passes ? "ok" : "bad"}>{r.edge_passes ? "Pass" : "Fail"}</Status>
+                    <div className="small secondary">{holdoutEdge(r)}</div>
+                  </td>
+                  <td className="num nw">
+                    {(r.mine.max_drawdown * 100).toFixed(0)}%
+                    <div className="small tertiary">holding {(r.held.max_drawdown * 100).toFixed(0)}%</div>
+                  </td>
+                  <td className="nw">
+                    <Status tone={r.passes ? "ok" : "bad"}>{r.passes ? "Passed" : "Failed"}</Status>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
     </Panel>
   );
 }

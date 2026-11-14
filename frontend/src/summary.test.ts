@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { datasetsLine, scorecardHeadline, luckBar, splitClosed, startDateVerdict, windowLabel, DECISION, studyTitle, studyTone, deflatedNote, spreadBands, DEFAULT_RUN_SORT, KIND_LABEL, UNIVERSE, marketLabel, marketsFor, defaultDataset, nextSort, sortRuns, fewTrades, signalsCaption, MAX_LABELLED_TRADES, MAX_MARKED_TRADES, costHeadroom, paramsText, runRole, tradeCount, heldAsset, money, span, trackRecord, tradeMarkers, verdict } from "./summary";
+import { holdoutEdge, datasetsLine, scorecardHeadline, luckBar, splitClosed, startDateVerdict, windowLabel, DECISION, studyTitle, studyTone, deflatedNote, spreadBands, DEFAULT_RUN_SORT, KIND_LABEL, UNIVERSE, marketLabel, marketsFor, defaultDataset, nextSort, sortRuns, fewTrades, signalsCaption, MAX_LABELLED_TRADES, MAX_MARKED_TRADES, costHeadroom, paramsText, runRole, tradeCount, heldAsset, money, span, trackRecord, tradeMarkers, verdict } from "./summary";
 import { run, trade } from "./test/fixtures";
 
 describe("verdict", () => {
@@ -401,5 +401,19 @@ describe("a scorecard with a test that doesn't apply", () => {
       tone: "ok",
       text: "Passes every test that applies.",
     });
+  });
+});
+
+describe("holdoutEdge", () => {
+  const record = (falling: boolean) => ({
+    research: "n", version: 1, recorded_at: "", strategy: "trend-vol-target", symbol: "BTCUSDT",
+    start: "", end: "", exposure: 0.332, matched_return: -0.0889, falling_year: falling,
+    mine: { sharpe: -0.057, total_return: -0.0237, max_drawdown: -0.11 },
+    held: { sharpe: 1.2, total_return: -0.29, max_drawdown: -0.47 },
+    edge_passes: true, drawdown_passes: true, passes: true,
+  });
+  it("compares returns at the same exposure in a falling year, Sharpes otherwise", () => {
+    expect(holdoutEdge(record(true))).toBe("−2.4% vs −8.9% for holding at its 33% exposure");
+    expect(holdoutEdge(record(false))).toBe("Sharpe -0.06 vs 1.20 for holding");
   });
 });

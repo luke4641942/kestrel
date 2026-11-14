@@ -284,6 +284,32 @@ export interface RegimeDetail extends RegimeSummary {
   oos_log_likelihood: number;
 }
 
+export interface HoldoutScore {
+  sharpe: number | null;
+  total_return: number;
+  max_drawdown: number;
+}
+
+/** One recorded holdout test (kestrel.validation.holdout). Read-only: run from the CLI only. */
+export interface HoldoutRecord {
+  research: string;
+  version: number;
+  recorded_at: string;
+  strategy: string;
+  symbol: string;
+  start: string;
+  /** Exclusive. */
+  end: string;
+  exposure: number;
+  mine: HoldoutScore;
+  held: HoldoutScore;
+  matched_return: number;
+  falling_year: boolean;
+  edge_passes: boolean;
+  drawdown_passes: boolean;
+  passes: boolean;
+}
+
 export interface Study {
   id: string;
   created_at: string;
@@ -562,6 +588,7 @@ export const api = {
   backtests: () => request<RunSummary[]>("/backtests"),
   validation: () => request<Validation>("/validation"),
   decisions: () => request<Decision[]>("/decisions"),
+  holdout: () => request<HoldoutRecord[]>("/holdout"),
   regimes: () => request<RegimeSummary[]>("/regimes"),
   regime: (symbol: string) => request<RegimeDetail>(`/regimes/${enc(symbol)}`),
   startRegimes: (symbol: string) => request<Job>("/jobs/regimes", { method: "POST", body: JSON.stringify({ symbol }) }),

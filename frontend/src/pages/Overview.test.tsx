@@ -16,6 +16,7 @@ beforeEach(() => {
   api.researchList = vi.fn().mockResolvedValue([]);
   api.validation = vi.fn().mockResolvedValue({ trials: 0, sharpe_std: 0, expected_max_sharpe: 0, studies: [] });
   api.datasets = vi.fn().mockResolvedValue([]);
+  api.holdout = vi.fn().mockResolvedValue([]);
 });
 
 describe("Overview", () => {
@@ -64,5 +65,30 @@ describe("Overview", () => {
     render(<Overview jobs={[]} go={() => {}} openJobs={() => {}} />);
     expect(await screen.findByText("Couldn't read the decisions")).toBeInTheDocument();
     expect(screen.getByText("decision 1: no strategy 'magic'")).toBeInTheDocument();
+  });
+});
+
+describe("Holdout tests", () => {
+  it("lists each recorded test with the edge in its note's terms", async () => {
+    api.holdout = vi.fn().mockResolvedValue([
+      {
+        research: "holdout-trend-vol-target-btc", version: 1, recorded_at: "2026-11-14T10:22:52Z",
+        strategy: "trend-vol-target", symbol: "BTCUSDT", start: "2025-11-01T00:00:00Z", end: "2026-11-01T00:00:00Z",
+        exposure: 0.33, matched_return: -0.089, falling_year: true, edge_passes: true, drawdown_passes: true, passes: true,
+        mine: { sharpe: -0.06, total_return: -0.024, max_drawdown: -0.11 },
+        held: { sharpe: -0.57, total_return: -0.292, max_drawdown: -0.469 },
+      },
+    ]);
+    render(<Overview jobs={[]} go={() => {}} openJobs={() => {}} />);
+    const row = (await screen.findByText("holdout-trend-vol-target-btc")).closest("tr")!;
+    expect(within(row).getByText("2025-11-01 to 2026-10-31")).toBeInTheDocument();
+    expect(within(row).getByText("−2.4% vs −8.9% for holding at its 33% exposure")).toBeInTheDocument();
+    expect(within(row).getByText("Passed")).toBeInTheDocument();
+    expect(within(row).getByText("holding -47%")).toBeInTheDocument();
+  });
+
+  it("says when the holdout hasn't been used", async () => {
+    render(<Overview jobs={[]} go={() => {}} openJobs={() => {}} />);
+    expect(await screen.findByText("The holdout hasn't been used")).toBeInTheDocument();
   });
 });

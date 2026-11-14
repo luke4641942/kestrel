@@ -71,8 +71,8 @@ Never pipe check output through `tail` or similar inside an `&&` chain: it hides
 - [x] Charts page under More: any market, bar size and range, the indicator chips, and a
       plain-English card per indicator switched on (`Preset.reading`)
 - [ ] P4 Execution: ExecutionVenue adapters (sim, Binance testnet, live), reconciliation,
-      risk limits, kill switch, alerting, parity tests. First candidates: the two watched
-      strategies, if they survive the holdout test, to prove the plumbing.
+      risk limits, kill switch, alerting, parity tests. First strategy: trend-vol-target on
+      BTC (pursue), as risk-managed holding, to prove the plumbing.
 - Parked: P5 perps (see Parked), multi-strategy portfolios, Settings page.
 
 ## Research rules (reviewed 2026-11-14)
@@ -94,11 +94,11 @@ Never pipe check output through `tail` or similar inside an `&&` chain: it hides
   Luke may run because it smooths the ride. It is labelled "not a proven edge" and never
   counts as a pass.
 - **Decisions** (`research/decisions.toml`, one per strategy and market): `pursue` means
-  carry on to paper trading, not "passed"; `watch`; `drop` (final). Nothing is on pursue
-  (2026-11-14). Two are watched: trend-vol-target on BTC (beats exposure-matched holding,
-  1.21 vs 1.07, but deflated 28% and won only 2 of 7 walk-forward windows) and weekly
-  momentum on ETH (1.23 vs 1.12, deflated 29%, walk-forward 4 of 7). Both are candidates
-  for the holdout test and then paper trading. A rejected *note* stays
+  carry on to paper trading, not "passed"; `watch`; `drop` (final). One pursue
+  (2026-11-14): trend-vol-target on BTC. It beats exposure-matched holding on 2020-25 (1.21
+  vs 1.07) but deflates to 28% and won only 2 of 7 walk-forward windows; it passed the
+  holdout (-2.4% vs -8.9% for BTC at its exposure in a falling year). Weekly momentum on ETH
+  failed the holdout and was dropped. The holdout is spent for both. A rejected *note* stays
   rejected; the decision file is the separate "what do we do with it" layer.
 - **Entry bar for a new idea.** Its note states who pays you and why (an economic reason,
   not a chart pattern), outside evidence (published or out-of-sample elsewhere), that it

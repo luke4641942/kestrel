@@ -37,6 +37,7 @@ from kestrel.api.models import (
     FillOut,
     GradeOut,
     Health,
+    HoldoutOut,
     IndicatorLines,
     IndicatorOut,
     IngestRequest,
@@ -105,6 +106,7 @@ from kestrel.strategy import (
 )
 from kestrel.validation import rules
 from kestrel.validation.deflated import TrialSet, counts_as_trial, deflated_sharpe, trial_set
+from kestrel.validation.holdout import HoldoutLog
 from kestrel.validation.log import ValidationLog
 from kestrel.validation.scorecard import grade
 
@@ -513,6 +515,14 @@ def create_app(
 
         job = jobs.submit("backtest", {**req.model_dump(mode="json"), "strategy": key}, run)
         return JobOut.from_job(job)
+
+    @api.get("/holdout")
+    def list_holdout() -> list[HoldoutOut]:
+        """Every holdout test ever recorded, newest first. Read-only: holdout tests run only
+        from the CLI, once per frozen note."""
+        found = HoldoutLog(data_dir).records()
+        found.sort(key=lambda r: r["recorded_at"], reverse=True)
+        return [HoldoutOut.model_validate(r) for r in found]
 
     # ---------- regimes ----------
 
