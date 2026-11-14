@@ -46,8 +46,17 @@ class TrendVolTarget:
         )
 
     def target_weights(self, bars: pl.DataFrame) -> pl.Series:
+        return self._decide(bars)["weight"]
+
+    def vote_count(self, bars: pl.DataFrame) -> pl.Series:
+        """How many of the three trends are up at each close (0 until the longest
+        lookback and the volatility window have filled)."""
+        return self._decide(bars)["votes"]
+
+    def _decide(self, bars: pl.DataFrame) -> pl.DataFrame:
         if bars.height < 2:
-            return pl.Series("weight", [0.0] * bars.height, dtype=pl.Float64)
+            zeros = pl.Series([0.0] * bars.height, dtype=pl.Float64)
+            return pl.DataFrame({"votes": zeros, "weight": zeros})
         # Bars per day from the median spacing: robust to the odd missing bar.
         step = bars["open_time"].diff().median()
         assert isinstance(step, timedelta)
@@ -62,10 +71,9 @@ class TrendVolTarget:
         vol = log_return.rolling_std(bars_for(self.vol_days)) * math.sqrt(DAYS_PER_YEAR * per_day)
         # A shift into the start of the data is null, so the vote is null until it fills.
         ready = close.shift(bars_for(max(self.lookbacks))).is_not_null() & vol.is_not_null()
-        weight = (pl.sum_horizontal(votes) / len(votes)) * (self.target_vol / vol).clip(
-            upper_bound=1.0
+        count = pl.sum_horizontal(votes)
+        weight = (count / len(votes)) * (self.target_vol / vol).clip(upper_bound=1.0)
+        return bars.select(
+            votes=pl.when(ready).then(count).otherwise(0.0).fill_null(0.0),
+            weight=pl.when(ready).then(weight).otherwise(0.0).fill_nan(0.0).fill_null(0.0),
         )
-        out = bars.select(
-            weight=pl.when(ready).then(weight).otherwise(0.0).fill_nan(0.0).fill_null(0.0)
-        )
-        return out["weight"]

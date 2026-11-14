@@ -23,6 +23,7 @@ import polars as pl
 
 from kestrel.strategies.anchor import HighAnchor
 from kestrel.strategies.basket import LargeCoinBasket
+from kestrel.strategies.brake import TrendVolTargetBrake, WeeklyMomentumBrake
 from kestrel.strategies.funding import FundingHold, FundingTrend
 from kestrel.strategies.levels import LevelBreakout, LevelRetest
 from kestrel.strategies.momentum import CrossSectionalMomentum
@@ -380,6 +381,22 @@ STRATEGIES: dict[str, StrategySpec] = {
             ),
         ),
         StrategySpec(
+            "trend-vol-target-brake",
+            "research",
+            "Trend-vol-target with a crash brake: sell when a close falls brake_atr x ATR(14) "
+            "below the high since entry, then wait for the trend votes to change. Research: "
+            "runs only through its frozen note.",
+            TrendVolTargetBrake,
+            (
+                Param("fast_days", 20, 5, 60, "Shortest trend lookback, in days"),
+                Param("mid_days", 60, 20, 180, "Middle trend lookback, in days"),
+                Param("slow_days", 120, 60, 365, "Longest trend lookback, in days"),
+                Param("vol_days", 30, 10, 90, "Days of returns that measure volatility"),
+                Param("target_vol_pct", 50, 10, 150, "Annual volatility to size towards, in %"),
+                Param("brake_atr", 2, 1, 6, "Brake: ATRs below the high that trip it"),
+            ),
+        ),
+        StrategySpec(
             "monday-pullback",
             "research",
             "In a week that breaks Monday's high (AEST) before its low, buy the first pullback "
@@ -527,6 +544,15 @@ STRATEGIES: dict[str, StrategySpec] = {
             "Hold the coin next week if its Sunday-to-Sunday return was positive, else cash. "
             "Research: runs only through its frozen note.",
             WeeklyMomentum,
+        ),
+        StrategySpec(
+            "weekly-momentum-brake",
+            "research",
+            "Weekly momentum with a crash brake: sell when a close falls brake_atr x ATR(14) "
+            "below the high since entry, then wait for the next Sunday. Research: runs only "
+            "through its frozen note.",
+            WeeklyMomentumBrake,
+            (Param("brake_atr", 2, 1, 6, "Brake: ATRs below the high that trip it"),),
         ),
         StrategySpec(
             "btc-led-weekly",
