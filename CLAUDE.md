@@ -68,7 +68,7 @@ Never pipe check output through `tail` or similar inside an `&&` chain: it hides
 - [x] HMM regimes (backlog S2/S3): `kestrel.regimes`, `kestrel regimes`, and the Regimes
       page under More (fitted as a job, stored in `data/regimes/`). Describes; never trades.
       A strategy using states (S2 as a filter) is a research note and the scorecard.
-- [x] Charts page under More: any market, bar size and range, the indicator chips, and a
+- [x] Charts page (its own main tab since 2026-11-14): any market, bar size and range, the indicator chips, and a
       plain-English card per indicator switched on (`Preset.reading`)
 - [x] P4 Execution (built 2026-11-14): sim and Binance testnet venues, the paper runner,
       reconciliation, risk limits, kill switch, tracking against the model, a launchd
