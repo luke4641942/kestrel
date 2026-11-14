@@ -49,7 +49,8 @@ Strategies, most to least promising:
       merged in): hold the top 2 by 12-month return that are above their 200-day; sweep
       3/6/12 months. Twins: BTC/ETH rotation (dropped), cross-sectional momentum (dropped).
       Overlaps trend-vol-target (pursue). A5 has no crypto version.
-- [ ] 6. RSI dip-buying, BTC/ETH 1d (batch 2 A1/A2/A4 and batch 3 G2 merged): RSI(2) < 10,
+- [ ] 6. READY TO FREEZE: note `rsi-dip-buying-on-btc-and-eth` (strategy `rsi-dip`).
+      RSI dip-buying, BTC/ETH 1d (batch 2 A1/A2/A4 and batch 3 G2 merged): RSI(2) < 10,
       RSI(5) < 30 or RSI(10) < 30, above the 200-day. Exit on the close above yesterday's
       high or RSI(10) > 40. Twins: buy big down days, Fear & Greed contrarian, extreme fear
       (all dropped or KILL). G2 has 36 trades in 23 years, so pool coins. At most 8 trials.

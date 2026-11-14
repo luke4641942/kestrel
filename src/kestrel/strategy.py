@@ -31,6 +31,7 @@ from kestrel.strategies.pivots import PivotReversal
 from kestrel.strategies.regime import TrendVolTargetRegime
 from kestrel.strategies.reversal import DropReversal
 from kestrel.strategies.rotation import DualMomentum
+from kestrel.strategies.rsi_dip import RsiDip
 from kestrel.strategies.sentiment import FearGreedContrarian
 from kestrel.strategies.squeeze import SqueezeBreakout
 from kestrel.strategies.structure import StructurePullback
@@ -568,6 +569,21 @@ STRATEGIES: dict[str, StrategySpec] = {
                 Param("min_volume_musd", 20, 1, 500, "Median daily volume needed, in million USDT"),
             ),
             universe=True,
+        ),
+        StrategySpec(
+            "rsi-dip",
+            "research",
+            "Buy when RSI(rsi_bars) closes below rsi_below above the trend_days average (0: no "
+            "filter); sell at a close above yesterday's high, or RSI above exit_rsi_above if set, "
+            "or after max_days if set. Research: runs only through its frozen note.",
+            RsiDip,
+            (
+                Param("rsi_bars", 2, 2, 14, "Closes in the RSI"),
+                Param("rsi_below", 10, 5, 40, "Buy when RSI closes below this"),
+                Param("trend_days", 200, 0, 365, "Trend filter average, days (0: none)"),
+                Param("exit_rsi_above", 0, 0, 90, "Sell when RSI closes above (0: QS exit)"),
+                Param("max_days", 0, 0, 30, "Time stop, days (0: none)"),
+            ),
         ),
         StrategySpec(
             "squeeze-breakout",
