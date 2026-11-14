@@ -3,6 +3,31 @@
 The active list. Claude keeps it up to date in the same commit as the work (see CLAUDE.md).
 Decisions and rules live in CLAUDE.md; results in `research/findings.md`.
 
+## Top: YouTube strategies (Luke's test spec, 2026-11-15)
+Source: "YouTube Trading Strategies — Test Spec" (13 videos, 3 strategies). All three must be
+adapted to Kestrel's rules: spot, long-only, 330 USDT, Binance data, costs on every fill.
+Each gets its own frozen note and the scorecard; every setting tried is a trial.
+- [ ] 0. Cost gate first (a raw-effect check, no strategy): on BTC/ETH/SOL 1m and 5m, how wide
+      are FVG/zone stops in bps? A round trip costs ~22 bps, so a 0.3% stop pays ~0.7R in
+      costs and lifts the break-even win rate at 4R from 20% to ~35%. If typical stops
+      can't carry the costs, S2 and S3 are dead at this account size before any build.
+      Needs 1m bars ingested (the archive has them; ~12+ months per coin).
+- [ ] 1. S2, CHoCH + FVG (Craig Percoco): NY open, 1m change of character, limit at the FVG
+      midpoint, stop beyond FVG candle 1, 4R target. Long setups only. Most codeable.
+      Spec defaults: pivot N 3, gap >= 0.3 x ATR(14, 1m), 30-min order expiry, 3 trades/day.
+      Include the spec's random-entry control (same exits, random entries/directions): it
+      tests whether any edge is more than the 4R/1R payoff shape.
+- [ ] 2. S3, market shift (Brad Goh): 1H bias / 15m zones / 5m sweep + body-close shift,
+      enter the shift's zone, 2R or next zone, premium/discount filter. Reuses S2's swing,
+      sweep and shift code. Long setups only; test only if S2's core holds up.
+- [ ] 3. S1, Set and Forget (Alex): W/D/4H structure, weekly/daily zones with 3+ touches, 1H
+      engulfing entry, 2R-4R. Forex in the original: adapt to crypto 4H/1H with ATR-based
+      zone widths. Least codeable (discretionary swings and zones); last, if at all.
+- Rules conflict to decide (Luke): CLAUDE.md's entry bar says a new idea mustn't be a variant
+  of a rejected family, and these are structure/pullback/sweep-reversal setups. A Craig
+  Percoco structure pullback was rejected on 2026-11-05 (+0.06R). Testing them means
+  overriding the bar knowingly, with the trials counted.
+
 ## Waiting on Luke
 - [ ] Read and freeze `paper-trading-trend-vol-target-btc` (drafted 2026-11-14). Then:
       `kestrel paper open tvt-btc ... --venue testnet` (the note's rules), `kestrel paper
