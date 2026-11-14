@@ -568,6 +568,9 @@ class AnalysisOut(BaseModel):
     open_at_end: bool
     resamples: int
     block_days: int
+    drawdown_paths: list[float] | None = None
+    """Max drawdown on resampled paths: [median, 95th percentile worst]. None for runs
+    saved before it existed."""
     start_dates: list[StartDateOut] = Field(default_factory=list)
     """Against holding from every start date. Runs saved before it existed get it
     computed from their stored equity."""

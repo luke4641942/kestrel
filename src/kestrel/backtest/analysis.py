@@ -7,6 +7,12 @@ streaks and volatility clustering that resampling single days would destroy. Blo
 come from prefix sums of log returns, so 2,000 resamples cost about 2,000 x n/block
 additions. The seed is fixed, so a run always reports the same intervals.
 
+The same resampled paths give a drawdown distribution: the backtest's max drawdown is one
+draw from it, so the median and the 1-in-20 worst path show how deep it could have gone
+with the same days in a different order. Batch 2's 9,000-backtest video reshuffled trades;
+resampling blocks of days does the same for every strategy, bracket or weights, and keeps
+the losing streaks that reshuffling single trades would break up.
+
 Caveat shown with every interval: they assume this was the only strategy tried. P3's
 deflated Sharpe corrects for every variant tested.
 
@@ -29,6 +35,7 @@ import random
 from dataclasses import dataclass
 from datetime import datetime, timedelta
 
+import numpy as np
 import polars as pl
 
 from kestrel.backtest.engine import BacktestResult
@@ -111,6 +118,9 @@ class Analysis:
     """Some position was never sold, so its gain is unrealised."""
     resamples: int
     block_days: int
+    drawdown_paths: tuple[float, float] | None
+    """Max drawdown on the block-bootstrap paths: (median, 95th percentile worst), both
+    negative. None for runs shorter than two days."""
     start_dates: list[StartDateRow]
     """Against holding, from every start date; see the module docstring."""
 
@@ -231,8 +241,28 @@ def analyse(
         open_at_end=open_at_end,
         resamples=resamples,
         block_days=block,
+        drawdown_paths=drawdown_paths(logs, block, resamples, seed),
         start_dates=start_dates(result.equity, benchmark.equity),
     )
+
+
+def drawdown_paths(
+    logs: list[float], block: int, resamples: int, seed: int
+) -> tuple[float, float] | None:
+    """Median and 95th-percentile-worst max drawdown over circular block-bootstrap paths of
+    daily log returns (its own seeded generator, so the return intervals don't move)."""
+    n = len(logs)
+    if n < 2:
+        return None
+    rng = np.random.default_rng(seed)
+    blocks = math.ceil(n / block)
+    doubled = np.array(logs + logs)
+    starts = rng.integers(0, n, size=(resamples, blocks))
+    idx = (starts[:, :, None] + np.arange(block)).reshape(resamples, -1)[:, :n]
+    wealth = np.exp(np.cumsum(doubled[idx], axis=1))
+    wealth = np.concatenate([np.ones((resamples, 1)), wealth], axis=1)
+    worst = (wealth / np.maximum.accumulate(wealth, axis=1) - 1).min(axis=1)
+    return float(np.median(worst)), float(np.quantile(worst, 0.05))
 
 
 def start_dates(

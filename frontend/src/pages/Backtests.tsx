@@ -1,8 +1,31 @@
-import { useEffect, useMemo, useRef, useState, type FormEvent, type ReactNode } from "react";
-import { api, type Dataset, type Job, type Metrics, type RunDetail, type RunSummary, type Scorecard } from "../api";
+import {
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  type FormEvent,
+  type ReactNode,
+} from "react";
+import {
+  api,
+  type Dataset,
+  type Job,
+  type Metrics,
+  type RunDetail,
+  type RunSummary,
+  type Scorecard,
+} from "../api";
 import { EquityChart } from "../components/EquityChart";
 import { ParamInputs, defaultParams } from "../components/ParamInputs";
-import { Empty, PageHeader, Panel, Section, Stat, Status, Tabs } from "../components/ui";
+import {
+  Empty,
+  PageHeader,
+  Panel,
+  Section,
+  Stat,
+  Status,
+  Tabs,
+} from "../components/ui";
 import { ago, dateTime, lastResearchMonth, num } from "../format";
 import { useResource } from "../hooks";
 import {
@@ -32,18 +55,25 @@ import {
   usdt,
   verdict,
   windowLabel,
+  drawdownPaths,
 } from "../summary";
 
 const pct = (x: number | null | undefined, digits = 1) =>
-  x === null || x === undefined ? "n/a" : `${x >= 0 ? "+" : ""}${(x * 100).toFixed(digits)}%`;
+  x === null || x === undefined
+    ? "n/a"
+    : `${x >= 0 ? "+" : ""}${(x * 100).toFixed(digits)}%`;
 const plain = (x: number | null | undefined, digits = 2) =>
   x === null || x === undefined ? "n/a" : x.toFixed(digits);
 const rFmt = (x: number | null | undefined) =>
-  x === null || x === undefined ? "n/a" : `${x >= 0 ? "+" : ""}${x.toFixed(2)}R`;
-const prob = (x: number | null | undefined) => (x === null || x === undefined ? "n/a" : `${Math.round(x * 100)}%`);
+  x === null || x === undefined
+    ? "n/a"
+    : `${x >= 0 ? "+" : ""}${x.toFixed(2)}R`;
+const prob = (x: number | null | undefined) =>
+  x === null || x === undefined ? "n/a" : `${Math.round(x * 100)}%`;
 const tone = (x: number) => (x > 0 ? "up" : x < 0 ? "down" : undefined);
 
-const datasetKey = (d: Pick<Dataset, "symbol" | "interval">) => `${d.symbol}/${d.interval}`;
+const datasetKey = (d: Pick<Dataset, "symbol" | "interval">) =>
+  `${d.symbol}/${d.interval}`;
 
 /** Long lists start short; the rest is one click away. */
 const RUNS_SHOWN = 10;
@@ -55,7 +85,13 @@ function runFromHash(): string | undefined {
   return id || undefined;
 }
 
-export function Backtests({ jobs, onJobStarted }: { jobs: Job[]; onJobStarted: (job: Job) => void }) {
+export function Backtests({
+  jobs,
+  onJobStarted,
+}: {
+  jobs: Job[];
+  onJobStarted: (job: Job) => void;
+}) {
   const runs = useResource(api.backtests, []);
   const [selected, setSelected] = useState<string | undefined>(runFromHash);
 
@@ -67,7 +103,9 @@ export function Backtests({ jobs, onJobStarted }: { jobs: Job[]; onJobStarted: (
 
   // When a backtest job finishes, refresh the list and show the newest run. Skip the
   // first run of this effect so a link to a specific run (#/backtests/<id>) is kept.
-  const finished = jobs.filter((j) => j.kind === "backtest" && j.finished_at).length;
+  const finished = jobs.filter(
+    (j) => j.kind === "backtest" && j.finished_at,
+  ).length;
   const mounted = useRef(false);
   useEffect(() => {
     runs.reload();
@@ -94,11 +132,19 @@ export function Backtests({ jobs, onJobStarted }: { jobs: Job[]; onJobStarted: (
         </Panel>
       </Section>
 
-      <Section title="Runs" description="Every saved run, including runs started from the CLI. Click a heading to sort; select a run to see it below.">
+      <Section
+        title="Runs"
+        description="Every saved run, including runs started from the CLI. Click a heading to sort; select a run to see it below."
+      >
         <Panel>
           {list.length === 0 ? (
             <Empty title={runs.loading ? "Loading runs" : "No runs yet"}>
-              {!runs.loading && <p>Start a backtest above. Results are saved, so they stay here after a restart.</p>}
+              {!runs.loading && (
+                <p>
+                  Start a backtest above. Results are saved, so they stay here
+                  after a restart.
+                </p>
+              )}
             </Empty>
           ) : (
             <RunsTable runs={list} current={current?.id} onSelect={select} />
@@ -126,16 +172,22 @@ function BacktestForm({ onStarted }: { onStarted: (job: Job) => void }) {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string>();
 
-  const maxMonth = config.data ? lastResearchMonth(config.data.backtest.holdout_start) : undefined;
+  const maxMonth = config.data
+    ? lastResearchMonth(config.data.backtest.holdout_start)
+    : undefined;
   const direct = (strategies.data ?? []).filter((s) => s.kind !== "research");
-  const testable = (research.data ?? []).filter((r) => r.frozen && r.status !== "rejected" && r.implementation);
+  const testable = (research.data ?? []).filter(
+    (r) => r.frozen && r.status !== "rejected" && r.implementation,
+  );
   const [kind, value] = choice.split(":") as ["impl" | "research", string];
-  const chosenResearch = kind === "research" ? testable.find((r) => r.slug === value) : undefined;
+  const chosenResearch =
+    kind === "research" ? testable.find((r) => r.slug === value) : undefined;
   const implKey = kind === "research" ? chosenResearch?.implementation : value;
   const impl = strategies.data?.find((s) => s.key === implKey);
   // A cross-sectional strategy runs on the whole coin universe, not a chosen market.
   const markets = marketsFor(impl, datasets.data ?? []);
-  const ds = markets.find((d) => datasetKey(d) === dataset) ?? defaultDataset(markets);
+  const ds =
+    markets.find((d) => datasetKey(d) === dataset) ?? defaultDataset(markets);
   useEffect(() => {
     setParams(impl ? defaultParams(impl.params) : {});
   }, [impl?.key]);
@@ -174,7 +226,11 @@ function BacktestForm({ onStarted }: { onStarted: (job: Job) => void }) {
   }
 
   if (datasets.data && datasets.data.length === 0) {
-    return <p className="secondary">Ingest a dataset on the Data page first; backtests run on stored bars.</p>;
+    return (
+      <p className="secondary">
+        Ingest a dataset on the Data page first; backtests run on stored bars.
+      </p>
+    );
   }
   const description =
     impl?.universe && markets.length === 0
@@ -188,7 +244,11 @@ function BacktestForm({ onStarted }: { onStarted: (job: Job) => void }) {
       <div className="form form-backtest">
         <div className="field">
           <label htmlFor="bt-data">Market</label>
-          <select id="bt-data" value={ds ? datasetKey(ds) : ""} onChange={(e) => setDataset(e.target.value)}>
+          <select
+            id="bt-data"
+            value={ds ? datasetKey(ds) : ""}
+            onChange={(e) => setDataset(e.target.value)}
+          >
             {markets.map((d) => (
               <option key={datasetKey(d)} value={datasetKey(d)}>
                 {marketLabel(d)}
@@ -198,7 +258,11 @@ function BacktestForm({ onStarted }: { onStarted: (job: Job) => void }) {
         </div>
         <div className="field">
           <label htmlFor="bt-strategy">Strategy</label>
-          <select id="bt-strategy" value={choice} onChange={(e) => setChoice(e.target.value)}>
+          <select
+            id="bt-strategy"
+            value={choice}
+            onChange={(e) => setChoice(e.target.value)}
+          >
             <optgroup label="Benchmark and engine tests">
               {direct.map((s) => (
                 <option key={s.key} value={`impl:${s.key}`}>
@@ -217,20 +281,47 @@ function BacktestForm({ onStarted }: { onStarted: (job: Job) => void }) {
             )}
           </select>
         </div>
-        <ParamInputs params={impl?.params ?? []} values={params} onChange={setParams} idPrefix="bt" />
+        <ParamInputs
+          params={impl?.params ?? []}
+          values={params}
+          onChange={setParams}
+          idPrefix="bt"
+        />
         <div className="field">
           <label htmlFor="bt-start">From month</label>
-          <input id="bt-start" type="month" value={start} max={maxMonth} onChange={(e) => setStart(e.target.value)} />
+          <input
+            id="bt-start"
+            type="month"
+            value={start}
+            max={maxMonth}
+            onChange={(e) => setStart(e.target.value)}
+          />
         </div>
         <div className="field">
           <label htmlFor="bt-end">To month</label>
-          <input id="bt-end" type="month" value={end} max={maxMonth} onChange={(e) => setEnd(e.target.value)} />
+          <input
+            id="bt-end"
+            type="month"
+            value={end}
+            max={maxMonth}
+            onChange={(e) => setEnd(e.target.value)}
+          />
         </div>
         <div className="field">
           <label htmlFor="bt-cash">Starting cash (USDT)</label>
-          <input id="bt-cash" type="number" min={1} step="any" value={cash} onChange={(e) => setCash(e.target.value)} />
+          <input
+            id="bt-cash"
+            type="number"
+            min={1}
+            step="any"
+            value={cash}
+            onChange={(e) => setCash(e.target.value)}
+          />
         </div>
-        <button className="btn btn-primary" disabled={busy || !ds || !start || !end || !(Number(cash) > 0)}>
+        <button
+          className="btn btn-primary"
+          disabled={busy || !ds || !start || !end || !(Number(cash) > 0)}
+        >
           {busy ? "Starting" : "Run backtest"}
         </button>
       </div>
@@ -238,9 +329,9 @@ function BacktestForm({ onStarted }: { onStarted: (job: Job) => void }) {
         <div className="form-error">{error}</div>
       ) : (
         <p className="form-hint">
-          {description ? `${description} ` : ""}330 USDT is about A$500. Data from{" "}
-          {maxMonth ? `after ${maxMonth}` : "the holdout period"} is reserved for one final test and can't be used
-          here.
+          {description ? `${description} ` : ""}330 USDT is about A$500. Data
+          from {maxMonth ? `after ${maxMonth}` : "the holdout period"} is
+          reserved for one final test and can't be used here.
         </p>
       )}
     </form>
@@ -260,9 +351,18 @@ function RunsTable({
   const [sort, setSort] = useState<RunSort>(DEFAULT_RUN_SORT);
   const sorted = sortRuns(runs, sort);
   // A run linked directly (#/backtests/<id>) stays visible even if it is further down.
-  const shown = all || sorted.findIndex((r) => r.id === current) >= RUNS_SHOWN ? sorted : sorted.slice(0, RUNS_SHOWN);
+  const shown =
+    all || sorted.findIndex((r) => r.id === current) >= RUNS_SHOWN
+      ? sorted
+      : sorted.slice(0, RUNS_SHOWN);
   const header = (key: RunSortKey, label: string, title: string) => (
-    <SortHeader sortKey={key} label={label} title={title} sort={sort} onSort={(k) => setSort(nextSort(sort, k))} />
+    <SortHeader
+      sortKey={key}
+      label={label}
+      title={title}
+      sort={sort}
+      onSort={(k) => setSort(nextSort(sort, k))}
+    />
   );
   return (
     <>
@@ -273,11 +373,27 @@ function RunsTable({
               <th>Strategy</th>
               <th>Market</th>
               <th>Period</th>
-              {header("profit", "Net profit", "After all costs. Sorts by return, so different starting cash compares fairly")}
-              {header("vsHold", "vs buy-and-hold", "Net profit minus what buy-and-hold of the same market made")}
+              {header(
+                "profit",
+                "Net profit",
+                "After all costs. Sorts by return, so different starting cash compares fairly",
+              )}
+              {header(
+                "vsHold",
+                "vs buy-and-hold",
+                "Net profit minus what buy-and-hold of the same market made",
+              )}
               {header("sharpe", "Sharpe", "Annualised, from daily returns")}
-              {header("drawdown", "Max drawdown", "Worst fall from a peak; sorts shallowest first")}
-              {header("trades", "Trades", "Round trips for stop-and-target strategies, orders otherwise")}
+              {header(
+                "drawdown",
+                "Max drawdown",
+                "Worst fall from a peak; sorts shallowest first",
+              )}
+              {header(
+                "trades",
+                "Trades",
+                "Round trips for stop-and-target strategies, orders otherwise",
+              )}
               {header("saved", "Saved", "When the run was saved")}
             </tr>
           </thead>
@@ -297,7 +413,9 @@ function RunsTable({
                   <td>
                     <div className="run-name">
                       {r.strategy}
-                      {r.used_holdout && <span className="chip verify run-chip">holdout</span>}
+                      {r.used_holdout && (
+                        <span className="chip verify run-chip">holdout</span>
+                      )}
                     </div>
                     <div className="cell-sub truncate" title={sub}>
                       {sub}
@@ -316,7 +434,10 @@ function RunsTable({
                   </td>
                   <td className="num">{plain(m.sharpe)}</td>
                   <td className="num">{pct(m.max_drawdown)}</td>
-                  <td className={`num${fewTrades(r) ? " warn" : ""}`} title={fewTrades(r) ? "Too few to trust" : undefined}>
+                  <td
+                    className={`num${fewTrades(r) ? " warn" : ""}`}
+                    title={fewTrades(r) ? "Too few to trust" : undefined}
+                  >
                     {num(tradeCount(r))}
                   </td>
                   <td className="num secondary">{ago(r.created_at)}</td>
@@ -326,7 +447,12 @@ function RunsTable({
           </tbody>
         </table>
       </div>
-      <MoreRows shown={shown.length} total={runs.length} noun="runs" onShowAll={() => setAll(true)} />
+      <MoreRows
+        shown={shown.length}
+        total={runs.length}
+        noun="runs"
+        onShowAll={() => setAll(true)}
+      />
     </>
   );
 }
@@ -347,8 +473,18 @@ function SortHeader({
 }) {
   const active = sort.key === sortKey;
   return (
-    <th className="num" aria-sort={active ? (sort.dir === "desc" ? "descending" : "ascending") : "none"}>
-      <button type="button" className={`sort-btn${active ? " active" : ""}`} title={title} onClick={() => onSort(sortKey)}>
+    <th
+      className="num"
+      aria-sort={
+        active ? (sort.dir === "desc" ? "descending" : "ascending") : "none"
+      }
+    >
+      <button
+        type="button"
+        className={`sort-btn${active ? " active" : ""}`}
+        title={title}
+        onClick={() => onSort(sortKey)}
+      >
         {label}
         <span className="sort-arrow" aria-hidden="true">
           {active && sort.dir === "asc" ? "↑" : "↓"}
@@ -402,7 +538,9 @@ function RunView({ id }: { id: string }) {
   if (!r) return null;
   const tabs: { id: RunTab; label: string }[] = [
     { id: "stats", label: "Statistics" },
-    ...(r.style === "brackets" ? [{ id: "trades" as const, label: `Trades (${num(r.trades.length)})` }] : []),
+    ...(r.style === "brackets"
+      ? [{ id: "trades" as const, label: `Trades (${num(r.trades.length)})` }]
+      : []),
     { id: "costs", label: `Costs and fills (${num(r.fills.length)})` },
     { id: "tax", label: "Tax view" },
     { id: "details", label: "Run details" },
@@ -429,8 +567,10 @@ function RunView({ id }: { id: string }) {
           </div>
         </div>
         <p className="small tertiary">
-          Confidence intervals and probabilities assume this was the only variant tried; the scorecard's luck test (deflated
-          Sharpe) corrects for every variant tested. Max drawdown is one history's worst case: treat it as a floor, not a forecast.
+          Confidence intervals and probabilities assume this was the only
+          variant tried; the scorecard's luck test (deflated Sharpe) corrects
+          for every variant tested. Max drawdown is one history's worst case:
+          treat it as a floor, not a forecast.
         </p>
       </div>
     </Section>
@@ -484,7 +624,11 @@ function RunSummaryPanel({ run: r }: { run: RunDetail }) {
         <Stat
           label="Sharpe"
           value={plain(m.sharpe)}
-          note={m.sharpe === null ? "Undefined for flat equity" : `95% CI ${plain(lo)} to ${plain(hi)} · P(SR > 0) ${prob(m.psr)}`}
+          note={
+            m.sharpe === null
+              ? "Undefined for flat equity"
+              : `95% CI ${plain(lo)} to ${plain(hi)} · P(SR > 0) ${prob(m.psr)}`
+          }
         />
         <Stat
           label="Max drawdown"
@@ -494,7 +638,11 @@ function RunSummaryPanel({ run: r }: { run: RunDetail }) {
         {brackets ? (
           <Stat
             label="Expectancy per trade"
-            value={<span className={tone(m.expectancy_r ?? 0)}>{rFmt(m.expectancy_r)}</span>}
+            value={
+              <span className={tone(m.expectancy_r ?? 0)}>
+                {rFmt(m.expectancy_r)}
+              </span>
+            }
             note={
               a?.expectancy_ci
                 ? `95% CI ${rFmt(a.expectancy_ci[0])} to ${rFmt(a.expectancy_ci[1])}, after costs`
@@ -502,11 +650,19 @@ function RunSummaryPanel({ run: r }: { run: RunDetail }) {
             }
           />
         ) : (
-          <Stat label="Yearly return" value={pct(m.cagr)} note={`Holding ${asset}: ${pct(b.cagr)} a year`} />
+          <Stat
+            label="Yearly return"
+            value={pct(m.cagr)}
+            note={`Holding ${asset}: ${pct(b.cagr)} a year`}
+          />
         )}
         <Stat
           label="Cost per round trip"
-          value={a?.cost_per_round_trip_bps == null ? "n/a" : `${a.cost_per_round_trip_bps.toFixed(0)} bps`}
+          value={
+            a?.cost_per_round_trip_bps == null
+              ? "n/a"
+              : `${a.cost_per_round_trip_bps.toFixed(0)} bps`
+          }
           note={
             a?.break_even_cost_bps == null
               ? "No trades"
@@ -526,7 +682,11 @@ function RunSummaryPanel({ run: r }: { run: RunDetail }) {
             )
           }
         />
-        <Stat label="Time in the market" value={`${Math.round(m.exposure * 100)}%`} note="Cash the rest of the time" />
+        <Stat
+          label="Time in the market"
+          value={`${Math.round(m.exposure * 100)}%`}
+          note="Cash the rest of the time"
+        />
       </div>
     </Panel>
   );
@@ -544,7 +704,11 @@ function ScorecardPanel({ card }: { card: Scorecard }) {
         <div>
           <h3>
             Scorecard{" "}
-            <Status tone={head.tone}>{card.verdict === "incomplete" ? "Incomplete" : GRADE[card.verdict].label}</Status>
+            <Status tone={head.tone}>
+              {card.verdict === "incomplete"
+                ? "Incomplete"
+                : GRADE[card.verdict].label}
+            </Status>
           </h3>
           <p className="small secondary">{head.text}</p>
         </div>
@@ -554,7 +718,10 @@ function ScorecardPanel({ card }: { card: Scorecard }) {
       </div>
       <ol className="scorecard scorecard-graded">
         {card.grades.map((g) => (
-          <li key={g.name} className={`grade-${g.status.replace(/[^a-z]+/g, "-")}`}>
+          <li
+            key={g.name}
+            className={`grade-${g.status.replace(/[^a-z]+/g, "-")}`}
+          >
             <span className="scorecard-name">{g.name}</span>
             <div>
               <div className="scorecard-rule">{g.measured}</div>
@@ -575,7 +742,9 @@ function ChartPanel({ run: r }: { run: RunDetail }) {
   return (
     <Panel pad>
       <div className="chart-top">
-        <span className="small secondary">Equity in {r.account_currency} (log scale), drawdown underneath</span>
+        <span className="small secondary">
+          Equity in {r.account_currency} (log scale), drawdown underneath
+        </span>
         <span className="cost-key">
           <span>
             <i className="swatch" style={{ background: "var(--text)" }} />
@@ -591,15 +760,17 @@ function ChartPanel({ run: r }: { run: RunDetail }) {
       <p className="small tertiary chart-foot">
         {hidden
           ? `Too many trades to mark without hiding the line; ${
-              r.style === "brackets" ? "the Trades tab lists every one" : "every fill is under Costs and fills"
+              r.style === "brackets"
+                ? "the Trades tab lists every one"
+                : "every fill is under Costs and fills"
             }.`
           : `Arrows mark trades: up for buys, down for sells${
               r.style === "brackets"
                 ? `; exits are green for a win and red for a loss${r.trades.length <= MAX_LABELLED_TRADES ? ", labelled in R" : ""}`
                 : ""
             }.`}{" "}
-        A log scale shows equal percentage moves as equal heights, so a small account and the benchmark can share one
-        axis.
+        A log scale shows equal percentage moves as equal heights, so a small
+        account and the benchmark can share one axis.
       </p>
     </Panel>
   );
@@ -617,25 +788,50 @@ function StatisticsTab({ run: r }: { run: RunDetail }) {
             <h3 className="panel-title">Is the edge real?</h3>
             <Ledger
               rows={[
-                ["Return, 95% range", `${pct(a.return_ci[0], 0)} to ${pct(a.return_ci[1], 0)}`],
+                [
+                  "Return, 95% range",
+                  `${pct(a.return_ci[0], 0)} to ${pct(a.return_ci[1], 0)}`,
+                ],
                 ["Chance of a profit after costs", prob(a.p_profit)],
                 ...(a.expectancy_ci
                   ? ([
-                      ["Expectancy, 95% range", `${rFmt(a.expectancy_ci[0])} to ${rFmt(a.expectancy_ci[1])}`],
-                      ["Chance the average trade is profitable", prob(a.p_positive_expectancy)],
+                      [
+                        "Expectancy, 95% range",
+                        `${rFmt(a.expectancy_ci[0])} to ${rFmt(a.expectancy_ci[1])}`,
+                      ],
+                      [
+                        "Chance the average trade is profitable",
+                        prob(a.p_positive_expectancy),
+                      ],
                     ] as [string, string][])
                   : []),
-                ["Paper trading needed to trust it", trackRecord(a.min_track_record_days)],
+                ...(a.drawdown_paths
+                  ? ([
+                      [
+                        "Max drawdown, days reshuffled",
+                        drawdownPaths(a.drawdown_paths, r.metrics.max_drawdown),
+                      ],
+                    ] as [string, string][])
+                  : []),
+                [
+                  "Paper trading needed to trust it",
+                  trackRecord(a.min_track_record_days),
+                ],
                 ...(r.deflated_sharpe != null && r.deflated_trials
                   ? ([
-                      [`Chance it's real after ${r.deflated_trials} strategies tried`, prob(r.deflated_sharpe)],
+                      [
+                        `Chance it's real after ${r.deflated_trials} strategies tried`,
+                        prob(r.deflated_sharpe),
+                      ],
                     ] as [string, string][])
                   : []),
               ]}
             />
             <p className="small tertiary panel-foot">
-              Returns: {a.resamples.toLocaleString("en-AU")} block-bootstrap resamples of daily returns in {a.block_days}
-              -day blocks, which keeps streaks and volatility clustering. Trades: resampled individually.
+              Returns: {a.resamples.toLocaleString("en-AU")} block-bootstrap
+              resamples of daily returns in {a.block_days}
+              -day blocks, which keeps streaks and volatility clustering; the
+              drawdown row reads the same paths. Trades: resampled individually.
             </p>
           </Panel>
           <Panel pad>
@@ -654,11 +850,16 @@ function StatisticsTab({ run: r }: { run: RunDetail }) {
                   : ([
                       [`Beta to ${asset}`, plain(a.beta)],
                       [`Correlation with ${asset}`, plain(a.correlation)],
-                      [`${asset} held at the same exposure`, pct(a.matched_btc_return, 0)],
+                      [
+                        `${asset} held at the same exposure`,
+                        pct(a.matched_btc_return, 0),
+                      ],
                     ] as [string, string][])),
               ]}
             />
-            <p className="small tertiary panel-foot">{costHeadroom(a.break_even_cost_bps, a.cost_per_round_trip_bps)}</p>
+            <p className="small tertiary panel-foot">
+              {costHeadroom(a.break_even_cost_bps, a.cost_per_round_trip_bps)}
+            </p>
           </Panel>
           <Panel pad>
             <h3 className="panel-title">What it's like to hold</h3>
@@ -666,12 +867,22 @@ function StatisticsTab({ run: r }: { run: RunDetail }) {
               rows={[
                 ["Worst day", pct(a.worst_day)],
                 ["Worst month", pct(a.worst_month)],
-                ["Expected shortfall (worst 5% of days)", pct(a.expected_shortfall, 2)],
+                [
+                  "Expected shortfall (worst 5% of days)",
+                  pct(a.expected_shortfall, 2),
+                ],
                 ...(a.payoff_ratio !== null
-                  ? ([["Average win ÷ average loss", a.payoff_ratio.toFixed(2)]] as [string, string][])
+                  ? ([
+                      ["Average win ÷ average loss", a.payoff_ratio.toFixed(2)],
+                    ] as [string, string][])
                   : []),
                 ...(a.profit_without_top5 !== null
-                  ? ([["Profit without the 5 best trades", `${money(a.profit_without_top5)} ${cur}`]] as [string, string][])
+                  ? ([
+                      [
+                        "Profit without the 5 best trades",
+                        `${money(a.profit_without_top5)} ${cur}`,
+                      ],
+                    ] as [string, string][])
                   : []),
               ]}
             />
@@ -698,45 +909,54 @@ function StatisticsTab({ run: r }: { run: RunDetail }) {
                 {a.years.map((y) => (
                   <tr key={y.year}>
                     <td>{y.year}</td>
-                    <td className={`num mono ${tone(y.strategy ?? 0) ?? ""}`}>{pct(y.strategy, 0)}</td>
+                    <td className={`num mono ${tone(y.strategy ?? 0) ?? ""}`}>
+                      {pct(y.strategy, 0)}
+                    </td>
                     <td className="num mono secondary">{pct(y.btc, 0)}</td>
                   </tr>
                 ))}
               </tbody>
             </table>
-            {r.strategy !== "buy-and-hold" && startDateVerdict(a.start_dates ?? []) && (
-              <>
-                <h3 className="panel-title panel-subtitle">From any start date</h3>
-                <table className="mini-table">
-                  <thead>
-                    <tr>
-                      <th>Held for</th>
-                      <th className="num">Starts</th>
-                      <th className="num">Better Sharpe</th>
-                      <th className="num">Smaller drawdown</th>
-                      <th className="num">Higher return</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {(a.start_dates ?? [])
-                      .filter((w) => w.windows > 0)
-                      .map((w) => (
-                        <tr key={w.window_days}>
-                          <td>{windowLabel(w.window_days)}</td>
-                          <td className="num mono">{num(w.windows)}</td>
-                          <td className="num mono">{pct(w.sharpe, 0)}</td>
-                          <td className="num mono">{pct(w.drawdown, 0)}</td>
-                          <td className="num mono">{pct(w.total_return, 0)}</td>
-                        </tr>
-                      ))}
-                  </tbody>
-                </table>
-                <p className="small tertiary panel-foot">
-                  {startDateVerdict(a.start_dates ?? [])} One test window is one sample: a result against holding
-                  depends on when it starts. Windows begin every 30 days from the first day the strategy is invested.
-                </p>
-              </>
-            )}
+            {r.strategy !== "buy-and-hold" &&
+              startDateVerdict(a.start_dates ?? []) && (
+                <>
+                  <h3 className="panel-title panel-subtitle">
+                    From any start date
+                  </h3>
+                  <table className="mini-table">
+                    <thead>
+                      <tr>
+                        <th>Held for</th>
+                        <th className="num">Starts</th>
+                        <th className="num">Better Sharpe</th>
+                        <th className="num">Smaller drawdown</th>
+                        <th className="num">Higher return</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {(a.start_dates ?? [])
+                        .filter((w) => w.windows > 0)
+                        .map((w) => (
+                          <tr key={w.window_days}>
+                            <td>{windowLabel(w.window_days)}</td>
+                            <td className="num mono">{num(w.windows)}</td>
+                            <td className="num mono">{pct(w.sharpe, 0)}</td>
+                            <td className="num mono">{pct(w.drawdown, 0)}</td>
+                            <td className="num mono">
+                              {pct(w.total_return, 0)}
+                            </td>
+                          </tr>
+                        ))}
+                    </tbody>
+                  </table>
+                  <p className="small tertiary panel-foot">
+                    {startDateVerdict(a.start_dates ?? [])} One test window is
+                    one sample: a result against holding depends on when it
+                    starts. Windows begin every 30 days from the first day the
+                    strategy is invested.
+                  </p>
+                </>
+              )}
           </Panel>
         )}
       </div>
@@ -745,7 +965,8 @@ function StatisticsTab({ run: r }: { run: RunDetail }) {
 }
 
 function MetricsLedger({ m, b }: { m: Metrics; b: Metrics }) {
-  const vol = (x: number | null) => (x === null ? "n/a" : `${(x * 100).toFixed(1)}%`);
+  const vol = (x: number | null) =>
+    x === null ? "n/a" : `${(x * 100).toFixed(1)}%`;
   const rows: [string, string, string][] = [
     ["Total return", pct(m.total_return), pct(b.total_return)],
     ["CAGR", pct(m.cagr), pct(b.cagr)],
@@ -782,33 +1003,51 @@ function MetricsLedger({ m, b }: { m: Metrics; b: Metrics }) {
 function TradesTab({ run }: { run: RunDetail }) {
   const m = run.metrics;
   const [all, setAll] = useState(false);
-  const risk = (run.config as { backtest?: { risk_per_trade?: number } }).backtest?.risk_per_trade;
+  const risk = (run.config as { backtest?: { risk_per_trade?: number } })
+    .backtest?.risk_per_trade;
   const shown = all ? run.trades : run.trades.slice(0, ROWS_SHOWN);
   return (
     <Panel>
       <div className="code-head">
         <h3 className="panel-title">Trades in R</h3>
         <span className="small tertiary">
-          1R = the planned loss at the stop{risk ? `, sized at ${(risk * 100).toFixed(1)}% of equity` : ""}. Results are
-          after all costs.
+          1R = the planned loss at the stop
+          {risk ? `, sized at ${(risk * 100).toFixed(1)}% of equity` : ""}.
+          Results are after all costs.
         </span>
       </div>
       <div className="stats r-stats">
-        <Stat label="Expectancy" value={rFmt(m.expectancy_r)} note="Average result per trade" />
+        <Stat
+          label="Expectancy"
+          value={rFmt(m.expectancy_r)}
+          note="Average result per trade"
+        />
         <Stat
           label="Win rate"
-          value={m.win_rate === null || m.win_rate === undefined ? "n/a" : `${Math.round(m.win_rate * 100)}%`}
+          value={
+            m.win_rate === null || m.win_rate === undefined
+              ? "n/a"
+              : `${Math.round(m.win_rate * 100)}%`
+          }
           note={`avg win ${rFmt(m.avg_win_r)} · avg loss ${rFmt(m.avg_loss_r)}`}
         />
         <Stat
           label="Profit factor"
-          value={m.profit_factor === null || m.profit_factor === undefined ? "n/a" : m.profit_factor.toFixed(2)}
+          value={
+            m.profit_factor === null || m.profit_factor === undefined
+              ? "n/a"
+              : m.profit_factor.toFixed(2)
+          }
           note="Winning R ÷ losing R"
         />
         <Stat
           label="Costs per trade"
           value={rFmt(m.avg_cost_r)}
-          note={m.risk_capped ? `${m.risk_capped} trades capped by cash` : "Share of each risk unit lost to costs"}
+          note={
+            m.risk_capped
+              ? `${m.risk_capped} trades capped by cash`
+              : "Share of each risk unit lost to costs"
+          }
         />
       </div>
       {run.trades.length > 0 && (
@@ -834,23 +1073,46 @@ function TradesTab({ run }: { run: RunDetail }) {
                     <td>{dateTime(t.entry_time)}</td>
                     <td>{dateTime(t.exit_time)}</td>
                     <td>
-                      <Status tone={t.exit_reason === "target" ? "ok" : t.exit_reason === "stop" ? "bad" : "neutral"}>
+                      <Status
+                        tone={
+                          t.exit_reason === "target"
+                            ? "ok"
+                            : t.exit_reason === "stop"
+                              ? "bad"
+                              : "neutral"
+                        }
+                      >
                         {t.exit_reason}
                       </Status>
-                      {t.risk_capped && <span className="chip run-chip">capped</span>}
+                      {t.risk_capped && (
+                        <span className="chip run-chip">capped</span>
+                      )}
                     </td>
                     <td className="num mono">{usdt(t.entry_price)}</td>
                     <td className="num mono">{usdt(t.stop)}</td>
-                    <td className="num mono">{t.target === null ? "—" : usdt(t.target)}</td>
+                    <td className="num mono">
+                      {t.target === null ? "—" : usdt(t.target)}
+                    </td>
                     <td className="num mono">{usdt(t.exit_price)}</td>
-                    <td className={`num mono ${t.pnl >= 0 ? "up" : "down"}`}>{usdt(t.pnl)}</td>
-                    <td className={`num mono ${t.r_multiple >= 0 ? "up" : "down"}`}>{rFmt(t.r_multiple)}</td>
+                    <td className={`num mono ${t.pnl >= 0 ? "up" : "down"}`}>
+                      {usdt(t.pnl)}
+                    </td>
+                    <td
+                      className={`num mono ${t.r_multiple >= 0 ? "up" : "down"}`}
+                    >
+                      {rFmt(t.r_multiple)}
+                    </td>
                   </tr>
                 ))}
               </tbody>
             </table>
           </div>
-          <MoreRows shown={shown.length} total={run.trades.length} noun="trades" onShowAll={() => setAll(true)} />
+          <MoreRows
+            shown={shown.length}
+            total={run.trades.length}
+            noun="trades"
+            onShowAll={() => setAll(true)}
+          />
         </>
       )}
     </Panel>
@@ -876,7 +1138,10 @@ function CostsTab({ run: r }: { run: RunDetail }) {
           <Ledger
             rows={[
               ["Turnover", `${plain(m.turnover)}× equity per year`],
-              ["Exposure", `${Math.round(m.exposure * 100)}% invested on average`],
+              [
+                "Exposure",
+                `${Math.round(m.exposure * 100)}% invested on average`,
+              ],
               ["Skipped by the no-trade band", num(m.band_skips)],
               ["Orders rejected", num(m.rejections)],
             ]}
@@ -922,7 +1187,9 @@ function FillsTable({ run }: { run: RunDetail }) {
               <tr key={`f${i}`}>
                 <td>{dateTime(f.time)}</td>
                 <td>
-                  <Status tone={f.side === "buy" ? "ok" : "bad"}>{f.side === "buy" ? "Buy" : "Sell"}</Status>
+                  <Status tone={f.side === "buy" ? "ok" : "bad"}>
+                    {f.side === "buy" ? "Buy" : "Sell"}
+                  </Status>
                 </td>
                 <td className="num mono">{f.quantity.toFixed(5)}</td>
                 <td className="num mono">{usdt(f.reference_price)}</td>
@@ -930,7 +1197,9 @@ function FillsTable({ run }: { run: RunDetail }) {
                 <td className="num mono">{usdt(f.fee, 4)}</td>
                 <td className="num mono">{usdt(f.spread_cost, 4)}</td>
                 <td className="num mono">{usdt(f.impact_cost, 4)}</td>
-                <td className={`num mono ${f.cash_flow < 0 ? "down" : "up"}`}>{usdt(f.cash_flow)}</td>
+                <td className={`num mono ${f.cash_flow < 0 ? "down" : "up"}`}>
+                  {usdt(f.cash_flow)}
+                </td>
               </tr>
             ))}
             {run.rejections.map((x, i) => (
@@ -948,7 +1217,12 @@ function FillsTable({ run }: { run: RunDetail }) {
           </tbody>
         </table>
       </div>
-      <MoreRows shown={fills.length} total={run.fills.length} noun="fills" onShowAll={() => setAll(true)} />
+      <MoreRows
+        shown={fills.length}
+        total={run.fills.length}
+        noun="fills"
+        onShowAll={() => setAll(true)}
+      />
     </>
   );
 }
@@ -968,23 +1242,36 @@ function TaxTab({ run: r }: { run: RunDetail }) {
   const sold = buckets.reduce((s, [, n]) => s + n, 0);
   return (
     <Panel pad>
-      <h3 className="panel-title">Holding periods (Australia, information only)</h3>
+      <h3 className="panel-title">
+        Holding periods (Australia, information only)
+      </h3>
       {sold === 0 ? (
         <p className="small secondary">
-          {a.open_at_end ? "Nothing was sold, so every gain is still unrealised." : "No positions were bought or sold."}
+          {a.open_at_end
+            ? "Nothing was sold, so every gain is still unrealised."
+            : "No positions were bought or sold."}
         </p>
       ) : (
         <Ledger
           rows={[
-            ...(buckets.map(([k, n]) => [`Sold after ${k}`, `${num(n)} position${n === 1 ? "" : "s"}`]) as [string, string][]),
-            ["Share of gains held over 12 months", prob(a.long_term_gain_share)],
+            ...(buckets.map(([k, n]) => [
+              `Sold after ${k}`,
+              `${num(n)} position${n === 1 ? "" : "s"}`,
+            ]) as [string, string][]),
+            [
+              "Share of gains held over 12 months",
+              prob(a.long_term_gain_share),
+            ],
           ]}
         />
       )}
       <p className="small tertiary panel-foot">
-        Gains on assets held over 12 months can get the CGT discount. Sells are matched to buys first-in first-out. The
-        engine does not model tax, and this is not tax advice.
-        {a.open_at_end && sold > 0 ? " A position was still open at the end, so part of the gain is unrealised." : ""}
+        Gains on assets held over 12 months can get the CGT discount. Sells are
+        matched to buys first-in first-out. The engine does not model tax, and
+        this is not tax advice.
+        {a.open_at_end && sold > 0
+          ? " A position was still open at the end, so part of the gain is unrealised."
+          : ""}
       </p>
     </Panel>
   );
@@ -1000,13 +1287,18 @@ function DetailsTab({ run: r }: { run: RunDetail }) {
           ["Strategy", <span className="mono">{r.strategy}</span>],
           ["Role", runRole(r)],
           ["Parameters", <span className="mono">{paramsText(r.params)}</span>],
-          ["Config fingerprint", <span className="mono">{r.config_fingerprint}</span>],
+          [
+            "Config fingerprint",
+            <span className="mono">{r.config_fingerprint}</span>,
+          ],
           [
             "Code",
             r.code?.commit ? (
               <span className="mono">
                 {r.code.commit.slice(0, 10)}
-                {r.code.dirty && <span className="warn"> + uncommitted changes</span>}
+                {r.code.dirty && (
+                  <span className="warn"> + uncommitted changes</span>
+                )}
               </span>
             ) : (
               "unknown"
@@ -1014,12 +1306,17 @@ function DetailsTab({ run: r }: { run: RunDetail }) {
           ],
           [
             "Holdout",
-            r.used_holdout ? <Status tone="warn">Used</Status> : <span className="secondary">Not touched</span>,
+            r.used_holdout ? (
+              <Status tone="warn">Used</Status>
+            ) : (
+              <span className="secondary">Not touched</span>
+            ),
           ],
         ]}
       />
       <p className="small tertiary panel-foot">
-        The full config used is saved with the run, so this result keeps its meaning if kestrel.toml changes later.
+        The full config used is saved with the run, so this result keeps its
+        meaning if kestrel.toml changes later.
       </p>
     </Panel>
   );

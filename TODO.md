@@ -19,12 +19,7 @@ reversals), means knowingly overriding the entry bar (Luke), with every run coun
 trial. Every strategy is spot, long-only, holds at most 3 coins, and is judged by the
 scorecard against exposure-matched holding.
 
-Tools first (not strategies, they improve every test):
-- [ ] Validation additions (batch 2's 9,000-backtest video): (1) reshuffle a run's trades
-      1,000 times and show drawdown percentiles; (2) results by calendar year; (3)
-      out-of-sample Sharpe at least half of in-sample. (1) and (2) are information on the
-      detail view. Making any of them a scorecard test changes the rules (Luke). The
-      video's own bar (Sharpe > 0.5, no comparison with holding) is weaker than ours.
+Tools first: done 2026-11-15 (see Done recently).
 
 Strategies, most to least promising:
 - [ ] 1. Turn of the month, BTC 1d (batch 2 A3): hold from the last day's close to the
@@ -94,6 +89,11 @@ Strategies, most to least promising:
       coins' prices before the study is written down.
 
 ## Later
+- [ ] Other markets (Luke's idea, 2026-11-15; nothing to work on now). Forex and commodities
+      without leaving Binance spot: EURUSDT (euro), PAXGUSDT (gold, one token per ounce),
+      and tokenized stocks/ETFs (AAPLBUSDT... from June 2026, too short for now). Wider
+      markets give trend strategies more setups (Rayner's point) and test whether an edge
+      is crypto-only. Each needs its own spread assumption and its own holding benchmark.
 - [ ] News-tone study (Luke's pick over Twitter, 2026-11-14): code built (`kestrel.data.news`,
       `kestrel signal-study news-tone`). Needs `kestrel ingest-news BTCUSDT ETHUSDT` first:
       GDELT allows ~1 request every 5-10s, so the 2017-25 history takes ~40+ minutes (run it in
@@ -107,6 +107,9 @@ Strategies, most to least promising:
 - [ ] HMM regime filter (backlog S2) as a strategy: needs a note that passes the entry bar.
 
 ## Done recently
+- 2026-11-15 Validation additions from batch 2: the max drawdown on 2,000 reshuffled paths
+  (median and 1 in 20) on every backtest. Results by year and walk-forward's
+  out-of-sample share of in-sample already existed.
 - 2026-11-15 Cost gate shown on the dashboard (More > What a trade costs), saved by `kestrel cost-gate`.
 - 2026-11-15 Random-entry control built: `kestrel random-entry`, scorecard test 9 for bracket
   strategies (beat 95% of random-entry paths with the same stops, targets and sizing).

@@ -547,6 +547,8 @@ export interface Analysis {
   open_at_end: boolean;
   resamples: number;
   block_days: number;
+  /** Max drawdown on resampled paths: [median, 95th percentile worst]; absent on older runs. */
+  drawdown_paths?: number[] | null;
   start_dates: StartDateRow[];
 }
 

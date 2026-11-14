@@ -239,6 +239,9 @@ def _analysis_lines(a: Analysis, asset: str) -> list[str]:
         "",
         f"  Return 95% CI     {p(lo)} to {p(hi)}   P(profit after costs) {a.p_profit:.0%}",
     ]
+    if a.drawdown_paths is not None:
+        mid, bad = a.drawdown_paths
+        lines.append(f"  Drawdown, paths   median {mid:.0%}, 1 in 20 worse than {bad:.0%}")
     if a.expectancy_ci and a.p_positive_expectancy is not None:
         elo, ehi = a.expectancy_ci
         lines.append(

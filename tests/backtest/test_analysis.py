@@ -280,3 +280,22 @@ def test_the_report_shows_start_dates_when_the_run_is_long_enough() -> None:
     assert "1-year starts    beats holding from 0% on Sharpe" in report
     short = run(BuyAndHold("BTCUSDT"), rising(120))
     assert "starts" not in format_report(short, compute_metrics(short), analyse(short, short))
+
+
+def test_drawdown_paths_bracket_the_backtests_drawdown() -> None:
+    from kestrel.backtest.analysis import drawdown_paths
+
+    assert drawdown_paths([0.01], 1, 100, 1) is None
+    assert drawdown_paths([0.01] * 50, 3, 200, 1) == (0.0, 0.0)  # never falls on any path
+    # Ten -10% days in one block, then calm: reshuffled, the fall is split or joined.
+    logs = [math.log(0.9)] * 10 + [0.001] * 90
+    mid, bad = drawdown_paths(logs, 5, 500, 1)  # type: ignore[misc]
+    assert bad <= mid < 0
+    # Drawn with replacement, the falling block can come up twice: the 1-in-20 path can be
+    # worse than the actual 65% fall.
+    assert bad < 0.9**10 - 1
+    frame = rising()
+    r = run(BuyAndHold(), frame)
+    a = analyse(r, r)
+    assert a.drawdown_paths is not None
+    assert "Drawdown, paths" in format_report(r, compute_metrics(r), a)
