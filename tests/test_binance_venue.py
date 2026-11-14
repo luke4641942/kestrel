@@ -224,7 +224,7 @@ def test_credentials_come_from_the_environment_and_never_print(
     assert "very-secret" not in repr(creds)
 
 
-def test_the_runner_trades_only_the_latest_decision_on_a_live_venue(tmp_path: Path) -> None:
+def test_a_live_venue_behind_records_missed_days_and_trades_the_latest(tmp_path: Path) -> None:
     frame = bars([100.0 + i for i in range(40)], step=timedelta(days=1))
     behind = PaperAccount.open(
         tmp_path / "a",
@@ -239,8 +239,13 @@ def test_the_runner_trades_only_the_latest_decision_on_a_live_venue(tmp_path: Pa
             venue="testnet",
         ),
     )
-    with pytest.raises(ValueError, match="40 bars behind"):
-        run(behind, frame, config(), lambda _: D(100), venue=venue(FakeBinance()))
+    fake_behind = FakeBinance()
+    caught_up = run(behind, frame, config(), lambda _: D(100), venue=venue(fake_behind))
+    assert [h.missed for h in caught_up] == [True] * 39 + [False]  # only the latest trades
+    assert len(fake_behind.orders) == 1
+    missed = [e for e in behind.ledger.events() if e.get("missed")]
+    assert len(missed) == 39
+    assert missed[0]["price"] is None
     fake = FakeBinance()
     latest = frame["open_time"][-1]
     current = PaperAccount.open(

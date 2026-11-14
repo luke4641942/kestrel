@@ -130,3 +130,37 @@ def paper_terms(name: str):  # type: ignore[no-untyped-def]
     from kestrel.execution.paper import Terms
 
     return Terms(name, "ma-trend", "BTCUSDT", Interval.D1, {}, Decimal(330), T0, venue="testnet")
+
+
+def test_track_after_runs(tmp_path: Path, setup: FakeBinance) -> None:
+    invoke(tmp_path, "open", "btc", "--symbol", "BTCUSDT", "--strategy", "ma-trend")
+    invoke(tmp_path, "run", "btc", "--config", REPO_CONFIG)
+    tracked = invoke(tmp_path, "track", "btc", "--config", REPO_CONFIG)
+    assert tracked.exit_code == 0, tracked.output
+    assert "1 of 1 match the model" in tracked.output
+    assert invoke(tmp_path, "track", "nobody", "--config", REPO_CONFIG).exit_code == 1
+
+
+def test_schedule_writes_a_job_without_secrets_and_removes_it(
+    tmp_path: Path, setup: FakeBinance
+) -> None:
+    import plistlib
+
+    invoke(tmp_path, "open", "btc", "--symbol", "BTCUSDT", "--strategy", "ma-trend")
+    agents = tmp_path / "agents"
+    written = invoke(tmp_path, "schedule", "btc", "--agents-dir", str(agents))
+    assert written.exit_code == 0, written.output
+    path = agents / "com.kestrel.paper.btc.plist"
+    job = plistlib.loads(path.read_bytes())
+    assert job["Label"] == "com.kestrel.paper.btc"
+    assert job["StartCalendarInterval"] == [{"Minute": 10}]
+    command = job["ProgramArguments"][2]
+    assert "source ~/.zshrc" in command
+    assert "paper run btc --data-dir" in command
+    assert "KESTREL_TESTNET" not in path.read_text(errors="ignore")  # keys never in the file
+    assert job["StandardOutPath"].endswith("paper/btc/schedule.log")
+    assert "launchctl bootstrap gui/$(id -u)" in written.output  # loading is left to Luke
+    removed = invoke(tmp_path, "schedule", "btc", "--remove", "--agents-dir", str(agents))
+    assert "launchctl bootout" in removed.output
+    assert not path.exists()
+    assert invoke(tmp_path, "schedule", "nobody", "--agents-dir", str(agents)).exit_code == 1

@@ -14,6 +14,9 @@ kestrel robustness BTCUSDT --strategy channel-breakout --interval 4h --start ...
 
 from __future__ import annotations
 
+import plistlib
+import shlex
+import sys
 from collections.abc import Callable
 from datetime import UTC, datetime
 from decimal import Decimal
@@ -38,7 +41,7 @@ from kestrel.data.schema import Interval
 from kestrel.data.store import ParquetStore
 from kestrel.data.universe import ArchiveListing, CoinIngest, ingest_universe, manifest_path
 from kestrel.execution import paper as paper_trading
-from kestrel.execution import safety
+from kestrel.execution import safety, tracking
 from kestrel.execution.binance import (
     TESTNET_URL,
     BinanceClient,
@@ -645,6 +648,9 @@ def _parse_params(pairs: list[str]) -> dict[str, int]:
     return out
 
 
+LAUNCH_AGENTS = Path.home() / "Library" / "LaunchAgents"
+"""Where macOS launchd looks for per-user jobs."""
+
 paper_app = typer.Typer(help="Paper trading on the simulated venue (P4).", no_args_is_help=True)
 app.add_typer(paper_app, name="paper")
 
@@ -732,7 +738,8 @@ def paper_run(
         typer.echo(f"{name}: nothing new (the next bar hasn't closed)")
     for h in handled:
         outcome = (
-            "within the band, no trade" if h.order is None
+            "MISSED (the run was late; a live venue can't fill at a past open)" if h.missed
+            else "within the band, no trade" if h.order is None
             else f"{h.order.side.value} {h.order.quantity} at {h.order.price:.2f}"
             if isinstance(h.order, paper_trading.Fill)
             else f"REJECTED: {h.order.reason}"
@@ -768,6 +775,81 @@ def _reconcile(
     short = safety.reconcile(holdings, venue.balances())
     if short:
         safety.halt(account, f"reconciliation failed: {safety.describe(short)}")
+
+
+@paper_app.command("track")
+def paper_track(
+    name: str,
+    data_dir: DataDir = Path("data"),
+    config: Annotated[
+        Path, typer.Option("--config", envvar="KESTREL_CONFIG", help="Config file.")
+    ] = Path("kestrel.toml"),
+) -> None:
+    """Compare a paper account with its replay on the simulated venue: decisions (which must
+    match), fill costs against the cost model, and equity."""
+    account = paper_trading.PaperAccount(data_dir, name)
+    try:
+        terms = account.terms()
+        bars = ParquetStore(data_dir).read(terms.symbol, terms.interval)
+        bars = attach_features(
+            bars, spec_for(terms.strategy).features, terms.symbol, terms.interval, data_dir
+        )
+        result = tracking.track(account, bars, load_config(config))
+    except (ValueError, ConfigError) as e:
+        typer.echo(str(e), err=True)
+        raise typer.Exit(code=1) from None
+    typer.echo(tracking.format_tracking(name, result))
+    if result.decision_mismatches:
+        raise typer.Exit(code=1)
+
+
+@paper_app.command("schedule")
+def paper_schedule(
+    name: str,
+    remove: Annotated[bool, typer.Option(help="Delete the job instead.")] = False,
+    agents_dir: Annotated[
+        Path, typer.Option(help="Where launchd looks for per-user jobs.")
+    ] = LAUNCH_AGENTS,
+    data_dir: DataDir = Path("data"),
+    config: Annotated[
+        Path, typer.Option("--config", envvar="KESTREL_CONFIG", help="Config file.")
+    ] = Path("kestrel.toml"),
+) -> None:
+    """Write (or remove) a macOS launchd job that runs the account every hour at 10 past.
+    Hourly is safe (a run with nothing new does nothing) and catches up after sleep; bars
+    close at 00:00 UTC, which launchd's local-time clock can't name across daylight saving.
+    It is written, not loaded: the command to load it is printed."""
+    account = paper_trading.PaperAccount(data_dir, name)
+    label = f"com.kestrel.paper.{name}"
+    path = agents_dir / f"{label}.plist"
+    if remove:
+        path.unlink(missing_ok=True)
+        typer.echo(f"Removed {path}. If it was loaded: launchctl bootout gui/$(id -u)/{label}")
+        return
+    try:
+        account.terms()
+    except ValueError as e:
+        typer.echo(str(e), err=True)
+        raise typer.Exit(code=1) from None
+    kestrel_bin = Path(sys.executable).parent / "kestrel"
+    data, cfg = data_dir.resolve(), config.resolve()
+    command = (
+        "source ~/.zshrc >/dev/null 2>&1; "  # the testnet keys, never written into the job
+        f"exec {shlex.quote(str(kestrel_bin))} paper run {shlex.quote(name)} "
+        f"--data-dir {shlex.quote(str(data))} --config {shlex.quote(str(cfg))}"
+    )
+    log = account.dir.resolve() / "schedule.log"
+    job = {
+        "Label": label,
+        "ProgramArguments": ["/bin/zsh", "-c", command],
+        "StartCalendarInterval": [{"Minute": 10}],
+        "StandardOutPath": str(log),
+        "StandardErrorPath": str(log),
+    }
+    agents_dir.mkdir(parents=True, exist_ok=True)
+    path.write_bytes(plistlib.dumps(job))
+    typer.echo(f"Wrote {path}: runs {name} hourly at 10 past, logging to {log}")
+    typer.echo(f"Load it with:  launchctl bootstrap gui/$(id -u) {shlex.quote(str(path))}")
 
 
 @paper_app.command("resume")

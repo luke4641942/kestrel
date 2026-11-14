@@ -158,6 +158,8 @@ class Handled:
     equity: Decimal
     target: Decimal
     order: Fill | Rejection | None
+    missed: bool = False
+    """A live venue was behind: decided and recorded, not traded."""
 
 
 class PaperVenue(Protocol):
@@ -192,8 +194,9 @@ def run(
 ) -> list[Handled]:
     """Handle every closed bar in ``bars`` (all of them closed, history included) that the
     account hasn't handled, oldest first, through ``venue`` (the simulated venue by
-    default). A live venue fills now, so it can't trade a decision at a past open: an
-    account more than one bar behind on a live venue is refused, not traded late.
+    default). A live venue fills now, so it can't trade a decision at a past open: when an
+    account on a live venue is behind (the Mac was asleep), each missed bar is still marked
+    and its decision recorded as missed, with no trade, and only the latest is traded.
 
     Safety (kestrel.execution.safety): a halted account is refused; with ``now`` (a live
     run, not a replay) stale bars are refused; every order passes the ``[risk]`` order
@@ -213,11 +216,8 @@ def run(
         t for t in times
         if t >= terms.trade_from and (state.last_bar is None or t > state.last_bar)
     ]  # fmt: skip
-    if getattr(venue, "live", False) and len(pending) > 1:
-        raise ValueError(
-            f"{terms.name} is {len(pending)} bars behind; a live venue can only trade the "
-            "latest decision (catching up is P4 S5)"
-        )
+    live = bool(getattr(venue, "live", False))
+    latest = pending[-1] if pending else None
     if now is not None:
         problem = stale(bars, terms.interval, now)
         if problem:
@@ -256,14 +256,28 @@ def run(
             break
         weight = strategy.target_weights(bars.head(i + 1))[-1]
         target = Decimal(str(weight))
+        mark = {"type": "mark", "bar": t, "close": Decimal(str(closes[i])), "equity": equity}
+        if live and t != latest:
+            # Missed: its next open has passed, and a live venue can only fill now.
+            current = held * Decimal(str(closes[i])) / equity if equity else Decimal(0)
+            account.ledger.append(mark)
+            account.ledger.append(
+                {"type": "decision", "bar": t, "target": target, "current": current,
+                 "price": None, "band_skip": False, "missed": True}
+            )  # fmt: skip
+            account.ledger.append(
+                {"type": "state", "bar": t, "cash": venue.cash(),
+                 "position": venue.position(terms.symbol), "target": target}
+            )  # fmt: skip
+            handled.append(Handled(t, equity, target, None, missed=True))
+            previous = target
+            continue
         venue.set_market(terms.symbol, price, Decimal(str(volumes[i])), spreads[i])
         step = rebalance(
             venue, model, terms.symbol, target, price, Decimal(str(volumes[i])), band, spreads[i]
         )
         skipped = step.order is None and target != step.current and target != previous
-        account.ledger.append(
-            {"type": "mark", "bar": t, "close": Decimal(str(closes[i])), "equity": equity}
-        )
+        account.ledger.append(mark)
         account.ledger.append(
             {
                 "type": "decision",
