@@ -32,6 +32,7 @@ from kestrel.strategies.regime import TrendVolTargetRegime
 from kestrel.strategies.reversal import DropReversal
 from kestrel.strategies.rotation import DualMomentum
 from kestrel.strategies.sentiment import FearGreedContrarian
+from kestrel.strategies.squeeze import SqueezeBreakout
 from kestrel.strategies.structure import StructurePullback
 from kestrel.strategies.trend import TrendVolTarget
 from kestrel.strategies.trend_basket import TrendBasket
@@ -567,6 +568,20 @@ STRATEGIES: dict[str, StrategySpec] = {
                 Param("min_volume_musd", 20, 1, 500, "Median daily volume needed, in million USDT"),
             ),
             universe=True,
+        ),
+        StrategySpec(
+            "squeeze-breakout",
+            "research",
+            "After a Bollinger squeeze (band width at its squeeze_bars-day low within "
+            "recent_bars days), buy a close above the upper band while above the trend_days "
+            "average; sell a close below the 20-day average. Research: runs only through its "
+            "frozen note.",
+            SqueezeBreakout,
+            (
+                Param("squeeze_bars", 120, 40, 365, "Days the band width must be lowest of"),
+                Param("recent_bars", 20, 5, 60, "Days after a squeeze a break still counts"),
+                Param("trend_days", 200, 50, 365, "Days in the trend average"),
+            ),
         ),
         StrategySpec(
             "turn-of-month",

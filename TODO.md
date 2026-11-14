@@ -36,7 +36,8 @@ Strategies, most to least promising:
       Needs engine work: a limit entry that fills at min(limit, open) only if the low
       reaches it. Its 3 x ATR stop variant is the random-entry control's first real
       test (above). Keep the sweep small: 3 widths x 3 depths is already 9 trials.
-- [ ] 3. Squeeze breakout (batch 3 G4). Band width at a 120-bar low; buy a close above
+- [ ] 3. READY TO FREEZE: note `squeeze-breakout-on-btc-and-eth` (strategy `squeeze-breakout`).
+      Squeeze breakout (batch 3 G4). Band width at a 120-bar low; buy a close above
       the upper band while above the 200-day; trail on the 20-day MA. It relates to our
       volatile-direction study (TREND), but the long-only version found little.
       Twin: channel breakout (dropped).
