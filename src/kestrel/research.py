@@ -282,7 +282,11 @@ class ResearchStore:
             _write(d / "notes" / f"v{note.version}.json", asdict(note))
 
 
-STUDIES = {"study:volatile-direction": "kestrel volatile-study"}
+STUDIES = {
+    "study:volatile-direction": "kestrel volatile-study",
+    "study:attention": "kestrel signal-study attention",
+    "study:extreme-fear": "kestrel signal-study extreme-fear",
+}
 """Raw-effect studies a note can name instead of a strategy: a question measured before any
 trading rule exists. A backtest refuses them; each runs through its own command."""
 

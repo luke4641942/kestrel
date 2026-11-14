@@ -34,7 +34,7 @@ from kestrel.backtest.metrics import Metrics, compute_metrics, format_report
 from kestrel.backtest.portfolio import run_portfolio
 from kestrel.backtest.runs import RunRequest, RunStore, execute, universe_panel
 from kestrel.config import Config, ConfigError, load_config
-from kestrel.data import funding, live, sentiment
+from kestrel.data import attention, funding, live, sentiment
 from kestrel.data.binance_vision import BinanceVisionClient, Month, last_complete_month
 from kestrel.data.features import attach_features
 from kestrel.data.quality import check_klines
@@ -64,6 +64,12 @@ from kestrel.strategy import (
 from kestrel.studies.anchor_day import format_study, run_study
 from kestrel.studies.volatile_direction import format_study as format_volatile_study
 from kestrel.studies.volatile_direction import run_study as run_volatile_study
+from kestrel.studies.weekly_signal import (
+    attention_flags,
+    fear_flags,
+    format_signal_study,
+    run_signal_study,
+)
 from kestrel.validation.holdout import HoldoutLog, format_holdout, holdout_test
 from kestrel.validation.log import Look, Study, ValidationLog
 from kestrel.validation.robustness import check_robustness, format_robustness
@@ -450,6 +456,78 @@ def volatile_study(
     if research is not None:
         store.mark_backtested(s.slug, note.version)
     typer.echo(format_volatile_study(result))
+
+
+@app.command("ingest-attention")
+def ingest_attention(symbols: list[str], data_dir: DataDir = Path("data")) -> None:
+    """Daily Wikipedia pageviews of each market's article (attention), from 2015-07."""
+    failed = False
+    with httpx.Client(timeout=60) as http:
+        for symbol in symbols:
+            try:
+                saved = attention.ingest(symbol, http, data_dir)
+            except (ValueError, httpx.HTTPError) as e:
+                typer.echo(f"{symbol.upper()}: {e}", err=True)
+                failed = True
+                continue
+            frame = attention.load(data_dir, symbol)
+            missing = attention.gaps(frame)
+            last = str(frame["date"].max())
+            typer.echo(
+                f"{symbol.upper()}: {frame.height} days to {last} -> {saved}"
+                + (f"; {len(missing)} days missing (reported, not filled)" if missing else "")
+            )
+    if failed:
+        raise typer.Exit(code=1)
+
+
+@app.command("signal-study")
+def signal_study(
+    signal: Annotated[str, typer.Argument(help="attention or extreme-fear.")],
+    symbols: list[str],
+    research: Annotated[
+        str | None,
+        typer.Option(help="The frozen note that pre-registers this run (marked as run)."),
+    ] = None,
+    research_dir: ResearchDir = Path("research"),
+    data_dir: DataDir = Path("data"),
+    config: Annotated[
+        Path, typer.Option("--config", envvar="KESTREL_CONFIG", help="Config file.")
+    ] = Path("kestrel.toml"),
+) -> None:
+    """Do the weeks after a signal beat the weeks without it? A raw-effect study on Sunday
+    closes, daily bars, never the holdout."""
+    store = ResearchStore(research_dir)
+    try:
+        if research is not None:
+            s, note = store.require_testable(research)
+            if note.implementation != f"study:{signal}":
+                raise ValueError(f"{research} names {note.implementation}, not study:{signal}")
+        cfg = load_config(config)
+        markets: dict[str, tuple[pl.DataFrame, list[bool | None]]] = {}
+        for symbol in symbols:
+            bars = ParquetStore(data_dir).read(
+                symbol, Interval.D1, None, cfg.backtest.holdout_start
+            )
+            if bars.is_empty():
+                raise ValueError(f"no stored {symbol.upper()} 1d bars; ingest them first")
+            if signal == "attention":
+                flags = attention_flags(bars, attention.load(data_dir, symbol))
+            elif signal == "extreme-fear":
+                bars = attach_features(bars, ("fear_greed",), symbol, Interval.D1, data_dir)
+                flags = fear_flags(bars)
+            else:
+                raise ValueError(f"unknown signal {signal!r}; one of attention, extreme-fear")
+            markets[symbol.upper()] = (bars, flags)
+        c = cfg.costs
+        hurdle = math.log1p(float(2 * (c.taker_fee_bps + c.half_spread_bps)) / 1e4)
+        result = run_signal_study(signal, markets, hurdle=hurdle)
+    except (ConfigError, ValueError) as e:
+        typer.echo(str(e), err=True)
+        raise typer.Exit(code=1) from None
+    if research is not None:
+        store.mark_backtested(s.slug, note.version)
+    typer.echo(format_signal_study(result))
 
 
 @app.command("holdout-test")

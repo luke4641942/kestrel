@@ -18,7 +18,7 @@ from kestrel.data.store import ParquetStore
 from kestrel.studies.volatile_direction import (
     Sample,
     StudyResult,
-    _side,
+    compare,
     format_study,
     run_study,
     samples,
@@ -72,7 +72,7 @@ def test_the_verdict_says_which_way() -> None:
 
 def test_a_rebound_reads_as_rebound() -> None:
     s = [Sample("A", T, up, f) for up, f in [(True, -0.05)] * 20 + [(False, 0.05)] * 20]
-    side = _side(s, 300, 0)
+    side = compare(s, 300, 0)
     r = StudyResult(["A"], 7, HURDLE, side, side)
     assert r.verdict == "REBOUND"
     assert side.spread == pytest.approx(-0.10)
@@ -80,7 +80,7 @@ def test_a_rebound_reads_as_rebound() -> None:
 
 
 def test_one_sided_or_empty_samples_kill() -> None:
-    only_up = _side([Sample("A", T, True, 0.1)], 100, 0)
+    only_up = compare([Sample("A", T, True, 0.1)], 100, 0)
     assert (only_up.spread, only_up.p_positive) == (None, None)
     assert StudyResult(["A"], 7, HURDLE, only_up, only_up).verdict == "KILL"
     assert "n/a" in format_study(StudyResult(["A"], 7, HURDLE, only_up, only_up))
@@ -110,7 +110,7 @@ def test_the_cli_uses_stored_regimes_and_never_the_holdout(tmp_path: Path) -> No
 
 def test_a_confident_spread_too_small_to_pay_costs_is_killed() -> None:
     tiny = [Sample("A", T, True, 0.001)] * 30 + [Sample("A", T, False, 0.0)] * 30
-    side = _side(tiny, 200, 0)
+    side = compare(tiny, 200, 0)
     assert side.p_positive == 1.0  # certain, but 0.1% a week doesn't pay 0.22% of costs
     assert StudyResult(["A"], 7, HURDLE, side, side).verdict == "KILL"
 

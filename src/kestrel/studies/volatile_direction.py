@@ -80,7 +80,7 @@ class Side:
     """Bootstrap share of resamples where the spread is above zero."""
 
 
-def _side(found: list[Sample], resamples: int, seed: int) -> Side:
+def compare(found: list[Sample], resamples: int, seed: int) -> Side:
     ups = [s.forward for s in found if s.up]
     downs = [s.forward for s in found if not s.up]
     if not ups or not downs:
@@ -130,8 +130,8 @@ def run_study(
         list(markets),
         horizon_days,
         hurdle,
-        _side(volatile, resamples, seed),
-        _side(other, resamples, seed),
+        compare(volatile, resamples, seed),
+        compare(other, resamples, seed),
     )
 
 
