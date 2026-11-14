@@ -22,6 +22,10 @@ Decisions and rules live in CLAUDE.md; results in `research/findings.md`.
       coins' prices before the study is written down.
 
 ## Later
+- [ ] News-tone study (Luke's pick over Twitter, 2026-11-14): code built (`kestrel.data.news`,
+      `kestrel signal-study news-tone`). Needs `kestrel ingest-news BTCUSDT ETHUSDT` first:
+      GDELT allows ~1 request every 5-10s, so the 2017-25 history takes ~40+ minutes (run it in
+      a spare terminal; it resumes if stopped). Then a note for Luke to freeze, then the study.
 - [ ] BTC's regime turning volatile before ETH's, as an early ETH trigger (Luke's idea,
       2026-11-14). Only 11 such moments on daily regimes 2021-25: too few to test. Revisit
       only if the MACD study finds a direction, with hourly regimes for more events.

@@ -34,7 +34,7 @@ from kestrel.backtest.metrics import Metrics, compute_metrics, format_report
 from kestrel.backtest.portfolio import run_portfolio
 from kestrel.backtest.runs import RunRequest, RunStore, execute, universe_panel
 from kestrel.config import Config, ConfigError, load_config
-from kestrel.data import attention, funding, live, sentiment
+from kestrel.data import attention, funding, live, news, sentiment
 from kestrel.data.binance_vision import BinanceVisionClient, Month, last_complete_month
 from kestrel.data.features import attach_features
 from kestrel.data.quality import check_klines
@@ -68,6 +68,7 @@ from kestrel.studies.weekly_signal import (
     attention_flags,
     fear_flags,
     format_signal_study,
+    news_flags,
     run_signal_study,
 )
 from kestrel.validation.holdout import HoldoutLog, format_holdout, holdout_test
@@ -481,9 +482,30 @@ def ingest_attention(symbols: list[str], data_dir: DataDir = Path("data")) -> No
         raise typer.Exit(code=1)
 
 
+@app.command("ingest-news")
+def ingest_news(symbols: list[str], data_dir: DataDir = Path("data")) -> None:
+    """Daily news tone for each market from GDELT, from 2017. Slow on purpose: GDELT allows
+    about one request every few seconds, so a full history takes a while. Each month is
+    saved as it arrives; run it again to continue an interrupted fetch."""
+    failed = False
+    with httpx.Client(timeout=120) as http:
+        for symbol in symbols:
+            try:
+                frame = news.ingest(
+                    symbol, http, data_dir, on_month=lambda m: typer.echo(f"  {m:%Y-%m}")
+                )
+            except (ValueError, httpx.HTTPError) as e:
+                typer.echo(f"{symbol.upper()}: {e}", err=True)
+                failed = True
+                continue
+            typer.echo(f"{symbol.upper()}: {frame.height} days of news tone")
+    if failed:
+        raise typer.Exit(code=1)
+
+
 @app.command("signal-study")
 def signal_study(
-    signal: Annotated[str, typer.Argument(help="attention or extreme-fear.")],
+    signal: Annotated[str, typer.Argument(help="attention, extreme-fear or news-tone.")],
     symbols: list[str],
     research: Annotated[
         str | None,
@@ -513,11 +535,15 @@ def signal_study(
                 raise ValueError(f"no stored {symbol.upper()} 1d bars; ingest them first")
             if signal == "attention":
                 flags = attention_flags(bars, attention.load(data_dir, symbol))
+            elif signal == "news-tone":
+                flags = news_flags(bars, news.load(data_dir, symbol))
             elif signal == "extreme-fear":
                 bars = attach_features(bars, ("fear_greed",), symbol, Interval.D1, data_dir)
                 flags = fear_flags(bars)
             else:
-                raise ValueError(f"unknown signal {signal!r}; one of attention, extreme-fear")
+                raise ValueError(
+                    f"unknown signal {signal!r}; one of attention, extreme-fear, news-tone"
+                )
             markets[symbol.upper()] = (bars, flags)
         c = cfg.costs
         hurdle = math.log1p(float(2 * (c.taker_fee_bps + c.half_spread_bps)) / 1e4)
