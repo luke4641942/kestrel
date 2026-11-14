@@ -57,8 +57,11 @@ def to_zip(
             + body
         )
     buf = io.BytesIO()
+    # A fixed timestamp: writestr(name) stamps the current time, so two builds of the same
+    # archive a second apart (the file and its checksum) could differ and fail at random.
+    entry = zipfile.ZipInfo(name, date_time=(2024, 1, 1, 0, 0, 0))
     with zipfile.ZipFile(buf, "w", zipfile.ZIP_DEFLATED) as zf:
-        zf.writestr(name, body)
+        zf.writestr(entry, body, compress_type=zipfile.ZIP_DEFLATED)
     return buf.getvalue()
 
 
