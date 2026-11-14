@@ -3,6 +3,49 @@
 The active list. Claude keeps it up to date in the same commit as the work (see CLAUDE.md).
 Decisions and rules live in CLAUDE.md; results in `research/findings.md`.
 
+## YouTube batch 2 (Luke's test spec, 2026-11-15): outlined, nothing built
+Nothing here is ruled out. Most items have a near-twin we've already tested and dropped
+(named below). Testing one of those means knowingly overriding the entry bar (Luke's
+call), and every run counts as a trial. The daily items don't need the cost gate. All are
+spot, long-only, at most 3 coins, and judged by the scorecard against exposure-matched
+holding.
+- [ ] A3. Turn of the month, BTC 1d: hold from the last day's close to the first day's
+      close; variant: the last 5 days plus the first 3. Compare with random days of the
+      same count. A new family (calendar) with no twin in our records. The equity reason
+      (month-end pay and fund flows) has no clear crypto version, so the note must give
+      one. 2 trials.
+- [ ] A1/A2/A4. RSI dip-buying, BTC and ETH 1d: RSI(2) < 10 or RSI(5) < 30. Exit when the
+      close is above yesterday's high. Run with and without the 200-day filter, and with
+      and without the scale-in.
+      Twins: buy big down days (dropped: +21% vs +42% for BTC at the same exposure), Fear &
+      Greed contrarian (dropped), extreme fear (KILL). The video's finding that "mean
+      reversion survives" comes mostly from equities with upward drift, and it never
+      compares against holding at the same exposure. Keep it to 8 trials or fewer.
+- [ ] A5/A6. Moving-average timing, BTC/ETH/cash 1d: hold each coin while its 3-month MA
+      is above its 10-month MA, equal weight, rebalanced monthly. Twins: trend-vol-target
+      (already uses MA votes; pursue), BTC/ETH rotation (dropped). A5 needs three markets
+      (S&P, Dow, utilities) and has no clean crypto version.
+- [ ] B1/B2. Breakouts on a coin basket: a 100-day 3 SD Bollinger band, or 20% above the
+      50-day low. BTC above its 200-day as the filter, lowest volatility first, ATR stop.
+      Twins: channel breakout (dropped), trend across a 10-coin basket (dropped). Its 10
+      slots must shrink to 3.
+- [ ] Cross-sectional momentum, long the top 3 coins by 1-3 month return. Twin:
+      cross-sectional momentum top 5 (dropped, -92% drawdown). The video's version is
+      long-short; we can only take the long half.
+- [ ] C. Order flow (Fabio Valentino), BTC/ETH 1m-5m: delta, cumulative delta and the
+      session volume profile, built from Binance spot aggTrades (they record which side
+      was the aggressor). Model 2 first: a failed breakout returning to the point of
+      control. A new family. Behind the cost gate like batch 1, and harder (minute-long
+      holds against a 22 bps round trip). Needs trade-level data, not bars.
+- D. Earnings IV-crush calendars: out of scope (US equity options). Not on the list.
+- [ ] Validation ideas from the 9,000-backtest video. We already have walk-forward, costs,
+      drawdown, minimum trades, deflated Sharpe, robustness and a bootstrap. Not yet built:
+      (1) out-of-sample Sharpe at least half of in-sample; (2) reshuffle a run's trades
+      1,000 times and show drawdown percentiles; (3) results by calendar year. Adding (2)
+      and (3) to the detail view is information only. Making any of them a scorecard test
+      changes the rules (Luke). The video's own bar (Sharpe > 0.5, no comparison with
+      holding) is weaker than ours on the edge test, so ours stays.
+
 ## Top
 - [ ] Cost gate (from Luke's YouTube spec, 2026-11-15): before building any 1m/5m strategy,
       measure on BTC/ETH/SOL 1m and 5m bars how wide FVG/zone stops are in bps and what a
