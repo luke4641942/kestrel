@@ -4,6 +4,9 @@ The active list. Claude keeps it up to date in the same commit as the work (see 
 Decisions and rules live in CLAUDE.md; results in `research/findings.md`.
 
 ## Waiting on Luke
+- [ ] Regime filter ran 2026-11-14 and failed its rule: Sharpe 0.64 with the filter vs 0.69
+      without (runs 20261114-124550-9267e1, -124551-620d04). The plain rule already holds
+      13% on volatile days vs 54% otherwise. Reject the note? Your call. Commit the note.
 - [ ] Read and freeze `paper-trading-trend-vol-target-btc` (drafted 2026-11-14). Then:
       `kestrel paper open tvt-btc ... --venue testnet` (the note's rules), `kestrel paper
       schedule tvt-btc`, and load the job with the launchctl command it prints. The
@@ -14,8 +17,6 @@ Decisions and rules live in CLAUDE.md; results in `research/findings.md`.
       are still open after its drop: reject them, or leave them? Your call.
 
 ## Next
-- [ ] Freeze the note `regime-filter-on-trend-vol-target-btc` (Luke), then Claude runs its
-      two pre-registered backtests (filter on and off, BTC 2021-05 to 2025-10).
 - [ ] Delistings (Luke's idea, 2026-11-14): a raw-effect study before any strategy.
       Needs Binance delisting announcement dates (no official history: scrape the public
       announcements catalog, "Delistings"). Measure the path from announcement to removal
