@@ -113,6 +113,12 @@ risk-managed holding rather than a proven edge.
    failed (BTC Sharpe -0.13, ETH 0.42 against 0.46 for holding at its exposure, 19-26
    trades): most of the spread was the down weeks, which a long-only account can only sit
    out, and sitting out is what holding less does for free. A short side would change that.
+10. **Attention and extreme fear don't pick better weeks.** Weeks after rising Wikipedia
+    attention returned +0.65% against +0.74% for the rest (854 weeks, BTC and ETH 2017-25);
+    weeks after Extreme Fear returned +0.27% against +0.59% (806 weeks). Liu and Tsyvinski's
+    attention effect didn't appear with this stand-in for Google searches, and fear mostly
+    followed falls that continued: in crypto, moves tend to carry on, and buying fear or
+    dips keeps losing.
 
 ## The holdout year (2025-11 to 2026-10)
 
@@ -160,6 +166,8 @@ edge, and the holdout can't be used again for either strategy.
 | Crash brake on trend-vol-target | BTC 1d | Sharpe 0.91 vs 1.21; return +272% vs +639%; drawdown -45.9% vs -48.3% | Drop |
 | Regime filter on trend-vol-target | BTC 1d | Sharpe 0.64 vs 0.69 (2021-05 to 2025-10); the plain rule already holds 13% in volatile spells | Drop |
 | Study: MACD direction in volatile spells | BTC, ETH 1d | Spread +3.70% a week (up +1.63%, down -2.00%), P = 98%: TREND | Study passed |
+| Study: rising attention (Wikipedia) | BTC, ETH 1d | Next week +0.65% after rising attention vs +0.74%; P 46%: KILL | Drop |
+| Study: extreme fear | BTC, ETH 1d | Next week +0.27% after Extreme Fear vs +0.59%; P 39%: KILL | Drop |
 | Ride volatile spells in MACD's direction | BTC, ETH 1d | Weekly hold: BTC Sharpe -0.13 vs 0.53 holding; ETH 0.42 vs 0.46; 0 and 1 of 5 walk-forward windows; 26 and 19 trades; robustness no edge / fragile. Daily switch no better | Drop |
 
 Each strategy was judged by its own note's pass test, written before it ran. From

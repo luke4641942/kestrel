@@ -35,6 +35,7 @@ Decisions and rules live in CLAUDE.md; results in `research/findings.md`.
 - [ ] HMM regime filter (backlog S2) as a strategy: needs a note that passes the entry bar.
 
 ## Done recently
+- 2026-11-14 Attention and extreme-fear studies: both KILL; rejected (Luke).
 - 2026-11-14 P4 paper trading built: sessions S1-S5 (details in CLAUDE.md's roadmap).
 - 2026-11-14 volatile-macd backtested: fails the scorecard on BTC and ETH; rejected (Luke).
 - 2026-11-14 Volatile-spell direction study: TREND (spread +3.70%/week, P 98%, 75 weeks).

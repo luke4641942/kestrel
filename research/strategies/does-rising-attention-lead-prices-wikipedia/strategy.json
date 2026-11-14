@@ -1,0 +1,28 @@
+{
+  "slug": "does-rising-attention-lead-prices-wikipedia",
+  "name": "Does rising attention lead prices (Wikipedia)",
+  "created_at": "2026-11-14T13:38:40.226593+00:00",
+  "status": "rejected",
+  "history": [
+    {
+      "status": "idea",
+      "at": "2026-11-14T13:38:40.226593+00:00",
+      "reason": "Created"
+    },
+    {
+      "status": "specified",
+      "at": "2026-11-14T13:53:25.146437+00:00",
+      "reason": "v1 frozen"
+    },
+    {
+      "status": "backtested",
+      "at": "2026-11-14T13:54:19.267206+00:00",
+      "reason": "first run on v1"
+    },
+    {
+      "status": "rejected",
+      "at": "2026-11-14T13:59:26.827031+00:00",
+      "reason": "KILL (rejected with Luke's say-so, 2026-11-14): weeks after rising Wikipedia attention returned +0.65% against +0.74% after the rest (BTC and ETH 2017-25, 854 Sunday-to-Sunday weeks); spread -0.09%, P(spread > 0) 46%. Attention partly followed rising weeks (58% vs 51% on BTC) but didn't predict the next one."
+    }
+  ]
+}
