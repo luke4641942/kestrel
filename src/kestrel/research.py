@@ -158,7 +158,7 @@ class ResearchStore:
         unknown = set(sections) - set(SECTIONS)
         if unknown:
             raise ResearchError(f"unknown section(s): {', '.join(sorted(unknown))}")
-        if implementation is not None and implementation not in STRATEGIES:
+        if implementation is not None and implementation not in {**STRATEGIES, **STUDIES}:
             raise ResearchError(f"unknown implementation {implementation!r}")
         note.sections.update(sections)
         note.implementation = implementation
@@ -282,6 +282,11 @@ class ResearchStore:
             _write(d / "notes" / f"v{note.version}.json", asdict(note))
 
 
+STUDIES = {"study:volatile-direction": "kestrel volatile-study"}
+"""Raw-effect studies a note can name instead of a strategy: a question measured before any
+trading rule exists. A backtest refuses them; each runs through its own command."""
+
+
 def run_target(
     store: ResearchStore, strategy: str, research: str | None
 ) -> tuple[str, tuple[str, int] | None]:
@@ -295,6 +300,10 @@ def run_target(
     if research is not None:
         s, note = store.require_testable(research)
         assert note.implementation is not None  # freezing requires one
+        if note.implementation in STUDIES:
+            raise ResearchError(
+                f"{research} is a study, not a strategy: run it with {STUDIES[note.implementation]}"
+            )
         return note.implementation, (s.slug, note.version)
     if strategy not in STRATEGIES:
         raise ResearchError(f"unknown strategy {strategy!r}; one of {', '.join(STRATEGIES)}")

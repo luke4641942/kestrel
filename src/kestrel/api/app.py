@@ -825,7 +825,7 @@ def create_app(
         except KeyError:
             raise HTTPException(status.HTTP_404_NOT_FOUND, "research strategy not found") from None
         note = s.latest
-        source = strategy_source(note.implementation) if note.implementation else None
+        source = strategy_source(note.implementation) if note.implementation in STRATEGIES else None
         try:
             answer = assistant.reply(
                 s, source, research.chat(slug), req.message, load_config(config_path)

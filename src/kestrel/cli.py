@@ -412,6 +412,11 @@ def update(
 def volatile_study(
     symbols: list[str],
     horizon_days: Annotated[int, typer.Option(help="Days after the signal to measure.")] = 7,
+    research: Annotated[
+        str | None,
+        typer.Option(help="The frozen note that pre-registers this run (marked as run)."),
+    ] = None,
+    research_dir: ResearchDir = Path("research"),
     data_dir: DataDir = Path("data"),
     config: Annotated[
         Path, typer.Option("--config", envvar="KESTREL_CONFIG", help="Config file.")
@@ -419,7 +424,12 @@ def volatile_study(
 ) -> None:
     """Which way do volatile spells go? MACD's direction on the regime model's volatile days
     against the next week's return (a raw-effect study). Daily bars; never uses the holdout."""
+    store = ResearchStore(research_dir)
     try:
+        if research is not None:
+            s, note = store.require_testable(research)
+            if note.implementation != "study:volatile-direction":
+                raise ValueError(f"{research} names {note.implementation}, not this study")
         cfg = load_config(config)
         markets = {}
         for symbol in symbols:
@@ -437,6 +447,8 @@ def volatile_study(
     except (ConfigError, ValueError) as e:
         typer.echo(str(e), err=True)
         raise typer.Exit(code=1) from None
+    if research is not None:
+        store.mark_backtested(s.slug, note.version)
     typer.echo(format_volatile_study(result))
 
 

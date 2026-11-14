@@ -113,3 +113,45 @@ def test_a_confident_spread_too_small_to_pay_costs_is_killed() -> None:
     side = _side(tiny, 200, 0)
     assert side.p_positive == 1.0  # certain, but 0.1% a week doesn't pay 0.22% of costs
     assert StudyResult(["A"], 7, HURDLE, side, side).verdict == "KILL"
+
+
+def study_note(root: Path, implementation: str = "study:volatile-direction") -> str:
+    from kestrel.research import ResearchStore
+
+    store = ResearchStore(root)
+    s = store.create("A study")
+    sections = ("hypothesis", "rationale", "rules", "falsification", "parameters", "costs")
+    store.edit(s.slug, 1, dict.fromkeys(sections, "x"), implementation)
+    store.freeze(s.slug, 1)
+    return s.slug
+
+
+def test_a_note_can_name_a_study_which_a_backtest_refuses(tmp_path: Path) -> None:
+    from kestrel.research import ResearchError, ResearchStore, run_target
+
+    slug = study_note(tmp_path)
+    with pytest.raises(
+        ResearchError, match="is a study, not a strategy: run it with kestrel volatile-study"
+    ):
+        run_target(ResearchStore(tmp_path), "ma-trend", slug)
+    with pytest.raises(ResearchError, match="unknown implementation"):
+        ResearchStore(tmp_path).edit(ResearchStore(tmp_path).create("B").slug, 1, {}, "study:nope")
+
+
+def test_the_cli_runs_under_its_frozen_note(tmp_path: Path) -> None:
+    from kestrel.research import ResearchStore
+
+    frame = flagged(daily([0.01] * 99), [1.0] * 100)
+    ParquetStore(tmp_path).write("BTCUSDT", Interval.D1, frame.drop(REGIME_VOLATILE))
+    store_fit(tmp_path, frame, [2] * 100)
+    slug = study_note(tmp_path / "r")
+    args = ["volatile-study", "BTCUSDT", "--data-dir", str(tmp_path), "--config", REPO_CONFIG,
+            "--research-dir", str(tmp_path / "r")]  # fmt: skip
+    ok = CliRunner().invoke(app, [*args, "--research", slug])
+    assert ok.exit_code == 0, ok.output
+    assert ResearchStore(tmp_path / "r").get(slug).status == "backtested"
+    other = study_note(tmp_path / "r2", implementation="ma-trend")
+    args[-1] = str(tmp_path / "r2")
+    wrong = CliRunner().invoke(app, [*args, "--research", other])
+    assert wrong.exit_code == 1
+    assert "names ma-trend, not this study" in wrong.output
