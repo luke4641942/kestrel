@@ -28,6 +28,7 @@ from kestrel.strategies.funding import FundingHold, FundingTrend
 from kestrel.strategies.levels import LevelBreakout, LevelRetest
 from kestrel.strategies.momentum import CrossSectionalMomentum
 from kestrel.strategies.pivots import PivotReversal
+from kestrel.strategies.regime import TrendVolTargetRegime
 from kestrel.strategies.reversal import DropReversal
 from kestrel.strategies.rotation import DualMomentum
 from kestrel.strategies.sentiment import FearGreedContrarian
@@ -379,6 +380,23 @@ STRATEGIES: dict[str, StrategySpec] = {
                 Param("vol_days", 30, 10, 90, "Days of returns that measure volatility"),
                 Param("target_vol_pct", 50, 10, 150, "Annual volatility to size towards, in %"),
             ),
+        ),
+        StrategySpec(
+            "trend-vol-target-regime",
+            "research",
+            "Trend-vol-target, in cash on days the regime model says the market is in its most "
+            "volatile state (backlog S2). regime_filter 0 is the plain rule, for comparison. "
+            "Research: runs only through its frozen note.",
+            TrendVolTargetRegime,
+            (
+                Param("fast_days", 20, 5, 60, "Shortest trend lookback, in days"),
+                Param("mid_days", 60, 20, 180, "Middle trend lookback, in days"),
+                Param("slow_days", 120, 60, 365, "Longest trend lookback, in days"),
+                Param("vol_days", 30, 10, 90, "Days of returns that measure volatility"),
+                Param("target_vol_pct", 50, 10, 150, "Annual volatility to size towards, in %"),
+                Param("regime_filter", 1, 0, 1, "1: out in the volatile regime; 0: plain rule"),
+            ),
+            features=("regime_volatile",),
         ),
         StrategySpec(
             "trend-vol-target-brake",
