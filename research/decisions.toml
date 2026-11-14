@@ -172,10 +172,19 @@ evidence = ["nearness-to-the-52-week-high-across-large-coins"]
 [[decision]]
 strategy = "weekly-momentum"
 name = "One-week momentum"
-market = "BTCUSDT, ETHUSDT and SOLUSDT 1d"
+market = "ETHUSDT 1d"
+decision = "watch"
+decided = 2026-11-14
+reason = "Under the 2026-11-14 scorecard it passes the edge test on ETH 2020-25 (Sharpe 1.23 vs 1.12 for holding; +2,318% vs +913% at the same exposure), as trend-vol-target does on BTC, and fails the luck test (deflated 29%). On ETH's unseen 2017-19 it trailed holding slightly (Sharpe 0.13 vs 0.15). Watched, not passed: a candidate for paper trading beside trend-vol-target."
+evidence = ["one-week-momentum-btc-eth-daily", "weekly-momentum-on-btc-followers-eth-unseen"]
+
+[[decision]]
+strategy = "weekly-momentum"
+name = "One-week momentum"
+market = "BTCUSDT and SOLUSDT 1d"
 decision = "drop"
 decided = 2026-11-13
-reason = "Passed every rule on ETH 2020-25 but not on BTC; retested on ETH's unseen 2017-19 and on SOL, it didn't reproduce (Sharpe 0.13 vs 0.15 and 1.08 vs 1.24 for holding). It cuts drawdowns, as trend rules do here, but doesn't beat holding."
+reason = "Below holding on Sharpe on both: BTC 2020-25 0.94 vs 1.07, SOL 2020-25 1.08 vs 1.24."
 evidence = ["one-week-momentum-btc-eth-daily", "weekly-momentum-on-btc-followers-eth-unseen"]
 
 [[decision]]

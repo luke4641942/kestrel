@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { scorecardHeadline, luckBar, splitClosed, startDateVerdict, windowLabel, DECISION, studyTitle, studyTone, deflatedNote, spreadBands, DEFAULT_RUN_SORT, KIND_LABEL, UNIVERSE, marketLabel, marketsFor, defaultDataset, nextSort, sortRuns, fewTrades, signalsCaption, MAX_LABELLED_TRADES, MAX_MARKED_TRADES, costHeadroom, paramsText, runRole, tradeCount, heldAsset, money, span, trackRecord, tradeMarkers, verdict } from "./summary";
+import { datasetsLine, scorecardHeadline, luckBar, splitClosed, startDateVerdict, windowLabel, DECISION, studyTitle, studyTone, deflatedNote, spreadBands, DEFAULT_RUN_SORT, KIND_LABEL, UNIVERSE, marketLabel, marketsFor, defaultDataset, nextSort, sortRuns, fewTrades, signalsCaption, MAX_LABELLED_TRADES, MAX_MARKED_TRADES, costHeadroom, paramsText, runRole, tradeCount, heldAsset, money, span, trackRecord, tradeMarkers, verdict } from "./summary";
 import { run, trade } from "./test/fixtures";
 
 describe("verdict", () => {
@@ -380,5 +380,16 @@ describe("scorecardHeadline", () => {
       text: "Passes every test run so far. Not yet run: luck and out of sample.",
     });
     expect(scorecardHeadline(card(["pass", "pass", "pass", "pass"], "pass")).tone).toBe("ok");
+  });
+});
+
+describe("datasetsLine", () => {
+  it("names the main markets and counts the rest", () => {
+    const coins = ["ADAUSDT", "BTCUSDT", "ZECUSDT", "ETHUSDT", "AAVEUSDT", "SOLUSDT"];
+    expect(datasetsLine(coins, ["1d", "4h"])).toBe("BTCUSDT, ETHUSDT, SOLUSDT and 3 more at 1d, 4h");
+    expect(datasetsLine(["ETHUSDT", "BTCUSDT"], ["1h"])).toBe("BTCUSDT, ETHUSDT at 1h");
+    expect(datasetsLine([], [])).toBe("Ingest a dataset to begin");
+    const many = Array.from({ length: 1200 }, (_, i) => `C${i}USDT`);
+    expect(datasetsLine(many, ["1d"])).toBe("C0USDT, C1000USDT, C1001USDT and 1,197 more at 1d");
   });
 });

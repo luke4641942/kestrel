@@ -44,6 +44,11 @@ reporting progress and logs and checking cancellation.
 - After each step: commit, push, and watch CI (`gh run watch`). Luke commits research
   notes in `research/strategies/` himself unless he asks otherwise.
 
+## To-do list
+`TODO.md` (repo root) is the active to-do list Luke reads in the IDE. Update it in the same
+change whenever a task is started, finished, added or parked, and move finished items to
+"Done recently" with the date. Keep it short: what's next, who it's waiting on.
+
 ## Before calling a task done
 ```bash
 scripts/check.sh   # ruff, format, mypy, pytest, frontend tests, build; stops at the first failure
@@ -91,7 +96,9 @@ Never pipe check output through `tail` or similar inside an `&&` chain: it hides
 - **Decisions** (`research/decisions.toml`, one per strategy and market): `pursue` means
   carry on to paper trading, not "passed"; `watch`; `drop` (final). Trend-vol-target on
   BTC is the only pursue, as risk-managed holding: it beats exposure-matched holding
-  (Sharpe 1.21 vs 1.07) but deflates to 28% at 172 trials.
+  (Sharpe 1.21 vs 1.07) but deflates to 28% at 172 trials. Weekly momentum on ETH is
+  watched for the same reason (1.23 vs 1.12, deflated 29%). A rejected *note* stays
+  rejected; the decision file is the separate "what do we do with it" layer.
 - **Entry bar for a new idea.** Its note states who pays you and why (an economic reason,
   not a chart pattern), outside evidence (published or out-of-sample elsewhere), that it
   is not a variant of a rejected family (pullbacks, chart patterns, reversals), and how

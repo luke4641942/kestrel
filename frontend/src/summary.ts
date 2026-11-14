@@ -354,3 +354,15 @@ export function scorecardHeadline(card: Scorecard): { tone: Tone; text: string }
   }
   return { tone: "warn", text: `Passes every test run so far.${pending}` };
 }
+
+/** What's stored, in one short line: the main markets by name, the rest counted. The coin
+ * universe adds hundreds of symbols, so listing them all would swamp the Overview. */
+export function datasetsLine(symbols: string[], intervals: string[], shown = 3): string {
+  if (!symbols.length) return "Ingest a dataset to begin";
+  const majors = ["BTCUSDT", "ETHUSDT", "SOLUSDT"];
+  const ordered = [...majors.filter((m) => symbols.includes(m)), ...symbols.filter((s) => !majors.includes(s)).sort()];
+  const names = ordered.slice(0, shown).join(", ");
+  const rest = ordered.length - shown;
+  const coins = rest > 0 ? `${names} and ${rest.toLocaleString("en-AU")} more` : names;
+  return `${coins} at ${intervals.join(", ")}`;
+}

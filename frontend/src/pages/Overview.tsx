@@ -2,7 +2,7 @@ import { useState } from "react";
 import { api, type Job } from "../api";
 import type { Route } from "../App";
 import { Empty, FoldToggle, PageHeader, Panel, Section, Status } from "../components/ui";
-import { DECISION, RESEARCH_STATUS, marketLabel, splitClosed, studyTitle, studyTone } from "../summary";
+import { DECISION, RESEARCH_STATUS, datasetsLine, marketLabel, splitClosed, studyTitle, studyTone } from "../summary";
 import { ago, date, num } from "../format";
 import { useResource } from "../hooks";
 
@@ -115,7 +115,7 @@ function DataSummary({ jobs, openJobs }: { jobs: Job[]; openJobs: () => void }) 
           <span className="small secondary">Datasets</span>
           <b>{num(ds.length)}</b>
           <span className="small tertiary">
-            {ds.length ? `${symbols.join(", ")} at ${intervals.join(", ")}` : "Ingest a dataset to begin"}
+            {datasetsLine(symbols, intervals)}
           </span>
         </div>
         <div>

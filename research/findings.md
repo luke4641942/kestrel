@@ -118,7 +118,8 @@ Its purpose there is to prove that live fills match the backtest, not to make mo
 | Trend across a 10-coin basket | Top 10 coins 1d | Drawdown -41% vs -85%, Sharpe 0.95 vs 1.07 for BTC | Drop |
 | Volatility-managed holding | BTC, ETH 1d | Below the market at the same exposure on both | Drop |
 | Nearness to the 52-week high | Top 20 coins 1d | -64% vs +10% for the same coins held equally | Drop |
-| One-week momentum | BTC, ETH, SOL 1d | Passed on ETH 2020-25 only; didn't reproduce on ETH 2017-19 or SOL | Drop |
+| One-week momentum | ETH 1d | Beat exposure-matched holding on ETH 2020-25 (Sharpe 1.23 vs 1.12); deflated 29%; slightly below holding on unseen ETH 2017-19 (0.13 vs 0.15) | Watch |
+| One-week momentum | BTC, SOL 1d | Below holding on both (BTC 0.94 vs 1.07, SOL 1.08 vs 1.24) | Drop |
 | BTC/ETH rotation | BTC, ETH 1d | Sharpe 1.06 vs 1.07 for BTC, same drawdown | Drop |
 | BTC-led weekly momentum | ETH, SOL 1d | Below holding on every window | Drop |
 
