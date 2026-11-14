@@ -45,7 +45,8 @@ Strategies, most to least promising:
       and the volume profile from Binance aggTrades. Model 2 first (a failed breakout
       back to the point of control). New family, but 1m stops measured 6-19 bp against a
       22 bp round trip: gate its own stops first. A big data job (trades, not bars).
-- [ ] 5. Momentum rotation, BTC/ETH/SOL/cash monthly (batch 3 G3, with batch 2 A5/A6
+- [ ] 5. READY TO FREEZE: note `monthly-rotation-across-btc-eth-and-sol` (strategy
+      `monthly-rotation`). Momentum rotation, BTC/ETH/SOL/cash monthly (batch 3 G3, with batch 2 A5/A6
       merged in): hold the top 2 by 12-month return that are above their 200-day; sweep
       3/6/12 months. Twins: BTC/ETH rotation (dropped), cross-sectional momentum (dropped).
       Overlaps trend-vol-target (pursue). A5 has no crypto version.
@@ -57,7 +58,8 @@ Strategies, most to least promising:
 - [ ] 7. Basket breakouts (batch 2 B1/B2): a 100-day 3 SD band, or 20% off the 50-day low;
       BTC above its 200-day; lowest volatility first; ATR stop; 3 slots, not 10. Twins:
       channel breakout, 10-coin trend basket (both dropped).
-- [ ] 8. Cross-sectional momentum, long the top 3 by 1-3 month return (batch 2). Twin:
+- [ ] 8. READY TO FREEZE: note `cross-sectional-momentum-top-3-over-1-3-months` (existing
+      strategy `xs-momentum`, no new code). Cross-sectional momentum, long the top 3 by 1-3 month return (batch 2). Twin:
       top 5 (dropped, -92% drawdown). The video's version is long-short; we only get the
       long half.
 - [ ] 9. Price action + MACD (batch 3 G5): candle pattern at a swing, breakout, MACD

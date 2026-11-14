@@ -27,6 +27,7 @@ from kestrel.strategies.brake import TrendVolTargetBrake, WeeklyMomentumBrake
 from kestrel.strategies.funding import FundingHold, FundingTrend
 from kestrel.strategies.levels import LevelBreakout, LevelRetest
 from kestrel.strategies.momentum import CrossSectionalMomentum
+from kestrel.strategies.monthly_rotation import MonthlyRotation
 from kestrel.strategies.pivots import PivotReversal
 from kestrel.strategies.regime import TrendVolTargetRegime
 from kestrel.strategies.reversal import DropReversal
@@ -641,6 +642,20 @@ STRATEGIES: dict[str, StrategySpec] = {
             "at all; otherwise cash. Research: runs only through its frozen note.",
             DualMomentum,
             (Param("lookback_days", 90, 20, 365, "Days of return compared"),),
+            universe=True,
+        ),
+        StrategySpec(
+            "monthly-rotation",
+            "research",
+            "At each month end, hold the top_n of BTC, ETH and SOL by lookback_days return "
+            "among those above their trend_days average, 1/top_n each; cash for an empty slot. "
+            "Research: runs only through its frozen note.",
+            MonthlyRotation,
+            (
+                Param("lookback_days", 365, 30, 365, "Days of return ranked"),
+                Param("trend_days", 200, 50, 365, "Trend filter average, days"),
+                Param("top_n", 2, 1, 3, "Coins held"),
+            ),
             universe=True,
         ),
         StrategySpec(

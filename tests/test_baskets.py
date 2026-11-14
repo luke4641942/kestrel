@@ -17,6 +17,7 @@ from kestrel.backtest.portfolio import run_portfolio, validated_decisions
 from kestrel.data.schema import Interval
 from kestrel.strategies.anchor import HighAnchor
 from kestrel.strategies.basket import LargeCoinBasket
+from kestrel.strategies.monthly_rotation import MonthlyRotation
 from kestrel.strategies.rotation import DualMomentum
 from kestrel.strategies.trend_basket import TrendBasket
 from kestrel.strategy import STRATEGIES, make_portfolio_strategy
@@ -85,7 +86,9 @@ def test_every_sunday_is_a_decision_even_with_nothing_eligible() -> None:
     assert all(t.weekday() == 6 for t in d["open_time"].to_list())
 
 
-@pytest.mark.parametrize("cls", [LargeCoinBasket, TrendBasket, HighAnchor, DualMomentum])
+@pytest.mark.parametrize(
+    "cls", [LargeCoinBasket, TrendBasket, HighAnchor, DualMomentum, MonthlyRotation]
+)
 def test_empty_and_intraday_panels(cls: type) -> None:
     p = panel({"BTCUSDT": steady(0.01, 30)})
     assert cls().target_weights(p.clear()).is_empty()
@@ -231,3 +234,46 @@ def test_sundays_are_seven_days_apart() -> None:
     d = validated_decisions(LargeCoinBasket(min_history_days=1), panel({"A": steady(0, 60)}))
     days = sorted(set(d["open_time"].to_list()))
     assert all(b - a == days[1] - days[0] for a, b in itertools.pairwise(days))
+
+
+# ---------- BTC/ETH/SOL monthly rotation ----------
+
+
+def rotation(**params: int) -> MonthlyRotation:
+    return MonthlyRotation(**{"lookback_days": 20, "trend_days": 10, **params})
+
+
+def test_rotation_holds_the_top_two_in_uptrends_at_month_ends() -> None:
+    # 2024-01-01 + 60 days: month ends on Jan 31 (day 30) and Feb 29 (day 59).
+    p = coins({
+        "BTCUSDT": (steady(0.01, 61), 9e9),
+        "ETHUSDT": (steady(0.02, 61), 9e9),
+        "SOLUSDT": (steady(0.005, 61), 9e9),
+        "DOGEUSDT": (steady(0.05, 61), 9e9),  # not one of the three: never held
+    })  # fmt: skip
+    d = validated_decisions(rotation(), p)
+    assert sorted({t.day for t in d["open_time"].to_list()}) == [29, 31]
+    feb = d.filter(pl.col("open_time").dt.month() == 2)
+    assert feb["symbol"].to_list() == ["BTCUSDT", "ETHUSDT"]  # SOL rose least; DOGE isn't one
+    assert feb["weight"].to_list() == [0.5, 0.5]
+
+
+def test_rotation_leaves_a_falling_coins_slot_in_cash() -> None:
+    p = coins({
+        "BTCUSDT": (steady(0.01, 61), 9e9),
+        "ETHUSDT": (steady(-0.01, 61), 9e9),  # below its average: not eligible
+    })  # fmt: skip
+    feb = last(rotation(), p)
+    assert feb["symbol"].to_list() == ["BTCUSDT"]
+    assert feb["weight"].to_list() == [0.5]
+    down = coins({"BTCUSDT": (steady(-0.01, 61), 9e9)})
+    nothing = last(rotation(), down)
+    assert nothing["symbol"].to_list() == [None]  # a month end holding nothing
+
+
+def test_rotation_is_registered() -> None:
+    spec = STRATEGIES["monthly-rotation"]
+    assert (spec.kind, spec.universe) == ("research", True)
+    assert make_portfolio_strategy("monthly-rotation", {"lookback_days": 180}).name == (
+        "BTC/ETH/SOL monthly rotation, top 2 by 180d"
+    )
