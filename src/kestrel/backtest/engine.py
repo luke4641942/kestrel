@@ -37,10 +37,11 @@ from typing import Literal
 
 import polars as pl
 
-from kestrel.backtest.costs import CostModel, Fill, Rejection, Side
+from kestrel.backtest.costs import Fill, Rejection, Side
 from kestrel.backtest.spread import with_half_spread
 from kestrel.config import Config
 from kestrel.data.schema import Interval
+from kestrel.execution.rebalance import rebalance
 from kestrel.execution.venue import SimVenue
 from kestrel.provenance import CodeVersion, code_version
 from kestrel.strategy import (
@@ -266,18 +267,12 @@ def _run_weights(
     for i in range(1, bars.height):
         price, target = opens[i], targets[i - 1]
         venue.set_market(symbol, price, volumes[i - 1], spreads[i - 1])
-        held = venue.position(symbol)
-        equity = venue.cash() + held * price
-        current = held * price / equity
-        if abs(target - current) > band:
-            order = _rebalance(
-                venue, model, symbol, target, current, equity, price, volumes[i - 1], spreads[i - 1]
-            )
-            if isinstance(order, Fill):
-                result.fills.append(FillRecord(times[i], order))
-            else:
-                result.rejections.append(RejectionRecord(times[i], order))
-        elif target != current and (i == 1 or target != targets[i - 2]):
+        step = rebalance(venue, model, symbol, target, price, volumes[i - 1], band, spreads[i - 1])
+        if isinstance(step.order, Fill):
+            result.fills.append(FillRecord(times[i], step.order))
+        elif isinstance(step.order, Rejection):
+            result.rejections.append(RejectionRecord(times[i], step.order))
+        elif target != step.current and (i == 1 or target != targets[i - 2]):
             result.band_skips += 1
         held = venue.position(symbol)
         rows.append((venue.cash() + held * closes[i], venue.cash(), held))
@@ -430,32 +425,3 @@ def _run_brackets(
         else:
             result.rejections.append(RejectionRecord(closed_at, sell))
     return rows
-
-
-def _rebalance(
-    venue: SimVenue,
-    model: CostModel,
-    symbol: str,
-    target: Decimal,
-    current: Decimal,
-    equity: Decimal,
-    price: Decimal,
-    last_volume: Decimal,
-    half_spread: Decimal | None = None,
-) -> Fill | Rejection:
-    """One market order moving the position from ``current`` to ``target`` weight."""
-    if target < current:
-        # current > target >= 0, so there is a position to sell.
-        held = venue.position(symbol)
-        qty = held if target == 0 else min(held, (current - target) * equity / price)
-        return venue.submit_market(symbol, Side.SELL, qty)
-    # Buying: size so notional plus all costs fits in cash. Costs depend on size, so
-    # use the rate for the intended size (it only shrinks the order, never grows it).
-    # Cash is positive whenever current < target (current = 1 - cash / equity).
-    notional = min((target - current) * equity, venue.cash())
-    rate = (
-        model.cost_rate(Side.BUY, notional, last_volume, half_spread)
-        if last_volume > 0
-        else Decimal(0)
-    )
-    return venue.submit_market(symbol, Side.BUY, notional / (1 + rate) / price)
