@@ -139,7 +139,16 @@ class BasketBreakout:
                     held[r["symbol"]] = _Held(r["close"] - self.stop_atr * r["_atr"])
             if set(held) != before:
                 if held:
-                    out += [{"open_time": day, "symbol": s, "weight": 1 / self.top_n} for s in held]
+                    # New coins get 1/top_n; coins already held are kept as they are (null
+                    # weight), not trimmed back to an equal share.
+                    out += [
+                        {
+                            "open_time": day,
+                            "symbol": s,
+                            "weight": None if s in before else 1 / self.top_n,
+                        }
+                        for s in held
+                    ]
                 else:
                     out.append({"open_time": day, "symbol": None, "weight": 0.0})
         if not out:

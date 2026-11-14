@@ -18,6 +18,7 @@ from kestrel.data.schema import Interval
 from kestrel.strategies.anchor import HighAnchor
 from kestrel.strategies.basket import LargeCoinBasket
 from kestrel.strategies.basket_breakout import BasketBreakout
+from kestrel.strategies.bollinger_pullback import BollingerPullback
 from kestrel.strategies.monthly_rotation import MonthlyRotation
 from kestrel.strategies.rotation import DualMomentum
 from kestrel.strategies.trend_basket import TrendBasket
@@ -349,3 +350,62 @@ def test_breakout_rules_and_registration() -> None:
     assert BasketBreakout(rule=1).name == "100d 3SD Bollinger breakout, top 3 coins"
     spec = STRATEGIES["basket-breakout"]
     assert (spec.kind, spec.universe) == ("research", True)
+
+
+# ---------- Bollinger pullback ----------
+
+
+def pullback(**params: int) -> BollingerPullback:
+    small = {"trend_days": 5, "min_history_days": 10}
+    return BollingerPullback(**{**small, **params})
+
+
+def dip_then(after: list[tuple[float, float]]) -> pl.DataFrame:
+    """C rises 1% a day for 200 days (150-day return known), drops 25% on day 200 (below
+    the 2.5 SD band, above the 100-day average), then ``after`` as (close, low) pairs."""
+    rise = steady(0.01, 200)
+    closes = [*rise, rise[-1] * 0.75]  # type: ignore[operator]
+    closes += [c for c, _ in after]
+    p = coins({"CUSDT": (closes, 9e9)})
+    lows = {T0 + (201 + i) * DAY: low for i, (_, low) in enumerate(after)}
+    return p.with_columns(
+        low=pl.col("open_time").replace_strict(lows, default=pl.col("low"), return_dtype=pl.Float64)
+    )
+
+
+def test_pullback_rests_a_limit_under_an_oversold_close_in_an_uptrend() -> None:
+    peak = steady(0.01, 200)[-1]
+    dip = peak * 0.75  # type: ignore[operator]
+    p = dip_then([(dip * 1.01, dip * 0.96)])  # next day trades 4% under the dip: filled
+    d = validated_decisions(pullback(trend_days=100), p)
+    first = d.filter(pl.col("open_time") == T0 + 200 * DAY)
+    assert first["symbol"].to_list() == ["CUSDT"]
+    assert first["limit"][0] == pytest.approx(dip * 0.97)
+    assert d.height >= 1
+
+
+def test_pullback_needs_the_close_below_the_band_and_above_the_trend() -> None:
+    p = coins({"CUSDT": (steady(0.01, 210), 9e9)})  # never below the lower band
+    assert validated_decisions(pullback(), p).is_empty()
+
+
+def test_pullback_sells_on_the_bounce_and_the_time_stop() -> None:
+    peak = steady(0.01, 200)[-1]
+    dip = peak * 0.75  # type: ignore[operator]
+    # Filled on day 201 (low 4% under), then a bounce: RSI(2) jumps above 50 on day 202.
+    bounce = dip_then([(dip * 0.97, dip * 0.96), (dip * 1.15, dip * 0.97)])
+    d = validated_decisions(pullback(trend_days=100), bounce)
+    assert d.filter(pl.col("open_time") == T0 + 202 * DAY)["symbol"].to_list() == [None]
+    # A slow slide never bounces: sold after its 3rd close since the fill.
+    slide = dip_then(
+        [(dip * 0.97, dip * 0.96)] + [(dip * (0.96 - i / 100), dip * 0.9) for i in range(5)]
+    )
+    s = validated_decisions(pullback(trend_days=100, max_days=3), slide)
+    sold = s.filter(pl.col("symbol").is_null())
+    assert sold["open_time"][0] == T0 + 204 * DAY
+
+
+def test_pullback_is_registered() -> None:
+    spec = STRATEGIES["bollinger-pullback"]
+    assert (spec.kind, spec.universe) == ("research", True)
+    assert BollingerPullback().name == "Bollinger pullback 2.5SD, 3% limit, top 3 coins"

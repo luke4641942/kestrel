@@ -24,6 +24,7 @@ import polars as pl
 from kestrel.strategies.anchor import HighAnchor
 from kestrel.strategies.basket import LargeCoinBasket
 from kestrel.strategies.basket_breakout import BasketBreakout
+from kestrel.strategies.bollinger_pullback import BollingerPullback
 from kestrel.strategies.brake import TrendVolTargetBrake, WeeklyMomentumBrake
 from kestrel.strategies.funding import FundingHold, FundingTrend
 from kestrel.strategies.levels import LevelBreakout, LevelRetest
@@ -657,6 +658,26 @@ STRATEGIES: dict[str, StrategySpec] = {
             "at all; otherwise cash. Research: runs only through its frozen note.",
             DualMomentum,
             (Param("lookback_days", 90, 20, 365, "Days of return compared"),),
+            universe=True,
+        ),
+        StrategySpec(
+            "bollinger-pullback",
+            "research",
+            "Across liquid coins above their trend_days average: after a close below the 20-day "
+            "band at band_sd_tenths/10 SD, a limit buy depth_pct% under it for the next day; "
+            "sell after a close with RSI(2) above 50 or max_days closes. Highest 150-day return "
+            "first, top_n slots. Research: runs only through its frozen note.",
+            BollingerPullback,
+            (
+                Param("band_sd_tenths", 25, 15, 40, "Lower band, tenths of a standard deviation"),
+                Param("depth_pct", 3, 1, 15, "Limit buy this % under the signal close"),
+                Param("max_days", 10, 2, 30, "Time stop: closes held at most"),
+                Param("top_n", 3, 1, 3, "Coins held at most"),
+                Param("trend_days", 200, 50, 365, "Coin trend filter average, days"),
+                Param("btc_filter", 0, 0, 1, "1: also need BTC above its trend_days average"),
+                Param("min_history_days", 180, 30, 730, "Unbroken history needed"),
+                Param("min_volume_musd", 20, 1, 500, "Median daily volume needed, million USDT"),
+            ),
             universe=True,
         ),
         StrategySpec(

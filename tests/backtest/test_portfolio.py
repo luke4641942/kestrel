@@ -12,13 +12,14 @@ import polars as pl
 import pytest
 
 from kestrel.backtest.engine import HoldoutError
-from kestrel.backtest.portfolio import run_portfolio, validated_decisions
+from kestrel.backtest.portfolio import WEIGHT_SCHEMA, run_portfolio, validated_decisions
 from kestrel.data.panel import with_histories
 from kestrel.data.schema import Interval
 from kestrel.strategy import LookaheadError
 from tests.backtest.helpers import config
 
 D1 = Interval.D1
+CASH = Decimal(1000)
 DAY = timedelta(days=1)
 T0 = datetime(2024, 1, 1, tzinfo=UTC)
 
@@ -252,3 +253,85 @@ def test_duplicate_bars_are_refused_not_repaired() -> None:
     doubled = pl.concat([p, p.filter((pl.col("symbol") == "B") & (pl.col("open_time") == T0))])
     with pytest.raises(ValueError, match="duplicate bars for B"):
         run(doubled, {0: {"A": 0.5}})
+
+
+# ---------- limit entries ----------
+
+
+class LimitBuy:
+    """On day 0, buy all of C at ``limit`` during day 1 (a resting order)."""
+
+    name = "limit buy"
+
+    def __init__(self, limit: float) -> None:
+        self.limit = limit
+
+    def target_weights(self, p: pl.DataFrame) -> pl.DataFrame:
+        if p.is_empty():
+            return pl.DataFrame(schema={**WEIGHT_SCHEMA, "limit": pl.Float64})
+        return pl.DataFrame(
+            {"open_time": [T0], "symbol": ["C"], "weight": [1.0], "limit": [self.limit]},
+            schema={**WEIGHT_SCHEMA, "limit": pl.Float64},
+        )
+
+
+def limit_panel(day1: tuple[float, float]) -> pl.DataFrame:
+    """C at 100 on day 0; day 1 opens at ``day1[0]`` and trades down to ``day1[1]``."""
+    p = panel({"C": [100.0, 100.0, 100.0]})
+    return p.with_columns(
+        open=pl.when(pl.col("open_time") == T0 + DAY).then(day1[0]).otherwise(pl.col("open")),
+        low=pl.when(pl.col("open_time") == T0 + DAY).then(day1[1]).otherwise(pl.col("low")),
+    )
+
+
+def test_a_limit_buy_fills_at_the_limit_when_the_low_reaches_it() -> None:
+    r = run_portfolio(LimitBuy(97.0), limit_panel((100.0, 95.0)), D1, config(costs=False), CASH)
+    (fill,) = r.fills
+    assert (fill.time, fill.fill.price) == (T0 + DAY, Decimal("97.0"))
+
+
+def test_a_limit_buy_lapses_when_the_low_stays_above_it() -> None:
+    r = run_portfolio(LimitBuy(97.0), limit_panel((100.0, 98.0)), D1, config(costs=False), CASH)
+    assert r.fills == []
+
+
+def test_a_gap_down_through_the_limit_fills_at_the_open() -> None:
+    r = run_portfolio(LimitBuy(97.0), limit_panel((94.0, 93.0)), D1, config(costs=False), CASH)
+    assert r.fills[0].fill.price == Decimal("94.0")
+
+
+def test_decisions_without_a_limit_column_still_work() -> None:
+    assert "limit" in validated_decisions(LimitBuy(97.0), limit_panel((100.0, 95.0))).columns
+
+
+class Keep:
+    """Day 0: all of A. Day 2: keep A as it is (null weight) and add B at a quarter."""
+
+    name = "keep"
+
+    def target_weights(self, p: pl.DataFrame) -> pl.DataFrame:
+        rows = [(T0, "A", 0.5), (T0 + 2 * DAY, "A", None), (T0 + 2 * DAY, "B", 0.25)]
+        last = p["open_time"].max()
+        return pl.DataFrame(
+            [r for r in rows if last is not None and r[0] <= last],
+            schema=WEIGHT_SCHEMA,
+            orient="row",
+        )
+
+
+def test_a_null_weight_keeps_a_coin_as_held() -> None:
+    p = panel({"A": [100, 100, 200, 200, 200], "B": [50, 50, 50, 50, 50]})
+    r = run_portfolio(Keep(), p, D1, config(costs=False), CASH)
+    sides = [(f.fill.symbol, f.fill.side.value) for f in r.fills]
+    assert sides == [("A", "buy"), ("B", "buy")]  # A doubled to two thirds and wasn't trimmed
+
+
+def test_a_null_weight_needs_a_coin() -> None:
+    class Bad:
+        name = "bad"
+
+        def target_weights(self, p: pl.DataFrame) -> pl.DataFrame:
+            return pl.DataFrame([(T0, None, None)], schema=WEIGHT_SCHEMA, orient="row")
+
+    with pytest.raises(ValueError, match="needs a coin"):
+        validated_decisions(Bad(), panel({"A": [1.0, 1.0]}))

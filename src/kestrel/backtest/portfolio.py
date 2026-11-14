@@ -12,6 +12,18 @@ and sum to at most 1 (long only, spot, the rest in cash). On a rebalance every s
 first, so sales fund the buys; a coin within the no-trade band of its target is left
 alone.
 
+Keeping a position. A row whose weight is null keeps that coin exactly as held, with no
+resizing: a strategy that adds a coin needn't trim the ones it already holds back to
+equal weight. (A null weight for a coin not held means nothing to keep.)
+
+Limit entries. A decision row may carry a ``limit`` price for a coin not already held: a
+buy order resting below the market for the next bar only. It fills if that bar's low
+reaches the limit, at the lower of the limit and the open (a gap down through it fills
+at the open), after the open's sells and market buys, with the same costs as a market
+order (conservative: a resting order would usually save the spread). Unfilled, it
+lapses; nothing is retried until the strategy decides again. The optional column is
+null for ordinary rows.
+
 Gaps and delistings. A coin held when its bars stop (delisted, or a gap that later
 reopens as a different coin under the same symbol) is sold at its last close, the
 closest the data allows, and counted as a forced exit. A strategy may only target a
@@ -42,6 +54,8 @@ WEIGHT_SCHEMA: dict[str, pl.DataType] = {
     "symbol": pl.Utf8(),
     "weight": pl.Float64(),
 }
+LIMIT = "limit"
+"""Optional decision column: a limit price for a new buy (see the module docstring)."""
 
 
 def validated_decisions(
@@ -68,11 +82,17 @@ def validated_decisions(
 
 
 def _normalised(name: str, frame: pl.DataFrame) -> pl.DataFrame:
-    if set(frame.columns) != set(WEIGHT_SCHEMA):
+    if set(frame.columns) - {LIMIT} != set(WEIGHT_SCHEMA):
         raise ValueError(f"{name}: decisions need columns {sorted(WEIGHT_SCHEMA)}")
-    out = frame.select([pl.col(c).cast(t) for c, t in WEIGHT_SCHEMA.items()])
-    if out["weight"].null_count() or out["weight"].is_nan().any():
-        raise ValueError(f"{name}: weights contain nulls or NaN")
+    if LIMIT not in frame.columns:
+        frame = frame.with_columns(pl.lit(None, pl.Float64).alias(LIMIT))
+    out = frame.select(
+        [pl.col(c).cast(t) for c, t in WEIGHT_SCHEMA.items()] + [pl.col(LIMIT).cast(pl.Float64)]
+    )
+    if out["weight"].is_nan().any():
+        raise ValueError(f"{name}: weights contain NaN")
+    if out.filter(pl.col("weight").is_null() & pl.col("symbol").is_null()).height:
+        raise ValueError(f"{name}: a null weight (keep) needs a coin")
     return out.sort("open_time", "symbol", nulls_last=True)
 
 
@@ -128,11 +148,22 @@ def run_portfolio(
             "symbol", "open_time", "open", "close", "quote_volume", "half_spread"
         ).iter_rows()
     }
-    targets: dict[datetime, dict[str, Decimal]] = {}
-    for t, s, w in decisions.iter_rows():
+    targets: dict[datetime, dict[str, Decimal | None]] = {}
+    limits: dict[datetime, dict[str, Decimal]] = {}
+    for t, s, w, limit in decisions.iter_rows():
         chosen = targets.setdefault(t, {})
         if s is not None:
-            chosen[s] = Decimal(str(w))
+            chosen[s] = None if w is None else Decimal(str(w))  # None: keep as held
+            if limit is not None:
+                limits.setdefault(t, {})[s] = Decimal(str(limit))
+    lows: dict[tuple[str, datetime], Decimal] = (
+        {
+            (s, t): Decimal(str(low))
+            for s, t, low in panel.select("symbol", "open_time", "low").iter_rows()
+        }
+        if limits
+        else {}
+    )
 
     venue = SimVenue(config, initial_cash, rules=config.rules_for)
     band = config.backtest.no_trade_band
@@ -151,7 +182,7 @@ def run_portfolio(
     last_bar: dict[str, datetime] = {}  # each held coin's latest bar
     stranded: set[str] = set()  # held coins whose forced sale was refused; never retried
     rows: list[tuple[Decimal, Decimal, Decimal]] = [(initial_cash, initial_cash, Decimal(0))]
-    previous: dict[str, Decimal] = {}
+    previous: dict[str, Decimal | None] = {}
 
     def submit(
         symbol: str, side: Side, qty: Decimal, price: Decimal, at: datetime, known: datetime
@@ -196,9 +227,11 @@ def run_portfolio(
                 for s, q in holdings.items()
             )
             current = {s: q * opens[s] / equity for s, q in holdings.items() if s in opens}
-            wanted = {
-                s: target.get(s, Decimal(0)) for s in set(target) | set(current) if s in opens
-            }
+            wanted: dict[str, Decimal] = {}
+            for s in set(target) | set(current):
+                if s in opens:
+                    w = target.get(s, Decimal(0))
+                    wanted[s] = current.get(s, Decimal(0)) if w is None else w
             changes = {s: w - current.get(s, Decimal(0)) for s, w in wanted.items()}
             # Resizing within the band is skipped (and counted when the target changed);
             # a coin dropped from the target is always sold in full.
@@ -214,7 +247,18 @@ def run_portfolio(
                 qty = held if wanted[s] == 0 else min(held, -changes[s] * equity / opens[s])
                 submit(s, Side.SELL, qty, opens[s], day, before)
             model = venue.cost_model()
-            for s in sorted(s for s, ch in changes.items() if ch > band):
+            resting = limits.get(before, {})
+            buys = sorted(s for s, ch in changes.items() if ch > band)
+            # Market buys at the open first; limit buys rest during the bar.
+            for s in [b for b in buys if b not in resting or b in current] + [
+                b for b in buys if b in resting and b not in current
+            ]:
+                price = opens[s]
+                if s in resting and s not in current:
+                    low = lows[(s, day)]
+                    if low > resting[s]:
+                        continue  # the bar never reached the limit: the order lapses
+                    price = min(resting[s], opens[s])
                 _, _, volume, spread = bars[(s, before)]
                 notional = min(changes[s] * equity, venue.cash())
                 rate = (
@@ -223,7 +267,7 @@ def run_portfolio(
                     else Decimal(0)
                 )
                 if notional > 0:
-                    submit(s, Side.BUY, notional / (1 + rate) / opens[s], opens[s], day, before)
+                    submit(s, Side.BUY, notional / (1 + rate) / price, price, day, before)
             previous = target
 
         for s in venue.holdings():

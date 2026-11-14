@@ -4,12 +4,11 @@ The active list. Claude keeps it up to date in the same commit as the work (see 
 Decisions and rules live in CLAUDE.md; results in `research/findings.md`.
 
 ## Top: first use of the random-entry control (scorecard test 9)
-- [ ] A bracket strategy to put through `kestrel random-entry`. Two steps:
-      1. Dry run on channel breakout, BTC 4h 2020-25 (already dropped). It checks the tool
-         on real data and adds no trial. It reruns a dropped strategy's code, so Luke's OK
-         is needed first.
-      2. First real one: G1 below with the 3 x ATR stop. This makes it a bracket strategy,
-         with RSI(2) > 50 or day 10 as its exit signals.
+- [ ] The first strategy it grades is pattern + MACD (item 9 below, a one-coin bracket
+      strategy, built). G1 can't use it: it holds a basket of weights, and the control is
+      built for one-coin bracket strategies. Optional dry run first, on channel breakout
+      BTC 4h 2020-25 (already dropped): checks the tool on real data, adds no trial, but
+      reruns a dropped strategy's code, so Luke's OK first.
 
 ## YouTube strategies, batches 1-3 (Luke's specs, 2026-11-15): ranked, nothing built
 Ranked by Claude: untried and most promising first. Nothing here is ruled out; dropping
@@ -27,15 +26,16 @@ Strategies, most to least promising:
       first day's close; variant: the last 5 days plus the first 3. Compare with random
       days of the same count. New family (calendar), no twin, cheap: 2 trials. Needs a
       crypto reason in the note (the equity reason is month-end pay and fund flows).
-- [ ] 2. Bollinger pullback on a coin basket (batch 3 G1, Rayner Teo). The coin closes
+- [ ] 2. READY TO FREEZE: note `bollinger-pullback-across-a-coin-basket` (strategy
+      `bollinger-pullback`; limit entries now in the portfolio engine).
+      Bollinger pullback on a coin basket (batch 3 G1, Rayner Teo). The coin closes
       above its 200-day, closes below the lower band (20, 2.5 SD), and then a limit order
       3% under that close fills. Exit on RSI(2) > 50 or after 10 days. At most 3 coins,
       ranked by 150-day return. It is the dip family (twin: buy big down days, on
       BTC/ETH only), but across alts with a trend filter it is untested. Our universe
       keeps delisted coins, so it avoids the survivorship bias Rayner's test may have.
-      Needs engine work: a limit entry that fills at min(limit, open) only if the low
-      reaches it. Its 3 x ATR stop variant is the random-entry control's first real
-      test (above). Keep the sweep small: 3 widths x 3 depths is already 9 trials.
+      Built: limit entries filling at min(limit, open) when the low reaches them, and
+      null weights that keep a held coin untrimmed. 3 runs, not the 9-setting sweep.
 - [ ] 3. READY TO FREEZE: note `squeeze-breakout-on-btc-and-eth` (strategy `squeeze-breakout`).
       Squeeze breakout (batch 3 G4). Band width at a 120-bar low; buy a close above
       the upper band while above the 200-day; trail on the 20-day MA. It relates to our
