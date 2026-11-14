@@ -4,6 +4,8 @@ The active list. Claude keeps it up to date in the same commit as the work (see 
 Decisions and rules live in CLAUDE.md; results in `research/findings.md`.
 
 ## Waiting on Luke
+- [ ] Freeze `which-way-do-volatile-spells-go-macd` (drafted 2026-11-14), then Claude runs
+      `kestrel volatile-study BTCUSDT ETHUSDT --research <note>`: TREND, REBOUND or KILL.
 - [ ] Read and freeze `paper-trading-trend-vol-target-btc` (drafted 2026-11-14). Then:
       `kestrel paper open tvt-btc ... --venue testnet` (the note's rules), `kestrel paper
       schedule tvt-btc`, and load the job with the launchctl command it prints. The
@@ -39,6 +41,9 @@ Decisions and rules live in CLAUDE.md; results in `research/findings.md`.
         2026-11-14.
 
 ## Later
+- [ ] BTC's regime turning volatile before ETH's, as an early ETH trigger (Luke's idea,
+      2026-11-14). Only 11 such moments on daily regimes 2021-25: too few to test. Revisit
+      only if the MACD study finds a direction, with hourly regimes for more events.
 - [ ] Exclude tokenized stocks (AAPLBUSDT...) from the universe before any holdout run.
 - [ ] Expectancy by conviction bucket (P2 leftover), once a strategy varies its sizing.
 - [ ] Dashboard at phone width: the top menu and pages spill off the screen.
