@@ -1,0 +1,28 @@
+{
+  "slug": "crash-brake-on-trend-vol-target-btc",
+  "name": "Crash brake on trend-vol-target BTC",
+  "created_at": "2026-11-14T09:00:11.635497+00:00",
+  "status": "rejected",
+  "history": [
+    {
+      "status": "idea",
+      "at": "2026-11-14T09:00:11.635497+00:00",
+      "reason": "Created"
+    },
+    {
+      "status": "specified",
+      "at": "2026-11-14T09:00:11.636503+00:00",
+      "reason": "v1 frozen"
+    },
+    {
+      "status": "backtested",
+      "at": "2026-11-14T09:00:18.241132+00:00",
+      "reason": "first run on v1"
+    },
+    {
+      "status": "rejected",
+      "at": "2026-11-14T09:00:53.406354+00:00",
+      "reason": "Failed the pre-registered adoption rule: Sharpe 0.91 against 1.21 for plain trend-vol-target on BTC 2020-25 (run 20261114-090018-e4d194 vs 20261113-073755-da13da). Drawdown slightly shallower (-45.9% vs -48.3%) but return +272% vs +639%. The brake tripped 49 times and bought back higher than it sold in 28: it duplicated the trend exit and paid for it."
+    }
+  ]
+}

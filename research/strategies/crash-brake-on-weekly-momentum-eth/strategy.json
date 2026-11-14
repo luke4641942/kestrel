@@ -1,0 +1,28 @@
+{
+  "slug": "crash-brake-on-weekly-momentum-eth",
+  "name": "Crash brake on weekly momentum ETH",
+  "created_at": "2026-11-14T09:00:11.633283+00:00",
+  "status": "rejected",
+  "history": [
+    {
+      "status": "idea",
+      "at": "2026-11-14T09:00:11.633283+00:00",
+      "reason": "Created"
+    },
+    {
+      "status": "specified",
+      "at": "2026-11-14T09:00:11.635070+00:00",
+      "reason": "v1 frozen"
+    },
+    {
+      "status": "backtested",
+      "at": "2026-11-14T09:00:17.769544+00:00",
+      "reason": "first run on v1"
+    },
+    {
+      "status": "rejected",
+      "at": "2026-11-14T09:00:53.405306+00:00",
+      "reason": "Failed the pre-registered adoption rule: Sharpe 1.21 against 1.23 for plain weekly momentum on ETH 2020-25 (run 20261114-090017-197bbf vs 20261114-084639-25d219). Drawdown barely changed (-41.4% vs -41.6%); return +1,917% vs +2,318%. The brake tripped 29 times and bought back higher than it sold in 16: it mostly sold dips that recovered."
+    }
+  ]
+}

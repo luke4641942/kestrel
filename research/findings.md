@@ -95,6 +95,10 @@ Its purpose there is to prove that live fills match the backtest, not to make mo
    too small to trade: 13.6% of the trend basket's orders were below Binance's minimum.
 6. **No lead from BTC at a weekly lag.** BTC's week was no better a signal for ETH or SOL than
    their own.
+7. **Stops made the survivors worse.** A 2 ATR trailing crash brake on weekly momentum (ETH)
+   and trend-vol-target (BTC) lowered both Sharpes (1.23 to 1.21, 1.21 to 0.91) and barely
+   moved drawdowns. Most trips sold a dip that recovered; crypto's normal swings are wider
+   than a stop that tight, and the strategies' own exits already do the job.
 
 ## Every hypothesis
 
@@ -122,6 +126,8 @@ Its purpose there is to prove that live fills match the backtest, not to make mo
 | One-week momentum | BTC, SOL 1d | Below holding on both (BTC 0.94 vs 1.07, SOL 1.08 vs 1.24) | Drop |
 | BTC/ETH rotation | BTC, ETH 1d | Sharpe 1.06 vs 1.07 for BTC, same drawdown | Drop |
 | BTC-led weekly momentum | ETH, SOL 1d | Below holding on every window | Drop |
+| Crash brake on weekly momentum | ETH 1d | Sharpe 1.21 vs 1.23 without it; drawdown -41.4% vs -41.6%; 16 of 29 trips sold a dip that recovered | Drop |
+| Crash brake on trend-vol-target | BTC 1d | Sharpe 0.91 vs 1.21; return +272% vs +639%; drawdown -45.9% vs -48.3% | Drop |
 
 Each strategy was judged by its own note's pass test, written before it ran. From
 2026-11-14 every strategy is judged on one scorecard instead.

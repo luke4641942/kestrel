@@ -1,0 +1,15 @@
+{
+  "version": 1,
+  "created_at": "2026-11-14T09:00:11.633283+00:00",
+  "sections": {
+    "hypothesis": "Weekly momentum holds Monday to Sunday whatever happens in between (worst day -14%, worst month -24% on ETH 2020-25). Selling after a close more than 2 ATR below the high since entry, and waiting for the next Sunday, cuts crash weeks by more than it costs in dips sold and fees.",
+    "rationale": "Plain weekly momentum on ETH 2020-25 passes every applicable scorecard test except luck (note weekly-momentum-eth-scorecard). Its exit is fixed at a week, so a crash mid-week is held to Sunday. A chandelier stop (highest close less a multiple of ATR) is the textbook protective exit. Risk: crypto often falls 2 ATR and recovers within days, so the brake may sell dips and pay twice. Written after the plain strategy's results were seen; the brake's own results are unseen.",
+    "rules": "Implementation weekly-momentum-brake, ETHUSDT 1d, 2020-01 to 2025-10, 330 USDT, costs from kestrel.toml, brake_atr 2. kestrel backtest ETHUSDT --strategy weekly-momentum-brake --research <this note> --interval 1d --start 2020-01 --end 2025-10 --cash 330. Compared with run 20261114-084639-25d219 (plain weekly momentum, same settings).",
+    "falsification": "Compared with the plain strategy's run on the same market, period, cash and costs. The brake is adopted only if all three hold: (1) higher Sharpe than the plain version; (2) shallower worst drawdown; (3) no scorecard test that the plain version passes is failed. Otherwise the note is rejected and the plain strategy stays as it is. Run once, at brake_atr 2. Also reported: how many times the brake tripped, and in how many of those the next entry was above the exit price (it sold a dip that recovered).",
+    "parameters": "brake_atr 2 (ATR over 14 days, Wilder). The weekly rule has no settings.",
+    "costs": "About 22-23 bps a round trip. Each trip of the brake adds a sale and usually a later purchase, so the brake must earn back its extra fees. One run, one trial."
+  },
+  "implementation": "weekly-momentum-brake",
+  "frozen_at": "2026-11-14T09:00:11.635064+00:00",
+  "change_reason": null
+}

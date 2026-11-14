@@ -204,3 +204,21 @@ decision = "drop"
 decided = 2026-11-13
 reason = "Sharpe below holding on every window (0.10 vs 0.15, 1.07 vs 1.12, 1.08 vs 1.24), and BTC's week was no better a signal than the coin's own: no tradeable lag at a weekly horizon."
 evidence = ["btc-led-weekly-momentum-on-eth-and-sol"]
+
+[[decision]]
+strategy = "weekly-momentum-brake"
+name = "Weekly momentum with a crash brake"
+market = "ETHUSDT 1d"
+decision = "drop"
+decided = 2026-11-14
+reason = "A 2 ATR trailing brake lowered the Sharpe (1.21 vs 1.23 without it) and barely moved the drawdown (-41.4% vs -41.6%). It tripped 29 times and bought back higher than it sold in 16: mostly selling dips that recovered."
+evidence = ["crash-brake-on-weekly-momentum-eth"]
+
+[[decision]]
+strategy = "trend-vol-target-brake"
+name = "Trend following with a crash brake"
+market = "BTCUSDT 1d"
+decision = "drop"
+decided = 2026-11-14
+reason = "A 2 ATR trailing brake cut the Sharpe from 1.21 to 0.91 and the return from +639% to +272%, for a slightly shallower drawdown (-45.9% vs -48.3%). It tripped 49 times and bought back higher in 28: the trend votes already exit, and the brake paid to duplicate them."
+evidence = ["crash-brake-on-trend-vol-target-btc"]

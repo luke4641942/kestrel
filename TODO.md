@@ -6,9 +6,6 @@ Decisions and rules live in CLAUDE.md; results in `research/findings.md`.
 ## Waiting on Luke
 - [ ] Read and freeze the draft note `trend-vol-target-btc-scorecard-walk-forward` (Strategies
       page), then commit it. Unlocks scorecard test 3 for trend-vol-target BTC.
-- [ ] Decide on stops and take-profits (proposal in the 2026-11-14 conversation): one
-      pre-registered trailing-stop variant on weekly momentum ETH and trend-vol-target BTC,
-      or leave exits to the signals.
 
 ## Next
 - [ ] Run the walk-forward once the note is frozen; record the result in decisions and findings.
@@ -24,6 +21,7 @@ Decisions and rules live in CLAUDE.md; results in `research/findings.md`.
 - [ ] HMM regime filter (backlog S2) as a strategy: needs a note that passes the entry bar.
 
 ## Done recently
+- 2026-11-14 Crash brake tested on both survivors: made both worse; rejected.
 - 2026-11-14 Weekly momentum ETH scorecard: passes all but luck (walk-forward 4 of 7); stays watch.
 - 2026-11-14 Scorecard for strategies with nothing to tune (fixed-rule walk-forward, robustness n/a).
 - 2026-11-14 Strategies cleaned out: seven tested notes rejected with their reasons; empty "Test" idea removed.
