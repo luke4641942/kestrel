@@ -35,9 +35,12 @@ reason not to build the strategy; dropping it is still Luke's call.
 
 from __future__ import annotations
 
+import json
 from dataclasses import dataclass
-from datetime import datetime, time
+from datetime import UTC, datetime, time
+from pathlib import Path
 from statistics import median
+from typing import Any
 
 import polars as pl
 
@@ -184,3 +187,56 @@ def format_gates(gates: list[Gate]) -> str:
         "  Stops only, no outcomes: not a trial.",
     ]
     return "\n".join(lines)
+
+
+def path(data_dir: Path | str, interval: str) -> Path:
+    return Path(data_dir) / "cost_gate" / f"{interval}.json"
+
+
+def save(
+    gates: list[Gate], interval: str, first: datetime, last: datetime, data_dir: Path | str
+) -> Path:
+    """The latest gate for a bar size, for the dashboard. A rerun replaces it: the setup
+    and the verdict are fixed, so only new data can change it, and outcomes never enter."""
+    rows: list[dict[str, Any]] = []
+    for g in gates:
+        cost = g.median_cost_r
+        rows.append(
+            {
+                "market": g.market,
+                "setups": g.count,
+                "p25_bps": g.quantile(0.25),
+                "median_bps": g.median_width,
+                "p75_bps": g.quantile(0.75),
+                "cost_r": cost,
+                "share_over_half_r": g.share_over_half_r,
+                "break_even": {
+                    str(t): None if cost is None else break_even_win_rate(t, cost)
+                    for t in TARGETS_R
+                },
+                "verdict": g.verdict,
+            }
+        )
+    doc = {
+        "interval": interval,
+        "measured_at": datetime.now(UTC).isoformat(),
+        "first": first.isoformat(),
+        "last": last.isoformat(),
+        "round_trip_bps": gates[0].round_trip_bps if gates else None,
+        "carries_at": CARRIES_AT,
+        "fails_above": FAILS_ABOVE,
+        "rows": rows,
+    }
+    target = path(data_dir, interval)
+    target.parent.mkdir(parents=True, exist_ok=True)
+    tmp = target.with_suffix(".tmp")
+    tmp.write_text(json.dumps(doc, indent=2))
+    tmp.replace(target)
+    return target
+
+
+def load_all(data_dir: Path | str) -> list[dict[str, Any]]:
+    """Every saved gate, shortest bars first."""
+    found = [json.loads(p.read_text()) for p in (Path(data_dir) / "cost_gate").glob("*.json")]
+    order = ["1m", "3m", "5m", "15m", "30m", "1h", "4h", "1d"]
+    return sorted(found, key=lambda d: order.index(d["interval"]) if d["interval"] in order else 99)

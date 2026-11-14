@@ -28,7 +28,9 @@ from kestrel.studies.cost_gate import (
     break_even_win_rate,
     format_gates,
     in_session,
+    load_all,
     measure,
+    save,
     setups,
 )
 from tests.backtest.helpers import T0, bars
@@ -121,3 +123,35 @@ def test_the_command_never_reads_the_holdout(tmp_path: Path) -> None:
     )
     assert got.exit_code == 0, got.output
     assert "BTCUSDT 1m: 3 bars" in got.output  # the 7 bars from 2025-11-01 are left out
+
+
+def test_the_command_saves_the_gate_for_the_dashboard(tmp_path: Path) -> None:
+    from fastapi.testclient import TestClient
+
+    from kestrel.api.app import create_app
+
+    ParquetStore(tmp_path).write("BTCUSDT", Interval.M1, minutes())
+    args = ["cost-gate", "BTCUSDT", "--data-dir", str(tmp_path), "--config", REPO_CONFIG]
+    got = CliRunner().invoke(app, args)
+    assert got.exit_code == 0, got.output
+    assert "Saved for the dashboard" in got.output
+    client = TestClient(create_app(tmp_path, static_dir=None, config_path=Path(REPO_CONFIG)))
+    (gate,) = client.get("/api/cost-gate").json()
+    assert gate["interval"] == "1m"
+    assert gate["round_trip_bps"] == 22.0
+    assert [r["market"] for r in gate["rows"]] == ["BTCUSDT 1m, all hours", "BTCUSDT 1m, NY open"]
+    assert gate["rows"][0]["verdict"] == "NO SETUPS"
+
+
+def test_saved_gates_keep_their_numbers_and_sort_by_bar_size(tmp_path: Path) -> None:
+    t = datetime(2025, 1, 1, tzinfo=UTC)
+    save([Gate("SOLUSDT 5m, NY open", 22.0, [40.0, 45.0, 50.0])], "5m", t, t, tmp_path)
+    save([Gate("BTCUSDT 1m, all hours", 22.0, [5.0])], "1m", t, t, tmp_path)
+    first, second = load_all(tmp_path)
+    assert (first["interval"], second["interval"]) == ("1m", "5m")
+    row = second["rows"][0]
+    assert row["median_bps"] == 45.0
+    assert row["cost_r"] == pytest.approx(22 / 45)
+    assert row["break_even"]["4"] == pytest.approx((1 + 22 / 45) / 5)
+    assert row["verdict"] == "MARGINAL"
+    assert load_all(tmp_path / "none") == []

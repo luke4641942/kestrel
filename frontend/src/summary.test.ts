@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { holdoutEdge, datasetsLine, scorecardHeadline, luckBar, splitClosed, startDateVerdict, windowLabel, DECISION, studyTitle, studyTone, deflatedNote, spreadBands, DEFAULT_RUN_SORT, KIND_LABEL, UNIVERSE, marketLabel, marketsFor, defaultDataset, nextSort, sortRuns, fewTrades, signalsCaption, MAX_LABELLED_TRADES, MAX_MARKED_TRADES, costHeadroom, paramsText, runRole, tradeCount, heldAsset, money, span, trackRecord, tradeMarkers, verdict } from "./summary";
+import { breakEvenLabel, gateTone, holdoutEdge, datasetsLine, scorecardHeadline, luckBar, splitClosed, startDateVerdict, windowLabel, DECISION, studyTitle, studyTone, deflatedNote, spreadBands, DEFAULT_RUN_SORT, KIND_LABEL, UNIVERSE, marketLabel, marketsFor, defaultDataset, nextSort, sortRuns, fewTrades, signalsCaption, MAX_LABELLED_TRADES, MAX_MARKED_TRADES, costHeadroom, paramsText, runRole, tradeCount, heldAsset, money, span, trackRecord, tradeMarkers, verdict } from "./summary";
 import { run, trade } from "./test/fixtures";
 
 describe("verdict", () => {
@@ -418,5 +418,21 @@ describe("holdoutEdge", () => {
   it("compares returns at the same exposure in a falling year, Sharpes otherwise", () => {
     expect(holdoutEdge(record(true))).toBe("−2.4% vs −8.9% for holding at its 33% exposure");
     expect(holdoutEdge(record(false))).toBe("Sharpe -0.06 vs 1.20 for holding");
+  });
+});
+
+describe("cost gate", () => {
+  it("colours the verdict", () => {
+    expect(gateTone("CARRIES")).toBe("ok");
+    expect(gateTone("MARGINAL")).toBe("warn");
+    expect(gateTone("FAILS")).toBe("bad");
+    expect(gateTone("NO SETUPS")).toBe("neutral");
+  });
+
+  it("says never when no win rate covers the costs", () => {
+    expect(breakEvenLabel(0.304)).toBe("30%");
+    expect(breakEvenLabel(1)).toBe("never");
+    expect(breakEvenLabel(1.62)).toBe("never");
+    expect(breakEvenLabel(null)).toBe("–");
   });
 });

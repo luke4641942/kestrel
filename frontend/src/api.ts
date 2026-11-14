@@ -290,6 +290,35 @@ export interface HoldoutScore {
   max_drawdown: number;
 }
 
+/** One market and session in a cost gate: S2 stop widths against a round trip's costs. */
+export interface CostGateRow {
+  /** e.g. "BTCUSDT 1m, NY open". */
+  market: string;
+  setups: number;
+  p25_bps: number | null;
+  median_bps: number | null;
+  p75_bps: number | null;
+  /** The median setup's round-trip cost in R. */
+  cost_r: number | null;
+  share_over_half_r: number | null;
+  /** Win rate needed to break even after costs, keyed by target in R ("2", "4"). */
+  break_even: Record<string, number | null>;
+  /** CARRIES, MARGINAL, FAILS or NO SETUPS. */
+  verdict: string;
+}
+
+/** A saved cost gate (kestrel.studies.cost_gate). Stops only, no outcomes; run from the CLI. */
+export interface CostGate {
+  interval: Interval;
+  measured_at: string;
+  first: string;
+  last: string;
+  round_trip_bps: number | null;
+  carries_at: number;
+  fails_above: number;
+  rows: CostGateRow[];
+}
+
 /** One recorded holdout test (kestrel.validation.holdout). Read-only: run from the CLI only. */
 export interface HoldoutRecord {
   research: string;
@@ -640,6 +669,7 @@ export const api = {
   paper: () => request<PaperSummary[]>("/paper"),
   paperAccount: (name: string) => request<PaperDetail>(`/paper/${enc(name)}`),
   holdout: () => request<HoldoutRecord[]>("/holdout"),
+  costGate: () => request<CostGate[]>("/cost-gate"),
   regimes: () => request<RegimeSummary[]>("/regimes"),
   regime: (symbol: string) => request<RegimeDetail>(`/regimes/${enc(symbol)}`),
   startRegimes: (symbol: string) => request<Job>("/jobs/regimes", { method: "POST", body: JSON.stringify({ symbol }) }),

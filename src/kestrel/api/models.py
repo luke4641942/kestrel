@@ -715,6 +715,35 @@ class RegimeDetailOut(RegimeSummaryOut):
     oos_log_likelihood: float
 
 
+class CostGateRowOut(BaseModel):
+    market: str
+    """e.g. "BTCUSDT 1m, NY open"."""
+    setups: int
+    p25_bps: float | None
+    median_bps: float | None
+    p75_bps: float | None
+    cost_r: float | None
+    """The median setup's round-trip cost in R."""
+    share_over_half_r: float | None
+    break_even: dict[str, float | None]
+    """Win rate needed to break even after costs, keyed by target in R ("2", "4")."""
+    verdict: str
+
+
+class CostGateOut(BaseModel):
+    """A saved cost gate (kestrel.studies.cost_gate): stop widths only, no outcomes. Run
+    from the CLI; read-only here."""
+
+    interval: str
+    measured_at: datetime
+    first: datetime
+    last: datetime
+    round_trip_bps: float | None
+    carries_at: float
+    fails_above: float
+    rows: list[CostGateRowOut]
+
+
 class HoldoutScoreOut(BaseModel):
     sharpe: float | None
     total_return: float

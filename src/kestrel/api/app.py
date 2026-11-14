@@ -29,6 +29,7 @@ from kestrel.api.models import (
     ChatRequest,
     CostConfigOut,
     CostCurve,
+    CostGateOut,
     CreateResearch,
     CurvePoint,
     Dataset,
@@ -111,6 +112,7 @@ from kestrel.strategy import (
     validated_brackets,
     validated_weights,
 )
+from kestrel.studies import cost_gate
 from kestrel.validation import rules
 from kestrel.validation.deflated import TrialSet, counts_as_trial, deflated_sharpe, trial_set
 from kestrel.validation.holdout import HoldoutLog
@@ -522,6 +524,11 @@ def create_app(
 
         job = jobs.submit("backtest", {**req.model_dump(mode="json"), "strategy": key}, run)
         return JobOut.from_job(job)
+
+    @api.get("/cost-gate")
+    def list_cost_gate() -> list[CostGateOut]:
+        """The saved cost gates, shortest bars first. Read-only: run with kestrel cost-gate."""
+        return [CostGateOut.model_validate(d) for d in cost_gate.load_all(data_dir)]
 
     @api.get("/holdout")
     def list_holdout() -> list[HoldoutOut]:

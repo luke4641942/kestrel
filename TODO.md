@@ -102,6 +102,7 @@ Each gets its own frozen note and the scorecard; every setting tried is a trial.
 - [ ] HMM regime filter (backlog S2) as a strategy: needs a note that passes the entry bar.
 
 ## Done recently
+- 2026-11-15 Cost gate shown on the dashboard (More > What a trade costs), saved by `kestrel cost-gate`.
 - 2026-11-15 Random-entry control built: `kestrel random-entry`, scorecard test 9 for bracket
   strategies (beat 95% of random-entry paths with the same stops, targets and sizing).
 - 2026-11-15 Cost gate built and run on BTC/ETH/SOL 1m and 5m (12 months each ingested):

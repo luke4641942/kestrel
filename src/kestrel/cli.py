@@ -884,6 +884,7 @@ def cost_gate_cmd(
         c = cfg.costs
         round_trip = float(2 * (c.taker_fee_bps + c.half_spread_bps))
         gates: list[cost_gate.Gate] = []
+        spans: list[tuple[datetime, datetime]] = []
         for symbol in symbols:
             bars = ParquetStore(data_dir).read(symbol, interval, None, cfg.backtest.holdout_start)
             if bars.is_empty():
@@ -892,6 +893,7 @@ def cost_gate_cmd(
                 )
             found = cost_gate.setups(bars, swing_bars=swing_bars)
             first, last = bars["open_time"][0], bars["open_time"][-1]
+            spans.append((first, last))
             market = f"{symbol.upper()} {interval.value}"
             typer.echo(f"{market}: {bars.height} bars, {first:%Y-%m-%d} to {last:%Y-%m-%d}")
             gates += [
@@ -903,6 +905,10 @@ def cost_gate_cmd(
         raise typer.Exit(code=1) from None
     typer.echo("")
     typer.echo(cost_gate.format_gates(gates))
+    first = min(a for a, _ in spans)
+    last = max(b for _, b in spans)
+    saved = cost_gate.save(gates, interval.value, first, last, data_dir)
+    typer.echo(f"Saved for the dashboard: {saved}")
 
 
 def _parse_grid(pairs: list[str]) -> dict[str, list[int]]:

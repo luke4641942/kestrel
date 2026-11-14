@@ -385,3 +385,17 @@ export function holdoutEdge(r: HoldoutRecord): string {
   const sr = (x: number | null) => (x === null ? "n/a" : x.toFixed(2));
   return `Sharpe ${sr(r.mine.sharpe)} vs ${sr(r.held.sharpe)} for holding`;
 }
+
+/** A cost gate verdict's colour: carrying the costs is good, failing is bad. */
+export function gateTone(verdict: string): VerdictTone {
+  if (verdict === "CARRIES") return "ok";
+  if (verdict === "MARGINAL") return "warn";
+  if (verdict === "FAILS") return "bad";
+  return "neutral";
+}
+
+/** A break-even win rate: "30%", or "never" when even winning every trade can't cover costs. */
+export function breakEvenLabel(rate: number | null): string {
+  if (rate === null) return "–";
+  return rate >= 1 ? "never" : `${Math.round(rate * 100)}%`;
+}
