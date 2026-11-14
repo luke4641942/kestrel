@@ -55,7 +55,8 @@ Strategies, most to least promising:
       RSI(5) < 30 or RSI(10) < 30, above the 200-day. Exit on the close above yesterday's
       high or RSI(10) > 40. Twins: buy big down days, Fear & Greed contrarian, extreme fear
       (all dropped or KILL). G2 has 36 trades in 23 years, so pool coins. At most 8 trials.
-- [ ] 7. Basket breakouts (batch 2 B1/B2): a 100-day 3 SD band, or 20% off the 50-day low;
+- [ ] 7. READY TO FREEZE: note `breakouts-across-a-coin-basket` (strategy `basket-breakout`;
+      its ATR stop acts at the close). Basket breakouts (batch 2 B1/B2): a 100-day 3 SD band, or 20% off the 50-day low;
       BTC above its 200-day; lowest volatility first; ATR stop; 3 slots, not 10. Twins:
       channel breakout, 10-coin trend basket (both dropped).
 - [ ] 8. READY TO FREEZE: note `cross-sectional-momentum-top-3-over-1-3-months` (existing

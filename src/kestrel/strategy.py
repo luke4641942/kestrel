@@ -23,6 +23,7 @@ import polars as pl
 
 from kestrel.strategies.anchor import HighAnchor
 from kestrel.strategies.basket import LargeCoinBasket
+from kestrel.strategies.basket_breakout import BasketBreakout
 from kestrel.strategies.brake import TrendVolTargetBrake, WeeklyMomentumBrake
 from kestrel.strategies.funding import FundingHold, FundingTrend
 from kestrel.strategies.levels import LevelBreakout, LevelRetest
@@ -642,6 +643,30 @@ STRATEGIES: dict[str, StrategySpec] = {
             "at all; otherwise cash. Research: runs only through its frozen note.",
             DualMomentum,
             (Param("lookback_days", 90, 20, 365, "Days of return compared"),),
+            universe=True,
+        ),
+        StrategySpec(
+            "basket-breakout",
+            "research",
+            "Across liquid coins while BTC is above its trend_days average: buy a close above a "
+            "band_days Bollinger band at entry_sd (rule 1) or 20% above the range_days low "
+            "(rule 2); sell below the band at exit_sd or 20% under the high, or at a close "
+            "below a stop_atr x ATR(20) stop. Calmest coins first, top_n slots. Research: runs "
+            "only through its frozen note.",
+            BasketBreakout,
+            (
+                Param("rule", 1, 1, 2, "1: Bollinger breakout, 2: 20% from the low"),
+                Param("band_days", 100, 20, 200, "Rule 1: days in the band"),
+                Param("entry_sd", 3, 1, 4, "Rule 1: standard deviations above to buy"),
+                Param("exit_sd", 1, 0, 3, "Rule 1: standard deviations below to sell"),
+                Param("range_days", 50, 10, 200, "Rule 2: days in the low and high"),
+                Param("top_n", 3, 1, 3, "Coins held at most"),
+                Param("stop_atr", 3, 1, 10, "Stop: ATRs below the entry close"),
+                Param("trend_days", 200, 50, 365, "BTC trend filter average, days"),
+                Param("vol_days", 63, 20, 252, "Days of volatility ranked (calmest first)"),
+                Param("min_history_days", 180, 30, 730, "Unbroken history needed"),
+                Param("min_volume_musd", 20, 1, 500, "Median daily volume needed, million USDT"),
+            ),
             universe=True,
         ),
         StrategySpec(

@@ -17,12 +17,13 @@ from kestrel.backtest.portfolio import run_portfolio, validated_decisions
 from kestrel.data.schema import Interval
 from kestrel.strategies.anchor import HighAnchor
 from kestrel.strategies.basket import LargeCoinBasket
+from kestrel.strategies.basket_breakout import BasketBreakout
 from kestrel.strategies.monthly_rotation import MonthlyRotation
 from kestrel.strategies.rotation import DualMomentum
 from kestrel.strategies.trend_basket import TrendBasket
 from kestrel.strategy import STRATEGIES, make_portfolio_strategy
 from tests.backtest.helpers import config
-from tests.backtest.test_portfolio import T0, panel
+from tests.backtest.test_portfolio import DAY, T0, panel
 
 
 def steady(daily: float, n: int) -> list[float | None]:
@@ -277,3 +278,74 @@ def test_rotation_is_registered() -> None:
     assert make_portfolio_strategy("monthly-rotation", {"lookback_days": 180}).name == (
         "BTC/ETH/SOL monthly rotation, top 2 by 180d"
     )
+
+
+# ---------- breakouts across a basket ----------
+
+
+def breakout(**params: int) -> BasketBreakout:
+    small = {"rule": 2, "range_days": 10, "trend_days": 5, "vol_days": 5, "min_history_days": 10}
+    return BasketBreakout(**{**small, **params})
+
+
+FLAT = 35
+"""Quiet days before a break: enough for the 30-day volume median."""
+
+
+def flat_then(after: list[float], wobble: float = 0.0) -> list[float | None]:
+    return [100.0 + (wobble if i % 2 else -wobble) for i in range(FLAT)] + after  # type: ignore[misc]
+
+
+def rising_btc() -> tuple[list[float | None], float]:
+    return steady(0.005, FLAT + 10), 9e9
+
+
+def test_breakout_buys_20_percent_off_the_low_and_sells_20_percent_off_the_high() -> None:
+    p = coins({
+        "BTCUSDT": rising_btc(),
+        "ALTUSDT": (flat_then([121.0, 140.0, 150.0, 130.0, 119.0, 119.0]), 9e9),
+    })  # fmt: skip
+    d = validated_decisions(breakout(top_n=2), p)
+    assert d.filter(pl.col("open_time") == T0 + FLAT * DAY)["symbol"].to_list() == ["ALTUSDT"]
+    assert d["weight"].max() == 0.5
+    # 119 is more than 20% under the high of 150: sold, and nothing else is held.
+    assert d.filter(pl.col("open_time") == T0 + (FLAT + 4) * DAY)["symbol"].to_list() == [None]
+    assert d.height == 2  # BTC's steady 0.5% a day never gets 20% above its 10-day low
+
+
+def test_breakout_needs_btc_above_its_average() -> None:
+    p = coins({
+        "BTCUSDT": (steady(-0.005, FLAT + 10), 9e9),
+        "ALTUSDT": (flat_then([121.0, 125.0]), 9e9),
+    })  # fmt: skip
+    assert validated_decisions(breakout(), p).is_empty()
+
+
+def test_breakout_fills_scarce_slots_with_the_calmest_coin() -> None:
+    p = coins({
+        "BTCUSDT": rising_btc(),
+        "CALMUSDT": (flat_then([121.0], wobble=0.5), 9e9),
+        "WILDUSDT": (flat_then([121.0], wobble=4.0), 9e9),
+    })  # fmt: skip
+    d = validated_decisions(breakout(top_n=1), p)
+    assert d["symbol"].to_list() == ["CALMUSDT"]
+    assert d["weight"].to_list() == [1.0]
+
+
+def test_breakout_stop_is_checked_at_the_close() -> None:
+    # Bought at 121 after a +21 day: ATR(20) is 1.05, so the stop is 117.85.
+    p = coins({
+        "BTCUSDT": rising_btc(),
+        "ALTUSDT": (flat_then([121.0, 118.5, 117.0]), 9e9),
+    })  # fmt: skip
+    d = validated_decisions(breakout(), p)
+    assert d.filter(pl.col("open_time") == T0 + (FLAT + 1) * DAY).is_empty()  # 118.5: kept
+    assert d.filter(pl.col("open_time") == T0 + (FLAT + 2) * DAY)["symbol"].to_list() == [None]
+
+
+def test_breakout_rules_and_registration() -> None:
+    with pytest.raises(ValueError, match="rule must be"):
+        BasketBreakout(rule=3)
+    assert BasketBreakout(rule=1).name == "100d 3SD Bollinger breakout, top 3 coins"
+    spec = STRATEGIES["basket-breakout"]
+    assert (spec.kind, spec.universe) == ("research", True)
