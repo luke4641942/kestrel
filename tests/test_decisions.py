@@ -37,7 +37,7 @@ def entry(
 
 def test_the_repos_decisions_load_and_point_at_real_evidence() -> None:
     decisions = load_decisions(REPO / "research" / "decisions.toml")
-    assert decisions[0].decision == "pursue"  # pursue first, then watch, then drop
+    # Pursue first, then watch, then drop (there may be no pursue at all).
     assert [d.decision for d in decisions] == sorted(
         (d.decision for d in decisions), key=["pursue", "watch", "drop"].index
     )

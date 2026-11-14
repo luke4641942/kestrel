@@ -29,8 +29,9 @@ PASS = (
 
 RISK_MANAGED = (
     "A strategy that hasn't passed but is kept because it smooths the ride. It is labelled "
-    "'not a proven edge' and never counts as a pass. Trend-vol-target on BTC is paper-traded "
-    "in P4 on this basis: it beat holding BTC at the same exposure, but not the luck bar."
+    "'not a proven edge' and never counts as a pass. Trend-vol-target on BTC and weekly "
+    "momentum on ETH are watched on this basis: each beat holding the same coin at the same "
+    "exposure, but neither cleared the luck bar."
 )
 
 

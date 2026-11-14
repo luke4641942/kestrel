@@ -71,8 +71,8 @@ Never pipe check output through `tail` or similar inside an `&&` chain: it hides
 - [x] Charts page under More: any market, bar size and range, the indicator chips, and a
       plain-English card per indicator switched on (`Preset.reading`)
 - [ ] P4 Execution: ExecutionVenue adapters (sim, Binance testnet, live), reconciliation,
-      risk limits, kill switch, alerting, parity tests. First run: trend-vol-target on BTC
-      as risk-managed holding, to prove the plumbing.
+      risk limits, kill switch, alerting, parity tests. First candidates: the two watched
+      strategies, if they survive the holdout test, to prove the plumbing.
 - Parked: P5 perps (see Parked), multi-strategy portfolios, Settings page.
 
 ## Research rules (reviewed 2026-11-14)
@@ -94,10 +94,11 @@ Never pipe check output through `tail` or similar inside an `&&` chain: it hides
   Luke may run because it smooths the ride. It is labelled "not a proven edge" and never
   counts as a pass.
 - **Decisions** (`research/decisions.toml`, one per strategy and market): `pursue` means
-  carry on to paper trading, not "passed"; `watch`; `drop` (final). Trend-vol-target on
-  BTC is the only pursue, as risk-managed holding: it beats exposure-matched holding
-  (Sharpe 1.21 vs 1.07) but deflates to 28% at 172 trials. Weekly momentum on ETH is
-  watched for the same reason (1.23 vs 1.12, deflated 29%). A rejected *note* stays
+  carry on to paper trading, not "passed"; `watch`; `drop` (final). Nothing is on pursue
+  (2026-11-14). Two are watched: trend-vol-target on BTC (beats exposure-matched holding,
+  1.21 vs 1.07, but deflated 28% and won only 2 of 7 walk-forward windows) and weekly
+  momentum on ETH (1.23 vs 1.12, deflated 29%, walk-forward 4 of 7). Both are candidates
+  for the holdout test and then paper trading. A rejected *note* stays
   rejected; the decision file is the separate "what do we do with it" layer.
 - **Entry bar for a new idea.** Its note states who pays you and why (an economic reason,
   not a chart pattern), outside evidence (published or out-of-sample elsewhere), that it

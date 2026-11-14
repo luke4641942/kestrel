@@ -74,8 +74,8 @@ of 172 worthless strategies would often reach. Its record outside 2020-25 is mix
 from -83% to -35% yet lost 32% overall, more than holding's 14%. On
 ETH it did well in-sample but failed walk-forward (out-of-sample Sharpe 0.28).
 
-So it is paper-traded next (P4), labelled as risk-managed holding and not as a proven edge.
-Its purpose there is to prove that live fills match the backtest, not to make money.
+It is watched, like weekly momentum on ETH: a candidate for the one-off holdout test and then
+paper trading (P4), labelled risk-managed holding rather than a proven edge.
 
 ## What the evidence says
 
@@ -106,7 +106,7 @@ Its purpose there is to prove that live fills match the backtest, not to make mo
 
 | Strategy | Market | Result | Decision |
 |---|---|---|---|
-| Trend following + volatility targeting | BTC 1d | Beat exposure-matched holding (Sharpe 1.21 vs 1.07); beat holding in only 2 of 7 walk-forward windows; deflated 28% | Pursue to paper trading, as risk-managed holding |
+| Trend following + volatility targeting | BTC 1d | Beat exposure-matched holding (Sharpe 1.21 vs 1.07); beat holding in only 2 of 7 walk-forward windows; deflated 28% | Watch |
 | Trend following + volatility targeting | ETH 1d | Walk-forward Sharpe 0.28, a third of in-sample | Drop |
 | Channel breakout | BTC, ETH 4h | Sharpe under half of holding; failed walk-forward on both | Drop |
 | Structure pullback | BTC, ETH 4h | +0.06R a trade, P(> 0) 63% against 90% needed | Drop |
