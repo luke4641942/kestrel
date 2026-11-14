@@ -105,6 +105,11 @@ risk-managed holding rather than a proven edge.
    the regime model (an HMM) said the market was in its volatile state lowered the Sharpe
    (0.64 vs 0.69): on those days the strategy already held 13% on average, against 54% on
    others, because its trend votes and volatility sizing do the same job.
+9. **In volatile spells, MACD's direction continued (a study, not yet a strategy).** On days
+   the regime model called volatile, the week after a positive MACD histogram returned
+   +1.63% on average and the week after a negative one -2.00% (BTC and ETH, 2021-25, 75
+   non-overlapping weeks, P = 98%); on other days the relationship slightly reversed. The
+   coins move together, so the sample is smaller than it looks.
 
 ## The holdout year (2025-11 to 2026-10)
 
@@ -151,6 +156,7 @@ edge, and the holdout can't be used again for either strategy.
 | Crash brake on weekly momentum | ETH 1d | Sharpe 1.21 vs 1.23 without it; drawdown -41.4% vs -41.6%; 16 of 29 trips sold a dip that recovered | Drop |
 | Crash brake on trend-vol-target | BTC 1d | Sharpe 0.91 vs 1.21; return +272% vs +639%; drawdown -45.9% vs -48.3% | Drop |
 | Regime filter on trend-vol-target | BTC 1d | Sharpe 0.64 vs 0.69 (2021-05 to 2025-10); the plain rule already holds 13% in volatile spells | Drop |
+| Study: MACD direction in volatile spells | BTC, ETH 1d | Spread +3.70% a week (up +1.63%, down -2.00%), P = 98%: TREND | Study passed; a strategy note follows |
 
 Each strategy was judged by its own note's pass test, written before it ran. From
 2026-11-14 every strategy is judged on one scorecard instead.

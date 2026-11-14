@@ -4,8 +4,6 @@ The active list. Claude keeps it up to date in the same commit as the work (see 
 Decisions and rules live in CLAUDE.md; results in `research/findings.md`.
 
 ## Waiting on Luke
-- [ ] Freeze `which-way-do-volatile-spells-go-macd` (drafted 2026-11-14), then Claude runs
-      `kestrel volatile-study BTCUSDT ETHUSDT --research <note>`: TREND, REBOUND or KILL.
 - [ ] Read and freeze `paper-trading-trend-vol-target-btc` (drafted 2026-11-14). Then:
       `kestrel paper open tvt-btc ... --venue testnet` (the note's rules), `kestrel paper
       schedule tvt-btc`, and load the job with the launchctl command it prints. The
@@ -16,6 +14,8 @@ Decisions and rules live in CLAUDE.md; results in `research/findings.md`.
       are still open after its drop: reject them, or leave them? Your call.
 
 ## Next
+- [ ] Strategy note for the volatile-spell MACD finding (TREND, 2026-11-14): design to agree
+      with Luke, then build, scorecard, and paper trading as its own account.
 - [ ] Delistings (Luke's idea, 2026-11-14): a raw-effect study before any strategy.
       Needs Binance delisting announcement dates (no official history: scrape the public
       announcements catalog, "Delistings"). Measure the path from announcement to removal
@@ -50,6 +50,7 @@ Decisions and rules live in CLAUDE.md; results in `research/findings.md`.
 - [ ] HMM regime filter (backlog S2) as a strategy: needs a note that passes the entry bar.
 
 ## Done recently
+- 2026-11-14 Volatile-spell direction study: TREND (spread +3.70%/week, P 98%, 75 weeks).
 - 2026-11-14 Regime filter on trend-vol-target: failed (Sharpe 0.64 vs 0.69); rejected (Luke).
 - 2026-11-14 P4 S5: catch-up, tracking, schedule, Trading page; paper-trading note drafted.
 - 2026-11-14 P4 S4: safety layer; a real kill-switch drill on the testnet.

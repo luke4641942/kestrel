@@ -1,0 +1,15 @@
+{
+  "version": 1,
+  "created_at": "2026-11-14T13:05:41.766408+00:00",
+  "sections": {
+    "hypothesis": "On days the regime model says the market is in its volatile state, the sign of the MACD 12/26/9 histogram predicts the direction of the next 7 days' return, either continuing (trend) or reversing (rebound), by more than a round trip of costs.",
+    "rationale": "Luke's idea (2026-11-14): the regime model says when big moves are likely but not which way; MACD might say which way. Two readings of the evidence disagree: trend rules suggest MACD's direction continues; Daniel and Moskowitz (Momentum Crashes, 2016) find momentum crashes in high-volatility panic states, where moves rebound. A raw-effect study tells them apart before any strategy is built, as the Monday-range study did. Written after the regime filter result (trend-vol-target already holds little in volatile spells) but before any MACD-by-regime result was looked at. The ETH regime fit was made for this study on pre-holdout data, before it ran.",
+    "rules": "kestrel volatile-study BTCUSDT ETHUSDT --research <this note> (kestrel.studies.volatile_direction): daily bars before 2025-11-01; volatile days are those whose stored, filtered regime state is the most volatile (regime_volatile = 1), which exist from 2021-05; signal: MACD 12/26/9 histogram above or below zero at the day's close; outcome: log return from that close to the close 7 days later; samples at least 7 days apart (non-overlapping weeks), pooled over both markets; the same measured on every other day for comparison; 5,000 bootstrap resamples.",
+    "falsification": "Verdict on the volatile days: TREND if P(spread > 0) is at least 90% and the spread (mean week after an up signal minus after a down signal) is above one round trip of costs (0.22%); REBOUND if P(spread < 0) is at least 90% and the spread is below -0.22%; otherwise KILL, and no strategy is built from it. TREND or REBOUND earns a strategy note, not a pass: that note would face the scorecard (a REBOUND rule is in the reversal family and needs its own case). Run once.",
+    "parameters": "MACD 12/26/9 (the textbook preset, never tuned); horizon 7 days; regime preset as fixed in kestrel.regimes (3 states).",
+    "costs": "Hurdle 0.22%: one round trip of the taker fee and half-spread from kestrel.toml. A study, not a strategy run: it counts as one look, logged in the findings."
+  },
+  "implementation": "study:volatile-direction",
+  "frozen_at": "2026-11-14T13:11:10.677471+00:00",
+  "change_reason": null
+}
