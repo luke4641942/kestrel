@@ -4,8 +4,6 @@ The active list. Claude keeps it up to date in the same commit as the work (see 
 Decisions and rules live in CLAUDE.md; results in `research/findings.md`.
 
 ## Waiting on Luke
-- [ ] Binance Spot Testnet API keys (testnet.binance.vision) in environment variables, by
-      P4 session 3. Never in code or the UI.
 - [ ] Trend-vol-target BTC walk-forward note failed its pre-registered rule (2 of 7 windows,
       4 needed). Its status is still frozen: reject it, or keep it open? Your call.
 - [ ] Weekly momentum ETH's notes (`holdout-weekly-momentum-eth`, `weekly-momentum-eth-scorecard`)
@@ -18,7 +16,10 @@ Decisions and rules live in CLAUDE.md; results in `research/findings.md`.
   - [x] S2 Paper runner (`kestrel.execution.paper`, `kestrel paper open/run/status`) with an
         append-only ledger; a day-by-day replay of BTC 2023-25 matches the backtest exactly
         (205 fills, every daily mark). Done 2026-11-14. The real account opens after S5's note.
-  - [ ] S3 Binance Spot Testnet venue (signed orders, exchange filters, order status).
+  - [x] S3 Binance Spot Testnet venue (`kestrel.execution.binance`, `paper open --venue
+        testnet`): signed orders, exchange filters, real fills; a real testnet order filled
+        2026-11-14. Testnet prices and fees aren't the real market's: it proves plumbing,
+        not costs. Done 2026-11-14.
   - [ ] S4 Reconciliation (halt on mismatch), risk limits, stale-data refusal (including a
         gap in the latest bars: `is_clean` doesn't count gaps), `kestrel kill`.
   - [ ] S5 Daily schedule with catch-up, the Trading page, a paper-vs-backtest tracking
@@ -31,6 +32,7 @@ Decisions and rules live in CLAUDE.md; results in `research/findings.md`.
 - [ ] HMM regime filter (backlog S2) as a strategy: needs a note that passes the entry bar.
 
 ## Done recently
+- 2026-11-14 P4 S3: Binance Spot Testnet venue; a real testnet order filled end to end.
 - 2026-11-14 P4 S2: paper runner on the simulated venue; replay identical to the backtest.
 - 2026-11-14 P4 S1: shared rebalance step (five real runs identical) and `kestrel update`.
 - 2026-11-14 Holdout tests shown on the Overview (read-only, `/api/holdout`).

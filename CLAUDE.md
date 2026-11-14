@@ -76,7 +76,10 @@ Never pipe check output through `tail` or similar inside an `&&` chain: it hides
       the latest closed bars come from `kestrel.data.live` (`kestrel update`). The paper
       runner (`kestrel.execution.paper`) handles each closed bar like the engine (mark, decide,
       trade at the next open) and writes an append-only ledger in `data/paper/<account>/`; a
-      day-by-day replay must reproduce the backtest exactly (`tests/test_paper.py`). First strategy: trend-vol-target on
+      day-by-day replay must reproduce the backtest exactly (`tests/test_paper.py`).
+      `kestrel.execution.binance` is the Binance venue (Spot Testnet now): an account trades
+      its own allocation, accounted from real fills; keys only from `KESTREL_TESTNET_KEY` /
+      `KESTREL_TESTNET_SECRET`, never logged or stored. Testnet prices aren't the market's. First strategy: trend-vol-target on
       BTC (pursue), as risk-managed holding, to prove the plumbing.
 - Parked: P5 perps (see Parked), multi-strategy portfolios, Settings page.
 

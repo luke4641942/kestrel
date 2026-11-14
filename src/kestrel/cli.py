@@ -24,6 +24,7 @@ import httpx
 import polars as pl
 import typer
 
+from kestrel.backtest.costs import CostModel
 from kestrel.backtest.engine import HoldoutError, run_backtest
 from kestrel.backtest.metrics import Metrics, compute_metrics, format_report
 from kestrel.backtest.portfolio import run_portfolio
@@ -37,6 +38,13 @@ from kestrel.data.schema import Interval
 from kestrel.data.store import ParquetStore
 from kestrel.data.universe import ArchiveListing, CoinIngest, ingest_universe, manifest_path
 from kestrel.execution import paper as paper_trading
+from kestrel.execution.binance import (
+    TESTNET_URL,
+    BinanceClient,
+    BinanceError,
+    BinanceVenue,
+    Credentials,
+)
 from kestrel.regimes import format_regimes
 from kestrel.regimes import walk_forward as walk_regimes
 from kestrel.research import ResearchStore, run_target
@@ -649,12 +657,17 @@ def paper_open(
     ] = None,
     interval: IntervalOpt = Interval.D1,
     cash: Annotated[float, typer.Option(help="Starting cash in USDT.")] = 330.0,
+    venue: Annotated[
+        str, typer.Option(help="sim (simulated fills) or testnet (Binance Spot Testnet orders).")
+    ] = "sim",
     research_dir: ResearchDir = Path("research"),
     data_dir: DataDir = Path("data"),
 ) -> None:
     """Open a paper account. Its first decision is on the last bar closed now; the strategy
     runs at the settings its note (or its defaults) fix, and the terms never change."""
     try:
+        if venue not in ("sim", "testnet"):
+            raise ValueError(f"--venue must be sim or testnet, not {venue!r}")
         key, link = run_target(ResearchStore(research_dir), strategy, research)
         now = datetime.now(UTC)
         step = interval.duration
@@ -664,14 +677,16 @@ def paper_open(
         )
         terms = paper_trading.Terms(
             name, key, symbol.upper(), interval, resolve_params(key, {}), Decimal(str(cash)), first,
-            link[0] if link else None,
+            link[0] if link else None, venue,  # type: ignore[arg-type]
         )  # fmt: skip
         paper_trading.PaperAccount.open(data_dir, terms)
     except ValueError as e:
         typer.echo(str(e), err=True)
         raise typer.Exit(code=1) from None
-    typer.echo(f"Opened paper account {name}: {key} on {terms.symbol} {interval.value}, "
-               f"{cash:g} USDT, first decision on the {first:%Y-%m-%d %H:%M} UTC bar")  # fmt: skip
+    typer.echo(
+        f"Opened paper account {name}: {key} on {terms.symbol} {interval.value} ({venue}), "
+        f"{cash:g} USDT, first decision on the {first:%Y-%m-%d %H:%M} UTC bar"
+    )
 
 
 @paper_app.command("run")
@@ -699,10 +714,22 @@ def paper_run(
             bars = attach_features(
                 bars, spec_for(terms.strategy).features, terms.symbol, terms.interval, data_dir
             )
+            venue = None
+            if terms.venue == "testnet":
+                client = BinanceClient(Credentials.from_env(), http, TESTNET_URL)
+                venue = BinanceVenue(
+                    client,
+                    terms.symbol,
+                    cfg.account_currency,
+                    CostModel(cfg.costs),
+                    terms.initial_cash,
+                )
             handled = paper_trading.run(
-                account, bars, cfg, lambda at: live.open_of(terms.symbol, terms.interval, at, http)
-            )
-    except (ValueError, ConfigError, httpx.HTTPError) as e:
+                account, bars, cfg,
+                lambda at: live.open_of(terms.symbol, terms.interval, at, http),
+                venue=venue,
+            )  # fmt: skip
+    except (ValueError, ConfigError, httpx.HTTPError, BinanceError) as e:
         typer.echo(str(e), err=True)
         raise typer.Exit(code=1) from None
     if not handled:

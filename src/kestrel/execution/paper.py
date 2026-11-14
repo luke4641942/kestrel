@@ -25,11 +25,11 @@ from dataclasses import dataclass
 from datetime import UTC, datetime
 from decimal import Decimal
 from pathlib import Path
-from typing import Any
+from typing import Any, Literal, Protocol
 
 import polars as pl
 
-from kestrel.backtest.costs import Fill, Rejection
+from kestrel.backtest.costs import CostModel, Fill, Rejection, Side
 
 __all__ = ["Fill", "Handled", "Ledger", "PaperAccount", "Rejection", "State", "Terms", "run"]
 from kestrel.backtest.engine import half_spreads
@@ -81,6 +81,8 @@ class Terms:
     """The first bar it handles: its close is the first decision."""
     research: str | None = None
     """The research note it runs under, for a research strategy."""
+    venue: Literal["sim", "testnet"] = "sim"
+    """Where its orders go: the simulated venue, or Binance's Spot Testnet."""
 
 
 @dataclass(frozen=True)
@@ -114,6 +116,7 @@ class PaperAccount:
                 "initial_cash": terms.initial_cash,
                 "trade_from": terms.trade_from,
                 "research": terms.research,
+                "venue": terms.venue,
             }
         )
         return account
@@ -132,6 +135,7 @@ class PaperAccount:
             Decimal(e["initial_cash"]),
             datetime.fromisoformat(e["trade_from"]),
             e.get("research"),
+            e.get("venue", "sim"),
         )
 
     def state(self) -> State:
@@ -155,6 +159,23 @@ class Handled:
     order: Fill | Rejection | None
 
 
+class PaperVenue(Protocol):
+    """What the runner needs from a venue: SimVenue offers it, and so does BinanceVenue."""
+
+    def cash(self) -> Decimal: ...
+    def position(self, symbol: str) -> Decimal: ...
+    def submit_market(self, symbol: str, side: Side, quantity: Decimal) -> Fill | Rejection: ...
+    def set_market(
+        self,
+        symbol: str,
+        reference_price: Decimal,
+        last_bar_volume: Decimal,
+        half_spread: Decimal | None = None,
+    ) -> None: ...
+    def restore(self, cash: Decimal, positions: dict[str, Decimal]) -> None: ...
+    def cost_model(self) -> CostModel: ...
+
+
 NextOpen = Callable[[datetime], Decimal | None]
 """The open of the bar starting at a time, if it has started; None if not yet."""
 
@@ -165,18 +186,30 @@ def run(
     config: Config,
     next_open: NextOpen = lambda _: None,
     strategy: Strategy | None = None,
+    venue: PaperVenue | None = None,
 ) -> list[Handled]:
     """Handle every closed bar in ``bars`` (all of them closed, history included) that the
-    account hasn't handled, oldest first."""
+    account hasn't handled, oldest first, through ``venue`` (the simulated venue by
+    default). A live venue fills now, so it can't trade a decision at a past open: an
+    account more than one bar behind on a live venue is refused, not traded late."""
     terms = account.terms()
     strategy = strategy or make_strategy(terms.strategy, terms.symbol, terms.params)  # type: ignore[assignment]
     assert strategy is not None
     state = account.state()
-    venue = SimVenue(config, terms.initial_cash, rules=config.rules_for)
+    times: list[datetime] = bars["open_time"].to_list()
+    pending = [
+        t for t in times
+        if t >= terms.trade_from and (state.last_bar is None or t > state.last_bar)
+    ]  # fmt: skip
+    if getattr(venue, "live", False) and len(pending) > 1:
+        raise ValueError(
+            f"{terms.name} is {len(pending)} bars behind; a live venue can only trade the "
+            "latest decision (catching up is P4 S5)"
+        )
+    venue = venue or SimVenue(config, terms.initial_cash, rules=config.rules_for)
     venue.restore(state.cash, {terms.symbol: state.position} if state.position else {})
     model = venue.cost_model()
     band = config.backtest.no_trade_band
-    times: list[datetime] = bars["open_time"].to_list()
     opens, closes = bars["open"].to_list(), bars["close"].to_list()
     volumes = bars["quote_volume"].to_list()
     spreads = half_spreads(bars, config, terms.symbol)
