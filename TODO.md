@@ -4,6 +4,9 @@ The active list. Claude keeps it up to date in the same commit as the work (see 
 Decisions and rules live in CLAUDE.md; results in `research/findings.md`.
 
 ## Waiting on Luke
+- [ ] `ride-volatile-spells-in-macd-s-direction` failed the scorecard on both coins (BTC
+      Sharpe -0.13 vs 0.53; ETH 0.42 vs 0.46; walk-forward 0/5 and 1/5; 26 and 19 trades;
+      robustness no edge / fragile). Its rule implies drop: reject it? Your call.
 - [ ] Read and freeze `paper-trading-trend-vol-target-btc` (drafted 2026-11-14). Then:
       `kestrel paper open tvt-btc ... --venue testnet` (the note's rules), `kestrel paper
       schedule tvt-btc`, and load the job with the launchctl command it prints. The
@@ -48,6 +51,7 @@ Decisions and rules live in CLAUDE.md; results in `research/findings.md`.
 - [ ] HMM regime filter (backlog S2) as a strategy: needs a note that passes the entry bar.
 
 ## Done recently
+- 2026-11-14 volatile-macd backtested: fails the scorecard on BTC and ETH (awaiting Luke).
 - 2026-11-14 Volatile-spell direction study: TREND (spread +3.70%/week, P 98%, 75 weeks).
 - 2026-11-14 Regime filter on trend-vol-target: failed (Sharpe 0.64 vs 0.69); rejected (Luke).
 - 2026-11-14 P4 S5: catch-up, tracking, schedule, Trading page; paper-trading note drafted.
