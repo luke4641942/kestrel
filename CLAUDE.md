@@ -70,8 +70,10 @@ Never pipe check output through `tail` or similar inside an `&&` chain: it hides
       A strategy using states (S2 as a filter) is a research note and the scorecard.
 - [x] Charts page under More: any market, bar size and range, the indicator chips, and a
       plain-English card per indicator switched on (`Preset.reading`)
-- [ ] P4 Execution: ExecutionVenue adapters (sim, Binance testnet, live), reconciliation,
-      risk limits, kill switch, alerting, parity tests. Plan and progress in TODO.md. The
+- [x] P4 Execution (built 2026-11-14): sim and Binance testnet venues, the paper runner,
+      reconciliation, risk limits, kill switch, tracking against the model, a launchd
+      schedule, the Trading page. Left: alerting, a live venue (real money: not before the
+      paper test says so). Plan and progress in TODO.md. The
       backtest and the paper runner share one rebalance step (`kestrel.execution.rebalance`);
       the latest closed bars come from `kestrel.data.live` (`kestrel update`). The paper
       runner (`kestrel.execution.paper`) handles each closed bar like the engine (mark, decide,
@@ -82,7 +84,11 @@ Never pipe check output through `tail` or similar inside an `&&` chain: it hides
       `KESTREL_TESTNET_SECRET`, never logged or stored. Testnet prices aren't the market's.
       Safety (`kestrel.execution.safety`, `[risk]` in kestrel.toml): breaches and failed
       reconciliations halt an account; only `kestrel paper resume --reason` lifts a halt;
-      stale data stops a run without halting; `kestrel kill` sells to cash and halts. First strategy: trend-vol-target on
+      stale data stops a run without halting; `kestrel kill` sells to cash and halts.
+      A live account that was behind records missed days (no trade) and trades the latest.
+      `kestrel.execution.tracking` compares an account with its sim replay (decisions must
+      match). `kestrel paper schedule` writes a launchd job (keys from ~/.zshrc at run time).
+      The dashboard's Trading page is read-only; every action is a CLI command. First strategy: trend-vol-target on
       BTC (pursue), as risk-managed holding, to prove the plumbing.
 - Parked: P5 perps (see Parked), multi-strategy portfolios, Settings page.
 

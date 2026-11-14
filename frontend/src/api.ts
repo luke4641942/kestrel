@@ -310,6 +310,54 @@ export interface HoldoutRecord {
   passes: boolean;
 }
 
+/** A paper account at a glance (kestrel.execution.paper). Opened and run from the CLI. */
+export interface PaperSummary {
+  name: string;
+  strategy: string;
+  symbol: string;
+  interval: Interval;
+  /** "sim" (simulated fills) or "testnet" (Binance Spot Testnet orders). */
+  venue: string;
+  research: string | null;
+  initial_cash: number;
+  trade_from: string;
+  last_bar: string | null;
+  /** At the latest mark; null before the first. */
+  equity: number | null;
+  cash: number;
+  position: number;
+  /** Why it is halted, or null. */
+  halted: string | null;
+}
+
+export interface PaperDetail extends PaperSummary {
+  equity_series: EquitySeries;
+  /** The same account replayed on the simulated venue: the backtest model. */
+  expected: EquitySeries;
+  fills: {
+    at: string;
+    side: Side;
+    quantity: number;
+    reference_price: number;
+    price: number;
+    fee: number;
+    cost_bps: number;
+    expected_bps: number | null;
+  }[];
+  /** Newest first. */
+  decisions: { bar: string; target: number; current: number; missed: boolean; band_skip: boolean }[];
+  events: { type: "halt" | "resume" | "kill"; at: string; reason: string | null }[];
+  tracking: {
+    days: number;
+    decision_mismatches: number;
+    missed: number;
+    /** Final equity against the model's, as a fraction. */
+    difference: number | null;
+    cost_bps: number | null;
+    expected_bps: number | null;
+  };
+}
+
 export interface Study {
   id: string;
   created_at: string;
@@ -588,6 +636,8 @@ export const api = {
   backtests: () => request<RunSummary[]>("/backtests"),
   validation: () => request<Validation>("/validation"),
   decisions: () => request<Decision[]>("/decisions"),
+  paper: () => request<PaperSummary[]>("/paper"),
+  paperAccount: (name: string) => request<PaperDetail>(`/paper/${enc(name)}`),
   holdout: () => request<HoldoutRecord[]>("/holdout"),
   regimes: () => request<RegimeSummary[]>("/regimes"),
   regime: (symbol: string) => request<RegimeDetail>(`/regimes/${enc(symbol)}`),

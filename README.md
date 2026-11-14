@@ -7,7 +7,7 @@ trading.
 > **Status:** Data, API, dashboard, the backtester (two engines, costs, metrics,
 > bootstrap confidence) and validation (walk-forward, robustness, deflated Sharpe over
 > every trial) are built and tested. About 25 pre-registered hypotheses have been tested;
-> none has passed. See [research/findings.md](research/findings.md). Paper trading is next.
+> none has passed. See [research/findings.md](research/findings.md). Paper trading (P4) is built; trend-vol-target on BTC is next to run on the Binance testnet.
 > No strategy has yet earned real money, by design.
 
 ## Why this exists
@@ -38,7 +38,7 @@ bias, unrealistic fills, ignored costs, and research code that is rewritten
 | 2. Backtester | Vectorised research engine, event-driven validation engine, cost model, metrics, stops/targets with risk-based sizing | Done |
 | 3. Validation | Walk-forward, parameter robustness, trial log, deflated Sharpe | Done |
 | 3.5 Scorecard | One pass/fail scorecard for every strategy, judged against holding at the same exposure, graded on every run | Done |
-| 4. Execution | `ExecutionVenue` adapters (sim, Binance testnet, live), reconciliation, kill switch, alerting | Planned |
+| 4. Execution | Paper trading through the backtest's own code: simulated and Binance Spot Testnet venues, reconciliation, risk limits, kill switch, tracking against the model, Trading page | Built (live venue later) |
 | Parked | Perps (Binance perps aren't available to Australian retail; ASIC caps retail crypto leverage at 2:1); multi-strategy portfolios; settings for risk limits and exchange status | Parked |
 
 ## Quick start

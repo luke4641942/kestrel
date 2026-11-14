@@ -44,6 +44,12 @@ from kestrel.api.models import (
     JobOut,
     LessonOut,
     NoteOut,
+    PaperDecisionOut,
+    PaperDetailOut,
+    PaperEventOut,
+    PaperFillOut,
+    PaperSummaryOut,
+    PaperTrackingOut,
     ParamOut,
     QualityOut,
     Quote,
@@ -82,6 +88,7 @@ from kestrel.data.quality import check_klines
 from kestrel.data.schema import Interval
 from kestrel.data.store import ParquetStore
 from kestrel.decisions import DecisionError, load_decisions
+from kestrel.execution import paper, safety, tracking
 from kestrel.indicators import PRESETS, compute_presets
 from kestrel.provenance import code_version
 from kestrel.regimes import RegimeStore
@@ -524,6 +531,102 @@ def create_app(
         found.sort(key=lambda r: r["recorded_at"], reverse=True)
         return [HoldoutOut.model_validate(r) for r in found]
 
+    # ---------- paper trading (read-only) ----------
+
+    def _paper_summary(account: paper.PaperAccount) -> PaperSummaryOut:
+        terms, state = account.terms(), account.state()
+        marks = [e for e in account.ledger.events() if e["type"] == "mark"]
+        return PaperSummaryOut(
+            name=terms.name,
+            strategy=terms.strategy,
+            symbol=terms.symbol,
+            interval=terms.interval.value,
+            venue=terms.venue,
+            research=terms.research,
+            initial_cash=float(terms.initial_cash),
+            trade_from=terms.trade_from,
+            last_bar=state.last_bar,
+            equity=float(marks[-1]["equity"]) if marks else None,
+            cash=float(state.cash),
+            position=float(state.position),
+            halted=safety.halted(account),
+        )
+
+    @api.get("/paper")
+    def list_paper() -> list[PaperSummaryOut]:
+        """Every paper account. Accounts are opened and run from the CLI only."""
+        return [_paper_summary(paper.PaperAccount(data_dir, n)) for n in paper.accounts(data_dir)]
+
+    @api.get("/paper/{name}")
+    def get_paper(name: str) -> PaperDetailOut:
+        if name not in paper.accounts(data_dir):
+            raise HTTPException(status.HTTP_404_NOT_FOUND, "no such paper account")
+        account = paper.PaperAccount(data_dir, name)
+        terms = account.terms()
+        bars = attach_features(
+            store.read(terms.symbol, terms.interval),
+            spec_for(terms.strategy).features,
+            terms.symbol,
+            terms.interval,
+            data_dir,
+        )
+        tracked = tracking.track(account, bars, load_config(config_path))
+        step = terms.interval.duration
+
+        def series(times: list[datetime], values: list[float]) -> Series:
+            frame = pl.DataFrame({"close_time": [t + step for t in times], "equity": values})
+            return _series(frame) if frame.height else Series(time=[], equity=[], drawdown=[])
+
+        days = tracked.days
+        events = account.ledger.events()
+        return PaperDetailOut(
+            **_paper_summary(account).model_dump(),
+            equity_series=series([d.bar for d in days], [float(d.equity) for d in days]),
+            expected=series([d.bar for d in days], [float(d.expected) for d in days]),
+            fills=[
+                PaperFillOut(
+                    at=datetime.fromisoformat(f.at),
+                    side=f.side,
+                    quantity=float(e["quantity"]),
+                    reference_price=float(e["reference_price"]),
+                    price=float(e["price"]),
+                    fee=float(e["fee"]),
+                    cost_bps=float(f.cost_bps),
+                    expected_bps=None if f.expected_bps is None else float(f.expected_bps),
+                )
+                for f, e in zip(
+                    tracked.fills, [e for e in events if e["type"] == "fill"], strict=True
+                )
+            ],
+            decisions=[
+                PaperDecisionOut(
+                    bar=datetime.fromisoformat(e["bar"]),
+                    target=float(e["target"]),
+                    current=float(e["current"]),
+                    missed=bool(e.get("missed")),
+                    band_skip=bool(e.get("band_skip")),
+                )
+                for e in reversed([e for e in events if e["type"] == "decision"])
+            ],
+            events=[
+                PaperEventOut(
+                    type=e["type"],
+                    at=datetime.fromisoformat(e["at"]),
+                    reason=e.get("reason"),
+                )
+                for e in events
+                if e["type"] in ("halt", "resume", "kill")
+            ],
+            tracking=PaperTrackingOut(
+                days=len(days),
+                decision_mismatches=tracked.decision_mismatches,
+                missed=tracked.missed,
+                difference=None if tracked.difference is None else float(tracked.difference),
+                cost_bps=_float(tracked.mean_cost()),
+                expected_bps=_float(tracked.mean_cost(expected=True)),
+            ),
+        )
+
     # ---------- regimes ----------
 
     @api.get("/regimes")
@@ -779,6 +882,10 @@ def _strategy_out(spec: StrategySpec) -> StrategyOut:
         params=[ParamOut.model_validate(asdict(p)) for p in spec.params],
         universe=spec.universe,
     )
+
+
+def _float(x: Decimal | None) -> float | None:
+    return None if x is None else float(x)
 
 
 def _series(equity: pl.DataFrame) -> Series:

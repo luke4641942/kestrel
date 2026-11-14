@@ -924,6 +924,25 @@ p {
   height: 520px;
 }
 
+/* ---------- trading ---------- */
+
+.table-foot {
+  padding: 10px 16px;
+}
+
+.safety-title {
+  margin: 0 0 6px;
+  font-size: 15px;
+}
+
+.safety-events {
+  list-style: none;
+  margin: 12px 0 0;
+  padding: 0;
+  display: grid;
+  gap: 6px;
+}
+
 /* ---------- charts ---------- */
 
 .form-charts {
@@ -1963,30 +1982,6 @@ p {
   border-top: 1px dashed var(--line-strong);
 }
 
-.scope {
-  list-style: none;
-  margin: 20px 0 0;
-  padding: 0;
-  max-width: 640px;
-  border-top: 1px solid var(--line);
-}
-
-.scope li {
-  display: grid;
-  grid-template-columns: 180px 1fr;
-  gap: 16px;
-  padding: 10px 0;
-  border-bottom: 1px solid var(--line);
-  font-size: 13px;
-}
-
-.scope li strong {
-  font-weight: 500;
-}
-
-.scope li span {
-  color: var(--text-2);
-}
 
 .row {
   display: flex;
@@ -2091,10 +2086,6 @@ p {
   }
   .nav .later {
     display: none;
-  }
-  .scope li {
-    grid-template-columns: 1fr;
-    gap: 2px;
   }
 }
 

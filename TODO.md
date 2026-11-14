@@ -4,6 +4,10 @@ The active list. Claude keeps it up to date in the same commit as the work (see 
 Decisions and rules live in CLAUDE.md; results in `research/findings.md`.
 
 ## Waiting on Luke
+- [ ] Read and freeze `paper-trading-trend-vol-target-btc` (drafted 2026-11-14). Then:
+      `kestrel paper open tvt-btc ... --venue testnet` (the note's rules), `kestrel paper
+      schedule tvt-btc`, and load the job with the launchctl command it prints. The
+      650-day test starts at its first decision.
 - [ ] Trend-vol-target BTC walk-forward note failed its pre-registered rule (2 of 7 windows,
       4 needed). Its status is still frozen: reject it, or keep it open? Your call.
 - [ ] Weekly momentum ETH's notes (`holdout-weekly-momentum-eth`, `weekly-momentum-eth-scorecard`)
@@ -24,8 +28,9 @@ Decisions and rules live in CLAUDE.md; results in `research/findings.md`.
         with a reason; `[risk]` limits (order size, daily loss, drawdown); stale data and
         recent gaps refused; testnet reconciliation; `kestrel kill`. Drilled for real on the
         testnet. Done 2026-11-14.
-  - [ ] S5 Daily schedule with catch-up, the Trading page, a paper-vs-backtest tracking
-        report. Then a paper-trading note fixes success criteria; run ~20 months.
+  - [x] S5 Catch-up (missed days recorded, latest traded), `kestrel paper track` (paper vs
+        the model), `kestrel paper schedule` (launchd, hourly), the Trading page. Done
+        2026-11-14.
 
 ## Later
 - [ ] Exclude tokenized stocks (AAPLBUSDT...) from the universe before any holdout run.
@@ -34,6 +39,7 @@ Decisions and rules live in CLAUDE.md; results in `research/findings.md`.
 - [ ] HMM regime filter (backlog S2) as a strategy: needs a note that passes the entry bar.
 
 ## Done recently
+- 2026-11-14 P4 S5: catch-up, tracking, schedule, Trading page; paper-trading note drafted.
 - 2026-11-14 P4 S4: safety layer; a real kill-switch drill on the testnet.
 - 2026-11-14 P4 S3: Binance Spot Testnet venue; a real testnet order filled end to end.
 - 2026-11-14 P4 S2: paper runner on the simulated venue; replay identical to the backtest.

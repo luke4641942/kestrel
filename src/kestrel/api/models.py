@@ -743,6 +743,74 @@ class HoldoutOut(BaseModel):
     passes: bool
 
 
+class PaperSummaryOut(BaseModel):
+    """A paper account at a glance (kestrel.execution.paper). Read-only."""
+
+    name: str
+    strategy: str
+    symbol: str
+    interval: str
+    venue: str
+    research: str | None
+    initial_cash: float
+    trade_from: datetime
+    last_bar: datetime | None
+    equity: float | None
+    """At the latest mark."""
+    cash: float
+    position: float
+    halted: str | None
+    """Why it is halted, or None."""
+
+
+class PaperFillOut(BaseModel):
+    at: datetime
+    side: str
+    quantity: float
+    reference_price: float
+    price: float
+    fee: float
+    cost_bps: float
+    expected_bps: float | None
+
+
+class PaperDecisionOut(BaseModel):
+    bar: datetime
+    target: float
+    current: float
+    missed: bool
+    band_skip: bool
+
+
+class PaperEventOut(BaseModel):
+    type: str
+    """halt, resume or kill."""
+    at: datetime
+    reason: str | None
+
+
+class PaperTrackingOut(BaseModel):
+    days: int
+    decision_mismatches: int
+    missed: int
+    difference: float | None
+    """Final equity against the model's, as a fraction."""
+    cost_bps: float | None
+    expected_bps: float | None
+
+
+class PaperDetailOut(PaperSummaryOut):
+    equity_series: Series
+    """The account's marks."""
+    expected: Series
+    """The same account replayed on the simulated venue: the backtest model."""
+    fills: list[PaperFillOut]
+    decisions: list[PaperDecisionOut]
+    """Newest first."""
+    events: list[PaperEventOut]
+    tracking: PaperTrackingOut
+
+
 class LookOut(BaseModel):
     params: dict[str, int]
     sharpe: float | None

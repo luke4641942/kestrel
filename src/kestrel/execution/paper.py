@@ -95,6 +95,12 @@ class State:
     last_target: Decimal | None
 
 
+def accounts(root: Path | str) -> list[str]:
+    """Every paper account under ``<root>/paper``, by name."""
+    base = Path(root) / "paper"
+    return sorted(p.name for p in base.glob("*") if (p / "ledger.jsonl").exists())
+
+
 class PaperAccount:
     def __init__(self, root: Path | str, name: str) -> None:
         self.dir = Path(root) / "paper" / name

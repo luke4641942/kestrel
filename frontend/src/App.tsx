@@ -12,7 +12,7 @@ import { Regimes } from "./pages/Regimes";
 import { Rules } from "./pages/Rules";
 import { Strategies } from "./pages/Strategies";
 import { Backtests } from "./pages/Backtests";
-import { Trading } from "./pages/Placeholders";
+import { Trading } from "./pages/Trading";
 import { useTheme } from "./theme";
 
 export type Route = "overview" | "strategies" | "data" | "costs" | "rules" | "regimes" | "charts" | "backtests" | "trading";
@@ -22,7 +22,7 @@ const NAV: { route: Route; label: string; later?: string; more?: boolean }[] = [
   { route: "overview", label: "Overview" },
   { route: "strategies", label: "Strategies" },
   { route: "backtests", label: "Backtests" },
-  { route: "trading", label: "Trading", later: "P4" },
+  { route: "trading", label: "Trading" },
   { route: "charts", label: "Charts", more: true },
   { route: "data", label: "Data", more: true },
   { route: "costs", label: "What a trade costs", more: true },
