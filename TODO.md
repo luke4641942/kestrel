@@ -14,6 +14,14 @@ Decisions and rules live in CLAUDE.md; results in `research/findings.md`.
       are still open after its drop: reject them, or leave them? Your call.
 
 ## Next
+- [ ] Freeze the note `regime-filter-on-trend-vol-target-btc` (Luke), then Claude runs its
+      two pre-registered backtests (filter on and off, BTC 2021-05 to 2025-10).
+- [ ] Delistings (Luke's idea, 2026-11-14): a raw-effect study before any strategy.
+      Needs Binance delisting announcement dates (no official history: scrape the public
+      announcements catalog, "Delistings"). Measure the path from announcement to removal
+      and whether any rebound beats a small coin's costs, pre-holdout. Long-only can't take
+      the short side; one study (Monero, 2024) found no rebound. Don't look at the delisted
+      coins' prices before the study is written down.
 - [ ] P4 paper trading, trend-vol-target BTC first (plan agreed 2026-11-14):
   - [x] S1 Shared rebalance step (`kestrel.execution.rebalance`); live feed of closed bars
         (`kestrel.data.live`, `kestrel update`). Done 2026-11-14.
