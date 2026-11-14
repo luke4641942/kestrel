@@ -3,72 +3,77 @@
 The active list. Claude keeps it up to date in the same commit as the work (see CLAUDE.md).
 Decisions and rules live in CLAUDE.md; results in `research/findings.md`.
 
-## YouTube batch 2 (Luke's test spec, 2026-11-15): outlined, nothing built
-Nothing here is ruled out. Most items have a near-twin we've already tested and dropped
-(named below). Testing one of those means knowingly overriding the entry bar (Luke's
-call), and every run counts as a trial. The daily items don't need the cost gate. All are
-spot, long-only, at most 3 coins, and judged by the scorecard against exposure-matched
-holding.
-- [ ] A3. Turn of the month, BTC 1d: hold from the last day's close to the first day's
-      close; variant: the last 5 days plus the first 3. Compare with random days of the
-      same count. A new family (calendar) with no twin in our records. The equity reason
-      (month-end pay and fund flows) has no clear crypto version, so the note must give
-      one. 2 trials.
-- [ ] A1/A2/A4. RSI dip-buying, BTC and ETH 1d: RSI(2) < 10 or RSI(5) < 30. Exit when the
-      close is above yesterday's high. Run with and without the 200-day filter, and with
-      and without the scale-in.
-      Twins: buy big down days (dropped: +21% vs +42% for BTC at the same exposure), Fear &
-      Greed contrarian (dropped), extreme fear (KILL). The video's finding that "mean
-      reversion survives" comes mostly from equities with upward drift, and it never
-      compares against holding at the same exposure. Keep it to 8 trials or fewer.
-- [ ] A5/A6. Moving-average timing, BTC/ETH/cash 1d: hold each coin while its 3-month MA
-      is above its 10-month MA, equal weight, rebalanced monthly. Twins: trend-vol-target
-      (already uses MA votes; pursue), BTC/ETH rotation (dropped). A5 needs three markets
-      (S&P, Dow, utilities) and has no clean crypto version.
-- [ ] B1/B2. Breakouts on a coin basket: a 100-day 3 SD Bollinger band, or 20% above the
-      50-day low. BTC above its 200-day as the filter, lowest volatility first, ATR stop.
-      Twins: channel breakout (dropped), trend across a 10-coin basket (dropped). Its 10
-      slots must shrink to 3.
-- [ ] Cross-sectional momentum, long the top 3 coins by 1-3 month return. Twin:
-      cross-sectional momentum top 5 (dropped, -92% drawdown). The video's version is
-      long-short; we can only take the long half.
-- [ ] C. Order flow (Fabio Valentino), BTC/ETH 1m-5m: delta, cumulative delta and the
-      session volume profile, built from Binance spot aggTrades (they record which side
-      was the aggressor). Model 2 first: a failed breakout returning to the point of
-      control. A new family. Needs trade-level data, not bars. Batch 1's cost gate found
-      1m stops of 6-19 bp against a 22 bp round trip; gate C's own stops before building.
-- D. Earnings IV-crush calendars: out of scope (US equity options). Not on the list.
-- [ ] Validation ideas from the 9,000-backtest video. We already have walk-forward, costs,
-      drawdown, minimum trades, deflated Sharpe, robustness and a bootstrap. Not yet built:
-      (1) out-of-sample Sharpe at least half of in-sample; (2) reshuffle a run's trades
-      1,000 times and show drawdown percentiles; (3) results by calendar year. Adding (2)
-      and (3) to the detail view is information only. Making any of them a scorecard test
-      changes the rules (Luke). The video's own bar (Sharpe > 0.5, no comparison with
-      holding) is weaker than ours on the edge test, so ours stays.
+## Top: first use of the random-entry control (scorecard test 9)
+- [ ] A bracket strategy to put through `kestrel random-entry`. Two steps:
+      1. Dry run on channel breakout, BTC 4h 2020-25 (already dropped). It checks the tool
+         on real data and adds no trial. It reruns a dropped strategy's code, so Luke's OK
+         is needed first.
+      2. First real one: G1 below with the 3 x ATR stop. This makes it a bracket strategy,
+         with RSI(2) > 50 or day 10 as its exit signals.
 
-## YouTube strategies batch 1 (Luke's test spec, 2026-11-15): cost gate FAILED, Luke to decide
-Not ruled out, not built. The cost gate (`kestrel cost-gate`, 2024-11 to 2025-10) measured
-S2's stops: median 6-19 bp on 1m and 15-45 bp on 5m, so a 22 bp round trip costs 0.5-3.9R
-a trade. FAILS on 17 of 18 rows; SOL 5m at the NY open is MARGINAL (0.49R, break-even win
-rate 30% at 4R). Luke's call: drop S2/S3, or test SOL 5m NY only (overriding the entry bar).
-S1 (4H/1H) has wider stops and wasn't gated.
-Source: "YouTube Trading Strategies — Test Spec" (13 videos, 3 strategies). All three must be
-adapted to Kestrel's rules: spot, long-only, 330 USDT, Binance data, costs on every fill.
-Each gets its own frozen note and the scorecard; every setting tried is a trial.
-- [ ] 1. S2, CHoCH + FVG (Craig Percoco): NY open, 1m change of character, limit at the FVG
-      midpoint, stop beyond FVG candle 1, 4R target. Long setups only. Most codeable.
-      Spec defaults: pivot N 3, gap >= 0.3 x ATR(14, 1m), 30-min order expiry, 3 trades/day.
-      Would be judged against the random-entry control (scorecard test 9).
-- [ ] 2. S3, market shift (Brad Goh): 1H bias / 15m zones / 5m sweep + body-close shift,
-      enter the shift's zone, 2R or next zone, premium/discount filter. Reuses S2's swing,
-      sweep and shift code. Long setups only; test only if S2's core holds up.
-- [ ] 3. S1, Set and Forget (Alex): W/D/4H structure, weekly/daily zones with 3+ touches, 1H
-      engulfing entry, 2R-4R. Forex in the original: adapt to crypto 4H/1H with ATR-based
-      zone widths. Least codeable (discretionary swings and zones); last, if at all.
-- Rules conflict to decide (Luke): CLAUDE.md's entry bar says a new idea mustn't be a variant
-  of a rejected family, and these are structure/pullback/sweep-reversal setups. A Craig
-  Percoco structure pullback was rejected on 2026-11-05 (+0.06R). Testing them means
-  overriding the bar knowingly, with the trials counted.
+## YouTube strategies, batches 1-3 (Luke's specs, 2026-11-15): ranked, nothing built
+Ranked by Claude: untried and most promising first. Nothing here is ruled out; dropping
+any of them is Luke's call. "Twin" means something close that we already tested and
+dropped. Testing a twin, or anything from a rejected family (pullbacks, chart patterns,
+reversals), means knowingly overriding the entry bar (Luke), with every run counted as a
+trial. Every strategy is spot, long-only, holds at most 3 coins, and is judged by the
+scorecard against exposure-matched holding.
+
+Tools first (not strategies, they improve every test):
+- [ ] Validation additions (batch 2's 9,000-backtest video): (1) reshuffle a run's trades
+      1,000 times and show drawdown percentiles; (2) results by calendar year; (3)
+      out-of-sample Sharpe at least half of in-sample. (1) and (2) are information on the
+      detail view. Making any of them a scorecard test changes the rules (Luke). The
+      video's own bar (Sharpe > 0.5, no comparison with holding) is weaker than ours.
+
+Strategies, most to least promising:
+- [ ] 1. Turn of the month, BTC 1d (batch 2 A3): hold from the last day's close to the
+      first day's close; variant: the last 5 days plus the first 3. Compare with random
+      days of the same count. New family (calendar), no twin, cheap: 2 trials. Needs a
+      crypto reason in the note (the equity reason is month-end pay and fund flows).
+- [ ] 2. Bollinger pullback on a coin basket (batch 3 G1, Rayner Teo). The coin closes
+      above its 200-day, closes below the lower band (20, 2.5 SD), and then a limit order
+      3% under that close fills. Exit on RSI(2) > 50 or after 10 days. At most 3 coins,
+      ranked by 150-day return. It is the dip family (twin: buy big down days, on
+      BTC/ETH only), but across alts with a trend filter it is untested. Our universe
+      keeps delisted coins, so it avoids the survivorship bias Rayner's test may have.
+      Needs engine work: a limit entry that fills at min(limit, open) only if the low
+      reaches it. Its 3 x ATR stop variant is the random-entry control's first real
+      test (above). Keep the sweep small: 3 widths x 3 depths is already 9 trials.
+- [ ] 3. Squeeze breakout (batch 3 G4). Band width at a 120-bar low; buy a close above
+      the upper band while above the 200-day; trail on the 20-day MA. It relates to our
+      volatile-direction study (TREND), but the long-only version found little.
+      Twin: channel breakout (dropped).
+- [ ] 4. Order flow, BTC/ETH 1m-5m (batch 2 C, Fabio Valentino): delta, cumulative delta
+      and the volume profile from Binance aggTrades. Model 2 first (a failed breakout
+      back to the point of control). New family, but 1m stops measured 6-19 bp against a
+      22 bp round trip: gate its own stops first. A big data job (trades, not bars).
+- [ ] 5. Momentum rotation, BTC/ETH/SOL/cash monthly (batch 3 G3, with batch 2 A5/A6
+      merged in): hold the top 2 by 12-month return that are above their 200-day; sweep
+      3/6/12 months. Twins: BTC/ETH rotation (dropped), cross-sectional momentum (dropped).
+      Overlaps trend-vol-target (pursue). A5 has no crypto version.
+- [ ] 6. RSI dip-buying, BTC/ETH 1d (batch 2 A1/A2/A4 and batch 3 G2 merged): RSI(2) < 10,
+      RSI(5) < 30 or RSI(10) < 30, above the 200-day. Exit on the close above yesterday's
+      high or RSI(10) > 40. Twins: buy big down days, Fear & Greed contrarian, extreme fear
+      (all dropped or KILL). G2 has 36 trades in 23 years, so pool coins. At most 8 trials.
+- [ ] 7. Basket breakouts (batch 2 B1/B2): a 100-day 3 SD band, or 20% off the 50-day low;
+      BTC above its 200-day; lowest volatility first; ATR stop; 3 slots, not 10. Twins:
+      channel breakout, 10-coin trend basket (both dropped).
+- [ ] 8. Cross-sectional momentum, long the top 3 by 1-3 month return (batch 2). Twin:
+      top 5 (dropped, -92% drawdown). The video's version is long-short; we only get the
+      long half.
+- [ ] 9. Price action + MACD (batch 3 G5): candle pattern at a swing, breakout, MACD
+      turn. No stop in the original (its 87% win rate likely hides large losses). Chart
+      pattern family; every pattern we tested failed.
+- [ ] 10. Set and Forget (batch 1 S1): W/D/4H structure, zones with 3+ touches, 1H
+      engulfing entry, 2R-4R. Discretionary zones, pattern family, forex original.
+- [ ] 11. CHoCH + FVG and market shift (batch 1 S2/S3, Craig Percoco / Brad Goh): the cost
+      gate FAILED on 17 of 18 (0.5-3.9R of costs a trade). Only SOL 5m at the NY open was
+      MARGINAL (0.49R). Luke's call: drop, or test SOL 5m NY only. A Percoco structure
+      pullback was rejected on 2026-11-05 (+0.06R).
+- Not on the list: earnings IV-crush calendars (batch 2 D, US equity options). Running G1
+  and G3 50/50 together is a multi-strategy portfolio, which is parked in CLAUDE.md;
+  revisit only if both pass on their own.
 
 ## Waiting on Luke
 - [ ] Read and freeze `paper-trading-trend-vol-target-btc` (drafted 2026-11-14). Then:
