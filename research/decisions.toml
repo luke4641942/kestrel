@@ -13,9 +13,9 @@ strategy = "trend-vol-target"
 name = "Trend following with volatility targeting"
 market = "BTCUSDT 1d"
 decision = "pursue"
-decided = 2026-11-12
-reason = "The only strategy that held up on data it wasn't tuned on (walk-forward Sharpe 0.97, holding BTC 0.71) and wasn't sensitive to its settings. Could still be luck (deflated 34%), so it is paper-traded, not traded with money."
-evidence = ["trend-following-robustness-and-walk-forward-btc", "trend-following-with-volatility-targeting-btc", "trend-following-through-the-2018-crash-unseen"]
+decided = 2026-11-14
+reason = "Paper-traded as risk-managed holding, not as a proven edge. Scorecard on BTC 2020-25 (completed 2026-11-14): passes edge (Sharpe 1.21 vs 1.07; +639% vs +423% at the same exposure), start dates, costs, trades, drawdown (-48%) and robustness; fails luck (deflated 28%) and out of sample (beat holding's Sharpe in only 2 of 7 six-month walk-forward windows, though its joined out-of-sample Sharpe was 0.97 vs 0.72)."
+evidence = ["trend-vol-target-btc-scorecard-walk-forward", "trend-following-robustness-and-walk-forward-btc", "trend-following-with-volatility-targeting-btc", "trend-following-through-the-2018-crash-unseen"]
 
 [[decision]]
 strategy = "trend-vol-target"

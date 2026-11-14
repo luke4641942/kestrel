@@ -4,11 +4,14 @@ The active list. Claude keeps it up to date in the same commit as the work (see 
 Decisions and rules live in CLAUDE.md; results in `research/findings.md`.
 
 ## Waiting on Luke
-- [ ] Read and freeze the draft note `trend-vol-target-btc-scorecard-walk-forward` (Strategies
-      page), then commit it. Unlocks scorecard test 3 for trend-vol-target BTC.
+- [ ] Trend-vol-target BTC walk-forward note failed its pre-registered rule (2 of 7 windows,
+      4 needed). Its status is still frozen: reject it, or keep it open? Your call.
+- [ ] Trend-vol-target BTC now fails two scorecard tests (luck, walk-forward) while weekly
+      momentum ETH fails one: keep it on "pursue", or move it to "watch"? Your call.
+- [ ] Holdout: a pre-registered note spending the year from 2025-11 on both strategies
+      (Claude drafts, Luke freezes), before P4.
 
 ## Next
-- [ ] Run the walk-forward once the note is frozen; record the result in decisions and findings.
 - [ ] P4 paper trading: sim venue, Binance testnet, reconciliation, risk limits, kill switch.
       First strategies: trend-vol-target BTC (pursue) and weekly momentum ETH (watch).
 
@@ -19,6 +22,7 @@ Decisions and rules live in CLAUDE.md; results in `research/findings.md`.
 - [ ] HMM regime filter (backlog S2) as a strategy: needs a note that passes the entry bar.
 
 ## Done recently
+- 2026-11-14 Trend-vol-target BTC walk-forward, window by window: beat holding in 2 of 7; fails test 3.
 - 2026-11-14 Charts page under More, with a plain-English card per indicator.
 - 2026-11-14 Crash brake tested on both survivors: made both worse; rejected.
 - 2026-11-14 Weekly momentum ETH scorecard: passes all but luck (walk-forward 4 of 7); stays watch.

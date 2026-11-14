@@ -1,0 +1,18 @@
+{
+  "slug": "trend-vol-target-btc-scorecard-walk-forward",
+  "name": "Trend-vol-target BTC: scorecard walk-forward",
+  "created_at": "2026-11-14T08:10:11.924719+00:00",
+  "status": "specified",
+  "history": [
+    {
+      "status": "idea",
+      "at": "2026-11-14T08:10:11.924719+00:00",
+      "reason": "Created"
+    },
+    {
+      "status": "specified",
+      "at": "2026-11-14T09:40:31.672016+00:00",
+      "reason": "v1 frozen"
+    }
+  ]
+}

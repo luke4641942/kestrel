@@ -178,6 +178,10 @@ Agreed with Luke; don't re-litigate without a reason.
   keychain, never in the UI.
 
 ## Working with Luke
+- **Never reject a research note, or drop or downgrade a strategy's decision, without Luke's
+  explicit say-so** (2026-11-14). Run what a frozen note specifies, record the result
+  plainly (decisions reasons, findings, scorecard), say what the note's rule implies, and
+  ask. A pre-registered result is never softened in the record; only the status change waits.
 - Be direct. Push back on ideas that would overfit or fool us.
 - Explain design decisions briefly when making them. He needs to be able to
   defend every part of this codebase in an interview.

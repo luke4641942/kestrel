@@ -1,10 +1,11 @@
 # Findings
 
-Kestrel has tested about 25 pre-registered trading hypotheses on Binance spot data, at
-172 trials in all. None has passed. The closest, trend following with volatility targeting
-on BTC, beat holding BTC at the same exposure in every period tested from 2020, but by too
-little to rule out luck once every trial is counted (deflated Sharpe 28%, against 95%
-required). This document explains how the tests were run, what they found, where the
+Kestrel has tested about 30 pre-registered trading hypotheses on Binance spot data, at
+175 trials in all. None has passed. Two came close: trend following with volatility
+targeting on BTC and one-week momentum on ETH both beat holding the same coin at the same
+exposure over 2020-25, but by too little to rule out luck once every trial is counted
+(deflated Sharpe 28% and 29%, against 95% required), and trend following beat holding in
+only 2 of 7 out-of-sample windows. This document explains how the tests were run, what they found, where the
 process went wrong, and what the results can't tell us.
 
 The decision on each strategy is in `research/decisions.toml` (shown on the dashboard's
@@ -56,18 +57,18 @@ Against the scorecard every strategy is now judged on (CLAUDE.md, "Research rule
 |---|---|---|
 | 1. Beats holding at the same exposure | Sharpe 1.21 vs 1.07; +639% vs +423% | Pass |
 | 2. Deflated Sharpe at least 95% | 28% | **Fail** |
-| 3. Walk-forward | Sharpe 0.97 out of sample vs 0.71 for holding | Pass |
+| 3. Walk-forward | Beat holding's Sharpe in only 2 of 7 six-month windows (4 needed); joined, 0.97 vs 0.72 | **Fail** |
 | 4. At least half of 2-year start windows | Better Sharpe than holding in 58% | Pass |
 | 5. Break-even cost at least 2x actual | 288 bp vs 22 bp a round trip | Pass |
 | 6. At least 30 trades | 510 | Pass |
 | 7. Worst drawdown at most 50% | -48% | Pass, narrowly |
 | 8. Neighbouring settings also work | A plateau, not a peak | Pass |
 
-Tests 3 and 4 were measured against holding at full size. Holding at a smaller size has
-about the same Sharpe, so the comparison carries over, but they will be rerun against
-exposure-matched holding when the scorecard is built into the engine.
+Holding at a smaller size has the same Sharpe as holding at full size, so tests 3 and 4
+compare with holding's Sharpe directly. Test 3 was measured on 2026-11-14 by repeating the
+identical walk-forward window by window (note trend-vol-target-btc-scorecard-walk-forward).
 
-It fails the one test that matters most. A Sharpe of 1.21 over six years is what the best
+It fails two tests: the walk-forward window by window, and the one that matters most. A Sharpe of 1.21 over six years is what the best
 of 172 worthless strategies would often reach. Its record outside 2020-25 is mixed: over
 2017-25 it still beat holding (Sharpe 1.07 vs 0.92), but over 2017-18 it cut the worst drawdown
 from -83% to -35% yet lost 32% overall, more than holding's 14%. On
@@ -78,10 +79,11 @@ Its purpose there is to prove that live fills match the backtest, not to make mo
 
 ## What the evidence says
 
-1. **Trend rules limit losses; only one beat holding, and not by enough.** Trend following,
-   a trend basket and weekly momentum all cut drawdowns, often by half. Only trend following
-   with volatility targeting also beat the same coin held at the same exposure, and only by
-   a margin that 172 trials could produce by chance.
+1. **Trend rules limit losses; two beat holding, neither by enough.** Trend following, a
+   trend basket and weekly momentum all cut drawdowns, often by half. Trend following on BTC
+   and weekly momentum on ETH also beat the same coin held at the same exposure, but by
+   margins that 175 trials could produce by chance, and trend following won only 2 of 7
+   six-month windows out of sample.
 2. **The trend votes carry it, not the sizing.** The same volatility sizing without the trend
    votes (vol-hold) scored a Sharpe of 0.93 on BTC, below holding.
 3. **Reversal, pullback and chart-pattern rules failed.** Structure pullbacks, pivot reversals,
@@ -104,7 +106,7 @@ Its purpose there is to prove that live fills match the backtest, not to make mo
 
 | Strategy | Market | Result | Decision |
 |---|---|---|---|
-| Trend following + volatility targeting | BTC 1d | Beat exposure-matched holding (Sharpe 1.21 vs 1.07); walk-forward 0.97 vs 0.71; deflated 28% | Pursue to paper trading, as risk-managed holding |
+| Trend following + volatility targeting | BTC 1d | Beat exposure-matched holding (Sharpe 1.21 vs 1.07); beat holding in only 2 of 7 walk-forward windows; deflated 28% | Pursue to paper trading, as risk-managed holding |
 | Trend following + volatility targeting | ETH 1d | Walk-forward Sharpe 0.28, a third of in-sample | Drop |
 | Channel breakout | BTC, ETH 4h | Sharpe under half of holding; failed walk-forward on both | Drop |
 | Structure pullback | BTC, ETH 4h | +0.06R a trade, P(> 0) 63% against 90% needed | Drop |
