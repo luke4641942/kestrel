@@ -13,12 +13,13 @@ Decisions and rules live in CLAUDE.md; results in `research/findings.md`.
 
 ## Next
 - [ ] P4 paper trading, trend-vol-target BTC first (plan agreed 2026-11-14):
-  - [ ] S1 One shared "decide and rebalance" step for engine and runner; a live feed of the
-        latest closed bars (offline tests). Engine parity tests unchanged.
+  - [x] S1 Shared rebalance step (`kestrel.execution.rebalance`); live feed of closed bars
+        (`kestrel.data.live`, `kestrel update`). Done 2026-11-14.
   - [ ] S2 Paper runner on the simulated venue, with an append-only ledger; a day-by-day
         replay of 2025 reproduces the backtest exactly.
   - [ ] S3 Binance Spot Testnet venue (signed orders, exchange filters, order status).
-  - [ ] S4 Reconciliation (halt on mismatch), risk limits, stale-data refusal, `kestrel kill`.
+  - [ ] S4 Reconciliation (halt on mismatch), risk limits, stale-data refusal (including a
+        gap in the latest bars: `is_clean` doesn't count gaps), `kestrel kill`.
   - [ ] S5 Daily schedule with catch-up, the Trading page, a paper-vs-backtest tracking
         report. Then a paper-trading note fixes success criteria; run ~20 months.
 
@@ -29,6 +30,7 @@ Decisions and rules live in CLAUDE.md; results in `research/findings.md`.
 - [ ] HMM regime filter (backlog S2) as a strategy: needs a note that passes the entry bar.
 
 ## Done recently
+- 2026-11-14 P4 S1: shared rebalance step (five real runs identical) and `kestrel update`.
 - 2026-11-14 Holdout tests shown on the Overview (read-only, `/api/holdout`).
 - 2026-11-14 Labels (Luke): trend-vol-target BTC pursue; weekly momentum ETH drop.
 - 2026-11-14 Holdout used once: trend-vol-target BTC passed, weekly momentum ETH failed.

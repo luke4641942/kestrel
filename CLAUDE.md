@@ -71,7 +71,9 @@ Never pipe check output through `tail` or similar inside an `&&` chain: it hides
 - [x] Charts page under More: any market, bar size and range, the indicator chips, and a
       plain-English card per indicator switched on (`Preset.reading`)
 - [ ] P4 Execution: ExecutionVenue adapters (sim, Binance testnet, live), reconciliation,
-      risk limits, kill switch, alerting, parity tests. First strategy: trend-vol-target on
+      risk limits, kill switch, alerting, parity tests. Plan and progress in TODO.md. The
+      backtest and the paper runner share one rebalance step (`kestrel.execution.rebalance`);
+      the latest closed bars come from `kestrel.data.live` (`kestrel update`). First strategy: trend-vol-target on
       BTC (pursue), as risk-managed holding, to prove the plumbing.
 - Parked: P5 perps (see Parked), multi-strategy portfolios, Settings page.
 

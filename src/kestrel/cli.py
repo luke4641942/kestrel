@@ -29,7 +29,7 @@ from kestrel.backtest.metrics import Metrics, compute_metrics, format_report
 from kestrel.backtest.portfolio import run_portfolio
 from kestrel.backtest.runs import RunRequest, RunStore, execute, universe_panel
 from kestrel.config import ConfigError, load_config
-from kestrel.data import funding, sentiment
+from kestrel.data import funding, live, sentiment
 from kestrel.data.binance_vision import BinanceVisionClient, Month, last_complete_month
 from kestrel.data.features import attach_features
 from kestrel.data.quality import check_klines
@@ -359,6 +359,36 @@ def regimes(
         typer.echo(str(e), err=True)
         raise typer.Exit(code=1) from None
     typer.echo(format_regimes(result, bars, symbol.upper()))
+
+
+@app.command()
+def update(
+    symbols: list[str],
+    interval: IntervalOpt = Interval.D1,
+    data_dir: DataDir = Path("data"),
+) -> None:
+    """Add the latest closed bars from Binance's live API to stored markets (after the
+    monthly archive). Each update is audited; problems are reported, never repaired."""
+    store = ParquetStore(data_dir)
+    failed = False
+    with httpx.Client(timeout=30) as http:
+        for symbol in symbols:
+            try:
+                up = live.update(store, symbol, interval, http)
+            except (ValueError, httpx.HTTPError) as e:
+                typer.echo(f"{symbol.upper()}: {e}", err=True)
+                failed = True
+                continue
+            last = f"{up.last:%Y-%m-%d %H:%M}" if up.last else "none"
+            gaps = f", {up.quality.missing_bars} missing" if up.quality.missing_bars else ""
+            state = "clean" if up.quality.is_clean else "PROBLEMS"
+            typer.echo(
+                f"{up.symbol} {interval.value}: {up.new_bars} new bars, last {last} UTC "
+                f"({state}{gaps})"
+            )
+            failed = failed or not up.quality.is_clean
+    if failed:
+        raise typer.Exit(code=1)
 
 
 @app.command("holdout-test")
