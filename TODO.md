@@ -78,8 +78,6 @@ Strategies, most to least promising:
   revisit only if both pass on their own.
 
 ## Waiting on Luke
-- [ ] Monthly rotation FAILED its holdout (2026-11-15): -31.5% vs -6.6% for BTC at its 25%
-      exposure. Its note's rule says fail; it is still labelled watch. Drop it? Your call.
 - [ ] Read and freeze `paper-trading-trend-vol-target-btc` (drafted 2026-11-14). Then:
       `kestrel paper open tvt-btc ... --venue testnet` (the note's rules), `kestrel paper
       schedule tvt-btc`, and load the job with the launchctl command it prints. The
@@ -105,6 +103,12 @@ Strategies, most to least promising:
       and tokenized stocks/ETFs (AAPLBUSDT... from June 2026, too short for now). Wider
       markets give trend strategies more setups (Rayner's point) and test whether an edge
       is crypto-only. Each needs its own spread assumption and its own holding benchmark.
+- [ ] Rotation across uncorrelated assets: BTC / gold (PAXGUSDT) / cash (Luke, 2026-11-15).
+      Why: BTC/ETH/SOL rotation (watch; failed its holdout) mostly picked the most volatile
+      coin, since the three move together; Rayner's ETF version works across assets that
+      don't. Needs a new note with that reason stated first, pre-holdout data, trials
+      counted. It can't use the holdout (gold's 2025-26 rise is already known): judge it
+      forward on paper.
 - [ ] News-tone study (Luke's pick over Twitter, 2026-11-14): code built (`kestrel.data.news`,
       `kestrel signal-study news-tone`). Needs `kestrel ingest-news BTCUSDT ETHUSDT` first:
       GDELT allows ~1 request every 5-10s, so the 2017-25 history takes ~40+ minutes (run it in
@@ -118,6 +122,7 @@ Strategies, most to least promising:
 - [ ] HMM regime filter (backlog S2) as a strategy: needs a note that passes the entry bar.
 
 ## Done recently
+- 2026-11-15 Monthly rotation holdout: FAILED (-31.5% vs -6.6% for BTC at its exposure); kept on watch (Luke).
 - 2026-11-15 Eight YouTube notes rejected (Luke): monthly rotation on watch, the other seven dropped.
 - 2026-11-15 Eight YouTube notes run (22 settings, trials 193 -> 473): every one fails.
 - 2026-11-15 Validation additions from batch 2: the max drawdown on 2,000 reshuffled paths
