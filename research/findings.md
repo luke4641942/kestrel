@@ -190,7 +190,7 @@ edge, and the holdout can't be used again for either strategy.
 | Turn of the month | BTC 1d 2018-25 | Sharpe 0.37 (last 0/first 1) and 0.68 (5/3) vs 0.74 holding; walk-forward 5 and 4 of 11 | Luke to decide |
 | Bollinger pullback, coin basket | Coins 1d 2020-25 | Sharpe 0.54 / 0.82 / 0.32 (3% limit / 7% / BTC filter) vs 1.07 for BTC; walk-forward beat BTC in 2, 1 and 0 of 7 windows | Luke to decide |
 | Squeeze breakout | BTC, ETH 1d 2018-25 | Sharpe 0.61 vs 0.74 and 0.18 vs 0.68; 22 and 16 trades; walk-forward 0 of 11 on both | Luke to decide |
-| Monthly rotation BTC/ETH/SOL | 1d 2018-25 | Sharpe 1.13 / 1.25 / 1.26 (365/180/90 days) vs 0.74 for BTC, but drawdown -59% (limit 50%) and deflated 30-43%; walk-forward beat BTC in 3 of 11 windows on every lookback (the gains came from holding ETH and SOL in 2021) | Luke to decide |
+| Monthly rotation BTC/ETH/SOL | 1d 2018-25 | Sharpe 1.13 / 1.25 / 1.26 (365/180/90 days) vs 0.74 for BTC, but drawdown -59% (limit 50%) and deflated 30-43%; walk-forward beat BTC in 3 of 11 windows on every lookback (the gains came from holding ETH and SOL in 2021) | Drop |
 | RSI dip-buying | BTC, ETH 1d 2018-25 | Six settings, Sharpe 0.04-0.52 vs 0.74 (BTC) and 0.68 (ETH); walk-forward 0-3 of 11 | Luke to decide |
 | Basket breakouts | Coins 1d 2020-25 | Sharpe 0.85 (Bollinger) and 0.89 (20% off the low) vs 1.07 for BTC; drawdowns -77% and -62%; walk-forward 1 and 0 of 7 windows | Luke to decide |
 | Cross-sectional momentum top 3, 1-3 months | Coins 1d 2020-25 | Sharpe 0.38 vs 1.07; drawdown -95%; break-even cost 0; walk-forward 0 of 7 windows, out-of-sample Sharpe -0.28 | Luke to decide |
