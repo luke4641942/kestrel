@@ -3,85 +3,22 @@
 The active list. Claude keeps it up to date in the same commit as the work (see CLAUDE.md).
 Decisions and rules live in CLAUDE.md; results in `research/findings.md`.
 
-## Top: first use of the random-entry control (scorecard test 9)
-- [ ] The first strategy it grades is pattern + MACD (item 9 below, a one-coin bracket
-      strategy, built). G1 can't use it: it holds a basket of weights, and the control is
-      built for one-coin bracket strategies. Optional dry run first, on channel breakout
-      BTC 4h 2020-25 (already dropped): checks the tool on real data, adds no trial, but
-      reruns a dropped strategy's code, so Luke's OK first.
-
-## YouTube strategies, batches 1-3 (Luke's specs, 2026-11-15): ranked, nothing built
-Ranked by Claude: untried and most promising first. Nothing here is ruled out; dropping
-any of them is Luke's call. "Twin" means something close that we already tested and
-dropped. Testing a twin, or anything from a rejected family (pullbacks, chart patterns,
-reversals), means knowingly overriding the entry bar (Luke), with every run counted as a
-trial. Every strategy is spot, long-only, holds at most 3 coins, and is judged by the
-scorecard against exposure-matched holding.
-
-Tools first: done 2026-11-15 (see Done recently).
-
-Strategies, most to least promising:
-- [ ] 1. READY TO FREEZE: note `turn-of-the-month-on-btc` (strategy `turn-of-month`).
-      Turn of the month, BTC 1d (batch 2 A3): hold from the last day's close to the
-      first day's close; variant: the last 5 days plus the first 3. Compare with random
-      days of the same count. New family (calendar), no twin, cheap: 2 trials. Needs a
-      crypto reason in the note (the equity reason is month-end pay and fund flows).
-- [ ] 2. READY TO FREEZE: note `bollinger-pullback-across-a-coin-basket` (strategy
-      `bollinger-pullback`; limit entries now in the portfolio engine).
-      Bollinger pullback on a coin basket (batch 3 G1, Rayner Teo). The coin closes
-      above its 200-day, closes below the lower band (20, 2.5 SD), and then a limit order
-      3% under that close fills. Exit on RSI(2) > 50 or after 10 days. At most 3 coins,
-      ranked by 150-day return. It is the dip family (twin: buy big down days, on
-      BTC/ETH only), but across alts with a trend filter it is untested. Our universe
-      keeps delisted coins, so it avoids the survivorship bias Rayner's test may have.
-      Built: limit entries filling at min(limit, open) when the low reaches them, and
-      null weights that keep a held coin untrimmed. 3 runs, not the 9-setting sweep.
-- [ ] 3. READY TO FREEZE: note `squeeze-breakout-on-btc-and-eth` (strategy `squeeze-breakout`).
-      Squeeze breakout (batch 3 G4). Band width at a 120-bar low; buy a close above
-      the upper band while above the 200-day; trail on the 20-day MA. It relates to our
-      volatile-direction study (TREND), but the long-only version found little.
-      Twin: channel breakout (dropped).
-- [ ] 4. Order flow, BTC/ETH 1m-5m (batch 2 C, Fabio Valentino): delta, cumulative delta
-      and the volume profile from Binance aggTrades. Model 2 first (a failed breakout
-      back to the point of control). New family, but 1m stops measured 6-19 bp against a
-      22 bp round trip: gate its own stops first. A big data job (trades, not bars).
-- [ ] 5. READY TO FREEZE: note `monthly-rotation-across-btc-eth-and-sol` (strategy
-      `monthly-rotation`). Momentum rotation, BTC/ETH/SOL/cash monthly (batch 3 G3, with batch 2 A5/A6
-      merged in): hold the top 2 by 12-month return that are above their 200-day; sweep
-      3/6/12 months. Twins: BTC/ETH rotation (dropped), cross-sectional momentum (dropped).
-      Overlaps trend-vol-target (pursue). A5 has no crypto version.
-- [ ] 6. READY TO FREEZE: note `rsi-dip-buying-on-btc-and-eth` (strategy `rsi-dip`).
-      RSI dip-buying, BTC/ETH 1d (batch 2 A1/A2/A4 and batch 3 G2 merged): RSI(2) < 10,
-      RSI(5) < 30 or RSI(10) < 30, above the 200-day. Exit on the close above yesterday's
-      high or RSI(10) > 40. Twins: buy big down days, Fear & Greed contrarian, extreme fear
-      (all dropped or KILL). G2 has 36 trades in 23 years, so pool coins. At most 8 trials.
-- [ ] 7. READY TO FREEZE: note `breakouts-across-a-coin-basket` (strategy `basket-breakout`;
-      its ATR stop acts at the close). Basket breakouts (batch 2 B1/B2): a 100-day 3 SD band, or 20% off the 50-day low;
-      BTC above its 200-day; lowest volatility first; ATR stop; 3 slots, not 10. Twins:
-      channel breakout, 10-coin trend basket (both dropped).
-- [ ] 8. READY TO FREEZE: note `cross-sectional-momentum-top-3-over-1-3-months` (existing
-      strategy `xs-momentum`, no new code). Cross-sectional momentum, long the top 3 by 1-3 month return (batch 2). Twin:
-      top 5 (dropped, -92% drawdown). The video's version is long-short; we only get the
-      long half.
-- [ ] 9. READY TO FREEZE: note `candle-pattern-and-macd-turn-on-btc-and-eth` (strategy
-      `pattern-macd`, a bracket strategy: test 9 applies). Price action + MACD (batch 3 G5): candle pattern at a swing, breakout, MACD
-      turn. No stop in the original (its 87% win rate likely hides large losses). Chart
-      pattern family; every pattern we tested failed.
-- [ ] 10. Set and Forget (batch 1 S1): W/D/4H structure, zones with 3+ touches, 1H
-      engulfing entry, 2R-4R. Discretionary zones, pattern family, forex original.
-- [ ] 11. CHoCH + FVG and market shift (batch 1 S2/S3, Craig Percoco / Brad Goh): the cost
-      gate FAILED on 17 of 18 (0.5-3.9R of costs a trade). Only SOL 5m at the NY open was
-      MARGINAL (0.49R). Luke's call: drop, or test SOL 5m NY only. A Percoco structure
-      pullback was rejected on 2026-11-05 (+0.06R).
-- Not on the list: earnings IV-crush calendars (batch 2 D, US equity options). Running G1
-  and G3 50/50 together is a multi-strategy portfolio, which is parked in CLAUDE.md;
-  revisit only if both pass on their own.
+## YouTube strategies (batches 1-3): what's left
+Tested 2026-11-15: turn of the month, Bollinger pullback, squeeze breakout, rotation, RSI
+dip-buying, basket breakouts, top-3 momentum and pattern + MACD all failed the scorecard and
+are dropped (findings, "Every hypothesis"). Pattern + MACD was the random-entry control's
+first real test: no better than random entries. Untested, all low priority:
+- [ ] Order flow, BTC/ETH 1m-5m (batch 2 C): needs trade-level data; 1m stops already fail
+      the cost gate, so gate its own stops first.
+- [ ] Set and Forget (batch 1 S1): zones drawn by eye; the chart-pattern family keeps failing.
+- [ ] CHoCH + FVG / market shift (batch 1 S2/S3): failed the cost gate; only SOL 5m at the NY
+      open was marginal.
 
 ## Waiting on Luke
-- [ ] Load the three paper jobs (Luke): `launchctl bootstrap gui/$(id -u)
-      ~/Library/LaunchAgents/com.kestrel.paper.tvt-{btc,eth,sol}.plist`, one command each.
-      Accounts tvt-btc, tvt-eth, tvt-sol are open (testnet, 330 USDT each, first decision the
-      2026-11-14 bar). 395 days; reviews every 3 months; failure-only check at 182 days.
+- [ ] Paper trading is live on the testnet (loaded 2026-11-15): tvt-btc, tvt-eth, tvt-sol,
+      hourly at 10 past. Check the first runs (Trading page or `kestrel paper status`).
+      Reviews every 3 months (next around 2027-02-15); failure-only check at 182 days
+      (around 2027-05-15); verdict at 395 days (around 2027-12-14).
 
 ## Next
 - [ ] Testnet keys from the macOS keychain, not ~/.zshrc (Luke, 2026-11-15). Luke adds them
@@ -109,12 +46,6 @@ Strategies, most to least promising:
       and tokenized stocks/ETFs (AAPLBUSDT... from June 2026, too short for now). Wider
       markets give trend strategies more setups (Rayner's point) and test whether an edge
       is crypto-only. Each needs its own spread assumption and its own holding benchmark.
-- [ ] Rotation across uncorrelated assets: BTC / gold (PAXGUSDT) / cash (Luke, 2026-11-15).
-      Why: BTC/ETH/SOL rotation (dropped; failed two holdouts) mostly picked the most volatile
-      coin, since the three move together; Rayner's ETF version works across assets that
-      don't. Needs a new note with that reason stated first, pre-holdout data, trials
-      counted. It can't use the holdout (gold's 2025-26 rise is already known): judge it
-      forward on paper.
 - [ ] News-tone study (Luke's pick over Twitter, 2026-11-14): code built (`kestrel.data.news`,
       `kestrel signal-study news-tone`). Needs `kestrel ingest-news BTCUSDT ETHUSDT` first:
       GDELT allows ~1 request every 5-10s, so the 2017-25 history takes ~40+ minutes (run it in
@@ -128,6 +59,7 @@ Strategies, most to least promising:
 - [ ] HMM regime filter (backlog S2) as a strategy: needs a note that passes the entry bar.
 
 ## Done recently
+- 2026-11-15 Paper jobs loaded (Luke). BTC/gold rotation tested and dropped. TODO tidied.
 - 2026-11-15 Paper trading opened: tvt-btc, tvt-eth, tvt-sol on the testnet, schedules written. Trend-trio: watch.
 - 2026-11-15 Trend-vol-target on ETH and SOL: pursue (Luke), after passing their holdouts.
 - 2026-11-15 Trend-vol-target finished on ETH and SOL: both match BTC's standard; holdout notes drafted. Strategies page cleaned (three rotation notes rejected).
