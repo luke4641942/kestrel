@@ -1,0 +1,23 @@
+{
+  "slug": "trend-vol-target-on-btc-eth-and-sol-together",
+  "name": "Trend-vol-target on BTC, ETH and SOL together",
+  "created_at": "2026-11-15T06:48:12.385258+00:00",
+  "status": "backtested",
+  "history": [
+    {
+      "status": "idea",
+      "at": "2026-11-15T06:48:12.385258+00:00",
+      "reason": "Created"
+    },
+    {
+      "status": "specified",
+      "at": "2026-11-15T06:49:14.663024+00:00",
+      "reason": "v1 frozen"
+    },
+    {
+      "status": "backtested",
+      "at": "2026-11-15T06:49:34.253130+00:00",
+      "reason": "first run on v1"
+    }
+  ]
+}

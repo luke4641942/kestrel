@@ -1,0 +1,15 @@
+{
+  "version": 1,
+  "created_at": "2026-11-15T06:48:12.385258+00:00",
+  "sections": {
+    "hypothesis": "Running trend-vol-target on BTC, ETH and SOL in one account, a third each, beats holding a third of each coin on Sharpe after costs, with a shallower drawdown than any one coin's strategy alone.",
+    "rationale": "Luke's request (2026-11-15) to backtest the three strategies on pursue at once. The coins move together, but not perfectly, and each strategy steps aside at different times, so the combined account should be smoother than any one of them: diversification within one rule. CLAUDE.md parks multi-strategy portfolios because every split is a trial; here the split is fixed by a rule (equal thirds) and named before the run. It tests the portfolio, not a new signal: each coin's strategy is unchanged and has already passed its own scorecard standard and holdout. Its holdout can't be used fairly: each part's holdout result is known.",
+    "rules": "trend-trio with trend-vol-target's defaults (20/60/120-day votes, 30-day volatility, 50% target): each coin's weight is a third of what trend-vol-target gives it alone; before SOL lists (2020-08) its third is cash. Daily decisions through the portfolio engine (one 2% no-trade band for the account). 990 USDT (330 per coin, as the three paper accounts), costs from kestrel.toml. Period 2020-01 to 2025-10, before the holdout. The control trio-hold (a third of each coin, rebalanced Sundays) runs on the same period and cash.",
+    "falsification": "An added test: its Sharpe must beat trio-hold's (the fair comparison: the same coins, always in). Then the full scorecard against BTC held, with walk-forward through the portfolio engine. Reported beside each coin alone (BTC 1.23, ETH 1.24, SOL 1.52). A pass supports running the three paper accounts as one later, with an allocator; it doesn't change the paper test.",
+    "parameters": "The defaults above; nothing tuned. One run, the control, and the robustness neighbours (about 12).",
+    "costs": "The sum of the three strategies' turnover; about 17 bps a round trip on BTC and ETH, wider on SOL. Trials: 1 run, the control and about 12 neighbours."
+  },
+  "implementation": "trend-trio",
+  "frozen_at": "2026-11-15T06:49:14.662987+00:00",
+  "change_reason": null
+}
