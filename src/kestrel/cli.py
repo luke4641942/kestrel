@@ -39,7 +39,7 @@ from kestrel.backtest.runs import (
     RunRequest,
     RunStore,
     execute,
-    universe_panel,
+    strategy_panel,
 )
 from kestrel.config import Config, ConfigError, load_config
 from kestrel.data import attention, funding, live, news, sentiment
@@ -615,7 +615,7 @@ def holdout_test_cmd(
         store_ = ParquetStore(data_dir)
         if spec_for(key).universe:
             # A basket: the portfolio engine on the universe panel, against BTC held.
-            panel = universe_panel(store_, interval, first, last)
+            panel = strategy_panel(store_, key, interval, first, last)
             btc = store_.read(UNIVERSE_BENCHMARK, interval, warm, until)
             typer.echo(f"HOLDOUT USED: {key} on {UNIVERSE} for {link[0]} v{link[1]}")
             mine = run_portfolio(
@@ -681,7 +681,7 @@ def walk_forward_cmd(
         plug: dict[str, Any] = {}
         if spec_for(key).universe:
             # A basket: each window's panel through the portfolio engine, against BTC held.
-            bars = universe_panel(ParquetStore(data_dir), interval, first, last)
+            bars = strategy_panel(ParquetStore(data_dir), key, interval, first, last)
             btc = ParquetStore(data_dir).read(
                 UNIVERSE_BENCHMARK,
                 interval,
@@ -781,7 +781,7 @@ def robustness(
         first, last = Month.parse(start), Month.parse(end)
         evaluate: Callable[[dict[str, int]], Metrics]
         if spec.universe:
-            panel = universe_panel(store, interval, first, last)
+            panel = strategy_panel(store, key, interval, first, last)
 
             def evaluate(p: dict[str, int]) -> Metrics:
                 strategy_ = make_portfolio_strategy(key, p)

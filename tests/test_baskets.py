@@ -409,3 +409,47 @@ def test_pullback_is_registered() -> None:
     spec = STRATEGIES["bollinger-pullback"]
     assert (spec.kind, spec.universe) == ("research", True)
     assert BollingerPullback().name == "Bollinger pullback 2.5SD, 3% limit, top 3 coins"
+
+
+def test_rotation_macd_filter_drops_a_coin_whose_histogram_is_negative() -> None:
+    # ETH rises then turns down in the last days: still above its average and up over the
+    # lookback, but MACD's histogram has gone negative.
+    eth = steady(0.02, 55) + [steady(0.02, 55)[-1] * (0.98**i) for i in range(1, 7)]  # type: ignore[operator]
+    p = coins({"BTCUSDT": (steady(0.01, 61), 9e9), "ETHUSDT": (eth, 9e9)})
+    plain = last(rotation(trend_days=40), p)
+    assert sorted(plain["symbol"].to_list()) == ["BTCUSDT", "ETHUSDT"]
+    filtered = last(rotation(trend_days=40, macd_filter=1), p)
+    assert filtered["symbol"].to_list() == ["BTCUSDT"]
+
+
+def test_btc_gold_rotation_holds_the_stronger_of_the_two() -> None:
+    from kestrel.strategies.monthly_rotation import BtcGoldRotation
+
+    p = coins({
+        "BTCUSDT": (steady(0.005, 61), 9e9),
+        "PAXGUSDT": (steady(0.01, 61), 9e9),
+        "ETHUSDT": (steady(0.05, 61), 9e9),  # not one of its assets
+    })  # fmt: skip
+    d = last(BtcGoldRotation(lookback_days=20, trend_days=10), p)
+    assert (d["symbol"].to_list(), d["weight"].to_list()) == (["PAXGUSDT"], [1.0])
+    spec = STRATEGIES["btc-gold-rotation"]
+    assert spec.assets == ("BTCUSDT", "PAXGUSDT")
+
+
+def test_a_strategy_with_named_assets_gets_only_their_panel(tmp_path) -> None:  # type: ignore[no-untyped-def]
+    from datetime import timedelta
+
+    from kestrel.backtest.runs import strategy_panel
+    from kestrel.data.binance_vision import Month
+    from kestrel.data.schema import Interval
+    from kestrel.data.store import ParquetStore
+    from tests.backtest.helpers import bars
+
+    store = ParquetStore(tmp_path)
+    for name in ("BTCUSDT", "PAXGUSDT", "ETHUSDT"):
+        store.write(name, Interval.D1, bars([100.0] * 40, start=T0, step=timedelta(days=1)))
+    month = Month.parse("2024-01")
+    panel = strategy_panel(store, "btc-gold-rotation", Interval.D1, month, month)
+    assert sorted(panel["symbol"].unique().to_list()) == ["BTCUSDT", "PAXGUSDT"]
+    with pytest.raises(ValueError, match="no 1d coin universe"):
+        strategy_panel(store, "monthly-rotation", Interval.D1, month, month)

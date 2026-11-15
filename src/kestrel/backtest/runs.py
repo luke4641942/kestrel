@@ -155,13 +155,30 @@ def universe_panel(
     return panel
 
 
+def strategy_panel(
+    store: ParquetStore, key: str, interval: Interval, start: Month, end: Month
+) -> pl.DataFrame:
+    """The panel a universe strategy runs on: its named assets if it has them (each
+    ingested on its own, like PAXGUSDT), else the coin universe."""
+    assets = spec_for(key).assets
+    if not assets:
+        return universe_panel(store, interval, start, end)
+    panel = load_panel(store, list(assets), interval, start, end)
+    missing = sorted(set(assets) - set(panel["symbol"].unique().to_list()))
+    if missing:
+        raise ValueError(
+            f"no {interval.value} bars stored for {', '.join(missing)}; ingest them first"
+        )
+    return panel
+
+
 def _execute_universe(request: RunRequest, store: ParquetStore, config: Config) -> RunOutcome:
     strategy = make_portfolio_strategy(request.strategy, request.params)
     if request.symbol.upper() != UNIVERSE:
         raise ValueError(f"{request.strategy} runs on {UNIVERSE}, not {request.symbol}")
     if request.engine != "event":
         raise ValueError("cross-sectional strategies run on the event engine only")
-    panel = universe_panel(store, request.interval, request.start, request.end)
+    panel = strategy_panel(store, request.strategy, request.interval, request.start, request.end)
     result = run_portfolio(
         strategy,
         panel,

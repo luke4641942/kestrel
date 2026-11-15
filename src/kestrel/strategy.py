@@ -29,7 +29,7 @@ from kestrel.strategies.brake import TrendVolTargetBrake, WeeklyMomentumBrake
 from kestrel.strategies.funding import FundingHold, FundingTrend
 from kestrel.strategies.levels import LevelBreakout, LevelRetest
 from kestrel.strategies.momentum import CrossSectionalMomentum
-from kestrel.strategies.monthly_rotation import MonthlyRotation
+from kestrel.strategies.monthly_rotation import BtcGoldRotation, MonthlyRotation
 from kestrel.strategies.pattern_macd import PatternMacd
 from kestrel.strategies.pivots import PivotReversal
 from kestrel.strategies.regime import TrendVolTargetRegime
@@ -193,6 +193,9 @@ class StrategySpec:
     """Ranks the whole coin universe (a PortfolioStrategy) instead of trading one market."""
     features: tuple[str, ...] = ()
     """Information beyond prices it needs on its bars (kestrel.data.features)."""
+    assets: tuple[str, ...] = ()
+    """For a universe strategy over named assets only (e.g. BTC and gold): its panel is just
+    these symbols, each ingested on its own, instead of the coin universe."""
 
 
 STRATEGIES: dict[str, StrategySpec] = {
@@ -715,8 +718,25 @@ STRATEGIES: dict[str, StrategySpec] = {
                 Param("lookback_days", 365, 30, 365, "Days of return ranked"),
                 Param("trend_days", 200, 50, 365, "Trend filter average, days"),
                 Param("top_n", 2, 1, 3, "Coins held"),
+                Param("macd_filter", 0, 0, 1, "1: also need a daily MACD histogram above zero"),
             ),
             universe=True,
+        ),
+        StrategySpec(
+            "btc-gold-rotation",
+            "research",
+            "At each month end, hold whichever of BTC and gold (PAXG) has the better "
+            "lookback_days return among those above their trend_days average; cash if neither. "
+            "Research: runs only through its frozen note.",
+            BtcGoldRotation,
+            (
+                Param("lookback_days", 365, 30, 365, "Days of return ranked"),
+                Param("trend_days", 200, 50, 365, "Trend filter average, days"),
+                Param("top_n", 1, 1, 2, "Assets held"),
+                Param("macd_filter", 0, 0, 1, "1: also need a daily MACD histogram above zero"),
+            ),
+            universe=True,
+            assets=("BTCUSDT", "PAXGUSDT"),
         ),
         StrategySpec(
             "ma-trend",
