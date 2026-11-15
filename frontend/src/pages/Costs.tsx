@@ -1,5 +1,5 @@
 import { useState, type PointerEvent, type ReactNode } from "react";
-import { breakEvenLabel, gateTone, spreadBands } from "../summary";
+import { breakEvenLabel, gateKey, gateSetupName, gateTone, hasOwnTarget, spreadBands } from "../summary";
 import { api, type CostConfig, type CostCurve, type CostGate, type Quote, type Side } from "../api";
 import { Empty, PageHeader, Panel, Section, Status } from "../components/ui";
 import { useDebounced, useResource } from "../hooks";
@@ -218,10 +218,10 @@ export function Costs() {
 
       <Section
         title="Can minute-chart stops pay for themselves?"
-        description="The cost gate. Costs are a share of the trade and risk is the distance to the stop, so a trade's cost in R is the round trip divided by the stop's width. These are the stops of the YouTube S2 setup (a change of character, then a fair value gap) on real bars before the holdout: widths only, no outcomes, so not a trial. Before costs, a 4R target breaks even at a 20% win rate and 2R at 33%."
+        description="The cost gate. Costs are a share of the trade and risk is the distance to the stop, so a trade's cost in R is the round trip divided by the stop's width. These are the stops of the YouTube minute-chart setups (S2's fair value gaps; batch 2's order flow) on real bars before the holdout: widths only, no outcomes, so not a trial. Before costs, a 4R target breaks even at a 20% win rate and 2R at 33%."
       >
         {gates.data && gates.data.length > 0 ? (
-          gates.data.map((g) => <GateTable key={g.interval} gate={g} />)
+          gates.data.map((g) => <GateTable key={gateKey(g)} gate={g} />)
         ) : (
           <Panel>
             <Empty title={gates.loading ? "Loading the cost gate" : "No cost gate run yet"}>
@@ -255,12 +255,14 @@ export function Costs() {
 function GateTable({ gate }: { gate: CostGate }) {
   const day = (iso: string) => iso.slice(0, 10);
   const bps = (n: number | null) => (n === null ? "–" : fmt(n, 0));
+  const own = hasOwnTarget(gate.rows);
   return (
     <Panel>
       <div className="table-wrap">
         <table className="table">
           <caption className="small secondary" style={{ textAlign: "left", padding: "12px 16px 4px" }}>
-            {gate.interval} bars, {day(gate.first)} to {day(gate.last)} · {gate.round_trip_bps ?? "–"} bps round trip ·
+            {gateSetupName(gate.setup)} · {gate.interval} bars, {day(gate.first)} to {day(gate.last)} ·{" "}
+            {gate.round_trip_bps ?? "–"} bps round trip ·
             CARRIES at or below {gate.carries_at}R, FAILS above {gate.fails_above}R
           </caption>
           <thead>
@@ -272,6 +274,7 @@ function GateTable({ gate }: { gate: CostGate }) {
               <th className="num">Cost per trade</th>
               <th className="num">Win rate needed at 2R</th>
               <th className="num">At 4R</th>
+              {own && <th className="num">Own target, R</th>}
               <th>Verdict</th>
             </tr>
           </thead>
@@ -289,6 +292,7 @@ function GateTable({ gate }: { gate: CostGate }) {
                 <td className="num">{r.cost_r === null ? "–" : `${fmt(r.cost_r, 2)}R`}</td>
                 <td className="num">{breakEvenLabel(r.break_even["2"] ?? null)}</td>
                 <td className="num">{breakEvenLabel(r.break_even["4"] ?? null)}</td>
+                {own && <td className="num">{r.target_r === null ? "–" : `${fmt(r.target_r, 2)}R`}</td>}
                 <td className="nw">
                   <Status tone={gateTone(r.verdict)}>{r.verdict}</Status>
                 </td>

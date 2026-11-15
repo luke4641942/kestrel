@@ -1093,12 +1093,15 @@ def cost_gate_cmd(
     symbols: list[str],
     interval: IntervalOpt = Interval.M1,
     swing_bars: Annotated[int, typer.Option(help="Bars either side of a swing high.")] = 3,
+    setup: Annotated[
+        str, typer.Option(help="fvg (S2/S3 fair value gaps) or order-flow (batch 2 C).")
+    ] = "fvg",
     data_dir: DataDir = Path("data"),
     config: Annotated[
         Path, typer.Option("--config", envvar="KESTREL_CONFIG", help="Config file.")
     ] = Path("kestrel.toml"),
 ) -> None:
-    """Can 1m/5m fair-value-gap stops carry a round trip's costs? Measures stop widths only
+    """Can a 1m/5m setup's stops carry a round trip's costs? Measures stop widths only
     (no outcomes, not a trial), on all stored bars before the holdout."""
     try:
         cfg = load_config(config)
@@ -1112,10 +1115,17 @@ def cost_gate_cmd(
                 raise ValueError(
                     f"no stored {symbol.upper()} {interval.value} bars; ingest them first"
                 )
-            found = cost_gate.setups(bars, swing_bars=swing_bars)
+            if setup == "fvg":
+                found = cost_gate.setups(bars, swing_bars=swing_bars)
+            elif setup == "order-flow":
+                found = cost_gate.order_flow_setups(bars)
+            else:
+                raise ValueError(f"unknown setup {setup!r}; fvg or order-flow")
             first, last = bars["open_time"][0], bars["open_time"][-1]
             spans.append((first, last))
-            market = f"{symbol.upper()} {interval.value}"
+            market = ("order flow " if setup == "order-flow" else "") + (
+                f"{symbol.upper()} {interval.value}"
+            )
             typer.echo(f"{market}: {bars.height} bars, {first:%Y-%m-%d} to {last:%Y-%m-%d}")
             gates += [
                 cost_gate.measure(market, found, round_trip),
@@ -1125,10 +1135,10 @@ def cost_gate_cmd(
         typer.echo(str(e), err=True)
         raise typer.Exit(code=1) from None
     typer.echo("")
-    typer.echo(cost_gate.format_gates(gates))
+    typer.echo(cost_gate.format_gates(gates, setup))
     first = min(a for a, _ in spans)
     last = max(b for _, b in spans)
-    saved = cost_gate.save(gates, interval.value, first, last, data_dir)
+    saved = cost_gate.save(gates, interval.value, first, last, data_dir, setup)
     typer.echo(f"Saved for the dashboard: {saved}")
 
 

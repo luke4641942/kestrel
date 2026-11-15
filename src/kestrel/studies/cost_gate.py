@@ -35,7 +35,9 @@ reason not to build the strategy; dropping it is still Luke's call.
 
 from __future__ import annotations
 
+import itertools
 import json
+import math
 from dataclasses import dataclass
 from datetime import UTC, datetime, time
 from pathlib import Path
@@ -60,10 +62,18 @@ class Setup:
     """Open time of the bar whose close made the change of character."""
     entry: float
     stop: float
+    target: float | None = None
+    """Set when the setup names its own target (order flow: the point of control)."""
 
     @property
     def width_bps(self) -> float:
         return (self.entry - self.stop) / self.entry * 1e4
+
+    @property
+    def target_r(self) -> float | None:
+        if self.target is None or self.entry <= self.stop:
+            return None
+        return (self.target - self.entry) / (self.entry - self.stop)
 
 
 def setups(
@@ -100,6 +110,79 @@ def setups(
     return out
 
 
+ORDER_FLOW_BIN_BPS = 5.0
+"""Volume-profile bin width, in bps of the previous day's last close."""
+VALUE_AREA = 0.70
+RECLAIM_BARS = 15
+
+
+def value_area(bars: pl.DataFrame) -> tuple[float, float, float] | None:
+    """(value area low, point of control, value area high) of one session's bars.
+
+    Each bar's volume goes to the bin of its typical price, (high + low + close) / 3. The
+    point of control is the busiest bin's middle; the value area grows from it, adding
+    whichever neighbouring bin traded more, until it holds 70% of the volume."""
+    if bars.is_empty() or float(bars["volume"].sum()) <= 0:
+        return None
+    width = float(bars["close"][-1]) * ORDER_FLOW_BIN_BPS / 1e4
+    typical = (bars["high"] + bars["low"] + bars["close"]) / 3
+    bins: dict[int, float] = {}
+    for price, vol in zip(typical.to_list(), bars["volume"].to_list(), strict=True):
+        key = math.floor(price / width)
+        bins[key] = bins.get(key, 0.0) + vol
+    total = sum(bins.values())
+    poc = max(bins, key=lambda k: (bins[k], -k))
+    lo = hi = poc
+    held = bins[poc]
+    while held < VALUE_AREA * total:
+        below, above = bins.get(lo - 1, 0.0), bins.get(hi + 1, 0.0)
+        if lo - 1 < min(bins) and hi + 1 > max(bins):
+            break
+        if above >= below and hi + 1 <= max(bins):
+            hi += 1
+            held += above
+        else:
+            lo -= 1
+            held += below
+    return lo * width, (poc + 0.5) * width, (hi + 1) * width
+
+
+def order_flow_setups(bars: pl.DataFrame) -> list[Setup]:
+    """Every order-flow Model 2 setup in ``bars`` (batch 2 C, Fabio Valentino), long only.
+
+    Fixed before any measurement (2026-11-16). For each UTC day, the previous day's value
+    area (``value_area``). The first bar of the day whose low trades below the value area
+    low starts a breakdown; it fails if, within ``RECLAIM_BARS`` bars from that bar, one
+    closes back above the value area low with positive delta (taker buys more than half
+    the bar's volume: order flow turned to buyers). Entry is that close, the stop the
+    lowest low from the breakdown bar to the reclaim, the target the point of control
+    (it must be above the entry). One setup a day at most. Only bars up to the reclaim's
+    close are used. Trade-level data would give a truer delta; the bars' taker-buy volume
+    is Binance's own split of each bar's volume, so it is a fair stand-in for a stop gate.
+    """
+    frame = bars.sort("open_time").with_columns(day=pl.col("open_time").dt.date())
+    found: list[Setup] = []
+    days = frame.partition_by("day", maintain_order=True)
+    for before, today in itertools.pairwise(days):
+        area = value_area(before)
+        if area is None:
+            continue
+        val, poc, _ = area
+        rows = today.to_dicts()
+        start = next((i for i, r in enumerate(rows) if r["low"] < val), None)
+        if start is None:
+            continue
+        for j in range(start, min(start + RECLAIM_BARS, len(rows))):
+            r = rows[j]
+            buyers = r["taker_buy_base_volume"] * 2 > r["volume"]
+            if r["close"] > val and buyers:
+                low = min(x["low"] for x in rows[start : j + 1])
+                if poc > r["close"] > low:
+                    found.append(Setup(r["open_time"], r["close"], low, poc))
+                break
+    return found
+
+
 def break_even_win_rate(target_r: float, cost_r: float) -> float:
     """Win rate at which a +target_r / -1R bracket nets zero after ``cost_r`` a trade."""
     return (1 + cost_r) / (target_r + 1)
@@ -111,6 +194,12 @@ class Gate:
     """e.g. "BTCUSDT 1m, NY open"."""
     round_trip_bps: float
     widths_bps: list[float]
+    target_rs: list[float] | None = None
+    """Each setup's own target in R, when the setup names one (order flow)."""
+
+    @property
+    def median_target_r(self) -> float | None:
+        return median(self.target_rs) if self.target_rs else None
 
     @property
     def count(self) -> int:
@@ -152,18 +241,26 @@ def in_session(at: datetime, session: tuple[time, time] = NY_OPEN) -> bool:
 def measure(market: str, found: list[Setup], round_trip_bps: float, ny_only: bool = False) -> Gate:
     chosen = [s for s in found if in_session(s.at)] if ny_only else found
     label = f"{market}, NY open" if ny_only else f"{market}, all hours"
-    return Gate(label, round_trip_bps, [s.width_bps for s in chosen if s.width_bps > 0])
+    kept = [s for s in chosen if s.width_bps > 0]
+    targets = [t for s in kept if (t := s.target_r) is not None]
+    return Gate(label, round_trip_bps, [s.width_bps for s in kept], targets or None)
 
 
-def format_gates(gates: list[Gate]) -> str:
+TITLES = {
+    "fvg": "S2 stops (change of character + fair value gap)",
+    "order-flow": "order flow Model 2 stops (failed breakdown back to the point of control)",
+}
+
+
+def format_gates(gates: list[Gate], setup: str = "fvg") -> str:
     def num(x: float | None, spec: str) -> str:
         return "n/a" if x is None else format(x, spec)
 
     rt = gates[0].round_trip_bps if gates else 0.0
     lines = [
-        f"Cost gate  ·  S2 stops (change of character + fair value gap)  ·  {rt:.0f} bp round trip",
+        f"Cost gate  ·  {TITLES[setup]}  ·  {rt:.0f} bp round trip",
         "",
-        f"  {'market':<26}{'setups':>7}{'p25':>7}{'median':>8}{'p75':>7}"
+        f"  {'market':<34}{'setups':>7}{'p25':>7}{'median':>8}{'p75':>7}"
         f"{'cost':>8}{'>0.5R':>7}{'win% 2R':>9}{'win% 4R':>9}  verdict",
     ]
     for g in gates:
@@ -171,7 +268,7 @@ def format_gates(gates: list[Gate]) -> str:
         rates = [None if cost is None else break_even_win_rate(t, cost) for t in TARGETS_R]
         wins = ["never" if w is not None and w >= 1 else num(w, ".0%") for w in rates]
         lines.append(
-            f"  {g.market:<26}{g.count:>7}{num(g.quantile(0.25), '.0f'):>7}"
+            f"  {g.market:<34}{g.count:>7}{num(g.quantile(0.25), '.0f'):>7}"
             f"{num(g.median_width, '.0f'):>8}{num(g.quantile(0.75), '.0f'):>7}"
             f"{num(cost, '.2f') + 'R':>8}{num(g.share_over_half_r, '.0%'):>7}"
             f"{wins[0]:>9}{wins[1]:>9}  {g.verdict}"
@@ -186,15 +283,30 @@ def format_gates(gates: list[Gate]) -> str:
         "else MARGINAL.",
         "  Stops only, no outcomes: not a trial.",
     ]
+    own = [g for g in gates if g.median_target_r is not None]
+    if own:
+        lines += ["", "  The setup's own target (the point of control), median, in R:"]
+        for g in own:
+            t, cost = g.median_target_r, g.median_cost_r
+            assert t is not None
+            need = None if cost is None else break_even_win_rate(t, cost)
+            shown = "never" if need is not None and need >= 1 else num(need, ".0%")
+            lines.append(f"  {g.market:<34}{t:>6.2f}R   break-even win rate {shown}")
     return "\n".join(lines)
 
 
-def path(data_dir: Path | str, interval: str) -> Path:
-    return Path(data_dir) / "cost_gate" / f"{interval}.json"
+def path(data_dir: Path | str, interval: str, setup: str = "fvg") -> Path:
+    name = interval if setup == "fvg" else f"{setup}-{interval}"
+    return Path(data_dir) / "cost_gate" / f"{name}.json"
 
 
 def save(
-    gates: list[Gate], interval: str, first: datetime, last: datetime, data_dir: Path | str
+    gates: list[Gate],
+    interval: str,
+    first: datetime,
+    last: datetime,
+    data_dir: Path | str,
+    setup: str = "fvg",
 ) -> Path:
     """The latest gate for a bar size, for the dashboard. A rerun replaces it: the setup
     and the verdict are fixed, so only new data can change it, and outcomes never enter."""
@@ -215,10 +327,12 @@ def save(
                     for t in TARGETS_R
                 },
                 "verdict": g.verdict,
+                "target_r": g.median_target_r,
             }
         )
     doc = {
         "interval": interval,
+        "setup": setup,
         "measured_at": datetime.now(UTC).isoformat(),
         "first": first.isoformat(),
         "last": last.isoformat(),
@@ -227,7 +341,7 @@ def save(
         "fails_above": FAILS_ABOVE,
         "rows": rows,
     }
-    target = path(data_dir, interval)
+    target = path(data_dir, interval, setup)
     target.parent.mkdir(parents=True, exist_ok=True)
     tmp = target.with_suffix(".tmp")
     tmp.write_text(json.dumps(doc, indent=2))

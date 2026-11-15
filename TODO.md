@@ -8,8 +8,10 @@ Tested 2026-11-15: turn of the month, Bollinger pullback, squeeze breakout, rota
 dip-buying, basket breakouts, top-3 momentum and pattern + MACD all failed the scorecard and
 are dropped (findings, "Every hypothesis"). Pattern + MACD was the random-entry control's
 first real test: no better than random entries. Untested, all low priority:
-- [ ] Order flow, BTC/ETH 1m-5m (batch 2 C): needs trade-level data; 1m stops already fail
-      the cost gate, so gate its own stops first.
+- [ ] Order flow (batch 2 C): its own cost gate run 2026-11-16 (`kestrel cost-gate --setup
+      order-flow`, stops only, not a trial): no case carries; 1m FAILS 5 of 6, 5m MARGINAL
+      5 of 6 with the point of control only 1.4-2.1R away (41-62% wins to break even).
+      Luke's call: drop, or a frozen note for 5m.
 - [ ] Set and Forget (batch 1 S1): zones drawn by eye; the chart-pattern family keeps failing.
 - [ ] CHoCH + FVG / market shift (batch 1 S2/S3): failed the cost gate; only SOL 5m at the NY
       open was marginal.

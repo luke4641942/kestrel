@@ -305,11 +305,15 @@ export interface CostGateRow {
   break_even: Record<string, number | null>;
   /** CARRIES, MARGINAL, FAILS or NO SETUPS. */
   verdict: string;
+  /** The setup's own target in R (median), when it names one (order flow's point of control). */
+  target_r: number | null;
 }
 
 /** A saved cost gate (kestrel.studies.cost_gate). Stops only, no outcomes; run from the CLI. */
 export interface CostGate {
   interval: Interval;
+  /** "fvg" (S2/S3 fair value gaps) or "order-flow". */
+  setup: string;
   measured_at: string;
   first: string;
   last: string;

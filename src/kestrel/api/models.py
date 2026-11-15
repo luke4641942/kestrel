@@ -731,6 +731,8 @@ class CostGateRowOut(BaseModel):
     break_even: dict[str, float | None]
     """Win rate needed to break even after costs, keyed by target in R ("2", "4")."""
     verdict: str
+    target_r: float | None = None
+    """The setup's own target in R (median), when it names one: order flow's point of control."""
 
 
 class CostGateOut(BaseModel):
@@ -738,6 +740,8 @@ class CostGateOut(BaseModel):
     from the CLI; read-only here."""
 
     interval: str
+    setup: str = "fvg"
+    """fvg (S2/S3 fair value gaps) or order-flow; gates saved before 2026-11-16 are fvg."""
     measured_at: datetime
     first: datetime
     last: datetime

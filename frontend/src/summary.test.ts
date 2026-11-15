@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { breakEvenLabel, drawdownPaths, mostPromising, newestFirst, gateTone, holdoutEdge, datasetsLine, scorecardHeadline, luckBar, splitClosed, startDateVerdict, windowLabel, DECISION, studyTitle, studyTone, deflatedNote, spreadBands, DEFAULT_RUN_SORT, KIND_LABEL, UNIVERSE, marketLabel, marketsFor, defaultDataset, nextSort, sortRuns, fewTrades, signalsCaption, MAX_LABELLED_TRADES, MAX_MARKED_TRADES, costHeadroom, paramsText, runRole, tradeCount, heldAsset, money, span, trackRecord, tradeMarkers, verdict } from "./summary";
+import { breakEvenLabel, gateKey, gateSetupName, hasOwnTarget, drawdownPaths, mostPromising, newestFirst, gateTone, holdoutEdge, datasetsLine, scorecardHeadline, luckBar, splitClosed, startDateVerdict, windowLabel, DECISION, studyTitle, studyTone, deflatedNote, spreadBands, DEFAULT_RUN_SORT, KIND_LABEL, UNIVERSE, marketLabel, marketsFor, defaultDataset, nextSort, sortRuns, fewTrades, signalsCaption, MAX_LABELLED_TRADES, MAX_MARKED_TRADES, costHeadroom, paramsText, runRole, tradeCount, heldAsset, money, span, trackRecord, tradeMarkers, verdict } from "./summary";
 import { run, trade } from "./test/fixtures";
 
 describe("verdict", () => {
@@ -470,5 +470,22 @@ describe("mostPromising", () => {
     const held = { ...runs[0]!.benchmark_metrics, sharpe: 1.0 };
     for (const r of runs) r.benchmark_metrics = held;
     expect(mostPromising(runs).map((r) => r.id)).toEqual(["a2", "b1", "c1"]);
+  });
+});
+
+describe("cost gate setups", () => {
+  it("keys a gate by setup and bar size, since two setups can share a bar size", () => {
+    expect(gateKey({ setup: "fvg", interval: "1m" })).not.toBe(gateKey({ setup: "order-flow", interval: "1m" }));
+  });
+
+  it("names each setup in words, and shows an unknown one as it is", () => {
+    expect(gateSetupName("order-flow")).toContain("point of control");
+    expect(gateSetupName("fvg")).toContain("fair value gap");
+    expect(gateSetupName("other")).toBe("other");
+  });
+
+  it("adds the own-target column only when a row has one", () => {
+    expect(hasOwnTarget([{ target_r: null }])).toBe(false);
+    expect(hasOwnTarget([{ target_r: null }, { target_r: 1.8 }])).toBe(true);
   });
 });

@@ -16,6 +16,7 @@ from __future__ import annotations
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
 
+import polars as pl
 import pytest
 from typer.testing import CliRunner
 
@@ -23,6 +24,7 @@ from kestrel.cli import app
 from kestrel.data.schema import Interval
 from kestrel.data.store import ParquetStore
 from kestrel.studies.cost_gate import (
+    RECLAIM_BARS,
     Gate,
     Setup,
     break_even_win_rate,
@@ -30,8 +32,11 @@ from kestrel.studies.cost_gate import (
     in_session,
     load_all,
     measure,
+    order_flow_setups,
+    path,
     save,
     setups,
+    value_area,
 )
 from tests.backtest.helpers import T0, bars
 from tests.test_structure import CLOSE, HIGH, LOW, frame
@@ -141,6 +146,15 @@ def test_the_command_saves_the_gate_for_the_dashboard(tmp_path: Path) -> None:
     assert gate["round_trip_bps"] == 17.0
     assert [r["market"] for r in gate["rows"]] == ["BTCUSDT 1m, all hours", "BTCUSDT 1m, NY open"]
     assert gate["rows"][0]["verdict"] == "NO SETUPS"
+    assert gate["setup"] == "fvg"
+    assert gate["rows"][0]["target_r"] is None
+    t = datetime(2025, 1, 1, tzinfo=UTC)
+    flow = Gate("order flow BTCUSDT 1m, all hours", 17.0, [34.0], [2.5])
+    save([flow], "1m", t, t, tmp_path, "order-flow")
+    both = client.get("/api/cost-gate").json()
+    assert sorted(g["setup"] for g in both) == ["fvg", "order-flow"]
+    (saved,) = [g for g in both if g["setup"] == "order-flow"]
+    assert saved["rows"][0]["target_r"] == 2.5
 
 
 def test_saved_gates_keep_their_numbers_and_sort_by_bar_size(tmp_path: Path) -> None:
@@ -155,3 +169,107 @@ def test_saved_gates_keep_their_numbers_and_sort_by_bar_size(tmp_path: Path) -> 
     assert row["break_even"]["4"] == pytest.approx((1 + 22 / 45) / 5)
     assert row["verdict"] == "MARGINAL"
     assert load_all(tmp_path / "none") == []
+
+
+def session(
+    lows: list[float],
+    closes: list[float],
+    *,
+    start: datetime,
+    buyers: list[bool] | None = None,
+    volume: float = 10.0,
+):  # type: ignore[no-untyped-def]
+    """1m bars with chosen lows and closes; opens and highs at the close, so a bar's typical
+    price sits near it. ``buyers``: whether takers bought more than half the volume."""
+    frame = bars(
+        closes,
+        closes=closes,
+        highs=closes,
+        lows=lows,
+        start=start,
+        step=timedelta(minutes=1),
+    )
+    flags = buyers or [True] * len(closes)
+    return frame.with_columns(
+        volume=pl.lit(volume),
+        taker_buy_base_volume=pl.Series([volume * (0.7 if b else 0.3) for b in flags]),
+    )
+
+
+DAY = datetime(2024, 3, 1, tzinfo=UTC)
+
+
+def test_the_value_area_holds_seventy_percent_around_the_busiest_price() -> None:
+    closes = [100.0] * 60 + [100.2] * 20 + [99.8] * 20  # bins of 5 bps of 100: 0.05 wide
+    area = value_area(session(closes, closes, start=DAY))
+    assert area is not None
+    val, poc, vah = area
+    assert 100.0 <= poc <= 100.05  # the busiest bin (100.0's)
+    assert val <= 100.0 < vah  # 60% is in the POC bin, so one neighbour more makes 80%
+    assert vah - val < 0.5
+
+
+def previous_day():  # type: ignore[no-untyped-def]
+    closes = [100.0] * 80 + [99.0] * 10 + [101.0] * 10
+    return session(closes, closes, start=DAY - timedelta(days=1))
+
+
+def test_a_failed_breakdown_reclaimed_by_buyers_is_a_setup() -> None:
+    before = previous_day()
+    area = value_area(before)
+    assert area is not None
+    val, poc, _ = area
+    lows = [100.0, val - 0.3, val - 0.5, val - 0.1, val - 0.05]
+    closes = [100.0, val - 0.2, val - 0.3, val - 0.02, val + 0.02]
+    found = order_flow_setups(pl.concat([before, session(lows, closes, start=DAY)]))
+    assert len(found) == 1
+    assert found[0].entry == pytest.approx(val + 0.02)
+    assert found[0].stop == pytest.approx(val - 0.5)  # the breakdown's lowest low
+    assert found[0].at == DAY + timedelta(minutes=4)
+    assert poc > found[0].entry
+    assert found[0].target == poc
+    target_r = found[0].target_r
+    assert target_r is not None
+    assert target_r == pytest.approx((poc - found[0].entry) / (found[0].entry - found[0].stop))
+
+
+def test_no_setup_without_buyers_too_late_or_with_nothing_to_aim_at() -> None:
+    before = previous_day()
+    area = value_area(before)
+    assert area is not None
+    val, poc, _ = area
+    sellers = session(
+        [val - 0.3, val - 0.1], [val - 0.2, val + 0.02], start=DAY, buyers=[True, False]
+    )
+    assert order_flow_setups(pl.concat([before, sellers])) == []
+    slow = [val - 0.2] * RECLAIM_BARS + [val + 0.02]
+    late = session([val - 0.3] * len(slow), slow, start=DAY)
+    assert order_flow_setups(pl.concat([before, late])) == []
+    above_poc = session([val - 0.3, val - 0.1], [val - 0.2, poc + 0.1], start=DAY)
+    assert order_flow_setups(pl.concat([before, above_poc])) == []
+
+
+def test_the_order_flow_gate_saves_apart_from_the_fvg_gate(tmp_path: Path) -> None:
+    assert path(tmp_path, "1m").name == "1m.json"
+    assert path(tmp_path, "1m", "order-flow").name == "order-flow-1m.json"
+    ParquetStore(tmp_path).write("BTCUSDT", Interval.M1, minutes())
+    args = ["cost-gate", "BTCUSDT", "--setup", "order-flow", "--data-dir", str(tmp_path)]
+    result = CliRunner().invoke(app, [*args, "--config", REPO_CONFIG])
+    assert result.exit_code == 0, result.output
+    assert "order flow BTCUSDT 1m" in result.output
+    assert "order flow Model 2 stops" in result.output
+    assert (tmp_path / "cost_gate" / "order-flow-1m.json").exists()
+    assert not (tmp_path / "cost_gate" / "1m.json").exists()
+    bad = CliRunner().invoke(
+        app, ["cost-gate", "BTCUSDT", "--setup", "nope", "--data-dir", str(tmp_path)]
+    )
+    assert bad.exit_code == 1
+
+
+def test_the_report_shows_a_setups_own_target_and_its_break_even() -> None:
+    gate = Gate("order flow X 1m, all hours", 17.0, [34.0, 34.0], [1.0, 1.0])
+    text = format_gates([gate], "order-flow")
+    assert "order flow Model 2 stops" in text
+    assert "1.00R   break-even win rate 75%" in text  # (1 + 0.5) / (1 + 1)
+    assert "point of control" in text
+    assert "own target" not in format_gates([Gate("X", 17.0, [34.0])])

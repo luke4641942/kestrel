@@ -394,6 +394,26 @@ export function gateTone(verdict: string): VerdictTone {
   return "neutral";
 }
 
+const GATE_SETUPS: Record<string, string> = {
+  fvg: "S2: a change of character, then a fair value gap",
+  "order-flow": "Order flow Model 2: a failed breakdown back to the point of control",
+};
+
+/** What a saved cost gate measured, in words. */
+export function gateSetupName(setup: string): string {
+  return GATE_SETUPS[setup] ?? setup;
+}
+
+/** A cost gate's identity: its setup and bar size (two setups can share a bar size). */
+export function gateKey(gate: { setup: string; interval: string }): string {
+  return `${gate.setup}-${gate.interval}`;
+}
+
+/** Whether any row names its own target, so the table needs that column. */
+export function hasOwnTarget(rows: { target_r: number | null }[]): boolean {
+  return rows.some((r) => r.target_r !== null && r.target_r !== undefined);
+}
+
 /** A break-even win rate: "30%", or "never" when even winning every trade can't cover costs. */
 export function breakEvenLabel(rate: number | null): string {
   if (rate === null) return "–";
