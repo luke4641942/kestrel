@@ -1,0 +1,15 @@
+{
+  "version": 1,
+  "created_at": "2026-11-15T05:59:45.403849+00:00",
+  "sections": {
+    "hypothesis": "The BTC/ETH/SOL monthly rotation (180 days), holding cash at month ends when stablecoin supply shrank over 4 weeks, beats holding BTC on the scorecard and brings the drawdown within 50%.",
+    "rationale": "Luke's request (2026-11-15) to try the stablecoin signal alongside the rotation. Stated before the run: the rotation is on watch after failing both holdout tests (plain -31.5% and MACD -25.2% against -6.6% and -5.4% for BTC at their exposures); this is another filter added after seeing where it failed, the pattern that produced the MACD version's hindsight. Its holdout is spent and its losses there are known, so a pass can only lead to a forward paper test. The stablecoin signal itself is independent evidence (its own study passed), which is the one difference from the MACD filter.",
+    "rules": "rotation-stablecoins: lookback_days 180, trend_days 200, top_n 2, on the coin universe (BTC, ETH, SOL only), daily bars. At each month-end close, the plain rotation's choice, unless stablecoins_up isn't 1 (supply didn't grow over 4 weeks, or is unknown): then hold nothing. 330 USDT, costs from kestrel.toml. Period 2018-01 to 2025-10, before the holdout.",
+    "falsification": "The full scorecard against BTC held, walk-forward through the portfolio engine. Fails on any failed test. Reported beside the plain rotation at 180 days (Sharpe 1.25, drawdown -59%, 3 of 11 windows) and the MACD version (1.41, -51%, 6 of 11).",
+    "parameters": "lookback_days 180, trend_days 200, top_n 2. One run; the robustness check moves each (about 8 neighbours).",
+    "costs": "At most a few changes each month end. Trials: 1 run plus about 8 neighbours."
+  },
+  "implementation": "rotation-stablecoins",
+  "frozen_at": "2026-11-15T06:00:21.774051+00:00",
+  "change_reason": null
+}

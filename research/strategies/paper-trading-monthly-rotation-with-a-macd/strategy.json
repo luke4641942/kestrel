@@ -1,0 +1,18 @@
+{
+  "slug": "paper-trading-monthly-rotation-with-a-macd",
+  "name": "Paper trading: monthly rotation with a MACD filter",
+  "created_at": "2026-11-15T01:21:50.721799+00:00",
+  "status": "rejected",
+  "history": [
+    {
+      "status": "idea",
+      "at": "2026-11-15T01:21:50.721799+00:00",
+      "reason": "Created"
+    },
+    {
+      "status": "rejected",
+      "at": "2026-11-15T06:06:02.023573+00:00",
+      "reason": "Never frozen; monthly rotation dropped (Luke, 2026-11-15) after failing both holdout tests, so it has nothing to paper trade."
+    }
+  ]
+}

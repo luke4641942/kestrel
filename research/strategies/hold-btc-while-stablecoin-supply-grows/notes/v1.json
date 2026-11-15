@@ -1,0 +1,15 @@
+{
+  "version": 1,
+  "created_at": "2026-11-15T05:59:45.402270+00:00",
+  "sections": {
+    "hypothesis": "Holding BTC only in weeks that start after 4 weeks of stablecoin supply growth, and cash otherwise, beats holding BTC at the same average exposure on Sharpe, after costs.",
+    "rationale": "The raw-effect study (note does-stablecoin-supply-growth-lead-prices, 2026-11-15) found weeks after supply growth averaged +0.78% against -0.38% after shrinkage on BTC and ETH pooled (PROCEED, P 91%), with little overlap with momentum. Who pays: new dollars enter crypto as stablecoins before they buy coins, so supply growth is fresh demand arriving. This trades exactly what was measured. It also settles the study's weak spot: pooling BTC and ETH weeks overstated its confidence, and a BTC-only run tests the effect on one coin with its own Sharpe and confidence interval. Not a variant of a rejected family (it reads money flows, not prices or sentiment). Unlike the rotation variants, its holdout year is unseen for this signal: the supply's path in 2025-26 hasn't been looked at, so a pass here could go on to the holdout.",
+    "rules": "stablecoin-hold on BTCUSDT daily bars: at each Sunday close (UTC), hold BTC for the next week if stablecoins_up is 1 (the supply known at the close, counted from two days after each day, above its value 28 days before), else cash; unknown is cash. Fills at Monday's open, 330 USDT, costs from kestrel.toml (7.5 bps fees with the BNB discount). Period 2018-01 to 2025-10, before the holdout. Also run on ETHUSDT with the same rule, reported separately.",
+    "falsification": "The full scorecard on BTC: fails on any failed test (random entry n/a: it holds weights). ETH is reported beside it and must not contradict it badly (a Sharpe below ETH held at the same exposure is noted as a warning, not a separate pass). A pass leads to a holdout note; a fail ends the idea.",
+    "parameters": "None to choose: 28 days, the two-day lag and Sunday decisions are fixed by the study. Robustness is n/a (no settings), as for weekly momentum.",
+    "costs": "A switch at most weekly; the study's split (602 growing weeks, 214 shrinking) suggests perhaps 15-30 switches a year, about 0.3-0.5% a year at 17 bps a round trip. Trials: 2 runs (BTC, ETH)."
+  },
+  "implementation": "stablecoin-hold",
+  "frozen_at": "2026-11-15T06:00:19.617802+00:00",
+  "change_reason": null
+}

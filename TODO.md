@@ -78,21 +78,12 @@ Strategies, most to least promising:
   revisit only if both pass on their own.
 
 ## Waiting on Luke
-- [ ] Rotation + MACD FAILED its one-sided holdout (-25.2% vs -5.4% for BTC at its exposure).
-      The note's agreed rule: a fail means drop. Drop rotation, or keep it on watch? Your call.
 - [ ] Read and freeze `paper-trading-trend-vol-target-btc` (drafted 2026-11-14). Then:
       `kestrel paper open tvt-btc ... --venue testnet` (the note's rules), `kestrel paper
       schedule tvt-btc`, and load the job with the launchctl command it prints. The
       395-day test (90%, a 6-month failure-only check) starts at its first decision.
 
 ## Next
-- [ ] Stablecoin study PROCEED (spread +1.17% a week, P 91%): draft a strategy note (hold BTC
-      while supply grows, cash otherwise; full scorecard). Check first that BTC alone shows it,
-      since pooling BTC and ETH weeks overstates the confidence.
-- [ ] Multi-coin paper trading: the paper runner, ledger, testnet venue, reconciliation and
-      tracking hold one coin. Rotation + MACD holds up to 2 of BTC/ETH/SOL. Extend them to
-      a portfolio (the portfolio engine's rebalance at each decision), with the same
-      replay-equals-backtest test as tests/test_paper.py. About 1-2 sessions.
 - [x] Walk-forward for basket strategies: built 2026-11-15 (portfolio engine per window, against
       BTC held); the five basket walk-forwards rerun with the notes' settings.
 - [ ] Delistings (Luke's idea, 2026-11-14): a raw-effect study before any strategy.
@@ -113,7 +104,7 @@ Strategies, most to least promising:
       markets give trend strategies more setups (Rayner's point) and test whether an edge
       is crypto-only. Each needs its own spread assumption and its own holding benchmark.
 - [ ] Rotation across uncorrelated assets: BTC / gold (PAXGUSDT) / cash (Luke, 2026-11-15).
-      Why: BTC/ETH/SOL rotation (watch; failed its holdout) mostly picked the most volatile
+      Why: BTC/ETH/SOL rotation (dropped; failed two holdouts) mostly picked the most volatile
       coin, since the three move together; Rayner's ETF version works across assets that
       don't. Needs a new note with that reason stated first, pre-holdout data, trials
       counted. It can't use the holdout (gold's 2025-26 rise is already known): judge it
@@ -131,6 +122,7 @@ Strategies, most to least promising:
 - [ ] HMM regime filter (backlog S2) as a strategy: needs a note that passes the entry bar.
 
 ## Done recently
+- 2026-11-15 Stablecoin hold: beats holding on BTC and ETH but fails five tests; watch (Luke). Rotation dropped (Luke), with its stablecoin version.
 - 2026-11-15 Cost re-checks at BNB fees: verdicts unchanged. Stablecoin study: PROCEED.
 - 2026-11-15 ETH/BTC relative value: fails the scorecard; dropped (Luke).
 - 2026-11-15 Strategies page cleaned up (Luke): three notes of dropped strategies rejected; trend walk-forward and rotation holdout notes kept.

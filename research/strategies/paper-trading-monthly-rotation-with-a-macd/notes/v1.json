@@ -1,0 +1,15 @@
+{
+  "version": 1,
+  "created_at": "2026-11-15T01:21:50.721799+00:00",
+  "sections": {
+    "hypothesis": "Monthly rotation with a MACD filter, traded forward through Kestrel, (a) behaves exactly as its backtest model says, and (b) beats BTC held at the same average exposure on data that didn't exist when it was designed.",
+    "rationale": "On watch since 2026-11-15: 7 of 9 scorecard tests (Sharpe 1.41 vs 0.74 for BTC over 2018-25; walk-forward 6 of 11 windows; every nearby setting 1.26-1.49), failing drawdown (-50.7%) and luck (deflated 57%). Its MACD filter was chosen after seeing where the plain rotation lost, and all past data has been seen, so only forward data can tell a real edge from hindsight. Its minimum track record (Bailey and Lopez de Prado, from its 2018-25 daily returns) is about 310 days for 90% confidence that its true Sharpe is above zero (509 for 95%); it runs 395 days so it is reviewed alongside trend-vol-target's paper test. Caveat: it decides only at month ends, so 395 days is about 13 decisions; the daily returns, not the decisions, carry the statistics.",
+    "rules": "One account, rot-macd, on Binance's Spot Testnet with 330 USDT of its own allocation, separate from tvt-btc: monthly-rotation over BTCUSDT, ETHUSDT and SOLUSDT with lookback_days 180, trend_days 200, top_n 2, macd_filter 1; decided at each month's last daily close (UTC), traded at the next open; the [risk] limits in kestrel.toml. Needs the multi-coin paper runner (built before this starts: the current one trades one coin). Runs 395 days from its first decision; reviewed every 3 months with kestrel paper track and the Trading page. Interim reviews report; only the 6-month check can end it, and only for failure.",
+    "falsification": "Plumbing, at every review: any decision that differs from the model is a bug, fixed before the test continues; missed month ends are reported. Early failure, at 182 days only: if the model replay is behind BTC held at its average exposure on both Sharpe and return, Claude recommends stopping and Luke decides. Strategy, at 395 days: the model replay must (1) have a probabilistic Sharpe of at least 90%, (2) beat BTC held at its average exposure (by Sharpe if holding's is positive, by return if not), and (3) keep its worst drawdown within 50%. Failing any one means Claude recommends drop and Luke decides.",
+    "parameters": "lookback_days 180, trend_days 200, top_n 2, macd_filter 1; never changed during the test.",
+    "costs": "Modelled at about 22 bps a round trip on BTC and ETH, wider on SOL by its spread band; testnet fees and prices aren't real. Paper trading is not a trial."
+  },
+  "implementation": "monthly-rotation",
+  "frozen_at": null,
+  "change_reason": null
+}

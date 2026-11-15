@@ -272,9 +272,9 @@ evidence = ["squeeze-breakout-on-btc-and-eth"]
 strategy = "monthly-rotation"
 name = "Monthly rotation across BTC, ETH and SOL (plain, and with a MACD filter)"
 market = "BTC/ETH/SOL 1d"
-decision = "watch"
+decision = "drop"
 decided = 2026-11-15
-reason = "Watch (Luke, 2026-11-15). The note failed its scorecard and is rejected, but it is the only YouTube strategy that beat holding BTC over 2018-01 to 2025-10: Sharpe 1.13, 1.25 and 1.26 (365/180/90-day lookbacks) against 0.74. It fails the drawdown limit (-59%), luck (deflated 30-43%) and out of sample: it beat BTC in only 3 of 11 walk-forward windows, almost all of its lead coming from holding ETH and SOL in 2021. No further work without new evidence; a version with a drawdown control would be a new note with new trials. Holdout (2025-11 to 2026-10, note holdout-monthly-rotation-across-btc-eth-and-sol, read 2026-11-15): FAILED. In a falling year (BTC -29%) it returned -31.5% against -6.6% for BTC held at its 25% exposure; Sharpe -1.21 vs -0.57; drawdown -32% vs -47%. Kept on watch after the holdout (Luke, 2026-11-15); the idea continues as rotation across uncorrelated assets (BTC/gold/cash), a new note to be judged forward. MACD filter version (note monthly-rotation-with-a-macd-filter, rejected; still watch, Luke 2026-11-15): the best scorecard in Kestrel so far, 7 of 9 tests. Sharpe 1.41 vs 0.74 for BTC (2018-01 to 2025-10), walk-forward beat BTC in 6 of 11 windows (out-of-sample Sharpe 1.77), 100% of 2-year starts, break-even cost about 70x actual, 85 trades, every neighbouring setting 1.26-1.49; fails drawdown (-50.7%, limit 50%) and luck (deflated 57%). The filter was added after seeing where the plain rotation lost, so hindsight can't be ruled out and no unseen data is left: its next test is forward, on paper beside trend-vol-target. BTC/gold rotation (note btc-and-gold-rotation) dropped separately. MACD version holdout (note holdout-monthly-rotation-with-a-macd-filter, read 2026-11-15, one-sided: only a fail counts): FAILED. In a falling year (BTC -29%) it returned -25.2% against -5.4% for BTC held at its 21% exposure; drawdown -31% vs -47%. At BNB fees (note cost-re-check-monthly-rotation-at-bnb-fees, 2026-11-15) the verdicts are unchanged: plain Sharpe 1.25, MACD 1.41 (deflated 56%), drawdowns -59% and -51%. Still labelled watch until Luke decides."
+reason = "Dropped (Luke, 2026-11-15); earlier on watch. The note failed its scorecard and is rejected, but it is the only YouTube strategy that beat holding BTC over 2018-01 to 2025-10: Sharpe 1.13, 1.25 and 1.26 (365/180/90-day lookbacks) against 0.74. It fails the drawdown limit (-59%), luck (deflated 30-43%) and out of sample: it beat BTC in only 3 of 11 walk-forward windows, almost all of its lead coming from holding ETH and SOL in 2021. No further work without new evidence; a version with a drawdown control would be a new note with new trials. Holdout (2025-11 to 2026-10, note holdout-monthly-rotation-across-btc-eth-and-sol, read 2026-11-15): FAILED. In a falling year (BTC -29%) it returned -31.5% against -6.6% for BTC held at its 25% exposure; Sharpe -1.21 vs -0.57; drawdown -32% vs -47%. Kept on watch after the holdout (Luke, 2026-11-15); the idea continues as rotation across uncorrelated assets (BTC/gold/cash), a new note to be judged forward. MACD filter version (note monthly-rotation-with-a-macd-filter, rejected; still watch, Luke 2026-11-15): the best scorecard in Kestrel so far, 7 of 9 tests. Sharpe 1.41 vs 0.74 for BTC (2018-01 to 2025-10), walk-forward beat BTC in 6 of 11 windows (out-of-sample Sharpe 1.77), 100% of 2-year starts, break-even cost about 70x actual, 85 trades, every neighbouring setting 1.26-1.49; fails drawdown (-50.7%, limit 50%) and luck (deflated 57%). The filter was added after seeing where the plain rotation lost, so hindsight can't be ruled out and no unseen data is left: its next test is forward, on paper beside trend-vol-target. BTC/gold rotation (note btc-and-gold-rotation) dropped separately. MACD version holdout (note holdout-monthly-rotation-with-a-macd-filter, read 2026-11-15, one-sided: only a fail counts): FAILED. In a falling year (BTC -29%) it returned -25.2% against -5.4% for BTC held at its 21% exposure; drawdown -31% vs -47%. At BNB fees (note cost-re-check-monthly-rotation-at-bnb-fees, 2026-11-15) the verdicts are unchanged: plain Sharpe 1.25, MACD 1.41 (deflated 56%), drawdowns -59% and -51%. Dropped (Luke, 2026-11-15) after both holdout tests failed and a stablecoin filter didn't help either (note monthly-rotation-with-a-stablecoin-filter: Sharpe 1.19, drawdown -59%, walk-forward 3 of 11)."
 evidence = ["monthly-rotation-across-btc-eth-and-sol", "holdout-monthly-rotation-across-btc-eth-and-sol", "monthly-rotation-with-a-macd-filter", "holdout-monthly-rotation-with-a-macd-filter", "cost-re-check-monthly-rotation-at-bnb-fees"]
 
 [[decision]]
@@ -330,3 +330,21 @@ decision = "drop"
 decided = 2026-11-15
 reason = "Dropped (Luke, 2026-11-15). Failed the scorecard (2018-01 to 2025-10): Sharpe 0.74, barely above half each (0.70, its added test) and level with BTC held (0.74); drawdown -87.5% (always fully in crypto); walk-forward beat BTC in 5 of 11 windows; deflated 5%. Switching the whole account between the coins cost 140 USDT against 7 for holding half each: the ratio wobbles, but not enough to pay for the switches."
 evidence = ["eth-btc-relative-value"]
+
+[[decision]]
+strategy = "rotation-stablecoins"
+name = "Monthly rotation with a stablecoin filter"
+market = "BTC/ETH/SOL 1d"
+decision = "drop"
+decided = 2026-11-15
+reason = "Dropped (Luke, 2026-11-15). Failed the scorecard (2018-01 to 2025-10): Sharpe 1.19, below the plain rotation's 1.25, vs 0.74 for BTC; drawdown -59%; walk-forward 3 of 11; deflated 32%."
+evidence = ["monthly-rotation-with-a-stablecoin-filter"]
+
+[[decision]]
+strategy = "stablecoin-hold"
+name = "Hold while stablecoin supply grows"
+market = "BTCUSDT and ETHUSDT 1d"
+decision = "watch"
+decided = 2026-11-15
+reason = "Watch (Luke, 2026-11-15); the note is rejected. The study passed (weeks after 4 weeks of supply growth +0.78% vs -0.38%, P 91%), and as a strategy it beat holding at the same exposure on both coins separately (Sharpe 0.81 vs 0.74 on BTC, 0.75 vs 0.68 on ETH, 2018-01 to 2025-10). But the edge is small: in the market 74% of the time, it takes most of each crash (drawdown -66%, -80%) and fails walk-forward (4 and 5 of 11), start dates, trades (27 of 30) and luck (6%, 4%). If revived, the sensible form is one more vote inside trend-vol-target: a new note, judged forward on paper. Its holdout year is still unseen."
+evidence = ["hold-btc-while-stablecoin-supply-grows", "does-stablecoin-supply-growth-lead-prices"]

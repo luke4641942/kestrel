@@ -1,0 +1,28 @@
+{
+  "slug": "monthly-rotation-with-a-stablecoin-filter",
+  "name": "Monthly rotation with a stablecoin filter",
+  "created_at": "2026-11-15T05:59:45.403849+00:00",
+  "status": "rejected",
+  "history": [
+    {
+      "status": "idea",
+      "at": "2026-11-15T05:59:45.403849+00:00",
+      "reason": "Created"
+    },
+    {
+      "status": "specified",
+      "at": "2026-11-15T06:00:21.774072+00:00",
+      "reason": "v1 frozen"
+    },
+    {
+      "status": "backtested",
+      "at": "2026-11-15T06:02:00.504443+00:00",
+      "reason": "first run on v1"
+    },
+    {
+      "status": "rejected",
+      "at": "2026-11-15T06:06:02.021765+00:00",
+      "reason": "Failed the scorecard (Luke, 2026-11-15): Sharpe 1.19 (below the plain rotation's 1.25) vs 0.74 for BTC; drawdown -59%; walk-forward 3 of 11; deflated 32%."
+    }
+  ]
+}
