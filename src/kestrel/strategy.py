@@ -26,6 +26,7 @@ from kestrel.strategies.basket import LargeCoinBasket
 from kestrel.strategies.basket_breakout import BasketBreakout
 from kestrel.strategies.bollinger_pullback import BollingerPullback
 from kestrel.strategies.brake import TrendVolTargetBrake, WeeklyMomentumBrake
+from kestrel.strategies.eth_btc import BtcEthHalf, EthBtcValue
 from kestrel.strategies.funding import FundingHold, FundingTrend
 from kestrel.strategies.levels import LevelBreakout, LevelRetest
 from kestrel.strategies.momentum import CrossSectionalMomentum
@@ -721,6 +722,28 @@ STRATEGIES: dict[str, StrategySpec] = {
                 Param("macd_filter", 0, 0, 1, "1: also need a daily MACD histogram above zero"),
             ),
             universe=True,
+        ),
+        StrategySpec(
+            "eth-btc-value",
+            "research",
+            "Each Sunday, hold ETH when ETH/BTC is more than entry_tenths/10 standard deviations "
+            "below its lookback_days average, BTC when as far above, else half each. Research: "
+            "runs only through its frozen note.",
+            EthBtcValue,
+            (
+                Param("lookback_days", 90, 20, 365, "Days in the ETH/BTC average"),
+                Param("entry_tenths", 10, 5, 30, "Z-score to tilt fully, in tenths"),
+            ),
+            universe=True,
+            assets=("BTCUSDT", "ETHUSDT"),
+        ),
+        StrategySpec(
+            "btc-eth-half",
+            "control",
+            "Half BTC, half ETH, rebalanced each Sunday: the control for ETH/BTC value.",
+            BtcEthHalf,
+            universe=True,
+            assets=("BTCUSDT", "ETHUSDT"),
         ),
         StrategySpec(
             "btc-gold-rotation",

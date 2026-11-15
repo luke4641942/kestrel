@@ -453,3 +453,26 @@ def test_a_strategy_with_named_assets_gets_only_their_panel(tmp_path) -> None:  
     assert sorted(panel["symbol"].unique().to_list()) == ["BTCUSDT", "PAXGUSDT"]
     with pytest.raises(ValueError, match="no 1d coin universe"):
         strategy_panel(store, "monthly-rotation", Interval.D1, month, month)
+
+
+# ---------- ETH/BTC value ----------
+
+
+def test_eth_btc_value_tilts_to_the_cheap_coin_and_otherwise_holds_half_each() -> None:
+    from kestrel.strategies.eth_btc import BtcEthHalf, EthBtcValue
+
+    flat = [100.0] * 60
+    wobble = [100.0 * (1.01 if i % 2 else 0.99) for i in range(60)]
+    cheap = coins({"BTCUSDT": (flat + [100.0] * 7, 9e9), "ETHUSDT": (wobble + [80.0] * 7, 9e9)})
+    d = last(EthBtcValue(lookback_days=20), cheap)
+    assert (d["symbol"].to_list(), d["weight"].to_list()) == (["ETHUSDT"], [1.0])
+    dear = coins({"BTCUSDT": (flat + [100.0] * 7, 9e9), "ETHUSDT": (wobble + [125.0] * 7, 9e9)})
+    assert last(EthBtcValue(lookback_days=20), dear)["symbol"].to_list() == ["BTCUSDT"]
+    calm = coins({"BTCUSDT": (flat + [100.0] * 7, 9e9), "ETHUSDT": (wobble + wobble[:7], 9e9)})
+    assert last(EthBtcValue(lookback_days=20), calm)["weight"].to_list() == [0.5, 0.5]
+    half = last(BtcEthHalf(), calm)
+    assert (half["symbol"].to_list(), half["weight"].to_list()) == (
+        ["BTCUSDT", "ETHUSDT"], [0.5, 0.5],
+    )  # fmt: skip
+    assert STRATEGIES["eth-btc-value"].assets == ("BTCUSDT", "ETHUSDT")
+    assert STRATEGIES["btc-eth-half"].kind == "control"
