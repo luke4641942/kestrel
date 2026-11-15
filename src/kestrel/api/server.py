@@ -6,7 +6,7 @@ root (KESTREL_RESEARCH) from the environment.
 
 import os
 
-from kestrel.api.app import create_app
+from kestrel.api.app import LOCAL_HOSTS, create_app
 from kestrel.assistant import ResearchAssistant
 
 app = create_app(
@@ -14,4 +14,6 @@ app = create_app(
     config_path=os.environ.get("KESTREL_CONFIG", "kestrel.toml"),
     research_dir=os.environ.get("KESTREL_RESEARCH", "research"),
     assistant=ResearchAssistant(),
+    # A non-local --host (e.g. a LAN address) must be allowed by name too.
+    allowed_hosts=(*LOCAL_HOSTS, *filter(None, [os.environ.get("KESTREL_HOST")])),
 )

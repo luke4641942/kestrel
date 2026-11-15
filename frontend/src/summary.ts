@@ -408,3 +408,9 @@ export function drawdownPaths(paths: number[], actual: number): string {
   if (mid === undefined || bad === undefined) return "n/a";
   return `${p(actual)} in the test; median ${p(mid)}, 1 in 20 worse than ${p(bad)}`;
 }
+
+/** The newest ``limit`` items (already newest first) and the rest, for a table that
+ * shows only its latest rows until asked. */
+export function newestFirst<T>(items: T[], limit: number): { shown: T[]; older: T[] } {
+  return { shown: items.slice(0, limit), older: items.slice(limit) };
+}

@@ -2,7 +2,7 @@ import { useState } from "react";
 import { api, type Job } from "../api";
 import type { Route } from "../App";
 import { Empty, FoldToggle, PageHeader, Panel, Section, Status } from "../components/ui";
-import { DECISION, RESEARCH_STATUS, datasetsLine, holdoutEdge, marketLabel, splitClosed, studyTitle, studyTone } from "../summary";
+import { DECISION, RESEARCH_STATUS, datasetsLine, holdoutEdge, marketLabel, newestFirst, splitClosed, studyTitle, studyTone } from "../summary";
 import { ago, date, num } from "../format";
 import { useResource } from "../hooks";
 
@@ -232,9 +232,15 @@ function ResearchBoard() {
   );
 }
 
+/** Studies shown before "Show": the newest few. Every one still counts as trials. */
+const STUDIES_SHOWN = 8;
+
 function StudiesBoard() {
   const validation = useResource(api.validation, []);
-  const studies = validation.data?.studies ?? [];
+  const all = validation.data?.studies ?? [];
+  const [showOlder, setShowOlder] = useState(false);
+  const { shown, older } = newestFirst(all, STUDIES_SHOWN);
+  const studies = showOlder ? all : shown;
   return (
     <Panel>
       {studies.length === 0 ? (
@@ -274,6 +280,12 @@ function StudiesBoard() {
               ))}
             </tbody>
           </table>
+          <FoldToggle
+            count={older.length}
+            noun={`older stud${older.length === 1 ? "y" : "ies"}`}
+            open={showOlder}
+            onToggle={() => setShowOlder((v) => !v)}
+          />
         </div>
       )}
     </Panel>

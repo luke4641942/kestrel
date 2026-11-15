@@ -236,3 +236,18 @@ def test_server_reads_data_and_config_from_env(
     with TestClient(importlib.reload(server).app) as client:
         assert client.get("/api/health").json()["data_dir"] == str(tmp_path.resolve())
         assert client.get("/api/costs").status_code == 200
+
+
+def test_requests_for_another_host_are_refused(tmp_path: Path) -> None:
+    from fastapi.testclient import TestClient
+
+    from kestrel.api.app import create_app
+
+    app = create_app(tmp_path, static_dir=None)
+    assert TestClient(app).get("/api/health").status_code == 200
+    local = TestClient(app, base_url="http://127.0.0.1:8000")
+    assert local.get("/api/health").status_code == 200
+    # A page whose domain was rebound to 127.0.0.1 still sends its own name.
+    rebound = TestClient(app, base_url="http://evil.example:8000")
+    assert rebound.get("/api/health").status_code == 400
+    assert rebound.post("/api/jobs/regimes", json={"symbol": "BTCUSDT"}).status_code == 400

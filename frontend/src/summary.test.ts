@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { breakEvenLabel, drawdownPaths, gateTone, holdoutEdge, datasetsLine, scorecardHeadline, luckBar, splitClosed, startDateVerdict, windowLabel, DECISION, studyTitle, studyTone, deflatedNote, spreadBands, DEFAULT_RUN_SORT, KIND_LABEL, UNIVERSE, marketLabel, marketsFor, defaultDataset, nextSort, sortRuns, fewTrades, signalsCaption, MAX_LABELLED_TRADES, MAX_MARKED_TRADES, costHeadroom, paramsText, runRole, tradeCount, heldAsset, money, span, trackRecord, tradeMarkers, verdict } from "./summary";
+import { breakEvenLabel, drawdownPaths, newestFirst, gateTone, holdoutEdge, datasetsLine, scorecardHeadline, luckBar, splitClosed, startDateVerdict, windowLabel, DECISION, studyTitle, studyTone, deflatedNote, spreadBands, DEFAULT_RUN_SORT, KIND_LABEL, UNIVERSE, marketLabel, marketsFor, defaultDataset, nextSort, sortRuns, fewTrades, signalsCaption, MAX_LABELLED_TRADES, MAX_MARKED_TRADES, costHeadroom, paramsText, runRole, tradeCount, heldAsset, money, span, trackRecord, tradeMarkers, verdict } from "./summary";
 import { run, trade } from "./test/fixtures";
 
 describe("verdict", () => {
@@ -441,5 +441,12 @@ describe("drawdownPaths", () => {
   it("sets the backtest's drawdown beside the reshuffled ones", () => {
     expect(drawdownPaths([-0.412, -0.634], -0.483)).toBe("-48% in the test; median -41%, 1 in 20 worse than -63%");
     expect(drawdownPaths([], -0.4)).toBe("n/a");
+  });
+});
+
+describe("newestFirst", () => {
+  it("keeps the first rows and folds the rest", () => {
+    expect(newestFirst([1, 2, 3, 4], 3)).toEqual({ shown: [1, 2, 3], older: [4] });
+    expect(newestFirst([1], 3)).toEqual({ shown: [1], older: [] });
   });
 });

@@ -91,4 +91,19 @@ describe("Holdout tests", () => {
     render(<Overview jobs={[]} go={() => {}} openJobs={() => {}} />);
     expect(await screen.findByText("The holdout hasn't been used")).toBeInTheDocument();
   });
+
+  it("shows the eight newest validation studies and folds the rest", async () => {
+    const studies = Array.from({ length: 10 }, (_, k) => ({
+      id: `s${k}`, created_at: "2026-11-15T00:00:00Z", kind: "robustness", strategy: `strategy-${k}`,
+      symbol: "BTCUSDT", interval: "1d", start: "2020-01", end: "2025-10", looks: [], verdict: "ROBUST",
+    }));
+    api.validation = vi.fn().mockResolvedValue({ trials: 10, sharpe_std: 0, expected_max_sharpe: 0, studies });
+    render(<Overview jobs={[]} go={() => {}} openJobs={() => {}} />);
+    await screen.findByText("Robustness of strategy-0");
+    expect(screen.queryByText("Robustness of strategy-8")).not.toBeInTheDocument();
+    expect(screen.getByText("2 older studies hidden.")).toBeInTheDocument();
+    const table = screen.getByText("Robustness of strategy-0").closest(".table-wrap")!;
+    fireEvent.click(within(table as HTMLElement).getByRole("button", { name: "Show" }));
+    expect(screen.getByText("Robustness of strategy-9")).toBeInTheDocument();
+  });
 });

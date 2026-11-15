@@ -18,6 +18,7 @@ from typing import Annotated, Any
 
 import polars as pl
 from fastapi import APIRouter, FastAPI, HTTPException, Query, status
+from fastapi.middleware.trustedhost import TrustedHostMiddleware
 from fastapi.staticfiles import StaticFiles
 
 from kestrel import __version__
@@ -125,6 +126,10 @@ MAX_BARS = 20_000
 ClientFactory = Callable[[], BinanceVisionClient]
 
 
+LOCAL_HOSTS = ("127.0.0.1", "localhost", "testserver")
+"""Host headers the API answers: this machine's names, plus Starlette's test client."""
+
+
 def create_app(
     data_dir: Path | str = "data",
     client_factory: ClientFactory = BinanceVisionClient,
@@ -132,6 +137,7 @@ def create_app(
     config_path: Path | str = "kestrel.toml",
     research_dir: Path | str = "research",
     assistant: ResearchAssistant | None = None,
+    allowed_hosts: tuple[str, ...] = LOCAL_HOSTS,
 ) -> FastAPI:
     store = ParquetStore(data_dir)
     runs = RunStore(data_dir)
@@ -152,6 +158,9 @@ def create_app(
         openapi_url="/api/openapi.json",
         lifespan=lifespan,
     )
+    # Only answer requests addressed to this machine by name. Without this, a web page could
+    # point its own domain at 127.0.0.1 (DNS rebinding) and drive the API from the browser.
+    app.add_middleware(TrustedHostMiddleware, allowed_hosts=list(allowed_hosts))
     api = APIRouter(prefix="/api")
 
     # ---------- system ----------

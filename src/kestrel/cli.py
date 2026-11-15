@@ -1305,6 +1305,7 @@ def serve(
     os.environ["KESTREL_DATA"] = str(data_dir)
     os.environ["KESTREL_CONFIG"] = str(config)
     os.environ["KESTREL_RESEARCH"] = str(research_dir)
+    os.environ["KESTREL_HOST"] = host
     typer.echo(f"Kestrel dashboard: http://{host}:{port}   API docs: http://{host}:{port}/api/docs")
     uvicorn.run("kestrel.api.server:app", host=host, port=port, reload=reload, factory=False)
 
