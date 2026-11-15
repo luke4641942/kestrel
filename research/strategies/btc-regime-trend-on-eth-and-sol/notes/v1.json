@@ -1,0 +1,15 @@
+{
+  "version": 1,
+  "created_at": "2026-11-15T23:30:31.158785+00:00",
+  "sections": {
+    "hypothesis": "btc-regime-trend, unchanged from its confirmation run (BTC above its 50-day average and the coin up over 30 days, sized to 50% volatility), beats holding ETH and SOL at the same exposure on Sharpe after costs, daily bars.",
+    "rationale": "The rule passed the exploration experiment's confirmation on 180 unsearched altcoins (findings item 13). ETH and SOL were left out of that split because they are Kestrel's most-searched coins, so this is not a confirmation: it is Luke's question whether the altcoin rule also works on the two large coins Kestrel already paper-trades with trend-vol-target. It leans on BTC's trend, as trend-vol-target does, so the useful comparison is with trend-vol-target on the same coins (Sharpe 1.24 on ETH 2020-25 and 1.52 on SOL 2020-08 to 2025-10, from their scorecard note). Nothing is tuned.",
+    "rules": "btc-regime-trend with its defaults (btc_days 50, coin_days 30, vol_days 30, target_vol_pct 50), daily bars, spot, long only, 330 USDT, costs from kestrel.toml. ETHUSDT 2020-01 to 2025-10; SOLUSDT 2020-08 to 2025-10. One kestrel backtest each, before the holdout.",
+    "falsification": "Scorecard test 1 on each coin: its Sharpe must beat holding the same coin at the same exposure. Reported beside trend-vol-target's Sharpe on the same coin and period. This note runs the two backtests only; walk-forward, robustness and the rest of the scorecard would be a follow-up, and a pursue would still need a holdout note.",
+    "parameters": "The defaults above, fixed. No other setting is run.",
+    "costs": "Daily bars; ETH pays 1 bp half-spread (its own config entry), SOL its volume band. Two trials in the main pool."
+  },
+  "implementation": "btc-regime-trend",
+  "frozen_at": "2026-11-15T23:36:46.708701+00:00",
+  "change_reason": null
+}
