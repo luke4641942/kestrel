@@ -10,9 +10,11 @@ Decisions and rules live in CLAUDE.md; results in `research/findings.md`.
       (around 2027-05-15); verdict at 395 days (around 2027-12-14).
 
 ## Next
-- [ ] Exploration experiment: round 1 done 2026-11-16. Method kept (Luke); crash rebound
-      dropped. btc-regime-trend PASSED: watch or pursue is Luke's call. Waiting on Luke:
-      freeze `btc-regime-trend-on-eth-and-sol` (his question), then two backtests.
+- [ ] Exploration experiment: round 1 done 2026-11-16; method kept; crash rebound dropped.
+      btc-regime-trend PASSED its confirmation, and on ETH/SOL beat holding and
+      trend-vol-target (Sharpe 1.33, 1.72) but fails luck; ETH/SOL holdouts are spent.
+      Waiting on Luke: watch or pursue; whether to finish its scorecard on ETH/SOL
+      (walk-forward, robustness: a new note version) or design an altcoin portfolio.
 - [ ] Delistings study: run 2026-11-15, verdict EXIT RULE (coins fell 39.8% on average from
       the day after the announcement to removal; no rebound; findings item 11). Luke's call:
       write an exit-rule note (sell a held coin at the next open after its delisting is

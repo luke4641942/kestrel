@@ -156,6 +156,10 @@ risk-managed holding rather than a proven edge.
     them on Sharpe is a low bar, and 55% of windows is a narrow margin; the rule leans on
     BTC's trend, as trend-vol-target does. A pass is not a pursue: it still needs its own
     scorecard, a rule for which coins to hold, and a holdout test.
+    Run unchanged on ETH and SOL (2026-11-16; heavily searched coins, so not a
+    confirmation), it beat holding at the same exposure and trend-vol-target on both
+    (Sharpe 1.33 and 1.72) with drawdowns near -33%, but fails luck against the main bar,
+    and both coins' holdout years are already spent.
 
 ## The holdout year (2025-11 to 2026-10)
 
@@ -243,6 +247,7 @@ edge, and the holdout can't be used again for either strategy.
 | Trend-vol-target, unchanged, on gold and currencies (Luke) | PAXGUSDT 1d 2020-08 to 2025-10; EURUSDT 2020-25; GBPUSDT 2020-07 to 2023-12 | Fails on all three. Gold +40% (Sharpe 0.58) vs +56% for gold held at the same exposure (Sharpe 0.93), robust and walk-forward 1 of 6, 0 of 35 start windows; costs were 75 of its 206 USDT before costs, mostly an assumed volume-band spread likely too high for gold, but even near-zero spread would only tie holding. EUR -20% (Sharpe -0.68) and GBP -21% (-0.88), negative before costs. On these markets the 50% volatility target always caps at 100%, so it is the trend votes alone | Drop (Luke) |
 | Exploration graduate: BTC regime + coin trend, volatility-sized | 180 confirmation-half altcoins 1d, first bar to 2025-10 | Searched on the other 181 coins; run once here: beat holding's Sharpe on 149 of 180 coins (83%), 427 of 771 walk-forward windows (55%), median Sharpe 0.57. PASS (both above half) | Luke's call |
 | Exploration graduate: altcoin crash rebound (-30% in 7 days, hold 3) | 180 confirmation-half altcoins 1d | Beat holding on 111 of 180 coins (62%) but only 274 of 771 walk-forward windows (36%), median Sharpe 0.44. FAIL | Drop (Luke) |
+| BTC regime + coin trend on ETH and SOL (Luke's question; not a confirmation) | ETH 1d 2020-25; SOL 1d 2020-08 to 2025-10 | Unchanged rule. ETH Sharpe 1.33 vs 1.12 held, +1,094% vs +398% at the same exposure, drawdown -35%; SOL 1.72 vs 1.24, +1,759% vs +380%, drawdown -32%; both above trend-vol-target on the same coins (1.24, 1.52). Pass edge, start dates (76%, 100%), costs (19x, 29x), trades, drawdown; fail luck against the main bar (deflated 1%, 10%); walk-forward and robustness not run. Both coins' holdouts are already spent (trend-vol-target) | Luke's call |
 
 Each strategy was judged by its own note's pass test, written before it ran. From
 2026-11-14 every strategy is judged on one scorecard instead.
