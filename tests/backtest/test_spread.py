@@ -45,3 +45,46 @@ def test_only_closed_bars_are_used() -> None:
     full = with_half_spread(frame, 3, TIERS, ["symbol"])["half_spread"][:4]
     early = with_half_spread(frame.head(4), 3, TIERS, ["symbol"])["half_spread"]
     assert full.to_list() == early.to_list()
+
+
+def test_intraday_bars_pay_the_band_of_their_daily_volume() -> None:
+    """5m bars of 0.5M each are 144M a day: the 100M+ band (3 bps), not the widest (15 bps)
+    that 30 bars' worth of volume would suggest. A bar pays the band of the 30 complete
+    days before its own, so the first 30 days pay the widest."""
+    from datetime import UTC, datetime, timedelta
+    from decimal import Decimal
+
+    from kestrel.backtest.engine import half_spreads
+    from tests.backtest.helpers import bars, config
+
+    n = 288 * 32  # 32 days of 5m bars
+    frame = bars(
+        [100.0] * n,
+        start=datetime(2024, 1, 1, tzinfo=UTC),
+        step=timedelta(minutes=5),
+        quote_volume=0.5e6,
+    )
+    paid = half_spreads(frame, config(), "SOLUSDT")
+    assert paid[0] == Decimal("0.0015")  # day 1: no complete history yet
+    assert paid[288 * 30 - 1] == Decimal("0.0015")  # day 30: only 29 complete days before
+    assert paid[288 * 30] == Decimal("0.0003")  # day 31: 30 complete days of 144M
+    assert paid[-1] == Decimal("0.0003")
+    assert half_spreads(frame, config(), "BTCUSDT") == [None] * n  # its own instrument entry
+
+
+def test_daily_bars_keep_the_window_of_days_including_their_own() -> None:
+    from datetime import UTC, datetime, timedelta
+    from decimal import Decimal
+
+    from kestrel.backtest.engine import half_spreads
+    from tests.backtest.helpers import bars, config
+
+    frame = bars(
+        [100.0] * 31,
+        start=datetime(2024, 1, 1, tzinfo=UTC),
+        step=timedelta(days=1),
+        quote_volume=150e6,
+    )
+    paid = half_spreads(frame, config(), "SOLUSDT")
+    assert paid[28] == Decimal("0.0015")
+    assert paid[29] == Decimal("0.0003")  # the 30th day's close completes the window

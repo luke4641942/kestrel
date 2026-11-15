@@ -31,7 +31,7 @@ from __future__ import annotations
 
 import logging
 from dataclasses import dataclass, field
-from datetime import datetime
+from datetime import datetime, timedelta
 from decimal import Decimal
 from typing import Literal
 
@@ -228,17 +228,36 @@ def check_inputs(
 def half_spreads(bars: pl.DataFrame, config: Config, symbol: str) -> list[Decimal | None]:
     """The half-spread each bar's orders pay, known at that bar's close. None means the
     configured [costs] half_spread_bps: a coin with its own [instruments] entry (BTC, ETH)
-    keeps it. Any other coin pays the band for its trading volume, as in the portfolio
-    engine (kestrel.backtest.spread)."""
+    keeps it. Any other coin pays the band for its daily trading volume, as in the
+    portfolio engine (kestrel.backtest.spread). The bands are set on daily volume, so on
+    shorter bars a bar pays the band of the complete UTC days before its own (until
+    2026-11-16 a window of bars was used instead, which on 5m bars read as a tiny coin)."""
     if symbol.upper() in config.instruments:
         return [None] * bars.height
-    banded = with_half_spread(
-        bars.select("quote_volume").with_columns(_coin=pl.lit(0)),
-        config.universe.volume_window_days,
-        [(float(v), float(bps) / 1e4) for v, bps in config.universe.spread_tiers],
-        ["_coin"],
+    window = config.universe.volume_window_days
+    tiers = [(float(v), float(bps) / 1e4) for v, bps in config.universe.spread_tiers]
+    times = bars["open_time"]
+    if bars.height < 2 or times[1] - times[0] >= timedelta(days=1):
+        banded = with_half_spread(
+            bars.select("quote_volume").with_columns(_coin=pl.lit(0)), window, tiers, ["_coin"]
+        )
+        return [Decimal(str(h)) for h in banded["half_spread"]]
+    # Shorter bars: the bands are for daily volume, so each UTC day's bars sum to a day and
+    # a bar pays the band of the days before its own (its day isn't complete yet).
+    days = (
+        bars.group_by(day=pl.col("open_time").dt.date())
+        .agg(pl.col("quote_volume").sum())
+        .sort("day")
+        .with_columns(_coin=pl.lit(0))
     )
-    return [Decimal(str(h)) for h in banded["half_spread"]]
+    banded_days = with_half_spread(days, window, tiers, ["_coin"]).select(
+        "day", pl.col("half_spread").shift(1)
+    )
+    widest = max(spread for _, spread in tiers)
+    joined = bars.select(day=pl.col("open_time").dt.date()).join(
+        banded_days, on="day", how="left", maintain_order="left"
+    )
+    return [Decimal(str(widest if h is None else h)) for h in joined["half_spread"]]
 
 
 Row = tuple[Decimal, Decimal, Decimal]

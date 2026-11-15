@@ -163,12 +163,13 @@ def test_result_records_provenance() -> None:
 
 def test_a_coin_without_its_own_rules_pays_the_spread_of_its_volume_band() -> None:
     # Regression: SOLUSDT failed with "no [instruments.SOLUSDT] in config". A coin without
-    # its own entry uses the universe's order rules and the spread band for its volume:
-    # 50M USDT a day is the 8 bp band (BTC keeps its configured 1 bp).
+    # its own entry uses the universe's order rules and the spread band for its daily
+    # volume: six 4h bars of 50M / 6 are 50M USDT a day, the 8 bp band, once 30 complete
+    # days are known (BTC keeps its configured 1 bp).
     from tests.backtest.helpers import FixedWeights
 
-    weights = [0.0] * 35 + [1.0] * 5
-    frame = bars([100.0] * 40, quote_volume=5e7)
+    weights = [0.0] * 195 + [1.0] * 5  # first trade on day 33
+    frame = bars([100.0] * 200, quote_volume=5e7 / 6)
     result = run_backtest(
         FixedWeights(weights, "SOLUSDT"), frame, Interval.H4, config(), Decimal(1000)
     )
