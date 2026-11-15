@@ -434,6 +434,9 @@ def update(
 def volatile_study(
     symbols: list[str],
     horizon_days: Annotated[int, typer.Option(help="Days after the signal to measure.")] = 7,
+    signal: Annotated[
+        str, typer.Option(help="macd (its direction) or stablecoins (supply growth).")
+    ] = "macd",
     research: Annotated[
         str | None,
         typer.Option(help="The frozen note that pre-registers this run (marked as run)."),
@@ -450,7 +453,8 @@ def volatile_study(
     try:
         if research is not None:
             s, note = store.require_testable(research)
-            if note.implementation != "study:volatile-direction":
+            wanted = "study:volatile-direction" if signal == "macd" else f"study:volatile-{signal}"
+            if note.implementation != wanted:
                 raise ValueError(f"{research} names {note.implementation}, not this study")
         cfg = load_config(config)
         markets = {}
@@ -461,11 +465,19 @@ def volatile_study(
             if bars.is_empty():
                 raise ValueError(f"no stored {symbol.upper()} 1d bars; ingest them first")
             markets[symbol.upper()] = attach_features(
-                bars, ("regime_volatile",), symbol, Interval.D1, data_dir
+                bars,
+                ("regime_volatile", "stablecoins_up")
+                if signal == "stablecoins"
+                else ("regime_volatile",),
+                symbol,
+                Interval.D1,
+                data_dir,
             )
         c = cfg.costs
         hurdle = math.log1p(float(2 * (c.taker_fee_bps + c.half_spread_bps)) / 1e4)
-        result = run_volatile_study(markets, horizon_days=horizon_days, hurdle=hurdle)
+        result = run_volatile_study(
+            markets, horizon_days=horizon_days, hurdle=hurdle, signal=signal
+        )
     except (ConfigError, ValueError) as e:
         typer.echo(str(e), err=True)
         raise typer.Exit(code=1) from None

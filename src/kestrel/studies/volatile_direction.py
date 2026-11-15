@@ -22,6 +22,11 @@ Verdict (pre-registered in the research note), on the volatile days, pooled over
 TREND if P(spread > 0) is at least 90% and the spread is larger than ``hurdle`` (one round
 trip of costs); REBOUND if P(spread < 0) is at least 90% and the spread is below
 ``-hurdle``; otherwise KILL. No strategy is built unless the verdict says which way.
+
+With ``signal="stablecoins"`` the "up" signal is instead the stablecoin supply having grown
+over the last 4 weeks (the ``stablecoins_up`` feature): does new money tell which way a
+volatile spell goes? Luke's idea, 2026-11-15. The same verdict rule applies; TREND then means
+the weeks after growth beat the weeks after shrinkage.
 """
 
 from __future__ import annotations
@@ -34,6 +39,7 @@ from datetime import datetime
 import polars as pl
 
 from kestrel.data.features import REGIME_VOLATILE
+from kestrel.data.stablecoins import FEATURE
 from kestrel.indicators import macd
 
 CONFIDENCE = 0.9
@@ -49,9 +55,20 @@ class Sample:
     """Log return to the close ``horizon_days`` later."""
 
 
-def samples(bars: pl.DataFrame, market: str, horizon_days: int, volatile: bool) -> list[Sample]:
-    """Non-overlapping samples from the days whose regime is (or isn't) volatile."""
-    hist = macd(bars["close"]).histogram.to_list()
+SIGNALS = ("macd", "stablecoins")
+
+
+def samples(
+    bars: pl.DataFrame, market: str, horizon_days: int, volatile: bool, signal: str = "macd"
+) -> list[Sample]:
+    """Non-overlapping samples from the days whose regime is (or isn't) volatile. ``up`` is
+    the signal's side: MACD's histogram above zero, or stablecoin supply growing."""
+    if signal == "macd":
+        hist = macd(bars["close"]).histogram.to_list()
+    elif signal == "stablecoins":
+        hist = [None if v is None else (1.0 if v == 1.0 else -1.0) for v in bars[FEATURE]]
+    else:
+        raise ValueError(f"unknown signal {signal!r}; one of {', '.join(SIGNALS)}")
     closes = bars["close"].to_list()
     times = bars["open_time"].to_list()
     flags = bars[REGIME_VOLATILE].to_list()
@@ -102,6 +119,7 @@ class StudyResult:
     hurdle: float
     volatile: Side
     other: Side
+    signal: str = "macd"
 
     @property
     def verdict(self) -> str:
@@ -122,16 +140,19 @@ def run_study(
     hurdle: float,
     resamples: int = 5000,
     seed: int = 0,
+    signal: str = "macd",
 ) -> StudyResult:
-    """``markets``: daily bars with the regime_volatile feature attached, by market."""
-    volatile = [s for m, b in markets.items() for s in samples(b, m, horizon_days, True)]
-    other = [s for m, b in markets.items() for s in samples(b, m, horizon_days, False)]
+    """``markets``: daily bars with the regime_volatile feature (and the signal's, for
+    stablecoins) attached, by market."""
+    volatile = [s for m, b in markets.items() for s in samples(b, m, horizon_days, True, signal)]
+    other = [s for m, b in markets.items() for s in samples(b, m, horizon_days, False, signal)]
     return StudyResult(
         list(markets),
         horizon_days,
         hurdle,
         compare(volatile, resamples, seed),
         compare(other, resamples, seed),
+        signal,
     )
 
 
@@ -146,17 +167,28 @@ def format_study(r: StudyResult) -> str:
             f"weeks {pct(s.mean_down):>8}   spread {pct(s.spread):>8}   P(spread > 0) {p}"
         )
 
-    verdicts = {
-        "TREND": "in volatile spells MACD's direction continued: worth a strategy note.",
-        "REBOUND": "in volatile spells moves ran against MACD: rebounds, worth a strategy "
-        "note (reversal family: needs its own case).",
-        "KILL": "MACD's direction in volatile spells doesn't say which way the next week "
-        "goes, by more than costs. No strategy.",
-    }
+    if r.signal == "stablecoins":
+        what = "stablecoin supply growing (up) or shrinking (down) over 4 weeks"
+        verdicts = {
+            "TREND": "volatile spells that start with new money arriving go up more: worth a "
+            "strategy note.",
+            "REBOUND": "volatile spells after growth did worse: the opposite of the idea.",
+            "KILL": "stablecoin growth doesn't say which way a volatile spell goes, by more "
+            "than costs. No strategy.",
+        }
+    else:
+        what = "the MACD 12/26/9 histogram's sign"
+        verdicts = {
+            "TREND": "in volatile spells MACD's direction continued: worth a strategy note.",
+            "REBOUND": "in volatile spells moves ran against MACD: rebounds, worth a strategy "
+            "note (reversal family: needs its own case).",
+            "KILL": "MACD's direction in volatile spells doesn't say which way the next week "
+            "goes, by more than costs. No strategy.",
+        }
     return "\n".join(
         [
             f"Volatile-spell direction  ·  {', '.join(r.markets)} 1d  ·  next {r.horizon_days} "
-            f"days after the MACD 12/26/9 histogram's sign  ·  non-overlapping weeks",
+            f"days after {what}  ·  non-overlapping weeks",
             "",
             row("volatile", r.volatile),
             row("other days", r.other),

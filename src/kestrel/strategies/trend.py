@@ -22,6 +22,8 @@ from datetime import timedelta
 
 import polars as pl
 
+from kestrel.data.stablecoins import FEATURE
+
 DAYS_PER_YEAR = 365
 
 
@@ -53,6 +55,10 @@ class TrendVolTarget:
         lookback and the volatility window have filled)."""
         return self._decide(bars)["votes"]
 
+    def _extra_votes(self, bars: pl.DataFrame) -> list[pl.Expr]:
+        """Votes beyond the three trends; none here (see TrendVolTargetStablecoin)."""
+        return []
+
     def _decide(self, bars: pl.DataFrame) -> pl.DataFrame:
         if bars.height < 2:
             zeros = pl.Series([0.0] * bars.height, dtype=pl.Float64)
@@ -67,13 +73,31 @@ class TrendVolTarget:
 
         close = pl.col("close")
         votes = [(close > close.shift(bars_for(days))).cast(pl.Float64) for days in self.lookbacks]
+        votes += self._extra_votes(bars)
         log_return = (close / close.shift(1)).log()
         vol = log_return.rolling_std(bars_for(self.vol_days)) * math.sqrt(DAYS_PER_YEAR * per_day)
         # A shift into the start of the data is null, so the vote is null until it fills.
         ready = close.shift(bars_for(max(self.lookbacks))).is_not_null() & vol.is_not_null()
+        for extra in self._extra_votes(bars):
+            ready = ready & extra.is_not_null()
         count = pl.sum_horizontal(votes)
         weight = (count / len(votes)) * (self.target_vol / vol).clip(upper_bound=1.0)
         return bars.select(
             votes=pl.when(ready).then(count).otherwise(0.0).fill_null(0.0),
             weight=pl.when(ready).then(weight).otherwise(0.0).fill_nan(0.0).fill_null(0.0),
         )
+
+
+class TrendVolTargetStablecoin(TrendVolTarget):
+    """Trend-vol-target with a fourth vote: 1 when the stablecoin supply known at the close
+    grew over the last 4 weeks (``stablecoins_up``, kestrel.data.features). The trend is then
+    the average of four votes, so money leaving trims the position by a quarter."""
+
+    def __init__(self, symbol: str = "BTCUSDT", **params: int) -> None:
+        super().__init__(symbol, **params)
+        self.name += ", stablecoin vote"
+
+    def _extra_votes(self, bars: pl.DataFrame) -> list[pl.Expr]:
+        if FEATURE not in bars.columns:
+            raise ValueError(f"{self.name} needs the {FEATURE} feature attached to its bars")
+        return [pl.col(FEATURE)]

@@ -155,3 +155,16 @@ def test_the_cli_runs_under_its_frozen_note(tmp_path: Path) -> None:
     wrong = CliRunner().invoke(app, [*args, "--research", other])
     assert wrong.exit_code == 1
     assert "names ma-trend, not this study" in wrong.output
+
+
+def test_volatile_spells_split_by_stablecoin_growth() -> None:
+    from kestrel.studies.volatile_direction import samples
+
+    bars = daily([0.01] * 40).with_columns(
+        regime_volatile=pl.lit(1.0),
+        stablecoins_up=pl.Series([1.0] * 20 + [0.0] * 21),
+    )
+    found = samples(bars, "X", 7, True, "stablecoins")
+    assert [s.up for s in found] == [True, True, True, False, False]
+    with pytest.raises(ValueError, match="unknown signal"):
+        samples(bars, "X", 7, True, "tea-leaves")

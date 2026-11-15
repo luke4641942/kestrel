@@ -109,3 +109,39 @@ def test_the_feature_goes_on_every_coin_of_a_day(tmp_path: Path) -> None:
         1.0,
         1.0,
     ]
+
+
+def test_the_trend_strategy_with_a_stablecoin_vote() -> None:
+    import math as m
+
+    from kestrel.strategies.trend import TrendVolTarget, TrendVolTargetStablecoin
+    from kestrel.strategy import validated_weights
+
+    bars = daily([0.002 * (1 if i % 2 else -0.5) for i in range(200)])  # a gentle rise
+    small = {"fast_days": 5, "mid_days": 10, "slow_days": 20, "vol_days": 10}
+    plain = validated_weights(TrendVolTarget(**small), bars).to_list()
+    grow = bars.with_columns(stablecoins_up=pl.lit(1.0))
+    shrink = bars.with_columns(stablecoins_up=pl.lit(0.0))
+    with_growth = validated_weights(TrendVolTargetStablecoin(**small), grow).to_list()
+    with_shrink = validated_weights(TrendVolTargetStablecoin(**small), shrink).to_list()
+    t = 150
+    votes = TrendVolTarget(**small).vote_count(bars)[t]
+    assert with_growth[t] == pytest.approx(plain[t] * (votes + 1) / 4 / (votes / 3))
+    assert with_shrink[t] == pytest.approx(plain[t] * votes / 4 / (votes / 3))
+    assert not m.isnan(with_growth[t])
+    with pytest.raises(ValueError, match="stablecoins_up"):
+        TrendVolTargetStablecoin(**small).target_weights(bars)
+
+
+def test_the_volatility_sized_hold() -> None:
+    from kestrel.strategies.stablecoin_hold import StablecoinVolHold
+    from kestrel.strategy import STRATEGIES, validated_weights
+
+    wild = daily([0.05 * (1 if i % 2 else -1) for i in range(60)])  # ~95% annual volatility
+    on = wild.with_columns(stablecoins_up=pl.lit(1.0))
+    w = validated_weights(StablecoinVolHold(vol_days=10, target_vol_pct=50), on).to_list()
+    assert 0.3 < w[-1] < 0.7  # about half: 50% target against ~95% volatility
+    off = wild.with_columns(stablecoins_up=pl.lit(0.0))
+    assert validated_weights(StablecoinVolHold(vol_days=10), off).to_list()[-1] == 0.0
+    assert STRATEGIES["stablecoin-vol-hold"].features == ("stablecoins_up",)
+    assert STRATEGIES["trend-vol-target-stablecoin"].features == ("stablecoins_up",)

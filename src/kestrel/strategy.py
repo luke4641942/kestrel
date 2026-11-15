@@ -43,9 +43,9 @@ from kestrel.strategies.rotation import DualMomentum
 from kestrel.strategies.rsi_dip import RsiDip
 from kestrel.strategies.sentiment import FearGreedContrarian
 from kestrel.strategies.squeeze import SqueezeBreakout
-from kestrel.strategies.stablecoin_hold import StablecoinHold
+from kestrel.strategies.stablecoin_hold import StablecoinHold, StablecoinVolHold
 from kestrel.strategies.structure import StructurePullback
-from kestrel.strategies.trend import TrendVolTarget
+from kestrel.strategies.trend import TrendVolTarget, TrendVolTargetStablecoin
 from kestrel.strategies.trend_basket import TrendBasket
 from kestrel.strategies.trendlines import (
     SwingPullback,
@@ -763,6 +763,34 @@ STRATEGIES: dict[str, StrategySpec] = {
                 Param("top_n", 2, 1, 3, "Coins held"),
             ),
             universe=True,
+            features=("stablecoins_up",),
+        ),
+        StrategySpec(
+            "stablecoin-vol-hold",
+            "research",
+            "Each Sunday, hold the coin for the next week if stablecoin supply grew over 4 weeks; "
+            "while in, size it by min(1, target_vol_pct / vol_days volatility). Research: runs "
+            "only through its frozen note.",
+            StablecoinVolHold,
+            (
+                Param("vol_days", 30, 10, 120, "Days of volatility"),
+                Param("target_vol_pct", 50, 10, 150, "Target annual volatility, %"),
+            ),
+            features=("stablecoins_up",),
+        ),
+        StrategySpec(
+            "trend-vol-target-stablecoin",
+            "research",
+            "Trend-vol-target with a fourth vote: stablecoin supply grew over 4 weeks. Research: "
+            "runs only through its frozen note.",
+            TrendVolTargetStablecoin,
+            (
+                Param("fast_days", 20, 5, 60, "Fast trend lookback, days"),
+                Param("mid_days", 60, 20, 180, "Middle trend lookback, days"),
+                Param("slow_days", 120, 60, 365, "Slow trend lookback, days"),
+                Param("vol_days", 30, 10, 90, "Days of volatility"),
+                Param("target_vol_pct", 50, 10, 150, "Target annual volatility, %"),
+            ),
             features=("stablecoins_up",),
         ),
         StrategySpec(
