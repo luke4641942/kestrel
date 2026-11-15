@@ -28,6 +28,10 @@ first real test: no better than random entries. Untested, all low priority:
       write an exit-rule note (sell a held coin at the next open after its delisting is
       announced; matters only for strategies that hold small coins, none running now), or
       park it. The short side would have made ~40% before borrowing: P5 only.
+- [ ] Hypothetical delisting short via perps (Luke, 2026-11-16): decides P5's priority only.
+      Draft note `shorting-the-delisting-window-with-perps` for Luke to review and freeze;
+      then perp 1d klines and funding for the ~33 coins (the downloader needs a futures/um
+      path) and `kestrel delisting-short-study`. No perp prices looked at yet.
 
 ## Later
 - [ ] Keys from the macOS keychain, not ~/.zshrc: parked until a live (non-testnet) account
