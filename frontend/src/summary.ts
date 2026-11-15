@@ -434,3 +434,7 @@ export function mostPromising(runs: RunSummary[], n = PROMISING): RunSummary[] {
   }
   return [...best.values()].sort((a, b) => (b.deflated_sharpe ?? 0) - (a.deflated_sharpe ?? 0)).slice(0, n);
 }
+
+/** A note whose work is finished: rejected (its test failed) or validated (it passed).
+ * Both are kept as evidence and folded away, so the pages show what is still live. */
+export const isSettled = (status: ResearchStatus) => status === "rejected" || status === "validated";

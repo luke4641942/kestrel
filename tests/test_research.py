@@ -190,3 +190,19 @@ def test_long_names_are_cut_at_a_word_boundary(store: ResearchStore) -> None:
     slug = store.create("Horizontal level retest (resistance becomes support)").slug
     assert slug == "horizontal-level-retest-resistance-becomes"
     assert len(slug) <= 48
+
+
+def test_a_finished_note_closes_as_validated_or_paper(store: ResearchStore) -> None:
+    slug = specified(store)
+    with pytest.raises(ResearchError, match="record why"):
+        store.close(slug, "validated", " ")
+    with pytest.raises(ResearchError, match="use reject"):
+        store.close(slug, "rejected", "failed")  # type: ignore[arg-type]
+    store.close(slug, "validated", "Passed its holdout")
+    s = store.get(slug)
+    assert (s.status, s.history[-1].reason) == ("validated", "Passed its holdout")
+    store.close(slug, "paper", "Running on the testnet")
+    assert store.get(slug).status == "paper"
+    draft = store.create("Not frozen").slug
+    with pytest.raises(ResearchError, match="freeze"):
+        store.close(draft, "validated", "x")

@@ -20,6 +20,7 @@ import {
   marketLabel,
   marketsFor,
   signalsCaption,
+  isSettled,
   splitClosed,
 } from "../summary";
 import { useResource } from "../hooks";
@@ -46,7 +47,7 @@ export function Strategies({ jobs, onJobStarted }: { jobs: Job[]; onJobStarted: 
     window.location.hash = `/strategies/${s}`;
   };
   const items = list.data ?? [];
-  const { live, closed } = splitClosed(items, (s) => s.status === "rejected");
+  const { live, closed } = splitClosed(items, (s) => isSettled(s.status));
   const current = slug ?? live[0]?.slug ?? items[0]?.slug;
   // Rejected ideas are folded away, but one that is open stays visible in the list.
   const [showRejected, setShowRejected] = useState(false);
@@ -83,7 +84,7 @@ export function Strategies({ jobs, onJobStarted }: { jobs: Job[]; onJobStarted: 
                 </ul>
                 <FoldToggle
                   count={closed.length}
-                  noun={`rejected idea${closed.length === 1 ? "" : "s"}`}
+                  noun={`rejected or validated idea${closed.length === 1 ? "" : "s"}`}
                   open={showRejected}
                   onToggle={() => setShowRejected((v) => !v)}
                 />

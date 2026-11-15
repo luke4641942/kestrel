@@ -54,7 +54,7 @@ describe("Overview", () => {
     render(<Overview jobs={[]} go={() => {}} openJobs={() => {}} />);
     await screen.findByText("Idea b");
     expect(screen.queryByText("Idea a")).not.toBeInTheDocument();
-    expect(screen.getByText("2 rejected ideas hidden.")).toBeInTheDocument();
+    expect(screen.getByText("2 rejected or validated ideas hidden.")).toBeInTheDocument();
     fireEvent.click(screen.getAllByRole("button", { name: "Show" }).at(-1)!);
     expect(screen.getByText("Idea a")).toBeInTheDocument();
     expect(screen.getByText("Idea c")).toBeInTheDocument();

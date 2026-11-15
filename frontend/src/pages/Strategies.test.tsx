@@ -25,7 +25,7 @@ const pending = () => new Promise<never>(() => {});
 
 beforeEach(() => {
   window.location.hash = "/strategies";
-  api.researchList = vi.fn().mockResolvedValue([idea("a", "rejected"), idea("b", "specified"), idea("c", "rejected")]);
+  api.researchList = vi.fn().mockResolvedValue([idea("a", "rejected"), idea("b", "specified"), idea("c", "validated")]);
   // The workspace for the selected idea never loads: only the list is under test.
   for (const name of ["research", "strategies", "datasets", "researchChat", "strategySource"] as const) {
     if (name in api) (api as unknown as Record<string, unknown>)[name] = vi.fn(pending);
@@ -33,11 +33,11 @@ beforeEach(() => {
 });
 
 describe("Strategies list", () => {
-  it("shows live ideas and folds rejected ones away until asked", async () => {
+  it("shows live ideas and folds rejected and validated ones away until asked", async () => {
     render(<Strategies jobs={[]} onJobStarted={() => {}} />);
     await screen.findByText("Idea b");
     expect(screen.queryByText("Idea a")).not.toBeInTheDocument();
-    expect(screen.getByText("2 rejected ideas hidden.")).toBeInTheDocument();
+    expect(screen.getByText("2 rejected or validated ideas hidden.")).toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: "Show" }));
     expect(screen.getByText("Idea a")).toBeInTheDocument();
     expect(screen.getByText("Idea c")).toBeInTheDocument();

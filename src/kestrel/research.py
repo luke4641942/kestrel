@@ -207,6 +207,22 @@ class ResearchStore:
         self._save(strategy)
         return strategy
 
+    def close(
+        self, slug: str, status: Literal["validated", "paper"], reason: str
+    ) -> ResearchStrategy:
+        """A finished note's final status: validated (its pre-registered test passed) or
+        paper (it is the rule of a running paper test). Only for a frozen note."""
+        strategy = self.get(slug)
+        if status not in ("validated", "paper"):
+            raise ResearchError("a note closes as validated or paper; use reject for a failure")
+        if not strategy.latest.frozen:
+            raise ResearchError(f"freeze {strategy.name} before closing it")
+        if not reason.strip():
+            raise ResearchError("record why; a status is kept as evidence")
+        self._set_status(strategy, status, reason.strip())
+        self._save(strategy)
+        return strategy
+
     def mark_backtested(self, slug: str, version: int) -> None:
         """Called when a run is logged against a frozen version."""
         strategy = self.get(slug)

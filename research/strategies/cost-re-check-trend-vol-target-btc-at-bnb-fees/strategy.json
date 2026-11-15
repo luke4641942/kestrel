@@ -2,7 +2,7 @@
   "slug": "cost-re-check-trend-vol-target-btc-at-bnb-fees",
   "name": "Cost re-check: trend-vol-target BTC at BNB fees",
   "created_at": "2026-11-15T05:17:17.593901+00:00",
-  "status": "backtested",
+  "status": "rejected",
   "history": [
     {
       "status": "idea",
@@ -18,6 +18,11 @@
       "status": "backtested",
       "at": "2026-11-15T05:22:04.662599+00:00",
       "reason": "first run on v1"
+    },
+    {
+      "status": "rejected",
+      "at": "2026-11-15T06:57:34.846514+00:00",
+      "reason": "Done: verdicts unchanged at BNB fees (Sharpe 1.23, luck 38%, walk-forward 2 of 7); recorded on trend-vol-target's entry. Cleanup (Luke, 2026-11-15)."
     }
   ]
 }

@@ -2,7 +2,7 @@ import { useState } from "react";
 import { api, type Job } from "../api";
 import type { Route } from "../App";
 import { Empty, FoldToggle, PageHeader, Panel, Section, Status } from "../components/ui";
-import { DECISION, RESEARCH_STATUS, datasetsLine, holdoutEdge, marketLabel, newestFirst, splitClosed, studyTitle, studyTone } from "../summary";
+import { DECISION, RESEARCH_STATUS, datasetsLine, holdoutEdge, marketLabel, isSettled, newestFirst, splitClosed, studyTitle, studyTone } from "../summary";
 import { ago, date, num } from "../format";
 import { useResource } from "../hooks";
 
@@ -161,7 +161,7 @@ function ResearchBoard() {
   const validation = useResource(api.validation, []);
   const v = validation.data;
   const list = research.data ?? [];
-  const { live, closed } = splitClosed(list, (r) => r.status === "rejected");
+  const { live, closed } = splitClosed(list, (r) => isSettled(r.status));
   const [showRejected, setShowRejected] = useState(false);
   const open = (slug: string) => {
     window.location.hash = `/strategies/${slug}`;
@@ -212,7 +212,7 @@ function ResearchBoard() {
           </table>
           <FoldToggle
             count={closed.length}
-            noun={`rejected idea${closed.length === 1 ? "" : "s"}`}
+            noun={`rejected or validated idea${closed.length === 1 ? "" : "s"}`}
             open={showRejected}
             onToggle={() => setShowRejected((v) => !v)}
           />
