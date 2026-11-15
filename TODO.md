@@ -78,14 +78,19 @@ Strategies, most to least promising:
   revisit only if both pass on their own.
 
 ## Waiting on Luke
-- [ ] Rotation + MACD is on watch: its next test is forward. Add it to paper trading beside
-      trend-vol-target once the paper-trading note is frozen (a second account, its own note).
+- [ ] Rotation + MACD (watch): freeze `holdout-monthly-rotation-with-a-macd-filter` (one-sided:
+      only a fail counts) and `paper-trading-monthly-rotation-with-a-macd-filter` (395 days,
+      a second testnet account). The paper test needs the multi-coin paper runner (Next).
 - [ ] Read and freeze `paper-trading-trend-vol-target-btc` (drafted 2026-11-14). Then:
       `kestrel paper open tvt-btc ... --venue testnet` (the note's rules), `kestrel paper
       schedule tvt-btc`, and load the job with the launchctl command it prints. The
       395-day test (90%, a 6-month failure-only check) starts at its first decision.
 
 ## Next
+- [ ] Multi-coin paper trading: the paper runner, ledger, testnet venue, reconciliation and
+      tracking hold one coin. Rotation + MACD holds up to 2 of BTC/ETH/SOL. Extend them to
+      a portfolio (the portfolio engine's rebalance at each decision), with the same
+      replay-equals-backtest test as tests/test_paper.py. About 1-2 sessions.
 - [x] Walk-forward for basket strategies: built 2026-11-15 (portfolio engine per window, against
       BTC held); the five basket walk-forwards rerun with the notes' settings.
 - [ ] Delistings (Luke's idea, 2026-11-14): a raw-effect study before any strategy.
