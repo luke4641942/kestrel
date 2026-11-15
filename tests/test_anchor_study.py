@@ -200,7 +200,7 @@ def test_cli_runs_the_study(tmp_path: Path) -> None:
     result = runner.invoke(app, [*args, "--data-dir", str(tmp_path), "--config", REPO_CONFIG])
     assert result.exit_code == 0, result.output
     assert "Monday against the other days" in result.output
-    assert "hurdle 0.22%" in result.output
+    assert "hurdle 0.17%" in result.output
 
 
 def test_cli_never_uses_the_holdout(tmp_path: Path) -> None:

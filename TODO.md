@@ -103,11 +103,10 @@ Strategies, most to least promising:
       coins' prices before the study is written down.
 
 ## Later
-- [ ] Pay fees in BNB for real: the Binance venue must account for commissions charged in BNB
-      (it raises today), keep a small BNB balance, and value fees at BNB's price. Then switch
-      kestrel.toml to 7.5 bps (kestrel.bnb.toml has it). Limit orders were considered and
-      left out: daily strategies fill at the open, BTC's spread is about 1 bp, and a resting
-      order risks not filling.
+- [ ] BNB fees on the venue: kestrel.toml models 7.5 bps (BNB discount) from 2026-11-15, but
+      the Binance venue stops on a fee charged in BNB. Account for it (value the BNB fee at
+      BNB's price), keep a small BNB balance and top it up. Until then testnet and live fills
+      pay 10 bps in the traded assets, and tracking will show fees above the model.
 - [ ] Other markets (Luke's idea, 2026-11-15; nothing to work on now). Forex and commodities
       without leaving Binance spot: EURUSDT (euro), PAXGUSDT (gold, one token per ounce),
       and tokenized stocks/ETFs (AAPLBUSDT... from June 2026, too short for now). Wider

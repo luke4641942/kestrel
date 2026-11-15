@@ -86,8 +86,8 @@ def test_system_prompt_carries_the_platform_rules(note: Any) -> None:
     messages = FakeMessages()
     fake_assistant(messages).reply(note, None, [], "hi", load_config(REPO_CONFIG))
     stable = messages.calls[0]["system"][0]["text"]
-    assert "taker fee 10.0 bps" in stable
-    assert "round trip costs about 22 bps" in stable
+    assert "taker fee 7.5 bps" in stable
+    assert "round trip costs about 17 bps" in stable
     assert "2025-11-01" in stable
     assert "never see backtest results" in stable
     assert "long-only" in stable

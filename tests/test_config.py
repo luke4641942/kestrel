@@ -45,7 +45,7 @@ def document() -> dict[str, Any]:
 def test_repo_config_loads() -> None:
     config = load_config(REPO_CONFIG)
     assert config.account_currency == "USDT"
-    assert config.costs.taker_fee_bps == Decimal(10)
+    assert config.costs.taker_fee_bps == Decimal("7.5")
     assert config.instrument("btcusdt").step_size == Decimal("0.00001")
     assert config.backtest.no_trade_band == Decimal("0.02")
     assert config.backtest.risk_per_trade == Decimal("0.01")
@@ -163,15 +163,3 @@ def test_fingerprint_is_stable_and_tracks_changes(document: dict[str, Any]) -> N
 def test_round_quantity_floors_to_step(qty: str, expected: str) -> None:
     rules = InstrumentRules("BTCUSDT", Decimal("0.00001"), Decimal("0.00001"), Decimal(5))
     assert rules.round_quantity(Decimal(qty)) == Decimal(expected)
-
-
-def test_the_bnb_config_differs_from_the_main_one_only_in_the_fee() -> None:
-    import tomllib
-
-    root = Path(__file__).resolve().parents[1]
-    main = tomllib.loads((root / "kestrel.toml").read_text())
-    bnb = tomllib.loads((root / "kestrel.bnb.toml").read_text())
-    assert bnb["costs"].pop("taker_fee_bps") == 7.5
-    assert main["costs"].pop("taker_fee_bps") == 10
-    assert bnb == main
-    load_config(root / "kestrel.bnb.toml")  # valid on its own

@@ -659,7 +659,7 @@ function Decisions({ cfg }: { cfg: CostConfig }) {
   const minNotional = cfg.instruments.find((i) => i.symbol === "BTCUSDT")?.min_notional ?? 5;
   const items: [Kind, string, string][] = [
     ["decided", "Costs are in basis points everywhere", "One unit for fee, spread and impact. Mixing fractions and bps in one file is how factor-of-100 bugs happen."],
-    ["decided", `Fee: ${c.taker_fee_bps} bps per side`, "Binance's base tier, paying fees without BNB. The BNB discount would flatter results, so it stays off."],
+    ["decided", `Fee: ${c.taker_fee_bps} bps per side`, "Binance's base tier (10 bps) with the BNB discount, 25% off. Caveat: it needs fees switched to BNB and a small BNB balance kept in the account; without it Binance charges the full 10 bps. Runs before 2026-11-15 used 10."],
     ["assumption", `Spread: ${c.half_spread_bps} bp per side`, "There is no order-book history yet. BTC usually quotes far tighter, so this errs on the expensive side."],
     [
       "assumption",

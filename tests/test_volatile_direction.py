@@ -99,7 +99,7 @@ def test_the_cli_uses_stored_regimes_and_never_the_holdout(tmp_path: Path) -> No
     )
     assert out.exit_code == 0, out.output
     assert "BTCUSDT 1d" in out.output
-    assert "Hurdle: 0.22%" in out.output
+    assert "Hurdle: 0.17%" in out.output
     missing = CliRunner().invoke(
         app, ["volatile-study", "ETHUSDT", "--data-dir", str(tmp_path), "--config", REPO_CONFIG]
     )

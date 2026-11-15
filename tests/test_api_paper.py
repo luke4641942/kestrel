@@ -9,11 +9,12 @@ import pytest
 from fastapi.testclient import TestClient
 
 from kestrel.api.app import create_app
+from kestrel.config import load_config
 from kestrel.data.schema import Interval
 from kestrel.data.store import ParquetStore
 from kestrel.execution import safety
 from kestrel.execution.paper import PaperAccount, Terms, run
-from tests.backtest.helpers import T0, config
+from tests.backtest.helpers import T0
 from tests.test_paper import walk
 
 REPO_CONFIG = Path(__file__).resolve().parent.parent / "kestrel.toml"
@@ -29,7 +30,7 @@ def test_accounts_are_listed_and_shown_with_their_tracking(tmp_path: Path) -> No
         "btc", "ma-trend", "BTCUSDT", Interval.D1, {"fast": 5, "slow": 20}, Decimal(330), T0
     )
     account = PaperAccount.open(tmp_path, terms)
-    run(account, frame, config())
+    run(account, frame, load_config(REPO_CONFIG))  # the API's model replay uses the repo config
     (summary,) = client.get("/api/paper").json()
     assert (summary["name"], summary["venue"], summary["halted"]) == ("btc", "sim", None)
     assert summary["equity"] is not None

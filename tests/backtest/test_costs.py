@@ -105,7 +105,7 @@ def test_round_trip_at_repo_defaults_is_about_22_bps() -> None:
     """Headline number for the README: what a liquid BTC round trip costs as configured.
 
     A A$500-sized order (~300 USDT) against a typical 4h BTCUSDT bar (~US$500m of
-    volume) has negligible impact, so the round trip is ~2 x (10 bps fee + 1 bp spread).
+    volume) has negligible impact, so the round trip is ~2 x (7.5 bps fee + 1 bp spread).
     """
     config = load_config(Path(__file__).resolve().parents[2] / "kestrel.toml")
     model = CostModel(config.costs)
@@ -115,4 +115,4 @@ def test_round_trip_at_repo_defaults_is_about_22_bps() -> None:
     assert isinstance(buy, Fill)
     assert isinstance(sell, Fill)
     round_trip = (buy.total_cost + sell.total_cost) / (buy.quantity * buy.reference_price)
-    assert D("0.0021") < round_trip < D("0.0023")
+    assert D("0.0016") < round_trip < D("0.0018")

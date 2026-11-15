@@ -10,8 +10,13 @@ account_currency = "USDT"
 [costs]
 # All costs in basis points (1 bp = 0.01%).
 
-# Binance spot taker fee at the base (VIP 0) tier, paying fees without BNB.
-taker_fee_bps = 10
+# Binance spot taker fee at the base (VIP 0) tier, paid in BNB: 25% off the 10 bps base, so
+# 7.5 bps (from 2026-11-15; earlier runs used 10 and store it). CAVEAT: the discount needs
+# "pay fees with BNB" switched on and a small BNB balance in the account, topped up as it is
+# spent; without BNB, Binance charges the full 10 bps. The Binance venue doesn't yet account
+# for fees charged in BNB (it stops with an error), so live and testnet fills pay 10 bps in
+# the traded assets until it does (TODO.md).
+taker_fee_bps = 7.5
 
 # Half the bid-ask spread, paid on every market order. An assumption: we have no
 # order-book history yet. Majors like BTCUSDT usually quote far tighter than this.

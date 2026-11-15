@@ -138,7 +138,7 @@ def test_the_command_saves_the_gate_for_the_dashboard(tmp_path: Path) -> None:
     client = TestClient(create_app(tmp_path, static_dir=None, config_path=Path(REPO_CONFIG)))
     (gate,) = client.get("/api/cost-gate").json()
     assert gate["interval"] == "1m"
-    assert gate["round_trip_bps"] == 22.0
+    assert gate["round_trip_bps"] == 17.0
     assert [r["market"] for r in gate["rows"]] == ["BTCUSDT 1m, all hours", "BTCUSDT 1m, NY open"]
     assert gate["rows"][0]["verdict"] == "NO SETUPS"
 

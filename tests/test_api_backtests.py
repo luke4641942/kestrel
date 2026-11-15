@@ -64,7 +64,7 @@ def test_backtest_job_saves_a_run_that_can_be_read_back(client: TestClient) -> N
     assert max(detail["equity"]["drawdown"]) == 0
     assert min(detail["equity"]["drawdown"]) < 0
     assert detail["fills"][0]["side"] == "buy"
-    assert detail["config"]["costs"]["taker_fee_bps"] == 10
+    assert detail["config"]["costs"]["taker_fee_bps"] == 7.5
     assert detail["code"]["commit"]
 
 

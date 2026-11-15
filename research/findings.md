@@ -17,7 +17,8 @@ hypothesis, rules and pass test, written down before the strategy saw market dat
 - **Pre-registered.** Each idea was written up (hypothesis, rules, what would falsify it,
   its settings) and frozen before it was run. A note is never edited after a run; a change
   needs a new version with a reason, and its runs count as new trials.
-- **Costs included.** Binance's 10 bp taker fee, a half-spread (1 bp for BTC and ETH, wider
+- **Costs included.** Binance's 10 bp taker fee (7.5 bp with the BNB discount from 2026-11-15,
+  which needs a BNB balance kept in the account; earlier results used 10), a half-spread (1 bp for BTC and ETH, wider
   for smaller coins) and square-root market impact on every fill.
   Orders above 1% of a bar's volume, or under Binance's 5 USDT minimum, are refused, as
   they would be live. A BTC round trip costs about 22 bp.
@@ -182,7 +183,6 @@ edge, and the holdout can't be used again for either strategy.
 | ETH/BTC relative value (hold the cheap one, else half each) | BTC/ETH 1d 2018-25 | Sharpe 0.74 vs 0.70 for half each (its added test, barely) and 0.74 for BTC; drawdown -87.5%; walk-forward 5 of 11; paid 140 USDT in costs against 7 for half each; deflated 5% | Drop |
 | Cost re-check at BNB fees (7.5 bps a side) | Trend-vol-target BTC; rotation | Verdicts unchanged: trend Sharpe 1.21 -> 1.23 (deflated 38%, walk-forward 2 of 7); rotation plain 1.25, MACD 1.41. Costs were never what held them back | - |
 | Study: stablecoin supply growth | BTC, ETH 1d 2018-25 | Next week +0.78% after 4-week supply growth vs -0.38% after shrinkage; spread +1.17%, P 91% (bar 90%): PROCEED. Little overlap with momentum (past week rose 54% vs 45-50%). Caveats: P only just clears the bar; pooled BTC and ETH weeks are not independent; DefiLlama's history is a reconstruction | Study passed |
-| Cost gate: 1m/5m change of character + fair value gap (YouTube S2/S3) | BTC, ETH, SOL 1m and 5m | Stops only, no outcomes (not a trial). Median stop 6-19 bp on 1m and 15-45 bp on 5m, so a 22 bp round trip costs 0.5-3.9R a trade; break-even win rate at 4R 30-97% instead of 20%. FAILS on 17 of 18 (coin x bar size x all hours / NY open); SOL 5m at the NY open MARGINAL (0.49R) | Not built (Luke's call) |
 | Cost gate: 1m/5m change of character + fair value gap (YouTube S2/S3) | BTC, ETH, SOL 1m and 5m | Stops only, no outcomes (not a trial). Median stop 6-19 bp on 1m and 15-45 bp on 5m, so a 22 bp round trip costs 0.5-3.9R a trade; break-even win rate at 4R 30-97% instead of 20%. FAILS on 17 of 18 (coin x bar size x all hours / NY open); SOL 5m at the NY open MARGINAL (0.49R) | Not built (Luke's call) |
 | YouTube batches 2-3, run 2026-11-15 (eight frozen notes, 22 settings, 280 trials with robustness) | | Every one FAILS the scorecard; all fail luck (deflated 0-43%) | Luke to decide |
 | Turn of the month | BTC 1d 2018-25 | Sharpe 0.37 (last 0/first 1) and 0.68 (5/3) vs 0.74 holding; walk-forward 5 and 4 of 11 | Luke to decide |
