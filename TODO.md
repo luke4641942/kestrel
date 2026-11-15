@@ -21,22 +21,32 @@ first real test: no better than random entries. Untested, all low priority:
       (around 2027-05-15); verdict at 395 days (around 2027-12-14).
 
 ## Next
-- [ ] Testnet keys from the macOS keychain, not ~/.zshrc (Luke, 2026-11-15). Luke adds them
+- [x] Walk-forward for basket strategies: built 2026-11-15 (portfolio engine per window, against
+      BTC held); the five basket walk-forwards rerun with the notes' settings.
+- [ ] Delistings (Luke's idea, 2026-11-14; started 2026-11-15): a raw-effect study before
+      any strategy. Done: `kestrel ingest-delistings` (Binance's announcements catalog, from
+      2022-02: ~26 announcements, ~110 coins removed before the holdout). Next: the study
+      note for Luke to freeze, then the study code and one run. Measure the path from
+      announcement to removal and whether any rebound beats a small coin's costs. Buying the
+      rebound is the reversal family (entry bar); long-only can't take the short side; one
+      study (Monero, 2024) found no rebound. Don't look at the delisted coins' prices before
+      the note is frozen.
+
+## Later
+- [ ] Keys from the macOS keychain, not ~/.zshrc: parked until a live (non-testnet) account
+      (Luke, 2026-11-15); do it before any live keys exist. Luke adds them
       himself (`security add-generic-password -s kestrel-testnet -a key -w`, and `-a secret`);
       Claude never sees the values. Kestrel reads them at run time; the keychain item's access
       list allows only Kestrel's Python (`-T .venv/bin/python`), not `security` in general, so
       any other reader (including a command Claude runs) triggers a macOS prompt Luke can deny.
-      Then remove them from ~/.zshrc and stop the launchd job sourcing it. Before any live keys.
-- [x] Walk-forward for basket strategies: built 2026-11-15 (portfolio engine per window, against
-      BTC held); the five basket walk-forwards rerun with the notes' settings.
-- [ ] Delistings (Luke's idea, 2026-11-14): a raw-effect study before any strategy.
-      Needs Binance delisting announcement dates (no official history: scrape the public
-      announcements catalog, "Delistings"). Measure the path from announcement to removal
-      and whether any rebound beats a small coin's costs, pre-holdout. Long-only can't take
-      the short side; one study (Monero, 2024) found no rebound. Don't look at the delisted
-      coins' prices before the study is written down.
-
-## Later
+      Then remove them from ~/.zshrc and stop the launchd job sourcing it.
+- [ ] Run the paper trader on Luke's TrueNAS server (Luke, 2026-11-15) so it keeps running
+      while the Mac sleeps. Likely a container (TrueNAS app) running `kestrel paper run`
+      hourly at 10 past, with the repo, .venv and `data/paper/` on the NAS. Only one machine
+      may run an account: two runners would both place orders and write the same ledger, so
+      unload the launchd jobs (`kestrel paper schedule <name> --remove`) in the same step.
+      Keys from a secrets file or env readable only by the container, not ~/.zshrc. The
+      dashboard reads `data/paper/` there (or a synced copy).
 - [ ] BNB fees on the venue: kestrel.toml models 7.5 bps (BNB discount) from 2026-11-15, but
       the Binance venue stops on a fee charged in BNB. Account for it (value the BNB fee at
       BNB's price), keep a small BNB balance and top it up. Until then testnet and live fills

@@ -42,7 +42,7 @@ from kestrel.backtest.runs import (
     strategy_panel,
 )
 from kestrel.config import Config, ConfigError, load_config
-from kestrel.data import attention, funding, live, news, sentiment, stablecoins
+from kestrel.data import attention, delistings, funding, live, news, sentiment, stablecoins
 from kestrel.data.binance_vision import BinanceVisionClient, Month, last_complete_month
 from kestrel.data.features import attach_features
 from kestrel.data.quality import check_klines
@@ -546,6 +546,30 @@ def ingest_stablecoins(data_dir: DataDir = Path("data")) -> None:
         f"{frame.height} days of stablecoin supply, {first} to {last}"
         + (f"; {len(missing)} missing days (not filled)" if missing else "")
     )
+
+
+@app.command("ingest-delistings")
+def ingest_delistings(data_dir: DataDir = Path("data")) -> None:
+    """Binance's spot delisting announcements (from 2022-02): when each coin's delisting was
+    announced and when its trading stopped. Announcements only, no prices. Articles that
+    can't be read are reported, never guessed."""
+    try:
+        with httpx.Client(timeout=60) as http:
+            frame, problems = delistings.ingest(http, data_dir)
+    except (httpx.HTTPError, delistings.DelistingError) as e:
+        typer.echo(f"delistings: {e}", err=True)
+        raise typer.Exit(code=1) from None
+    announcements = frame["article"].n_unique()
+    amended = frame.filter(pl.col("amended_by").is_not_null()).height
+    first, last = frame["announced_at"].min(), frame["announced_at"].max()
+    assert isinstance(first, datetime)
+    assert isinstance(last, datetime)
+    typer.echo(
+        f"{frame.height} coins in {announcements} announcements, {first:%Y-%m-%d} to "
+        f"{last:%Y-%m-%d}" + (f"; {amended} removal dates amended" if amended else "")
+    )
+    for problem in problems:
+        typer.echo(f"  problem: {problem}")
 
 
 @app.command("signal-study")
