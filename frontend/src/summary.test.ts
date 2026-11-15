@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { breakEvenLabel, drawdownPaths, newestFirst, gateTone, holdoutEdge, datasetsLine, scorecardHeadline, luckBar, splitClosed, startDateVerdict, windowLabel, DECISION, studyTitle, studyTone, deflatedNote, spreadBands, DEFAULT_RUN_SORT, KIND_LABEL, UNIVERSE, marketLabel, marketsFor, defaultDataset, nextSort, sortRuns, fewTrades, signalsCaption, MAX_LABELLED_TRADES, MAX_MARKED_TRADES, costHeadroom, paramsText, runRole, tradeCount, heldAsset, money, span, trackRecord, tradeMarkers, verdict } from "./summary";
+import { breakEvenLabel, drawdownPaths, mostPromising, newestFirst, gateTone, holdoutEdge, datasetsLine, scorecardHeadline, luckBar, splitClosed, startDateVerdict, windowLabel, DECISION, studyTitle, studyTone, deflatedNote, spreadBands, DEFAULT_RUN_SORT, KIND_LABEL, UNIVERSE, marketLabel, marketsFor, defaultDataset, nextSort, sortRuns, fewTrades, signalsCaption, MAX_LABELLED_TRADES, MAX_MARKED_TRADES, costHeadroom, paramsText, runRole, tradeCount, heldAsset, money, span, trackRecord, tradeMarkers, verdict } from "./summary";
 import { run, trade } from "./test/fixtures";
 
 describe("verdict", () => {
@@ -448,5 +448,27 @@ describe("newestFirst", () => {
   it("keeps the first rows and folds the rest", () => {
     expect(newestFirst([1, 2, 3, 4], 3)).toEqual({ shown: [1, 2, 3], older: [4] });
     expect(newestFirst([1], 3)).toEqual({ shown: [1], older: [] });
+  });
+});
+
+describe("mostPromising", () => {
+  const research = { slug: "a-note", version: 1 };
+  const graded = (strategy: string, id: string, sharpe: number, deflated: number, over = {}) =>
+    run({ id, strategy, research, deflated_sharpe: deflated, ...over }, { sharpe });
+
+  it("keeps each strategy's best run that beat holding, by deflated Sharpe", () => {
+    const runs = [
+      graded("a", "a1", 1.5, 0.4),
+      graded("a", "a2", 1.6, 0.6), // a's best
+      graded("b", "b1", 1.4, 0.5),
+      graded("c", "c1", 1.3, 0.3),
+      graded("d", "d1", 1.2, 0.2),
+      graded("e", "e1", 0.5, 0.9), // below holding: never promising, however lucky
+      graded("f", "f1", 2.0, 0.95, { research: null }), // not a research run
+      graded("g", "g1", 2.0, 0.95, { used_holdout: true }),
+    ];
+    const held = { ...runs[0]!.benchmark_metrics, sharpe: 1.0 };
+    for (const r of runs) r.benchmark_metrics = held;
+    expect(mostPromising(runs).map((r) => r.id)).toEqual(["a2", "b1", "c1"]);
   });
 });

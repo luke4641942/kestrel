@@ -414,3 +414,23 @@ export function drawdownPaths(paths: number[], actual: number): string {
 export function newestFirst<T>(items: T[], limit: number): { shown: T[]; older: T[] } {
   return { shown: items.slice(0, limit), older: items.slice(limit) };
 }
+
+/** How many strategies the "Most promising" panel shows. */
+export const PROMISING = 3;
+
+/** The strategies closest to passing, by a fixed rule rather than by hand: among research
+ * runs (not on the holdout) whose Sharpe beat holding the same market, each strategy's best
+ * deflated Sharpe, highest first. Its label (pursue, watch, drop) doesn't matter: these are
+ * the ideas worth revisiting, not proven ones. */
+export function mostPromising(runs: RunSummary[], n = PROMISING): RunSummary[] {
+  const best = new Map<string, RunSummary>();
+  for (const r of runs) {
+    const mine = r.metrics.sharpe;
+    const held = r.benchmark_metrics.sharpe;
+    if (r.research == null || r.used_holdout || r.deflated_sharpe == null) continue;
+    if (mine == null || held == null || mine <= held) continue;
+    const seen = best.get(r.strategy);
+    if (!seen || (seen.deflated_sharpe ?? 0) < r.deflated_sharpe) best.set(r.strategy, r);
+  }
+  return [...best.values()].sort((a, b) => (b.deflated_sharpe ?? 0) - (a.deflated_sharpe ?? 0)).slice(0, n);
+}

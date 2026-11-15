@@ -33,6 +33,8 @@ import {
   verdict,
   windowLabel,
   drawdownPaths,
+  DECISION,
+  mostPromising,
 } from "../summary";
 
 const pct = (x: number | null | undefined, digits = 1) =>
@@ -95,6 +97,15 @@ export function Backtests({ jobs, onJobStarted }: { jobs: Job[]; onJobStarted: (
         </Panel>
       </Section>
 
+      <Section
+        title="Most promising"
+        description="Closest to passing, by a fixed rule: among research runs that beat holding the same market, each strategy's best deflated Sharpe (the luck test's score), highest first, whatever its label. Directions worth revisiting, not proven edges."
+      >
+        <Panel>
+          <PromisingTable runs={mostPromising(list)} onSelect={select} />
+        </Panel>
+      </Section>
+
       <Section title="Runs" description="Every saved run, including runs started from the CLI. Click a heading to sort; select a run to see it below.">
         <Panel>
           {list.length === 0 ? (
@@ -109,6 +120,49 @@ export function Backtests({ jobs, onJobStarted }: { jobs: Job[]; onJobStarted: (
 
       {current && <RunView key={current.id} id={current.id} />}
     </>
+  );
+}
+
+function PromisingTable({ runs, onSelect }: { runs: RunSummary[]; onSelect: (id: string) => void }) {
+  const decisions = useResource(api.decisions, []);
+  const label = (strategy: string) => decisions.data?.find((d) => d.strategy === strategy)?.decision;
+  if (runs.length === 0) {
+    return (
+      <Empty title="Nothing yet">
+        <p>No research run has beaten holding its market yet.</p>
+      </Empty>
+    );
+  }
+  return (
+    <div className="table-wrap">
+      <table className="table">
+        <thead>
+          <tr>
+            <th>Strategy</th>
+            <th>Market</th>
+            <th className="num">Sharpe</th>
+            <th className="num">Holding</th>
+            <th className="num">Deflated</th>
+            <th>Label</th>
+          </tr>
+        </thead>
+        <tbody>
+          {runs.map((r) => {
+            const d = label(r.strategy);
+            return (
+              <tr key={r.id} className="clickable" onClick={() => onSelect(r.id)}>
+                <td style={{ fontWeight: 500 }}>{r.strategy_name}</td>
+                <td className="nw">{marketLabel(r)}</td>
+                <td className="num">{r.metrics.sharpe?.toFixed(2)}</td>
+                <td className="num">{r.benchmark_metrics.sharpe?.toFixed(2)}</td>
+                <td className="num">{Math.round((r.deflated_sharpe ?? 0) * 100)}%</td>
+                <td className="nw">{d ? <Status tone={DECISION[d].tone}>{DECISION[d].label}</Status> : <span className="tertiary">none</span>}</td>
+              </tr>
+            );
+          })}
+        </tbody>
+      </table>
+    </div>
   );
 }
 
