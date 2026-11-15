@@ -1,0 +1,23 @@
+{
+  "slug": "cost-re-check-monthly-rotation-at-bnb-fees",
+  "name": "Cost re-check: monthly rotation at BNB fees",
+  "created_at": "2026-11-15T05:17:17.595387+00:00",
+  "status": "backtested",
+  "history": [
+    {
+      "status": "idea",
+      "at": "2026-11-15T05:17:17.595387+00:00",
+      "reason": "Created"
+    },
+    {
+      "status": "specified",
+      "at": "2026-11-15T05:21:30.563900+00:00",
+      "reason": "v1 frozen"
+    },
+    {
+      "status": "backtested",
+      "at": "2026-11-15T05:22:12.740507+00:00",
+      "reason": "first run on v1"
+    }
+  ]
+}

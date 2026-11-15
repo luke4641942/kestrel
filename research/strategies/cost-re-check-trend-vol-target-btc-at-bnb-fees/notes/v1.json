@@ -1,0 +1,15 @@
+{
+  "version": 1,
+  "created_at": "2026-11-15T05:17:17.593901+00:00",
+  "sections": {
+    "hypothesis": "Trend-vol-target on BTC, graded again with Binance's BNB fee discount (7.5 bps a side instead of 10), keeps the same scorecard verdicts, or improves on the tests near a threshold.",
+    "rationale": "Luke's request (2026-11-15) to model cutting costs and re-check every strategy on pursue or watch. Paying fees in BNB is a real, available saving (it needs a small BNB balance). The earlier result: passes edge (Sharpe 1.21 vs 1.07), start dates, costs (break-even about 12x actual), trades, drawdown and robustness; fails luck (deflated 28%) and out of sample (2 of 7 windows). Costs are small against its edge, so little change is expected; the point is to record it at the costs it would really pay.",
+    "rules": "With --config kestrel.bnb.toml (identical to kestrel.toml except the fee): kestrel backtest BTCUSDT --strategy trend-vol-target --interval 1d --start 2020-01 --end 2025-10 --research <this note>; kestrel walk-forward with the same grid as before (slow_days 90,120,180 x target_vol_pct 30,50,70; 24-month train, 6-month test); kestrel robustness around the defaults. 330 USDT.",
+    "falsification": "Graded on the full scorecard as before. Reported beside the 10 bps grades; a verdict that changes is recorded in decisions.toml. This note can't move the strategy's label on its own: pursue stays pursue unless Luke decides otherwise.",
+    "parameters": "Defaults: fast_days 20, mid_days 60, slow_days 120, vol_days 30, target_vol_pct 50. The walk-forward grid as in trend-vol-target-btc-scorecard-walk-forward.",
+    "costs": "Binance's spot fee with the BNB discount: 7.5 bps a side instead of 10, so a BTC round trip costs about 17 bps instead of 22. Same settings, market and period as before, so no new trials (a trial is keyed on strategy, settings, market and period, not costs)."
+  },
+  "implementation": "trend-vol-target",
+  "frozen_at": "2026-11-15T05:21:24.967993+00:00",
+  "change_reason": null
+}

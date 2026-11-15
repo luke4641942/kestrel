@@ -78,9 +78,6 @@ Strategies, most to least promising:
   revisit only if both pass on their own.
 
 ## Waiting on Luke
-- [ ] Freeze three drafted notes: `cost-re-check-trend-vol-target-btc-at-bnb-fees`,
-      `cost-re-check-monthly-rotation-at-bnb-fees` (BNB fees, 7.5 bps; no new trials) and
-      `does-stablecoin-supply-growth-lead-prices` (a raw-effect study, one look).
 - [ ] Rotation + MACD FAILED its one-sided holdout (-25.2% vs -5.4% for BTC at its exposure).
       The note's agreed rule: a fail means drop. Drop rotation, or keep it on watch? Your call.
 - [ ] Read and freeze `paper-trading-trend-vol-target-btc` (drafted 2026-11-14). Then:
@@ -89,6 +86,9 @@ Strategies, most to least promising:
       395-day test (90%, a 6-month failure-only check) starts at its first decision.
 
 ## Next
+- [ ] Stablecoin study PROCEED (spread +1.17% a week, P 91%): draft a strategy note (hold BTC
+      while supply grows, cash otherwise; full scorecard). Check first that BTC alone shows it,
+      since pooling BTC and ETH weeks overstates the confidence.
 - [ ] Multi-coin paper trading: the paper runner, ledger, testnet venue, reconciliation and
       tracking hold one coin. Rotation + MACD holds up to 2 of BTC/ETH/SOL. Extend them to
       a portfolio (the portfolio engine's rebalance at each decision), with the same
@@ -132,6 +132,7 @@ Strategies, most to least promising:
 - [ ] HMM regime filter (backlog S2) as a strategy: needs a note that passes the entry bar.
 
 ## Done recently
+- 2026-11-15 Cost re-checks at BNB fees: verdicts unchanged. Stablecoin study: PROCEED.
 - 2026-11-15 ETH/BTC relative value: fails the scorecard; dropped (Luke).
 - 2026-11-15 Strategies page cleaned up (Luke): three notes of dropped strategies rejected; trend walk-forward and rotation holdout notes kept.
 - 2026-11-15 Rotation + MACD: 7 of 9 tests (fails drawdown by 0.7 points, luck 57%); watch. BTC/gold rotation: dropped.

@@ -1,0 +1,15 @@
+{
+  "version": 1,
+  "created_at": "2026-11-15T05:17:17.595387+00:00",
+  "sections": {
+    "hypothesis": "Monthly rotation across BTC, ETH and SOL (180 days; plain and with the MACD filter), graded again at BNB fees (7.5 bps a side), keeps the same scorecard verdicts.",
+    "rationale": "Luke's request (2026-11-15) to re-check every strategy on pursue or watch at cut costs. Rotation is on watch after failing both holdout tests (plain -31.5% and MACD -25.2% against -6.6% and -5.4% for BTC at their exposures). Its costs were small against its results (MACD version break-even about 70x actual), so the verdicts are expected to stand; the holdout failures don't depend on costs.",
+    "rules": "With --config kestrel.bnb.toml, on the coin universe, daily bars, 2018-01 to 2025-10, 330 USDT: kestrel backtest, walk-forward (fixed rule, 24/6 months) and robustness for monthly-rotation at lookback_days 180, once with macd_filter 0 and once with macd_filter 1.",
+    "falsification": "Graded on the full scorecard as before, beside the 10 bps grades; a verdict that changes is recorded in decisions.toml. The label is Luke's call.",
+    "parameters": "lookback_days 180, trend_days 200, top_n 2; macd_filter 0 and 1.",
+    "costs": "Binance's spot fee with the BNB discount: 7.5 bps a side instead of 10, so a BTC round trip costs about 17 bps instead of 22. Same settings, market and period as before, so no new trials (a trial is keyed on strategy, settings, market and period, not costs)."
+  },
+  "implementation": "monthly-rotation",
+  "frozen_at": "2026-11-15T05:21:30.563859+00:00",
+  "change_reason": null
+}

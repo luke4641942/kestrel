@@ -1,0 +1,23 @@
+{
+  "slug": "cost-re-check-trend-vol-target-btc-at-bnb-fees",
+  "name": "Cost re-check: trend-vol-target BTC at BNB fees",
+  "created_at": "2026-11-15T05:17:17.593901+00:00",
+  "status": "backtested",
+  "history": [
+    {
+      "status": "idea",
+      "at": "2026-11-15T05:17:17.593901+00:00",
+      "reason": "Created"
+    },
+    {
+      "status": "specified",
+      "at": "2026-11-15T05:21:24.968002+00:00",
+      "reason": "v1 frozen"
+    },
+    {
+      "status": "backtested",
+      "at": "2026-11-15T05:22:04.662599+00:00",
+      "reason": "first run on v1"
+    }
+  ]
+}
