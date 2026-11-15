@@ -19,8 +19,6 @@ first real test: no better than random entries. Untested, all low priority:
       tvt-eth, tvt-sol, hourly at 10 past. First runs OK: BTC bought 33%, ETH and SOL 0%.
       Reviews every 3 months (next around 2027-02-15); failure-only check at 182 days
       (around 2027-05-15); verdict at 395 days (around 2027-12-14).
-- [ ] Delete ~/Downloads/kestrel.zip (old copy from before the move to ~/kestrel) once
-      happy the move is complete.
 
 ## Next
 - [ ] Testnet keys from the macOS keychain, not ~/.zshrc (Luke, 2026-11-15). Luke adds them
@@ -61,6 +59,7 @@ first real test: no better than random entries. Untested, all low priority:
 - [ ] HMM regime filter (backlog S2) as a strategy: needs a note that passes the entry bar.
 
 ## Done recently
+- 2026-11-15 Old ~/Downloads/kestrel.zip deleted after checking nothing in it was missing (Luke).
 - 2026-11-15 Project moved to ~/kestrel (launchd can't read ~/Downloads); paper jobs rewritten, reloaded and run once.
 - 2026-11-15 Paper jobs loaded (Luke). BTC/gold rotation tested and dropped. TODO tidied.
 - 2026-11-15 Paper trading opened: tvt-btc, tvt-eth, tvt-sol on the testnet, schedules written. Trend-trio: watch.
