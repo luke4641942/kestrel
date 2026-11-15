@@ -45,9 +45,10 @@ Sleep = Callable[[float], None]
 
 
 def fetch_month(
-    query: str, month: date, http: httpx.Client, sleep: Sleep = time.sleep
+    query: str, month: date, http: httpx.Client, sleep: Sleep | None = None
 ) -> pl.DataFrame:
     """Daily tone for ``query`` over the calendar month starting ``month``."""
+    sleep = sleep or time.sleep
     after = date(month.year + month.month // 12, month.month % 12 + 1, 1)
     params = {
         "query": query,
@@ -99,10 +100,12 @@ def ingest(
     http: httpx.Client,
     data_dir: Path | str,
     end: date | None = None,
-    sleep: Sleep = time.sleep,
+    sleep: Sleep | None = None,
     on_month: Callable[[date], None] = lambda _: None,
 ) -> pl.DataFrame:
     """Every month from 2017 to ``end`` not already stored, saved as each arrives."""
+    # Looked up at call time, not bound as a default, so a test can replace time.sleep.
+    sleep = sleep or time.sleep
     if symbol.upper() not in QUERIES:
         raise NewsError(f"no news query for {symbol}; one of {', '.join(QUERIES)}")
     end = end or (datetime.now(UTC).date() - timedelta(days=1))

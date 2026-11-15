@@ -7,7 +7,7 @@ cd "$(dirname "$0")/.."
 ruff check .
 ruff format --check .
 mypy
-pytest -m "not network" -q
+pytest -m "not network" -q -n auto  # parallel across cores (pytest-xdist)
 python scripts/check_committed.py
 cd frontend
 npm test
