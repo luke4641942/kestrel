@@ -78,6 +78,9 @@ Strategies, most to least promising:
   revisit only if both pass on their own.
 
 ## Waiting on Luke
+- [ ] YouTube batches 2-3 tested (2026-11-15): all eight notes FAIL the scorecard (findings,
+      "Every hypothesis"). Reject the notes and drop them, or keep any open? Your call.
+      Closest: monthly rotation (Sharpe 1.26 vs 0.74 for BTC, but drawdown -59% and luck 43%).
 - [ ] Read and freeze `paper-trading-trend-vol-target-btc` (drafted 2026-11-14). Then:
       `kestrel paper open tvt-btc ... --venue testnet` (the note's rules), `kestrel paper
       schedule tvt-btc`, and load the job with the launchctl command it prints. The
@@ -88,6 +91,10 @@ Strategies, most to least promising:
       are still open after its drop: reject them, or leave them? Your call.
 
 ## Next
+- [ ] Walk-forward for basket strategies: `walk_forward` only runs one coin, so every universe
+      strategy stops at its first window. Run each window through the portfolio engine and
+      compare with the large-basket control. Then rerun the five basket walk-forwards
+      (same settings: no new trials). It can't turn any of today's fails into a pass.
 - [ ] Delistings (Luke's idea, 2026-11-14): a raw-effect study before any strategy.
       Needs Binance delisting announcement dates (no official history: scrape the public
       announcements catalog, "Delistings"). Measure the path from announcement to removal
@@ -114,6 +121,7 @@ Strategies, most to least promising:
 - [ ] HMM regime filter (backlog S2) as a strategy: needs a note that passes the entry bar.
 
 ## Done recently
+- 2026-11-15 Eight YouTube notes run (22 settings, trials 193 -> 473): every one fails.
 - 2026-11-15 Validation additions from batch 2: the max drawdown on 2,000 reshuffled paths
   (median and 1 in 20) on every backtest. Results by year and walk-forward's
   out-of-sample share of in-sample already existed.
