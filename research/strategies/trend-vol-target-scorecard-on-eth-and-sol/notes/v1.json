@@ -1,0 +1,15 @@
+{
+  "version": 1,
+  "created_at": "2026-11-15T06:35:59.602109+00:00",
+  "sections": {
+    "hypothesis": "Trend-vol-target, unchanged from BTC (20/60/120-day votes, 30-day volatility, 50% target), clears the same scorecard bar on ETH and SOL daily as it does on BTC: every test except luck and out of sample.",
+    "rationale": "A 2026-11-15 review of every graded backtest (prompted by Luke) found the trend rule beats holding on all three major coins, but only BTC was ever finished. ETH daily (2020-25: Sharpe 1.23 vs 1.12, deflated 38%) was dropped on 2026-11-12 under an older rule (out-of-sample Sharpe under half of in-sample) before today's scorecard existed, and was never graded window by window. SOL 4h (2020-08 to 2025-10: Sharpe 1.47 vs 1.24, deflated 60%, the best in Kestrel) was never completed and has no decision. The same rule working on three coins would be stronger evidence for the edge than BTC alone: time-series momentum is documented across assets (Moskowitz, Ooi and Pedersen 2012; in crypto Liu and Tsyvinski 2021). Stated honestly: SOL is being revisited partly because its number stood out, which is a selection; the scorecard and an unseen holdout are what guard against that. Daily bars, to match BTC, not SOL's 4h.",
+    "rules": "trend-vol-target with its defaults, daily bars, 330 USDT, costs from kestrel.toml (7.5 bps fees). ETHUSDT 2020-01 to 2025-10; SOLUSDT 2020-08 (its Binance listing) to 2025-10. For each: kestrel backtest, kestrel walk-forward (grid slow_days 90,120,180 x target_vol_pct 30,50,70; 24-month train, 6-month test, as for BTC), kestrel robustness around the defaults. All before the holdout.",
+    "falsification": "The full scorecard for each coin. A coin that passes every test except luck and out of sample (BTC's standard for pursue) earns its own holdout note, judged by the holdout rule (in a falling year, its return must beat the coin held at the same exposure; drawdown within 50%). A coin that fails anything else is recorded and not taken further. The ETH and SOL holdouts are both unused.",
+    "parameters": "fast_days 20, mid_days 60, slow_days 120, vol_days 30, target_vol_pct 50; the walk-forward grid and robustness neighbours as for BTC. Nothing new is tuned.",
+    "costs": "About 17 bps a round trip on ETH; SOL pays its own spread band. Turnover like BTC's (break-even there was 287 bps). Trials: ETH's settings were tried before (no new trials there); SOL daily is new (one run plus its grid and neighbours, about 20)."
+  },
+  "implementation": "trend-vol-target",
+  "frozen_at": "2026-11-15T06:38:38.350496+00:00",
+  "change_reason": null
+}
