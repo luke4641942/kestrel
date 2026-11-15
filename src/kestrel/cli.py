@@ -529,9 +529,9 @@ def ingest_stablecoins(data_dir: DataDir = Path("data")) -> None:
         raise typer.Exit(code=1) from None
     stablecoins.save(frame, data_dir)
     missing = stablecoins.gaps(frame)
+    first, last = frame["date"].to_list()[0], frame["date"].to_list()[-1]
     typer.echo(
-        f"{frame.height} days of stablecoin supply, {frame['date'].min()} to "
-        f"{frame['date'].max()}"
+        f"{frame.height} days of stablecoin supply, {first} to {last}"
         + (f"; {len(missing)} missing days (not filled)" if missing else "")
     )
 
