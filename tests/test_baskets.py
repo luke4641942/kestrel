@@ -494,3 +494,27 @@ def test_rotation_holds_cash_at_a_month_end_when_stablecoins_shrank() -> None:
     with pytest.raises(ValueError, match="stablecoins_up"):
         s.target_weights(p)
     assert STRATEGIES["rotation-stablecoins"].features == ("stablecoins_up",)
+
+
+# ---------- trend-vol-target on three coins ----------
+
+
+def test_trend_trio_gives_each_coin_a_third_of_its_own_weight() -> None:
+    from kestrel.strategies.trend import TrendVolTarget
+    from kestrel.strategies.trend_trio import TrendTrio, TrioHold
+
+    small = {"fast_days": 5, "mid_days": 10, "slow_days": 20, "vol_days": 10}
+    wiggle = [100 * (1.01**i) * (1.02 if i % 2 else 0.98) for i in range(60)]
+    p = coins({"BTCUSDT": (wiggle, 9e9), "ETHUSDT": (wiggle, 9e9), "DOGEUSDT": (wiggle, 9e9)})
+    d = validated_decisions(TrendTrio(**small), p)
+    alone = TrendVolTarget("BTCUSDT", **small).target_weights(
+        p.filter(pl.col("symbol") == "BTCUSDT").sort("open_time")
+    )
+    end = d.filter(pl.col("open_time") == d["open_time"].max())
+    assert sorted(end["symbol"].to_list()) == ["BTCUSDT", "ETHUSDT"]  # no SOL yet; never DOGE
+    assert end["weight"].to_list()[0] == pytest.approx(alone[-1] / 3)
+    hold = last(TrioHold(), p)
+    assert (hold["symbol"].to_list(), hold["weight"].to_list()) == (
+        ["BTCUSDT", "ETHUSDT"], [pytest.approx(1 / 3)] * 2,
+    )  # fmt: skip
+    assert STRATEGIES["trend-trio"].assets == ("BTCUSDT", "ETHUSDT", "SOLUSDT")

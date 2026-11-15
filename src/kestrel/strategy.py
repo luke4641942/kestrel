@@ -47,6 +47,7 @@ from kestrel.strategies.stablecoin_hold import StablecoinHold, StablecoinVolHold
 from kestrel.strategies.structure import StructurePullback
 from kestrel.strategies.trend import TrendVolTarget, TrendVolTargetStablecoin
 from kestrel.strategies.trend_basket import TrendBasket
+from kestrel.strategies.trend_trio import TrendTrio, TrioHold
 from kestrel.strategies.trendlines import (
     SwingPullback,
     TrendlineBounce,
@@ -764,6 +765,31 @@ STRATEGIES: dict[str, StrategySpec] = {
             ),
             universe=True,
             features=("stablecoins_up",),
+        ),
+        StrategySpec(
+            "trend-trio",
+            "research",
+            "Trend-vol-target on BTC, ETH and SOL in one account, a third of equity each, sized "
+            "inside its third exactly as alone. Research: runs only through its frozen note.",
+            TrendTrio,
+            (
+                Param("fast_days", 20, 5, 60, "Fast trend lookback, days"),
+                Param("mid_days", 60, 20, 180, "Middle trend lookback, days"),
+                Param("slow_days", 120, 60, 365, "Slow trend lookback, days"),
+                Param("vol_days", 30, 10, 90, "Days of volatility"),
+                Param("target_vol_pct", 50, 10, 150, "Target annual volatility, %"),
+            ),
+            universe=True,
+            assets=("BTCUSDT", "ETHUSDT", "SOLUSDT"),
+        ),
+        StrategySpec(
+            "trio-hold",
+            "control",
+            "BTC, ETH and SOL held, a third each, rebalanced each Sunday: the control for "
+            "trend-trio.",
+            TrioHold,
+            universe=True,
+            assets=("BTCUSDT", "ETHUSDT", "SOLUSDT"),
         ),
         StrategySpec(
             "stablecoin-vol-hold",
