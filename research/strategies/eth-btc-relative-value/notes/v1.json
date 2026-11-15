@@ -1,0 +1,15 @@
+{
+  "version": 1,
+  "created_at": "2026-11-15T01:14:36.533370+00:00",
+  "sections": {
+    "hypothesis": "Holding whichever of ETH and BTC is unusually cheap against the other (the ETH/BTC ratio's 90-day z-score beyond 1), and half each otherwise, beats holding half of each on Sharpe after costs.",
+    "rationale": "Who pays: relative mispricing between two closely linked assets. ETH and BTC share most of their drivers, so when one runs far ahead of the other, flows that overshoot (narrative rotations, liquidations in one market) tend to partly reverse: the logic of pairs trading (Gatev, Goetzmann and Rouwenhorst 2006, Pairs Trading, Review of Financial Studies). Long-only spot can't short the spread, but it can choose which coin to own, so this is a bet on which, not on direction. Suggested independently by two other AI assistants Luke consulted (2026-11-15) as the crypto form of mean reversion with the best case. It is not a variant of a rejected family: Kestrel's failed reversal tests bought single-coin dips (which is part-time market exposure); this is always fully invested and only switches between the two. Against it: the ETH/BTC ratio has trended for years at a time (up 2017-21, down since 2022), when a reversion rule keeps buying the loser. Kestrel's BTC/ETH momentum rotation (the opposite bet) was dropped at Sharpe 1.06 vs 1.07.",
+    "rules": "eth-btc-value, BTCUSDT and ETHUSDT daily bars, decided each Sunday close (UTC), filled at Monday's open. z = (log of ETH/BTC - its 90-day mean) / its 90-day standard deviation, on daily closes. z below -1: all ETH; above +1: all BTC; otherwise half each, rebalanced back to half each when outside the 2% band. 330 USDT, costs from kestrel.toml. Period 2018-01 to 2025-10, before the holdout. The control, btc-eth-half (half each, rebalanced each Sunday), runs on the same period.",
+    "falsification": "An added test (a note may add tests): its Sharpe must beat the half-each control's, after costs; beating BTC alone isn't enough, since half ETH changes the risk. Plus the full scorecard against BTC held (the engine's universe benchmark), with walk-forward through the portfolio engine. Fails on either.",
+    "parameters": "lookback_days 90 (20-365), entry_tenths 10 (a z of 1.0; 5-30). One run plus the control; the robustness check moves each parameter (about 8 neighbours).",
+    "costs": "A switch at most weekly; when the z-score crosses \u00b11 the whole account moves between the coins (two fills, about 22 bps a round trip), plus small rebalances in the half-each state. Perhaps 10-30 switches a year. Trials: 1 run, the control (counted, as the large-basket control is), and about 8 neighbours."
+  },
+  "implementation": "eth-btc-value",
+  "frozen_at": "2026-11-15T01:15:25.840056+00:00",
+  "change_reason": null
+}

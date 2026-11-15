@@ -120,6 +120,7 @@ Strategies, most to least promising:
 - [ ] HMM regime filter (backlog S2) as a strategy: needs a note that passes the entry bar.
 
 ## Done recently
+- 2026-11-15 ETH/BTC relative value: fails the scorecard; dropped (Luke).
 - 2026-11-15 Strategies page cleaned up (Luke): three notes of dropped strategies rejected; trend walk-forward and rotation holdout notes kept.
 - 2026-11-15 Rotation + MACD: 7 of 9 tests (fails drawdown by 0.7 points, luck 57%); watch. BTC/gold rotation: dropped.
 - 2026-11-15 Monthly rotation holdout: FAILED (-31.5% vs -6.6% for BTC at its exposure); kept on watch (Luke).

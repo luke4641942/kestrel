@@ -321,3 +321,12 @@ decision = "drop"
 decided = 2026-11-15
 reason = "Dropped (Luke, 2026-11-15). Failed the scorecard (2020-08 to 2025-10): Sharpe 0.54 vs 1.01 for BTC held; 19 trades; walk-forward 3 of 6 windows; deflated 3%. PAXG's Binance history is short (from 2020-08)."
 evidence = ["btc-and-gold-rotation"]
+
+[[decision]]
+strategy = "eth-btc-value"
+name = "ETH/BTC relative value"
+market = "BTC/ETH 1d"
+decision = "drop"
+decided = 2026-11-15
+reason = "Dropped (Luke, 2026-11-15). Failed the scorecard (2018-01 to 2025-10): Sharpe 0.74, barely above half each (0.70, its added test) and level with BTC held (0.74); drawdown -87.5% (always fully in crypto); walk-forward beat BTC in 5 of 11 windows; deflated 5%. Switching the whole account between the coins cost 140 USDT against 7 for holding half each: the ratio wobbles, but not enough to pay for the switches."
+evidence = ["eth-btc-relative-value"]
