@@ -209,7 +209,7 @@ edge, and the holdout can't be used again for either strategy.
 | Trend-vol-target, finished on ETH and SOL (2026-11-15) | ETH 1d 2020-25; SOL 1d 2020-08 to 2025-10 | Both match BTC's standard (fail only luck and out of sample). ETH: Sharpe 1.24 vs 1.12, +896% vs +573% at the same exposure, drawdown -38%, deflated 33%, walk-forward 2 of 7. SOL: Sharpe 1.52 vs 1.24, +1,211% vs +553%, drawdown -42%, deflated 59% (the best in Kestrel), walk-forward 2 of 6. The same rule beats holding on all three major coins | Both passed their holdouts: pursue (Luke) |
 | Trend-vol-target on BTC, ETH and SOL together (a third each) | 3 coins 1d 2020-25, 990 USDT | Sharpe 1.59 vs 1.31 for holding a third of each (its added test: pass) and 1.07 for BTC; +1,021%; drawdown -42% vs -85% for the held thirds; in the market 39% of the time; break-even 376 bps vs 18; robust. Fails luck (deflated 59%) and out of sample (2 of 7 windows), like each coin alone. The highest Sharpe in Kestrel | Watch |
 | Cost gate: 1m/5m change of character + fair value gap (YouTube S2/S3) | BTC, ETH, SOL 1m and 5m | Stops only, no outcomes (not a trial). Median stop 6-19 bp on 1m and 15-45 bp on 5m, so a 22 bp round trip costs 0.5-3.9R a trade; break-even win rate at 4R 30-97% instead of 20%. FAILS on 17 of 18 (coin x bar size x all hours / NY open); SOL 5m at the NY open MARGINAL (0.49R) | Not built (Luke's call) |
-| Cost gate: 1m/5m order flow Model 2, failed breakdown back to the point of control (YouTube batch 2 C) | BTC, ETH, SOL; 5m 2020-25, 1m 2024-11 to 2025-10 | Stops only (not a trial); delta from each bar's taker-buy volume. 1m FAILS on 5 of 6 (median 0.45-1.30R of a 17 bp round trip). 5m (680-884 setups a coin at all hours): BTC FAILS (0.53R), ETH and SOL MARGINAL (0.36R, 0.26R), SOL at the New York open CARRIES (0.18R, 45 setups). The setup's own target (the point of control) sits a median 0.9-1.7R away, so even the carrying cases need about 50-62% wins to break even | Frozen note for ETH and SOL 5m (Luke) |
+| Cost gate: 1m/5m order flow Model 2, failed breakdown back to the point of control (YouTube batch 2 C) | BTC, ETH, SOL; 5m 2020-25, 1m 2024-11 to 2025-10 | Stops only (not a trial); delta from each bar's taker-buy volume. 1m FAILS on 5 of 6 (median 0.45-1.30R of a 17 bp round trip). 5m (680-884 setups a coin at all hours): BTC FAILS (0.53R), ETH and SOL MARGINAL (0.36R, 0.26R), SOL at the New York open CARRIES (0.18R, 45 setups). The setup's own target (the point of control) sits a median 0.9-1.7R away, so even the carrying cases need about 50-62% wins to break even | Tested anyway (Luke); failed, below |
 | YouTube batches 2-3, run 2026-11-15 (eight frozen notes, 22 settings, 280 trials with robustness) | | Every one FAILS the scorecard; all fail luck (deflated 0-43%) | Notes rejected (Luke) |
 | Turn of the month | BTC 1d 2018-25 | Sharpe 0.37 (last 0/first 1) and 0.68 (5/3) vs 0.74 holding; walk-forward 5 and 4 of 11 | Drop |
 | Bollinger pullback, coin basket | Coins 1d 2020-25 | Sharpe 0.54 / 0.82 / 0.32 (3% limit / 7% / BTC filter) vs 1.07 for BTC; walk-forward beat BTC in 2, 1 and 0 of 7 windows | Drop |
@@ -221,6 +221,9 @@ edge, and the holdout can't be used again for either strategy.
 | Candle pattern + MACD turn | BTC, ETH 4h 2020-25 | +0.05R and +0.17R a trade; beat 70% and 88% of random-entry paths (95% needed); Sharpe 0.17 vs 1.07 and 0.56 vs 1.12 | Drop |
 | Study: Binance delisting announcement to removal | 80 delisted coins 1d, 21 announcements 2022-10 to 2025-09 | Day 1's open to the removal day's open: -39.8% on average (-41.9% vs BTC), P(< 0) 100%, after -31% on the announcement day; no rebound. EXIT RULE: sell held coins at once | Study passed (exit rule); next step Luke's |
 | Study: shorting the delisting window with perps (hypothetical) | 12 coins with a perp that traded to removal, 6 announcements 2024-02 to 2025-09 | Net at 2x after funding and 2x costs -7.8% (P > 0: 29%); 3 of 12 liquidated (HIFI +1,357%); funding -1.2%; 16 of 28 perps stopped before the spot removal. INSUFFICIENT (10 announcements needed) | No reason to hurry into derivatives for this |
+| Order flow Model 2 (YouTube batch 2 C) | ETH, SOL 5m 2020-25 | ETH -81% (Sharpe -3.67, 790 trades, 30% won, -0.68R a trade); SOL -80% (-3.42, 637 trades, -0.73R); negative before costs on both; walk-forward 0 of 7 and 0 of 6; ETH no better than random entries (beat 19% of paths) | Drop (Luke) |
+| CHoCH + FVG at the New York open (YouTube batch 1 S2) | SOL 5m 2020-08 to 2025-10 | -40%, Sharpe -0.92, 308 trades, 21% won, -0.55R a trade (about +0.04R before 0.59R of costs); walk-forward 1 of 6 | Drop (Luke) |
+| Set and Forget, mechanical zones (YouTube batch 1 S1) | BTC, ETH 1H 2020-25 | BTC +0.6% (Sharpe 0.04) vs +12% held at the same exposure, 62 trades, +0.02R; ETH -6.2% (-0.18) vs +15%, 59 trades, -0.09R; costs small (0.06-0.07R): no edge before them; walk-forward 0 of 7 and 1 of 7; BTC no better than random entries (beat 50% of paths) | Drop (Luke) |
 
 Each strategy was judged by its own note's pass test, written before it ran. From
 2026-11-14 every strategy is judged on one scorecard instead.
@@ -233,6 +236,14 @@ Each strategy was judged by its own note's pass test, written before it ran. Fro
   copies were removed by hand and recorded here. No other daily file has duplicates. Both
   days are in the holdout, so no earlier result was affected.
 
+- **Spread bands on short bars read bar volume as daily volume (found 2026-11-16).** A coin
+  without its own config entry (anything but BTC and ETH) paid the band for the median
+  volume of its last 30 *bars*; the bands are set for daily volume, so on 5m bars SOL
+  read as a tiny coin and paid about 8 bps a side instead of its tier. Found because a
+  SOL 5m run paid 49 bps a round trip against the note's 17. Fixed (shorter bars use the
+  30 complete days before their own); the two SOL 5m runs were voided and rerun, both
+  still failing. Four exploratory SOL trend runs on 4h and 1h (2026-11-12) were also
+  overcharged; nothing on daily bars, BTC or ETH was affected.
 - **A faulty spread model** made cross-sectional momentum v1's result meaningless. It was
   voided, the spread model replaced (estimated per coin from daily highs and lows, with a
   1 bp floor) and the strategy rerun as v2.

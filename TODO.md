@@ -3,21 +3,6 @@
 The active list. Claude keeps it up to date in the same commit as the work (see CLAUDE.md).
 Decisions and rules live in CLAUDE.md; results in `research/findings.md`.
 
-## YouTube strategies (batches 1-3): what's left
-Tested 2026-11-15: turn of the month, Bollinger pullback, squeeze breakout, rotation, RSI
-dip-buying, basket breakouts, top-3 momentum and pattern + MACD all failed the scorecard and
-are dropped (findings, "Every hypothesis"). Pattern + MACD was the random-entry control's
-first real test: no better than random entries. Untested, all low priority:
-Luke chose (2026-11-16) to test all three; 5m history for BTC/ETH/SOL now from 2020.
-- [ ] Order flow (batch 2 C): cost gate on 5m 2020-25: ETH and SOL MARGINAL, BTC FAILS.
-      Frozen and run 2026-11-16: ETH -81% (Sharpe -3.67, -0.68R a trade), SOL -94% (-5.73,
-      -1.24R): fails test 1 on both; walk-forward and random-entry recorded for the file.
-- [ ] CHoCH + FVG, SOL 5m New York open only: frozen and run 2026-11-16: -40%, Sharpe
-      -0.92, -0.55R a trade after costs (with the spread fix; the first run is void). Fails
-      test 1. SOL walk-forward and random-entry for both 5m notes running.
-- [ ] Set and Forget, BTC and ETH 1H (mechanical zones): strategy `set-and-forget` built.
-      Waiting on Luke: freeze `set-and-forget-on-btc-and-eth-1h`, then the scorecard.
-
 ## Waiting on Luke
 - [ ] Paper trading is live on the testnet (reloaded from ~/kestrel 2026-11-15): tvt-btc,
       tvt-eth, tvt-sol, hourly at 10 past. First runs OK: BTC bought 33%, ETH and SOL 0%.
@@ -70,6 +55,7 @@ Luke chose (2026-11-16) to test all three; 5m history for BTC/ETH/SOL now from 2
 - [ ] HMM regime filter (backlog S2) as a strategy: needs a note that passes the entry bar.
 
 ## Done recently
+- 2026-11-16 YouTube leftovers tested and dropped (Luke): order flow (ETH, SOL 5m), CHoCH + FVG (SOL 5m NY), Set and Forget (BTC, ETH 1H) all fail test 1. Engine: resting limit orders; spread-band fix for sub-daily bars.
 - 2026-11-16 Hypothetical delisting short (perps): INSUFFICIENT; 12 coins in 6 announcements shortable to removal, -7.8% net at 2x, 3 of 12 liquidated.
 - 2026-11-15 Delisting study: EXIT RULE (-39.8% from day 1 to removal, no rebound).
 - 2026-11-15 Old ~/Downloads/kestrel.zip deleted after checking nothing in it was missing (Luke).
