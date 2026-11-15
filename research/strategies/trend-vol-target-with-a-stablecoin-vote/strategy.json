@@ -1,0 +1,28 @@
+{
+  "slug": "trend-vol-target-with-a-stablecoin-vote",
+  "name": "Trend-vol-target with a stablecoin vote",
+  "created_at": "2026-11-15T06:16:34.693082+00:00",
+  "status": "rejected",
+  "history": [
+    {
+      "status": "idea",
+      "at": "2026-11-15T06:16:34.693082+00:00",
+      "reason": "Created"
+    },
+    {
+      "status": "specified",
+      "at": "2026-11-15T06:18:13.604187+00:00",
+      "reason": "v1 frozen"
+    },
+    {
+      "status": "backtested",
+      "at": "2026-11-15T06:19:18.819529+00:00",
+      "reason": "first run on v1"
+    },
+    {
+      "status": "rejected",
+      "at": "2026-11-15T06:22:38.053261+00:00",
+      "reason": "Failed its added test (Luke, 2026-11-15): Sharpe 1.22 vs 1.23 for the plain trend-vol-target; walk-forward 2 of 7; deflated 37%. The vote adds nothing."
+    }
+  ]
+}

@@ -128,6 +128,7 @@ Strategies, most to least promising:
 - [ ] HMM regime filter (backlog S2) as a strategy: needs a note that passes the entry bar.
 
 ## Done recently
+- 2026-11-15 Three stablecoin pairings tested: two dropped, the volatility-sized hold folded into the stablecoin watch (Luke).
 - 2026-11-15 Stablecoin hold: beats holding on BTC and ETH but fails five tests; watch (Luke). Rotation dropped (Luke), with its stablecoin version.
 - 2026-11-15 Cost re-checks at BNB fees: verdicts unchanged. Stablecoin study: PROCEED.
 - 2026-11-15 ETH/BTC relative value: fails the scorecard; dropped (Luke).

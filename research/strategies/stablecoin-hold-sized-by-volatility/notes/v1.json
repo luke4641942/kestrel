@@ -1,0 +1,15 @@
+{
+  "version": 1,
+  "created_at": "2026-11-15T06:16:34.694207+00:00",
+  "sections": {
+    "hypothesis": "Holding BTC while stablecoin supply grows (Sunday decisions), sized by min(1, 50% / 30-day volatility), beats holding BTC at the same average exposure on Sharpe and keeps the drawdown within 50%.",
+    "rationale": "The plain stablecoin hold (watch) beat holding at the same exposure on BTC and ETH, but took every crash in full (drawdown -66% and -80%) because it is fully in whenever supply grows. Volatility targeting is what turned simple trend following into the one strategy on pursue: holding less when the market is wild cuts crash losses (Moreira and Muir 2017, Volatility-Managed Portfolios). Claude's suggestion, 2026-11-15. Against it: volatility-managed holding alone failed here (below the market at the same exposure), so it may only help in combination. Its holdout year is unseen for this signal.",
+    "rules": "stablecoin-vol-hold on BTCUSDT 1d: on/off as the stablecoin hold (each Sunday close, on if stablecoins_up is 1, for the week); while on, weight = min(1, 0.5 / annualised 30-day volatility), rebalanced daily outside the 2% band. 330 USDT, costs from kestrel.toml. Period 2018-01 to 2025-10, before the holdout. Also run on ETHUSDT, reported beside it.",
+    "falsification": "The full scorecard on BTC; fails on any failed test. ETH is reported beside it; a result there below ETH held at the same exposure is a warning. A pass leads to a holdout note.",
+    "parameters": "vol_days 30, target_vol_pct 50 (trend-vol-target's defaults). One run a coin; robustness moves each (about 8 neighbours).",
+    "costs": "Weekly on/off plus daily resizing outside the band: more turnover than the plain hold, perhaps 1% a year at 17 bps. Trials: 2 runs plus about 8 neighbours."
+  },
+  "implementation": "stablecoin-vol-hold",
+  "frozen_at": "2026-11-15T06:18:08.942781+00:00",
+  "change_reason": null
+}

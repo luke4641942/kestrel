@@ -1,0 +1,15 @@
+{
+  "version": 1,
+  "created_at": "2026-11-15T06:16:34.693082+00:00",
+  "sections": {
+    "hypothesis": "Adding stablecoin supply growth as a fourth vote to trend-vol-target on BTC (so the position shrinks by a quarter when new money stops arriving) beats the plain strategy on Sharpe, and passes the scorecard.",
+    "rationale": "Trend-vol-target is the only strategy on pursue: it beats exposure-matched holding (Sharpe 1.23 vs 1.07 at 7.5 bps) but fails luck (38%) and walk-forward (2 of 7). Stablecoin growth is the only other signal that beat holding on two coins independently (watch). The two are different sources, price trend and money flows, so combining them could make each more reliable; Claude's suggestion, 2026-11-15. Stated before the run: trend-vol-target's holdout is spent and its result there is known, so this can't use it; a pass leads to paper trading beside the plain strategy, not the holdout.",
+    "rules": "trend-vol-target-stablecoin on BTCUSDT 1d: votes from the 20, 60 and 120-day trends plus stablecoins_up; the trend is their average (0 to 1 in quarters); weight = trend x min(1, 50% / 30-day volatility). Cash until every vote is known. 330 USDT, costs from kestrel.toml. Period 2020-01 to 2025-10 (the plain strategy's scorecard period), before the holdout.",
+    "falsification": "The full scorecard against BTC held, and an added test: its Sharpe must beat the plain trend-vol-target's on the same period (1.23 at 7.5 bps). Fails on either.",
+    "parameters": "fast_days 20, mid_days 60, slow_days 120, vol_days 30, target_vol_pct 50 (the plain strategy's defaults; nothing new to tune). Walk-forward over the same 9-point grid as the plain strategy; robustness around the defaults.",
+    "costs": "Similar turnover to the plain strategy plus small weekly-ish adjustments when the vote flips. Trials: 1 run plus the grid and robustness neighbours (about 20, many shared with the plain strategy's settings but counted under this strategy)."
+  },
+  "implementation": "trend-vol-target-stablecoin",
+  "frozen_at": "2026-11-15T06:18:13.604153+00:00",
+  "change_reason": null
+}

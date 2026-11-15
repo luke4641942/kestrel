@@ -1,0 +1,28 @@
+{
+  "slug": "do-volatile-spells-with-new-money-go-up",
+  "name": "Do volatile spells with new money go up",
+  "created_at": "2026-11-15T06:16:34.691665+00:00",
+  "status": "rejected",
+  "history": [
+    {
+      "status": "idea",
+      "at": "2026-11-15T06:16:34.691665+00:00",
+      "reason": "Created"
+    },
+    {
+      "status": "specified",
+      "at": "2026-11-15T06:18:11.359726+00:00",
+      "reason": "v1 frozen"
+    },
+    {
+      "status": "backtested",
+      "at": "2026-11-15T06:19:18.223410+00:00",
+      "reason": "first run on v1"
+    },
+    {
+      "status": "rejected",
+      "at": "2026-11-15T06:22:38.051987+00:00",
+      "reason": "KILL (Luke, 2026-11-15): in volatile spells the weeks after supply growth averaged -0.75% vs +0.71% after shrinkage (53 and 22 weeks, P 21%). Stablecoin growth doesn't say which way a volatile spell goes."
+    }
+  ]
+}
