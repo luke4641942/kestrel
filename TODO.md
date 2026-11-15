@@ -78,9 +78,8 @@ Strategies, most to least promising:
   revisit only if both pass on their own.
 
 ## Waiting on Luke
-- [ ] Trend-vol-target PASSED the holdout on ETH (-7.1% vs -12.2% at its exposure) and SOL
-      (+2.6% vs -13.8%). The notes' rule: recommend pursue. Label ETH (now drop, from the old
-      rule) and SOL (no label) pursue? Then paper-trade all three coins.
+- [ ] Paper trading for ETH and SOL (pursue since 2026-11-15): one testnet account each, like
+      tvt-btc; drafts to write once Luke wants them (he chose BTC's note first).
 - [ ] Read and freeze `paper-trading-trend-vol-target-btc` (drafted 2026-11-14). Then:
       `kestrel paper open tvt-btc ... --venue testnet` (the note's rules), `kestrel paper
       schedule tvt-btc`, and load the job with the launchctl command it prints. The
@@ -131,6 +130,7 @@ Strategies, most to least promising:
 - [ ] HMM regime filter (backlog S2) as a strategy: needs a note that passes the entry bar.
 
 ## Done recently
+- 2026-11-15 Trend-vol-target on ETH and SOL: pursue (Luke), after passing their holdouts.
 - 2026-11-15 Trend-vol-target finished on ETH and SOL: both match BTC's standard; holdout notes drafted. Strategies page cleaned (three rotation notes rejected).
 - 2026-11-15 Three stablecoin pairings tested: two dropped, the volatility-sized hold folded into the stablecoin watch (Luke).
 - 2026-11-15 Stablecoin hold: beats holding on BTC and ETH but fails five tests; watch (Luke). Rotation dropped (Luke), with its stablecoin version.
