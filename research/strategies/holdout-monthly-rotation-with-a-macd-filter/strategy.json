@@ -1,0 +1,23 @@
+{
+  "slug": "holdout-monthly-rotation-with-a-macd-filter",
+  "name": "Holdout: monthly rotation with a MACD filter",
+  "created_at": "2026-11-15T01:21:50.720405+00:00",
+  "status": "backtested",
+  "history": [
+    {
+      "status": "idea",
+      "at": "2026-11-15T01:21:50.720405+00:00",
+      "reason": "Created"
+    },
+    {
+      "status": "specified",
+      "at": "2026-11-15T01:22:20.968395+00:00",
+      "reason": "v1 frozen"
+    },
+    {
+      "status": "backtested",
+      "at": "2026-11-15T01:22:37.511050+00:00",
+      "reason": "first run on v1"
+    }
+  ]
+}

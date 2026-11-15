@@ -78,9 +78,8 @@ Strategies, most to least promising:
   revisit only if both pass on their own.
 
 ## Waiting on Luke
-- [ ] Rotation + MACD (watch): freeze `holdout-monthly-rotation-with-a-macd-filter` (one-sided:
-      only a fail counts) and `paper-trading-monthly-rotation-with-a-macd` (395 days,
-      a second testnet account). The paper test needs the multi-coin paper runner (Next).
+- [ ] Rotation + MACD FAILED its one-sided holdout (-25.2% vs -5.4% for BTC at its exposure).
+      The note's agreed rule: a fail means drop. Drop rotation, or keep it on watch? Your call.
 - [ ] Read and freeze `paper-trading-trend-vol-target-btc` (drafted 2026-11-14). Then:
       `kestrel paper open tvt-btc ... --venue testnet` (the note's rules), `kestrel paper
       schedule tvt-btc`, and load the job with the launchctl command it prints. The

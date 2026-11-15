@@ -136,6 +136,7 @@ holding the same coin at the strategy's average exposure.
 | Trend-vol-target, BTC | -2.4% | -8.9% (33%) | -11% | -47% | Pass |
 | Weekly momentum, ETH | -25.1% | -16.7% (43%) | -35% | -60% | Fail |
 | Monthly rotation BTC/ETH/SOL, 180 days (read 2026-11-15) | -31.5% | -6.6% for BTC (25%) | -32% | -47% | Fail |
+| Monthly rotation with a MACD filter (read 2026-11-15; one-sided) | -25.2% | -5.4% for BTC (21%) | -31% | -47% | Fail |
 
 On Sharpe the verdicts are the same (trend -0.06 vs -0.57 for holding; weekly -0.74 vs -0.57;
 rotation -1.21 vs -0.57 for BTC). Rotation lost more than BTC held in full while only a
@@ -176,7 +177,7 @@ edge, and the holdout can't be used again for either strategy.
 | Study: rising attention (Wikipedia) | BTC, ETH 1d | Next week +0.65% after rising attention vs +0.74%; P 46%: KILL | Drop |
 | Study: extreme fear | BTC, ETH 1d | Next week +0.27% after Extreme Fear vs +0.59%; P 39%: KILL | Drop |
 | Ride volatile spells in MACD's direction | BTC, ETH 1d | Weekly hold: BTC Sharpe -0.13 vs 0.53 holding; ETH 0.42 vs 0.46; 0 and 1 of 5 walk-forward windows; 26 and 19 trades; robustness no edge / fragile. Daily switch no better | Drop |
-| Monthly rotation with a MACD filter (Luke's idea, after the holdout) | BTC/ETH/SOL 1d 2018-25 | Sharpe 1.41 vs 0.74 for BTC; walk-forward 6 of 11 windows, out-of-sample 1.77; robust (every neighbour 1.26-1.49); passes 7 of 9 tests, fails drawdown (-50.7%, limit 50%) and luck (deflated 57%). Designed after seeing where the plain rotation failed, so hindsight can't be ruled out; no holdout left | Watch (paper) |
+| Monthly rotation with a MACD filter (Luke's idea, after the holdout) | BTC/ETH/SOL 1d 2018-25 | Sharpe 1.41 vs 0.74 for BTC; walk-forward 6 of 11 windows, out-of-sample 1.77; robust (every neighbour 1.26-1.49); passes 7 of 9 tests, fails drawdown (-50.7%, limit 50%) and luck (deflated 57%). Designed after seeing where the plain rotation failed, so hindsight can't be ruled out; failed its one-sided holdout (-25.2% vs -5.4% for BTC at its 21% exposure) | Luke to decide |
 | BTC and gold rotation | BTC/PAXG 1d 2020-08 to 2025-10 | Sharpe 0.54 vs 1.01 for BTC; 19 trades; walk-forward 3 of 6 | Drop |
 | ETH/BTC relative value (hold the cheap one, else half each) | BTC/ETH 1d 2018-25 | Sharpe 0.74 vs 0.70 for half each (its added test, barely) and 0.74 for BTC; drawdown -87.5%; walk-forward 5 of 11; paid 140 USDT in costs against 7 for half each; deflated 5% | Drop |
 | Cost gate: 1m/5m change of character + fair value gap (YouTube S2/S3) | BTC, ETH, SOL 1m and 5m | Stops only, no outcomes (not a trial). Median stop 6-19 bp on 1m and 15-45 bp on 5m, so a 22 bp round trip costs 0.5-3.9R a trade; break-even win rate at 4R 30-97% instead of 20%. FAILS on 17 of 18 (coin x bar size x all hours / NY open); SOL 5m at the NY open MARGINAL (0.49R) | Not built (Luke's call) |
