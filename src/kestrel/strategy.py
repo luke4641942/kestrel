@@ -44,6 +44,7 @@ from kestrel.strategies.reversal import DropReversal
 from kestrel.strategies.rotation import DualMomentum
 from kestrel.strategies.rsi_dip import RsiDip
 from kestrel.strategies.sentiment import FearGreedContrarian
+from kestrel.strategies.set_and_forget import SetAndForget
 from kestrel.strategies.squeeze import SqueezeBreakout
 from kestrel.strategies.stablecoin_hold import StablecoinHold, StablecoinVolHold
 from kestrel.strategies.structure import StructurePullback
@@ -610,6 +611,22 @@ STRATEGIES: dict[str, StrategySpec] = {
                 Param("swing_bars", 10, 3, 50, "Bars the pattern's low must be lowest of"),
                 Param("expiry_bars", 3, 1, 10, "Bars a pattern waits for its breakout"),
                 Param("target_r", 2, 1, 6, "Target as a multiple of the risk to the stop"),
+            ),
+        ),
+        StrategySpec(
+            "set-and-forget",
+            "research",
+            "While weekly and daily swings make higher highs and lows, buy a 1H bullish "
+            "engulfing inside a 4H demand zone (touches swing lows within zone_atr_tenths/10 "
+            "x daily ATR); stop below the zone, target_r target. Research: runs only through "
+            "its frozen note.",
+            SetAndForget,
+            (
+                Param("swing_bars", 3, 2, 5, "Bars either side of a swing"),
+                Param("touches", 3, 2, 5, "4H swing lows a zone must hold"),
+                Param("zone_atr_tenths", 5, 2, 10, "Zone width, tenths of daily ATR(14)"),
+                Param("lookback_days", 90, 30, 180, "Days of 4H swing lows zones use"),
+                Param("target_r", 3, 2, 4, "Target as a multiple of the risk to the stop"),
             ),
         ),
         StrategySpec(

@@ -12,11 +12,11 @@ Luke chose (2026-11-16) to test all three; 5m history for BTC/ETH/SOL now from 2
 - [ ] Order flow (batch 2 C): cost gate on 5m 2020-25: ETH and SOL MARGINAL, BTC FAILS.
       Frozen and run 2026-11-16: ETH -81% (Sharpe -3.67, -0.68R a trade), SOL -94% (-5.73,
       -1.24R): fails test 1 on both; walk-forward and random-entry recorded for the file.
-- [ ] CHoCH + FVG, SOL 5m New York open only: strategy `choch-fvg` built (resting limit
-      orders added to the bracket engine). Waiting on Luke: freeze
-      `choch-and-fvg-at-the-new-york-open-on-sol-5m`, then the scorecard.
-- [ ] Set and Forget, BTC and ETH 1H (mechanical zones): note drafted
-      (`set-and-forget-on-btc-and-eth-1h`); strategy `set-and-forget` to build.
+- [ ] CHoCH + FVG, SOL 5m New York open only: frozen and run 2026-11-16: -40%, Sharpe
+      -0.92, -0.55R a trade after costs (with the spread fix; the first run is void). Fails
+      test 1. SOL walk-forward and random-entry for both 5m notes running.
+- [ ] Set and Forget, BTC and ETH 1H (mechanical zones): strategy `set-and-forget` built.
+      Waiting on Luke: freeze `set-and-forget-on-btc-and-eth-1h`, then the scorecard.
 
 ## Waiting on Luke
 - [ ] Paper trading is live on the testnet (reloaded from ~/kestrel 2026-11-15): tvt-btc,
