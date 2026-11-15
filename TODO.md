@@ -78,12 +78,9 @@ Strategies, most to least promising:
   revisit only if both pass on their own.
 
 ## Waiting on Luke
-- [ ] Paper trading for ETH and SOL (pursue since 2026-11-15): one testnet account each, like
-      tvt-btc; drafts to write once Luke wants them (he chose BTC's note first).
-- [ ] Read and freeze `paper-trading-trend-vol-target-btc` (drafted 2026-11-14). Then:
-      `kestrel paper open tvt-btc ... --venue testnet` (the note's rules), `kestrel paper
-      schedule tvt-btc`, and load the job with the launchctl command it prints. The
-      395-day test (90%, a 6-month failure-only check) starts at its first decision.
+- [ ] Freeze the three paper-trading notes: `paper-trading-trend-vol-target-btc`, `-eth`, `-sol`
+      (395 days each, own testnet account and 330 USDT). Then Claude opens tvt-btc, tvt-eth and
+      tvt-sol and writes their schedules; Luke loads the launchctl jobs it prints.
 
 ## Next
 - [ ] Testnet keys from the macOS keychain, not ~/.zshrc (Luke, 2026-11-15). Luke adds them
