@@ -8,13 +8,14 @@ Tested 2026-11-15: turn of the month, Bollinger pullback, squeeze breakout, rota
 dip-buying, basket breakouts, top-3 momentum and pattern + MACD all failed the scorecard and
 are dropped (findings, "Every hypothesis"). Pattern + MACD was the random-entry control's
 first real test: no better than random entries. Untested, all low priority:
-- [ ] Order flow (batch 2 C): its own cost gate run 2026-11-16 (`kestrel cost-gate --setup
-      order-flow`, stops only, not a trial): no case carries; 1m FAILS 5 of 6, 5m MARGINAL
-      5 of 6 with the point of control only 1.4-2.1R away (41-62% wins to break even).
-      Luke's call: drop, or a frozen note for 5m.
-- [ ] Set and Forget (batch 1 S1): zones drawn by eye; the chart-pattern family keeps failing.
-- [ ] CHoCH + FVG / market shift (batch 1 S2/S3): failed the cost gate; only SOL 5m at the NY
-      open was marginal.
+Luke chose (2026-11-16) to test all three; 5m history for BTC/ETH/SOL now from 2020.
+- [ ] Order flow (batch 2 C): cost gate on 5m 2020-25: ETH and SOL MARGINAL, BTC FAILS.
+      Strategy `order-flow` built. Waiting on Luke: freeze `order-flow-model-2-on-eth-and-sol-5m`,
+      then scorecard + random-entry on ETH and SOL 5m.
+- [ ] CHoCH + FVG, SOL 5m New York open only: note drafted
+      (`choch-and-fvg-at-the-new-york-open-on-sol-5m`); strategy `choch-fvg` to build.
+- [ ] Set and Forget, BTC and ETH 1H (mechanical zones): note drafted
+      (`set-and-forget-on-btc-and-eth-1h`); strategy `set-and-forget` to build.
 
 ## Waiting on Luke
 - [ ] Paper trading is live on the testnet (reloaded from ~/kestrel 2026-11-15): tvt-btc,

@@ -23,8 +23,8 @@ from typer.testing import CliRunner
 from kestrel.cli import app
 from kestrel.data.schema import Interval
 from kestrel.data.store import ParquetStore
+from kestrel.strategies.order_flow import RECLAIM_BARS, value_area
 from kestrel.studies.cost_gate import (
-    RECLAIM_BARS,
     Gate,
     Setup,
     break_even_win_rate,
@@ -36,7 +36,6 @@ from kestrel.studies.cost_gate import (
     path,
     save,
     setups,
-    value_area,
 )
 from tests.backtest.helpers import T0, bars
 from tests.test_structure import CLOSE, HIGH, LOW, frame

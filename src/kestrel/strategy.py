@@ -35,6 +35,7 @@ from kestrel.strategies.monthly_rotation import (
     MonthlyRotation,
     RotationWithStablecoins,
 )
+from kestrel.strategies.order_flow import OrderFlow
 from kestrel.strategies.pattern_macd import PatternMacd
 from kestrel.strategies.pivots import PivotReversal
 from kestrel.strategies.regime import TrendVolTargetRegime
@@ -595,6 +596,20 @@ STRATEGIES: dict[str, StrategySpec] = {
                 Param("swing_bars", 10, 3, 50, "Bars the pattern's low must be lowest of"),
                 Param("expiry_bars", 3, 1, 10, "Bars a pattern waits for its breakout"),
                 Param("target_r", 2, 1, 6, "Target as a multiple of the risk to the stop"),
+            ),
+        ),
+        StrategySpec(
+            "order-flow",
+            "research",
+            "Order flow Model 2: a failed breakdown below the previous UTC day's value area, "
+            "reclaimed by a bar where buyers took most of the volume; stop at the breakdown's "
+            "low, target the point of control, out by the next day. Research: runs only "
+            "through its frozen note.",
+            OrderFlow,
+            (
+                Param("bin_bps", 5, 2, 20, "Volume-profile bin, bps of the last close"),
+                Param("value_area_pct", 70, 60, 80, "Share of the day's volume in the value area"),
+                Param("reclaim_bars", 15, 5, 30, "Bars a breakdown has to be reclaimed"),
             ),
         ),
         StrategySpec(

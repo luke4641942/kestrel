@@ -35,9 +35,7 @@ reason not to build the strategy; dropping it is still Luke's call.
 
 from __future__ import annotations
 
-import itertools
 import json
-import math
 from dataclasses import dataclass
 from datetime import UTC, datetime, time
 from pathlib import Path
@@ -47,6 +45,7 @@ from typing import Any
 import polars as pl
 
 from kestrel.indicators import atr
+from kestrel.strategies import order_flow
 
 CARRIES_AT = 0.25
 FAILS_ABOVE = 0.5
@@ -110,77 +109,19 @@ def setups(
     return out
 
 
-ORDER_FLOW_BIN_BPS = 5.0
-"""Volume-profile bin width, in bps of the previous day's last close."""
-VALUE_AREA = 0.70
-RECLAIM_BARS = 15
-
-
-def value_area(bars: pl.DataFrame) -> tuple[float, float, float] | None:
-    """(value area low, point of control, value area high) of one session's bars.
-
-    Each bar's volume goes to the bin of its typical price, (high + low + close) / 3. The
-    point of control is the busiest bin's middle; the value area grows from it, adding
-    whichever neighbouring bin traded more, until it holds 70% of the volume."""
-    if bars.is_empty() or float(bars["volume"].sum()) <= 0:
-        return None
-    width = float(bars["close"][-1]) * ORDER_FLOW_BIN_BPS / 1e4
-    typical = (bars["high"] + bars["low"] + bars["close"]) / 3
-    bins: dict[int, float] = {}
-    for price, vol in zip(typical.to_list(), bars["volume"].to_list(), strict=True):
-        key = math.floor(price / width)
-        bins[key] = bins.get(key, 0.0) + vol
-    total = sum(bins.values())
-    poc = max(bins, key=lambda k: (bins[k], -k))
-    lo = hi = poc
-    held = bins[poc]
-    while held < VALUE_AREA * total:
-        below, above = bins.get(lo - 1, 0.0), bins.get(hi + 1, 0.0)
-        if lo - 1 < min(bins) and hi + 1 > max(bins):
-            break
-        if above >= below and hi + 1 <= max(bins):
-            hi += 1
-            held += above
-        else:
-            lo -= 1
-            held += below
-    return lo * width, (poc + 0.5) * width, (hi + 1) * width
-
-
-def order_flow_setups(bars: pl.DataFrame) -> list[Setup]:
-    """Every order-flow Model 2 setup in ``bars`` (batch 2 C, Fabio Valentino), long only.
-
-    Fixed before any measurement (2026-11-16). For each UTC day, the previous day's value
-    area (``value_area``). The first bar of the day whose low trades below the value area
-    low starts a breakdown; it fails if, within ``RECLAIM_BARS`` bars from that bar, one
-    closes back above the value area low with positive delta (taker buys more than half
-    the bar's volume: order flow turned to buyers). Entry is that close, the stop the
-    lowest low from the breakdown bar to the reclaim, the target the point of control
-    (it must be above the entry). One setup a day at most. Only bars up to the reclaim's
-    close are used. Trade-level data would give a truer delta; the bars' taker-buy volume
-    is Binance's own split of each bar's volume, so it is a fair stand-in for a stop gate.
-    """
-    frame = bars.sort("open_time").with_columns(day=pl.col("open_time").dt.date())
-    found: list[Setup] = []
-    days = frame.partition_by("day", maintain_order=True)
-    for before, today in itertools.pairwise(days):
-        area = value_area(before)
-        if area is None:
-            continue
-        val, poc, _ = area
-        rows = today.to_dicts()
-        start = next((i for i, r in enumerate(rows) if r["low"] < val), None)
-        if start is None:
-            continue
-        for j in range(start, min(start + RECLAIM_BARS, len(rows))):
-            r = rows[j]
-            buyers = r["taker_buy_base_volume"] * 2 > r["volume"]
-            if r["close"] > val and buyers:
-                low = min(x["low"] for x in rows[start : j + 1])
-                if poc > r["close"] > low:
-                    found.append(Setup(r["open_time"], r["close"], low, poc))
-                break
-    return found
+def order_flow_setups(
+    bars: pl.DataFrame,
+    bin_bps: float = order_flow.BIN_BPS,
+    share: float = order_flow.VALUE_AREA,
+    reclaim_bars: int = order_flow.RECLAIM_BARS,
+) -> list[Setup]:
+    """Order flow Model 2's setups (kestrel.strategies.order_flow.signals), as stops to
+    measure: entry at the reclaim's close, stop at the breakdown's low, target the point
+    of control. Fixed before any measurement (2026-11-16)."""
+    return [
+        Setup(s.at, s.entry, s.stop, s.target)
+        for s in order_flow.signals(bars, bin_bps, share, reclaim_bars)
+    ]
 
 
 def break_even_win_rate(target_r: float, cost_r: float) -> float:
