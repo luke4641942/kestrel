@@ -20,14 +20,14 @@ export type Route = "overview" | "strategies" | "data" | "costs" | "rules" | "re
 // Main tabs are about strategies and trading; reference and data pages live under More.
 const NAV: { route: Route; label: string; later?: string; more?: boolean }[] = [
   { route: "overview", label: "Overview" },
+  { route: "trading", label: "Trading" },
   { route: "strategies", label: "Strategies" },
   { route: "backtests", label: "Backtests" },
   { route: "charts", label: "Charts" },
-  { route: "trading", label: "Trading" },
-  { route: "data", label: "Data", more: true },
   { route: "costs", label: "What a trade costs", more: true },
-  { route: "regimes", label: "Regimes", more: true },
   { route: "rules", label: "Rules", more: true },
+  { route: "regimes", label: "Regimes", more: true },
+  { route: "data", label: "Data", more: true },
 ];
 
 /** The page from `#/<route>` or `#/<route>/<id>`; the id is read by the page itself. */

@@ -27,10 +27,10 @@ describe("navigation", () => {
     const tabs = within(nav)
       .getAllByRole("link")
       .map((a) => a.textContent);
-    expect(tabs).toEqual(["Overview", "Strategies", "Backtests", "Charts", "Trading"]);
+    expect(tabs).toEqual(["Overview", "Trading", "Strategies", "Backtests", "Charts"]);
     fireEvent.click(within(nav).getByRole("button", { name: /More/ }));
     const more = screen.getAllByRole("menuitem").map((a) => a.textContent);
-    expect(more).toEqual(["Data", "What a trade costs", "Regimes", "Rules"]);
+    expect(more).toEqual(["What a trade costs", "Rules", "Regimes", "Data"]);
     expect(await screen.findByText("No paper accounts yet")).toBeInTheDocument();
   });
 });
