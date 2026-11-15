@@ -84,8 +84,6 @@ Strategies, most to least promising:
       `kestrel paper open tvt-btc ... --venue testnet` (the note's rules), `kestrel paper
       schedule tvt-btc`, and load the job with the launchctl command it prints. The
       395-day test (90%, a 6-month failure-only check) starts at its first decision.
-- [ ] Trend-vol-target BTC walk-forward note failed its pre-registered rule (2 of 7 windows,
-      4 needed). Its status is still frozen: reject it, or keep it open? Your call.
 
 ## Next
 - [x] Walk-forward for basket strategies: built 2026-11-15 (portfolio engine per window, against
