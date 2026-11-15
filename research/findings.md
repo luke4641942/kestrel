@@ -133,6 +133,13 @@ risk-managed holding rather than a proven edge.
     at once), not REBOUND. For a long-only account this is a safety rule for any strategy
     holding small coins, not an edge; only a short could earn the fall (P5). 30 of 110
     announced coins couldn't be measured, most because their USDT pair had already gone.
+    A hypothetical perp short (pre-registered, 2x with liquidations) was INSUFFICIENT: of
+    the 80 coins, 50 had no USDT-M perp and 16 had a perp that stopped trading before the
+    spot removal, so only 12 coins in 6 announcements could be shorted to the end (10
+    announcements needed). Those 12 averaged -7.8% net at 2x (P > 0: 29%): shorts paid
+    1.2% in funding, and 3 of 12 were liquidated, including HIFI's +1,357% squeeze during
+    its window in 2025-09. The fall is real, but on Binance it was mostly not shortable,
+    and where it was, a crowded short got squeezed.
 
 ## The holdout year (2025-11 to 2026-10)
 
@@ -212,6 +219,7 @@ edge, and the holdout can't be used again for either strategy.
 | Cross-sectional momentum top 3, 1-3 months | Coins 1d 2020-25 | Sharpe 0.38 vs 1.07; drawdown -95%; break-even cost 0; walk-forward 0 of 7 windows, out-of-sample Sharpe -0.28 | Drop |
 | Candle pattern + MACD turn | BTC, ETH 4h 2020-25 | +0.05R and +0.17R a trade; beat 70% and 88% of random-entry paths (95% needed); Sharpe 0.17 vs 1.07 and 0.56 vs 1.12 | Drop |
 | Study: Binance delisting announcement to removal | 80 delisted coins 1d, 21 announcements 2022-10 to 2025-09 | Day 1's open to the removal day's open: -39.8% on average (-41.9% vs BTC), P(< 0) 100%, after -31% on the announcement day; no rebound. EXIT RULE: sell held coins at once | Study passed (exit rule); next step Luke's |
+| Study: shorting the delisting window with perps (hypothetical) | 12 coins with a perp that traded to removal, 6 announcements 2024-02 to 2025-09 | Net at 2x after funding and 2x costs -7.8% (P > 0: 29%); 3 of 12 liquidated (HIFI +1,357%); funding -1.2%; 16 of 28 perps stopped before the spot removal. INSUFFICIENT (10 announcements needed) | No reason to hurry into derivatives for this |
 
 Each strategy was judged by its own note's pass test, written before it ran. From
 2026-11-14 every strategy is judged on one scorecard instead.

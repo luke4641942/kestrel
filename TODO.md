@@ -27,11 +27,7 @@ first real test: no better than random entries. Untested, all low priority:
       the day after the announcement to removal; no rebound; findings item 11). Luke's call:
       write an exit-rule note (sell a held coin at the next open after its delisting is
       announced; matters only for strategies that hold small coins, none running now), or
-      park it. The short side would have made ~40% before borrowing: P5 only.
-- [ ] Hypothetical delisting short via perps (Luke, 2026-11-16): decides P5's priority only.
-      Draft note `shorting-the-delisting-window-with-perps` for Luke to review and freeze;
-      then perp 1d klines and funding for the ~33 coins (the downloader needs a futures/um
-      path) and `kestrel delisting-short-study`. No perp prices looked at yet.
+      park it. The hypothetical perp short was INSUFFICIENT (2026-11-16, findings 11).
 
 ## Later
 - [ ] Keys from the macOS keychain, not ~/.zshrc: parked until a live (non-testnet) account
@@ -70,6 +66,8 @@ first real test: no better than random entries. Untested, all low priority:
 - [ ] HMM regime filter (backlog S2) as a strategy: needs a note that passes the entry bar.
 
 ## Done recently
+- 2026-11-16 Hypothetical delisting short (perps): INSUFFICIENT; 12 coins in 6 announcements shortable to removal, -7.8% net at 2x, 3 of 12 liquidated.
+- 2026-11-15 Delisting study: EXIT RULE (-39.8% from day 1 to removal, no rebound).
 - 2026-11-15 Old ~/Downloads/kestrel.zip deleted after checking nothing in it was missing (Luke).
 - 2026-11-15 Project moved to ~/kestrel (launchd can't read ~/Downloads); paper jobs rewritten, reloaded and run once.
 - 2026-11-15 Paper jobs loaded (Luke). BTC/gold rotation tested and dropped. TODO tidied.
