@@ -138,6 +138,8 @@ holding the same coin at the strategy's average exposure.
 | Weekly momentum, ETH | -25.1% | -16.7% (43%) | -35% | -60% | Fail |
 | Monthly rotation BTC/ETH/SOL, 180 days (read 2026-11-15) | -31.5% | -6.6% for BTC (25%) | -32% | -47% | Fail |
 | Monthly rotation with a MACD filter (read 2026-11-15; one-sided) | -25.2% | -5.4% for BTC (21%) | -31% | -47% | Fail |
+| Trend-vol-target, ETH (read 2026-11-15) | -7.1% | -12.2% (32%) | -16% | -60% | Pass |
+| Trend-vol-target, SOL (read 2026-11-15) | +2.6% | -13.8% (28%) | -19% | -67% | Pass |
 
 On Sharpe the verdicts are the same (trend -0.06 vs -0.57 for holding; weekly -0.74 vs -0.57;
 rotation -1.21 vs -0.57 for BTC). Rotation lost more than BTC held in full while only a
@@ -188,7 +190,7 @@ edge, and the holdout can't be used again for either strategy.
 | Study: volatile spells split by stablecoin growth | BTC, ETH 1d | In volatile spells the weeks after growth averaged -0.75% vs +0.71% after shrinkage (53 and 22 weeks; P 21%): KILL. The opposite sign to the idea, though not significant; on other days growth still led (+0.82% spread, P 80%) | Drop |
 | Trend-vol-target with a stablecoin vote | BTC 1d 2020-25 | Sharpe 1.22 vs 1.23 for the plain strategy (its added test) and 1.07 for BTC; walk-forward 2 of 7; deflated 37%. The vote adds nothing | Drop |
 | Stablecoin hold sized by volatility | BTC, ETH 1d 2018-25 | Better than the plain hold: Sharpe 0.87 vs 0.74 (BTC) and 0.87 vs 0.68 (ETH); drawdowns -57% and -51% (limit 50%); walk-forward 5 and 6 of 11; deflated 9% and 8% | Watch (with the stablecoin hold) |
-| Trend-vol-target, finished on ETH and SOL (2026-11-15) | ETH 1d 2020-25; SOL 1d 2020-08 to 2025-10 | Both match BTC's standard (fail only luck and out of sample). ETH: Sharpe 1.24 vs 1.12, +896% vs +573% at the same exposure, drawdown -38%, deflated 33%, walk-forward 2 of 7. SOL: Sharpe 1.52 vs 1.24, +1,211% vs +553%, drawdown -42%, deflated 59% (the best in Kestrel), walk-forward 2 of 6. The same rule beats holding on all three major coins | Holdout notes drafted |
+| Trend-vol-target, finished on ETH and SOL (2026-11-15) | ETH 1d 2020-25; SOL 1d 2020-08 to 2025-10 | Both match BTC's standard (fail only luck and out of sample). ETH: Sharpe 1.24 vs 1.12, +896% vs +573% at the same exposure, drawdown -38%, deflated 33%, walk-forward 2 of 7. SOL: Sharpe 1.52 vs 1.24, +1,211% vs +553%, drawdown -42%, deflated 59% (the best in Kestrel), walk-forward 2 of 6. The same rule beats holding on all three major coins | Both passed their holdouts; Luke to decide |
 | Cost gate: 1m/5m change of character + fair value gap (YouTube S2/S3) | BTC, ETH, SOL 1m and 5m | Stops only, no outcomes (not a trial). Median stop 6-19 bp on 1m and 15-45 bp on 5m, so a 22 bp round trip costs 0.5-3.9R a trade; break-even win rate at 4R 30-97% instead of 20%. FAILS on 17 of 18 (coin x bar size x all hours / NY open); SOL 5m at the NY open MARGINAL (0.49R) | Not built (Luke's call) |
 | YouTube batches 2-3, run 2026-11-15 (eight frozen notes, 22 settings, 280 trials with robustness) | | Every one FAILS the scorecard; all fail luck (deflated 0-43%) | Notes rejected (Luke) |
 | Turn of the month | BTC 1d 2018-25 | Sharpe 0.37 (last 0/first 1) and 0.68 (5/3) vs 0.74 holding; walk-forward 5 and 4 of 11 | Drop |

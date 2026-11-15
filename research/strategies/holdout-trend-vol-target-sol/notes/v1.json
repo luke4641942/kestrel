@@ -1,0 +1,15 @@
+{
+  "version": 1,
+  "created_at": "2026-11-15T06:40:38.634419+00:00",
+  "sections": {
+    "hypothesis": "Trend-vol-target on SOL, unchanged, beats SOL held at the same exposure on the holdout year, 2025-11 to 2026-10.",
+    "rationale": "The note trend-vol-target-scorecard-on-eth-and-sol (2026-11-15) set the bar in advance: a coin that passes every scorecard test except luck and out of sample, as BTC did, earns its own holdout test. SOL did: Sharpe 1.52 vs 1.24 for SOL held; +1,211% vs +553% at the same 28% exposure; drawdown -42%; break-even 443 bps vs 21 paid; robust; fails luck (deflated 59%) and out of sample (2 of 6 windows). The holdout was reserved on 2026-10-31 and this rule was designed before then; nothing is tuned. Honest limits: the holdout year is known to have fallen (BTC -29%, ETH -41% in earlier holdout tests), and these coins are being tested because the same rule passed BTC's holdout; the falling-year rule compares returns at the same exposure, which removes most of the advantage of being in cash, but not the choice.",
+    "rules": "Implementation trend-vol-target with its defaults (20/60/120-day votes, 30-day volatility, 50% target), SOLUSDT 1d, 330 USDT, costs from kestrel.toml. Warm-up from 2025-05-01; scored 2025-11-01 to 2026-10-31. Command: kestrel holdout-test SOLUSDT --strategy trend-vol-target --research <this note> --warmup-start 2025-05 --start 2025-11 --end 2026-10.",
+    "falsification": "Scored on 2025-11-01 to 2026-10-31 only, against SOL held over the same days. Passes only if both hold: (1) if SOL held has a positive Sharpe over the year, the strategy's Sharpe is at least holding's; if it is zero or negative (a falling year), the strategy's return beats SOL held at the strategy's average exposure; (2) its worst drawdown is no deeper than 50%. A pass means Claude recommends pursue (paper trading beside BTC) and Luke decides; a fail means drop. Run once; recorded in data/holdout and decisions.toml whatever it is.",
+    "parameters": "fast_days 20, mid_days 60, slow_days 120, vol_days 30, target_vol_pct 50. Nothing is chosen.",
+    "costs": "About 17 bps a round trip on SOL plus its wider spread band. Holdout runs are never trials."
+  },
+  "implementation": "trend-vol-target",
+  "frozen_at": "2026-11-15T06:41:45.618834+00:00",
+  "change_reason": null
+}

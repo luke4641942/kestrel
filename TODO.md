@@ -78,8 +78,9 @@ Strategies, most to least promising:
   revisit only if both pass on their own.
 
 ## Waiting on Luke
-- [ ] Freeze `holdout-trend-vol-target-eth` and `holdout-trend-vol-target-sol`: trend-vol-target
-      matched BTC's scorecard standard on both coins (2026-11-15). One look each.
+- [ ] Trend-vol-target PASSED the holdout on ETH (-7.1% vs -12.2% at its exposure) and SOL
+      (+2.6% vs -13.8%). The notes' rule: recommend pursue. Label ETH (now drop, from the old
+      rule) and SOL (no label) pursue? Then paper-trade all three coins.
 - [ ] Read and freeze `paper-trading-trend-vol-target-btc` (drafted 2026-11-14). Then:
       `kestrel paper open tvt-btc ... --venue testnet` (the note's rules), `kestrel paper
       schedule tvt-btc`, and load the job with the launchctl command it prints. The
