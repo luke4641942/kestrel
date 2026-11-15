@@ -366,3 +366,13 @@ decision = "pursue"
 decided = 2026-11-15
 reason = "Pursue (Luke, 2026-11-15), after passing the holdout: next is paper trading, as risk-managed holding rather than a proven edge. Scorecard on SOL 2020-08 to 2025-10 (note trend-vol-target-scorecard-on-eth-and-sol): Sharpe 1.52 vs 1.24 for SOL held, +1,211% vs +553% at the same exposure, drawdown -42%, break-even 443 bps vs 21, robust; fails luck (deflated 59%, the best in Kestrel) and out of sample (2 of 6 windows), as BTC does. Holdout (2025-11 to 2026-10, note holdout-trend-vol-target-sol): PASSED. In a falling year (SOL -49%) it returned +2.6% against -13.8% for SOL held at its 28% exposure; drawdown -19% vs -67%."
 evidence = ["holdout-trend-vol-target-sol", "trend-vol-target-scorecard-on-eth-and-sol"]
+
+[[decision]]
+strategy = "trend-trio"
+name = "Trend-vol-target on BTC, ETH and SOL together"
+market = "BTC/ETH/SOL 1d"
+decision = "watch"
+decided = 2026-11-15
+reason = "Watch (Luke, 2026-11-15). The highest Sharpe in Kestrel: 1.59 over 2020-01 to 2025-10 (a third of 990 USDT per coin), against 1.31 for holding a third of each (its added test: pass) and 1.07 for BTC; drawdown -42% vs -85% for the held thirds; break-even 376 bps vs 18; robust. Fails luck (deflated 59%) and out of sample (2 of 7 windows), like each coin alone. Every part is on pursue and passed its own holdout, so there is no unused holdout for the whole; the three paper accounts (tvt-btc, tvt-eth, tvt-sol) are its forward test, and a shared account split in thirds is the natural live form later."
+evidence = ["trend-vol-target-on-btc-eth-and-sol-together"]
+
