@@ -124,6 +124,15 @@ risk-managed holding rather than a proven edge.
     attention effect didn't appear with this stand-in for Google searches, and fear mostly
     followed falls that continued: in crypto, moves tend to carry on, and buying fear or
     dips keeps losing.
+11. **After a Binance delisting announcement, coins keep falling until removal (a study).**
+    Across 21 announcements (80 coins, 2022-10 to 2025-09), a coin bought at the open the day
+    after the announcement and sold at the removal day's open lost 39.8% on average (41.9%
+    more than BTC over the same days); 18 of 21 announcements fell, P(mean < 0) 100%. That
+    comes after a 31% fall on the announcement day itself and a 16% lag behind BTC over the
+    30 days before. There was no rebound to buy: the pre-registered verdict is EXIT RULE (sell
+    at once), not REBOUND. For a long-only account this is a safety rule for any strategy
+    holding small coins, not an edge; only a short could earn the fall (P5). 30 of 110
+    announced coins couldn't be measured, most because their USDT pair had already gone.
 
 ## The holdout year (2025-11 to 2026-10)
 
@@ -202,6 +211,7 @@ edge, and the holdout can't be used again for either strategy.
 | Basket breakouts | Coins 1d 2020-25 | Sharpe 0.85 (Bollinger) and 0.89 (20% off the low) vs 1.07 for BTC; drawdowns -77% and -62%; walk-forward 1 and 0 of 7 windows | Drop |
 | Cross-sectional momentum top 3, 1-3 months | Coins 1d 2020-25 | Sharpe 0.38 vs 1.07; drawdown -95%; break-even cost 0; walk-forward 0 of 7 windows, out-of-sample Sharpe -0.28 | Drop |
 | Candle pattern + MACD turn | BTC, ETH 4h 2020-25 | +0.05R and +0.17R a trade; beat 70% and 88% of random-entry paths (95% needed); Sharpe 0.17 vs 1.07 and 0.56 vs 1.12 | Drop |
+| Study: Binance delisting announcement to removal | 80 delisted coins 1d, 21 announcements 2022-10 to 2025-09 | Day 1's open to the removal day's open: -39.8% on average (-41.9% vs BTC), P(< 0) 100%, after -31% on the announcement day; no rebound. EXIT RULE: sell held coins at once | Study passed (exit rule); next step Luke's |
 
 Each strategy was judged by its own note's pass test, written before it ran. From
 2026-11-14 every strategy is judged on one scorecard instead.

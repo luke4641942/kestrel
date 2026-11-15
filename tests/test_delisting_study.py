@@ -197,3 +197,11 @@ def test_the_command_refuses_a_note_for_another_implementation(tmp_path: Path) -
     result = CliRunner().invoke(app, [*args, "--config", REPO_CONFIG])
     assert result.exit_code == 1
     assert "not study:delistings" in result.output
+
+
+def test_the_short_side_is_the_negated_fall_not_its_log_inverse() -> None:
+    fall = math.log(0.6)  # every event falls 40%
+    result = run_delisting_study([path(f"e{i}", fall, i) for i in range(3)], [], resamples=50)
+    assert "information only (long-only can't take it): +40.00% before borrowing" in (
+        format_delisting_study(result)
+    )

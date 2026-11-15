@@ -272,7 +272,7 @@ def format_delisting_study(r: DelistingResult) -> str:
         f"  round trip {pct(r.mean_round_trip)}; window less 2x cost {pct(r.mean_net_double)} "
         f"(P > 0: {r.p_net_double_positive:.0%}); less 3x cost {pct(r.mean_net_triple)}",
         f"  P(window < 0): {r.p_window_negative:.0%}; the short side's window, information "
-        f"only (long-only can't take it): {pct(-r.mean_window)}",
+        f"only (long-only can't take it): {-math.expm1(r.mean_window):+.2%} before borrowing",
         "",
         f"Verdict: {r.verdict}",
     ]

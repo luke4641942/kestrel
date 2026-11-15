@@ -23,15 +23,11 @@ first real test: no better than random entries. Untested, all low priority:
 ## Next
 - [x] Walk-forward for basket strategies: built 2026-11-15 (portfolio engine per window, against
       BTC held); the five basket walk-forwards rerun with the notes' settings.
-- [ ] Delistings (Luke's idea, 2026-11-14; started 2026-11-15): a raw-effect study before
-      any strategy. Done: `kestrel ingest-delistings` (Binance's announcements catalog, from
-      2022-02: 87 coins in 22 announcements usable before the holdout) and the study
-      (`kestrel delisting-study`). Waiting on Luke: review and freeze the draft note
-      `what-happens-between-a-binance-delisting`, then one run. Measure the path from
-      announcement to removal and whether any rebound beats a small coin's costs. Buying the
-      rebound is the reversal family (entry bar); long-only can't take the short side; one
-      study (Monero, 2024) found no rebound. Don't look at the delisted coins' prices before
-      the note is frozen.
+- [ ] Delistings study: run 2026-11-15, verdict EXIT RULE (coins fell 39.8% on average from
+      the day after the announcement to removal; no rebound; findings item 11). Luke's call:
+      write an exit-rule note (sell a held coin at the next open after its delisting is
+      announced; matters only for strategies that hold small coins, none running now), or
+      park it. The short side would have made ~40% before borrowing: P5 only.
 
 ## Later
 - [ ] Keys from the macOS keychain, not ~/.zshrc: parked until a live (non-testnet) account
