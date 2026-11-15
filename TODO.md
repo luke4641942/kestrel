@@ -79,7 +79,7 @@ Strategies, most to least promising:
 
 ## Waiting on Luke
 - [ ] Rotation + MACD (watch): freeze `holdout-monthly-rotation-with-a-macd-filter` (one-sided:
-      only a fail counts) and `paper-trading-monthly-rotation-with-a-macd-filter` (395 days,
+      only a fail counts) and `paper-trading-monthly-rotation-with-a-macd` (395 days,
       a second testnet account). The paper test needs the multi-coin paper runner (Next).
 - [ ] Read and freeze `paper-trading-trend-vol-target-btc` (drafted 2026-11-14). Then:
       `kestrel paper open tvt-btc ... --venue testnet` (the note's rules), `kestrel paper
