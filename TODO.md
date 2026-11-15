@@ -78,6 +78,8 @@ Strategies, most to least promising:
   revisit only if both pass on their own.
 
 ## Waiting on Luke
+- [ ] Rotation + MACD is on watch: its next test is forward. Add it to paper trading beside
+      trend-vol-target once the paper-trading note is frozen (a second account, its own note).
 - [ ] Read and freeze `paper-trading-trend-vol-target-btc` (drafted 2026-11-14). Then:
       `kestrel paper open tvt-btc ... --venue testnet` (the note's rules), `kestrel paper
       schedule tvt-btc`, and load the job with the launchctl command it prints. The
@@ -122,6 +124,7 @@ Strategies, most to least promising:
 - [ ] HMM regime filter (backlog S2) as a strategy: needs a note that passes the entry bar.
 
 ## Done recently
+- 2026-11-15 Rotation + MACD: 7 of 9 tests (fails drawdown by 0.7 points, luck 57%); watch. BTC/gold rotation: dropped.
 - 2026-11-15 Monthly rotation holdout: FAILED (-31.5% vs -6.6% for BTC at its exposure); kept on watch (Luke).
 - 2026-11-15 Eight YouTube notes rejected (Luke): monthly rotation on watch, the other seven dropped.
 - 2026-11-15 Eight YouTube notes run (22 settings, trials 193 -> 473): every one fails.

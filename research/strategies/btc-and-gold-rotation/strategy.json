@@ -1,0 +1,28 @@
+{
+  "slug": "btc-and-gold-rotation",
+  "name": "BTC and gold rotation",
+  "created_at": "2026-11-15T01:06:44.164545+00:00",
+  "status": "rejected",
+  "history": [
+    {
+      "status": "idea",
+      "at": "2026-11-15T01:06:44.164545+00:00",
+      "reason": "Created"
+    },
+    {
+      "status": "specified",
+      "at": "2026-11-15T01:07:32.115468+00:00",
+      "reason": "v1 frozen"
+    },
+    {
+      "status": "backtested",
+      "at": "2026-11-15T01:08:42.266858+00:00",
+      "reason": "first run on v1"
+    },
+    {
+      "status": "rejected",
+      "at": "2026-11-15T01:10:51.799806+00:00",
+      "reason": "Failed the scorecard (Luke, 2026-11-15): Sharpe 0.54 vs 1.01 for BTC held, 19 trades, walk-forward 3 of 6 windows, deflated 3%."
+    }
+  ]
+}

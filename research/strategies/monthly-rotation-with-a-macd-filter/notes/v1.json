@@ -1,0 +1,15 @@
+{
+  "version": 1,
+  "created_at": "2026-11-15T01:06:44.162960+00:00",
+  "sections": {
+    "hypothesis": "Adding a MACD condition to the BTC/ETH/SOL monthly rotation (a coin is held only while its daily MACD histogram is above zero at the month-end decision) makes it beat holding BTC on the scorecard where the plain rotation failed.",
+    "rationale": "Luke's idea (2026-11-15), tested at his request. The plain rotation lost in falling markets while still in ETH and SOL; a faster momentum check might step out sooner. Stated honestly before the run: this is a filter added after seeing where the strategy failed, the pattern that failed three times on 2026-11-14 (crash brake, HMM regime filter, MACD in volatile spells). The 200-day filter already plays this role, and a month-end MACD check only acts once a month. It can't use the holdout: the rotation's holdout is spent and its losses there are known. A pass would mean watching it forward, nothing more.",
+    "rules": "monthly-rotation with macd_filter 1: lookback_days 180, trend_days 200, top_n 2. At each month-end close, a coin among BTC, ETH and SOL is eligible with 180 days of history, a close above its 200-day average and a daily MACD (12, 26, 9) histogram above zero; the top 2 by 180-day return are held at half each, cash otherwise. Daily bars, 330 USDT, costs from kestrel.toml. Period 2018-01 to 2025-10, before the holdout.",
+    "falsification": "The full scorecard, against BTC held, with walk-forward run through the portfolio engine. Fails on any failed test. Also reported beside the plain rotation at 180 days (Sharpe 1.25, drawdown -59%, 3 of 11 walk-forward windows): the filter must at least bring the drawdown within 50%.",
+    "parameters": "lookback_days 180, trend_days 200, top_n 2, macd_filter 1. One run; the robustness check moves each parameter (about 8 neighbours). MACD itself stays at the textbook 12/26/9.",
+    "costs": "Up to a few changes each month end, slightly more than the plain rotation. Trials: 1 run plus about 8 neighbours."
+  },
+  "implementation": "monthly-rotation",
+  "frozen_at": "2026-11-15T01:07:27.943289+00:00",
+  "change_reason": null
+}

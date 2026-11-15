@@ -1,0 +1,15 @@
+{
+  "version": 1,
+  "created_at": "2026-11-15T01:06:44.164545+00:00",
+  "sections": {
+    "hypothesis": "Each month, holding whichever of BTC and gold (PAXGUSDT) has the better 12-month return among those above their 200-day average, and cash if neither, beats holding BTC on the scorecard.",
+    "rationale": "Who pays: time-series momentum across asset classes (Moskowitz, Ooi and Pedersen 2012) and dual momentum (Antonacci), the effect behind Rayner Teo's ETF rotation (gold, stocks, bonds, commodities; Luke's YouTube batch 3 G3). Rotation adds value only between assets that don't move together. The BTC/ETH/SOL version failed because the three are highly correlated: it mostly picked the most volatile coin, winning in 2021 and losing more than BTC in the 2025-26 holdout. Gold's correlation with BTC is low, so rotating between them changes what is owned. Stated before the run: this follows from diagnosing that failure, and gold's 2025-26 path is public knowledge, so the holdout can't judge it fairly; a pass here leads to a forward paper test, not the holdout. PAXG's Binance history starts 2020-08, so the sample is short.",
+    "rules": "btc-gold-rotation: lookback_days 365, trend_days 200, top_n 1. At each month-end close, BTCUSDT and PAXGUSDT are eligible with 365 days of history and a close above their 200-day average; the one with the higher 365-day return is held in full, cash if neither. Daily bars, 330 USDT, costs from kestrel.toml (PAXG pays its volume-based spread band). Period 2020-08 to 2025-10 (decisions from 2021-08, once a year of history exists), before the holdout.",
+    "falsification": "The full scorecard against BTC held, walk-forward through the portfolio engine. Fails on any failed test. With about four years of decisions and perhaps 10-20 switches, too few trades (under 30) is a real risk; it fails test 6 rather than being rescued with a shorter lookback.",
+    "parameters": "lookback_days 365 (Rayner's 12 months), trend_days 200, top_n 1. One run; the robustness check moves each parameter (about 8 neighbours).",
+    "costs": "A switch at most monthly; perhaps 4-10 round trips a year. Trials: 1 run plus about 8 neighbours."
+  },
+  "implementation": "btc-gold-rotation",
+  "frozen_at": "2026-11-15T01:07:32.115425+00:00",
+  "change_reason": null
+}

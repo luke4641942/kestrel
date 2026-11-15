@@ -312,3 +312,21 @@ decision = "drop"
 decided = 2026-11-15
 reason = "Dropped (Luke, 2026-11-15). Failed the scorecard (2020-01 to 2025-10): +0.05R and +0.17R a trade, beating only 70% (BTC) and 88% (ETH) of 200 random-entry paths with the same stops and targets (95% needed); Sharpe 0.17 vs 1.07 and 0.56 vs 1.12."
 evidence = ["candle-pattern-and-macd-turn-on-btc-and-eth"]
+
+[[decision]]
+strategy = "monthly-rotation"
+name = "Monthly rotation with a MACD filter"
+market = "BTC/ETH/SOL 1d"
+decision = "watch"
+decided = 2026-11-15
+reason = "Watch (Luke, 2026-11-15); the note is rejected. The best scorecard in Kestrel so far, 7 of 9 tests: Sharpe 1.41 vs 0.74 for BTC (2018-01 to 2025-10), walk-forward beat BTC in 6 of 11 windows (out-of-sample Sharpe 1.77), 100% of 2-year starts, break-even cost about 70x actual, 85 trades, every neighbouring setting 1.26-1.49. Fails drawdown (-50.7% against the 50% limit) and luck (deflated 57%). The MACD filter was added after seeing where the plain rotation lost (2022, the holdout), so hindsight can't be ruled out, and no unseen data is left: the next honest test is forward, on paper beside trend-vol-target."
+evidence = ["monthly-rotation-with-a-macd-filter", "monthly-rotation-across-btc-eth-and-sol"]
+
+[[decision]]
+strategy = "btc-gold-rotation"
+name = "BTC and gold rotation"
+market = "BTC/PAXG 1d"
+decision = "drop"
+decided = 2026-11-15
+reason = "Dropped (Luke, 2026-11-15). Failed the scorecard (2020-08 to 2025-10): Sharpe 0.54 vs 1.01 for BTC held; 19 trades; walk-forward 3 of 6 windows; deflated 3%. PAXG's Binance history is short (from 2020-08)."
+evidence = ["btc-and-gold-rotation"]
