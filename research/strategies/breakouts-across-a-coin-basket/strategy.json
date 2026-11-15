@@ -1,0 +1,28 @@
+{
+  "slug": "breakouts-across-a-coin-basket",
+  "name": "Breakouts across a coin basket",
+  "created_at": "2026-11-14T23:40:55.709165+00:00",
+  "status": "rejected",
+  "history": [
+    {
+      "status": "idea",
+      "at": "2026-11-14T23:40:55.709165+00:00",
+      "reason": "Created"
+    },
+    {
+      "status": "specified",
+      "at": "2026-11-14T23:53:33.538878+00:00",
+      "reason": "v1 frozen"
+    },
+    {
+      "status": "backtested",
+      "at": "2026-11-14T23:59:33.967758+00:00",
+      "reason": "first run on v1"
+    },
+    {
+      "status": "rejected",
+      "at": "2026-11-15T00:24:22.708910+00:00",
+      "reason": "Failed the scorecard (Luke, 2026-11-15). (2020-01 to 2025-10): Sharpe 0.85 (Bollinger) and 0.89 (20% off the low) vs 1.07 for BTC held; drawdowns -77% and -62% (limit 50%); walk-forward 1 and 0 of 7 windows."
+    }
+  ]
+}

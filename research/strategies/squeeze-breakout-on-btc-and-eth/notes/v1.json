@@ -1,0 +1,15 @@
+{
+  "version": 1,
+  "created_at": "2026-11-14T23:34:29.644910+00:00",
+  "sections": {
+    "hypothesis": "On BTC and ETH daily, buying an upward close outside the Bollinger band soon after a squeeze, in an uptrend, and riding it until a close below the 20-day average, beats holding the same coin at the same average exposure on Sharpe, after costs.",
+    "rationale": "Who pays: volatility clusters, so a long quiet stretch is followed by a large move more often than chance (the persistence Kestrel's regime model measures). Once the move starts, traders who were positioned for the range are forced out and late trend followers buy, which is the time-series momentum documented in crypto (Liu and Tsyvinski 2021). The squeeze only says when; the 200-day trend and the break above the band pick the side long-only spot can take. Outside evidence: volatility clustering in crypto is well documented (GARCH literature); the squeeze rule itself is practitioner lore (Bollinger; Rayner Teo, Luke's YouTube batch 3 G4) with no published test. Related to, not a variant of, the rejected channel breakout: that bought any 20-day high, this only buys the first break after an unusually quiet spell, and exits on the 20-day average rather than a fixed target. Kestrel's volatile-direction study found moves continue in MACD's direction in volatile spells (TREND), mostly downward, which long-only can't use; this tests the upward break only.",
+    "rules": "Daily bars, UTC, spot, long only, BTCUSDT and ETHUSDT separately. Band width = (upper - lower) / middle of the 20-day, 2 SD Bollinger band. A squeeze is on when the width was its lowest of the last squeeze_bars days at some point in the last recent_bars days. Buy (weight 1) at a close above the upper band while a squeeze is on and the close is above its trend_days-day average. Sell to cash at a close below the 20-day average. Fills at the next open, costs from kestrel.toml, 330 USDT. Period 2018-01 to 2025-10 (BTC and ETH both have daily data from 2017-08), before the holdout.",
+    "falsification": "The full scorecard on each coin. The idea fails if neither coin passes every test; a coin that passes alone is reported with the other's failure. Random entry (test 9) is n/a: this holds weights, not brackets. Few trades is a real risk (squeezes are rare): under 30 trades fails test 6 rather than being rescued by loosening the squeeze.",
+    "parameters": "squeeze_bars 120 (40-365), recent_bars 20 (5-60), trend_days 200 (50-365). One setting, the defaults, on each coin: 2 runs. The robustness check moves each parameter (about 12 neighbours a coin). The band itself stays 20 days, 2 SD: it is the textbook band and isn't tuned.",
+    "costs": "A trade lasts weeks, and squeezes are rare: expect a handful of round trips a year a coin, a few tenths of a percent a year in costs. Trials: 2 runs plus about 24 robustness neighbours."
+  },
+  "implementation": "squeeze-breakout",
+  "frozen_at": "2026-11-14T23:53:54.151044+00:00",
+  "change_reason": null
+}

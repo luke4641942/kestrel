@@ -1,0 +1,15 @@
+{
+  "version": 1,
+  "created_at": "2026-11-14T23:33:09.399408+00:00",
+  "sections": {
+    "hypothesis": "BTC earns more per day held over the change of month than on other days, enough that holding it only then beats holding BTC at the same average exposure on Sharpe, after costs.",
+    "rationale": "Who pays: in equities the turn of the month (last day plus first few) carries most of the market's return (Ariel 1987; Lakonishok and Smidt 1988; McConnell and Xu 2008), put down to pay arriving and funds investing it at month starts. Crypto's version would be the same cash arriving: recurring buys that exchanges and brokers schedule on the 1st, monthly rebalancing by the spot BTC ETFs (from January 2024) and funds, and month-end marking. Outside evidence for crypto is thin and mixed (calendar studies of Bitcoin, e.g. Kaiser 2019, Finance Research Letters, find few robust calendar effects), so this is a cheap test with low expectations. It is a new family for Kestrel (calendar), not a variant of a rejected one. Source: Luke's YouTube batch 2 (Quantified Strategies, system A3).",
+    "rules": "Daily bars, UTC days, BTCUSDT spot, long only. Hold BTC during the last last_days days of each month and the first first_days days of the next; cash otherwise. The weight decided at a day's close is for the next day. Fills at the next open, costs from kestrel.toml, 330 USDT. Two settings, each run once: the video's rule (last_days 0, first_days 1: buy the last day's close, sell the first day's close) and its variant (last_days 5, first_days 3). Period: 2018-01 to 2025-10 (94 month changes), all before the holdout.",
+    "falsification": "Judged by the scorecard, every test, for each setting. Test 1 (Sharpe above exposure-matched holding) is the random-days comparison the video asks for: holding BTC at the same average exposure is what random days of the same count earn on average. Fails if either setting fails any scorecard test; a setting passing alone is reported but not called a pass of the idea unless its neighbours also pass (test 8). Random entry (test 9) is n/a: this holds weights, not brackets.",
+    "parameters": "last_days 0 to 10, first_days 0 to 10. Run exactly two settings: (0, 1) and (5, 3). The robustness check (test 8) moves each around its setting as kestrel robustness does; those count as trials. No other settings.",
+    "costs": "One round trip a month: 12 a year at about 22 bps is about 2.6% a year in costs. Exposure is about 3% (0/1) or 26% (5/3) of days, so the per-day edge must be large. Trials: 2 settings plus about 4 robustness neighbours, taking the count from 193 to about 199."
+  },
+  "implementation": "turn-of-month",
+  "frozen_at": "2026-11-14T23:54:02.196092+00:00",
+  "change_reason": null
+}

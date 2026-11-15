@@ -1,0 +1,15 @@
+{
+  "version": 1,
+  "created_at": "2026-11-14T23:38:07.936478+00:00",
+  "sections": {
+    "hypothesis": "Holding, each month, the two of BTC, ETH and SOL with the best trailing return among those above their 200-day average (cash otherwise) beats holding the same coins at the same average exposure on Sharpe, after costs.",
+    "rationale": "Who pays: time-series momentum, documented in crypto (Liu and Tsyvinski 2021) and across asset classes (Moskowitz, Ooi and Pedersen 2012): investors under-react to news, then pile in late, so a coin's past months predict its next. The 200-day filter is absolute momentum (Antonacci's dual momentum): rank first, then require the trend to be up, so a falling market goes to cash. Outside evidence for the ETF version: Rayner Teo's backtest 2006-2025 (+535%, drawdown 22%; Luke's YouTube batch 3 G3) and Faber's moving-average timing (batch 2 A6). Overlap, stated honestly: BTC/ETH weekly rotation (dropped: Sharpe 1.06 vs 1.07) and cross-sectional momentum top 5 (dropped) are close relatives, and trend-vol-target (pursue) already rides BTC's trend. This differs in the monthly horizon (fewer, slower trades), a 12-month ranking and SOL as a third choice. Freezing it is Luke's knowing override of the entry bar if he judges it a variant.",
+    "rules": "Daily bars, UTC, spot, long only. At the close of each month's last day: among BTCUSDT, ETHUSDT and SOLUSDT, a coin is eligible with lookback_days of unbroken history and a close above its trend_days average. Rank eligible coins by their lookback_days return; hold the top top_n at 1/top_n each from the next open; unfilled slots are cash. Positions change only at month ends. SOL joins once it has the history (listed 2020-08). Costs from kestrel.toml, 330 USDT (two 165 USDT slots, well above the 5 USDT minimum). Period 2018-01 to 2025-10, before the holdout. Three settings: lookback_days 365, 180 and 90 (the spec's 12, 6 and 3 months), each with trend_days 200, top_n 2.",
+    "falsification": "Scored against the large-basket control and against holding BTC and the same coins at the same exposure, as universe strategies are (CLAUDE.md). The full scorecard; the idea fails if no lookback passes every test. Random entry (test 9) is n/a (weights).",
+    "parameters": "lookback_days 30-365, trend_days 50-365, top_n 1-3. Three runs: lookback 365, 180, 90 with trend 200 and top 2. The robustness check moves each parameter around the best of the three (about 8 neighbours).",
+    "costs": "At most a few changes a month-end, usually none: perhaps 6-15 round trips a year across both slots, about 0.2-0.4% a year in costs. Trials: 3 runs plus about 8 neighbours."
+  },
+  "implementation": "monthly-rotation",
+  "frozen_at": "2026-11-14T23:53:47.815459+00:00",
+  "change_reason": null
+}

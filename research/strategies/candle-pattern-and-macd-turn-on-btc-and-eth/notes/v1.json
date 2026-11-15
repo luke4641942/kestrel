@@ -1,0 +1,15 @@
+{
+  "version": 1,
+  "created_at": "2026-11-14T23:42:22.709711+00:00",
+  "sections": {
+    "hypothesis": "A bullish candle pattern at a swing low, followed within three bars by a close above it as MACD's histogram rises, gives long trades on BTC and ETH 4h that beat random entries with the same stops and targets and beat holding at the same exposure on Sharpe, after costs.",
+    "rationale": "Who pays, as the method claims: a pattern at a swing low shows sellers exhausted, the breakout shows buyers taking control, and a rising MACD confirms momentum has turned, so late sellers are squeezed. The guest trader on Rayner Teo's channel reports an 87% win rate over 1,377 trades in 2022-2024 (Luke's YouTube batch 3 G5), but with no stop rule: a high win rate with uncapped losses usually means small wins and occasional large losses. This note's job is to check whether anything is left once the loss is capped at the pattern's low. Against it, honestly: this is the chart-pattern family, which the entry bar names as rejected; Kestrel's level retest, trendline and wedge tests all failed. Freezing this note is Luke's knowing override of the entry bar. It is the first strategy built for the random-entry control (scorecard test 9).",
+    "rules": "pattern-macd, BTCUSDT and ETHUSDT 4h separately, spot, long only. Pattern on bar p at a swing low (lowest low of the last 10 bars): pin bar (lower wick at least two thirds of the range), inside bar, outside bar, or bullish engulfing. Signal: within 3 bars after p, a bar closes above p's high while the MACD (12, 26, 9) histogram is above the previous bar's. Entry at the next open; stop at p's low; target 2 x the risk from the signal close. A newer pattern replaces a waiting one; each pattern is used once. Sizing by the engine: 1% risk per trade, capped at 100% of equity; costs from kestrel.toml, 330 USDT. Period 2020-01 to 2025-10, before the holdout.",
+    "falsification": "The full scorecard on each coin, including test 9: net expectancy per trade must beat 95% of 200 random-entry paths with the same stops, targets and sizing (kestrel random-entry). Fails if neither coin passes every test. A win rate near the claimed 87% is not required; a positive edge after costs that beats random entries is.",
+    "parameters": "swing_bars 10 (3-50), expiry_bars 3 (1-10), target_r 2 (1-6). One setting on each coin: 2 runs. The robustness check moves each (about 10 neighbours a coin). The 'First Red' 5m scalp is not tested: it is a minute-chart method, and the cost gate found 1m-5m stops can't carry a 22 bps round trip.",
+    "costs": "Several setups a month on 4h bars: perhaps 30-80 round trips a year a coin. With stops at the pattern's low (often 1-3% away on 4h), a 22 bps round trip is roughly 0.1-0.2R a trade, a real drag at a 2R target. Trials: 2 runs plus about 20 neighbours; random-entry paths aren't trials."
+  },
+  "implementation": "pattern-macd",
+  "frozen_at": "2026-11-14T23:53:30.663398+00:00",
+  "change_reason": null
+}

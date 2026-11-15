@@ -240,3 +240,75 @@ decision = "drop"
 decided = 2026-11-14
 reason = "Failed the scorecard on both coins: BTC Sharpe -0.13 vs 0.53 for holding, ETH 0.42 vs 0.46; walk-forward 0 and 1 of 5 windows; 19-26 trades. The study behind it found MACD's direction continues in volatile spells, but most of that was the down weeks, which long-only can only sit out. Worth revisiting only with a short side."
 evidence = ["ride-volatile-spells-in-macd-s-direction", "which-way-do-volatile-spells-go-macd"]
+
+[[decision]]
+strategy = "turn-of-month"
+name = "Turn of the month"
+market = "BTCUSDT 1d"
+decision = "drop"
+decided = 2026-11-15
+reason = "Dropped (Luke, 2026-11-15). Failed the scorecard (2018-01 to 2025-10): Sharpe 0.37 (last 0 / first 1 days) and 0.68 (5 / 3) against 0.74 for holding BTC; beat holding in 5 and 4 of 11 walk-forward windows; deflated 0-3%."
+evidence = ["turn-of-the-month-on-btc"]
+
+[[decision]]
+strategy = "bollinger-pullback"
+name = "Bollinger pullback across a coin basket"
+market = "Coin universe 1d"
+decision = "drop"
+decided = 2026-11-15
+reason = "Dropped (Luke, 2026-11-15). Failed the scorecard (2020-01 to 2025-10): Sharpe 0.54 (3% limit), 0.82 (7%) and 0.32 (with the BTC filter) against 1.07 for BTC held; walk-forward beat BTC in 2, 1 and 0 of 7 windows; deflated 1-9%. Dip-buying failed again, now across alts."
+evidence = ["bollinger-pullback-across-a-coin-basket"]
+
+[[decision]]
+strategy = "squeeze-breakout"
+name = "Squeeze breakout"
+market = "BTCUSDT and ETHUSDT 1d"
+decision = "drop"
+decided = 2026-11-15
+reason = "Dropped (Luke, 2026-11-15). Failed the scorecard (2018-01 to 2025-10): Sharpe 0.61 vs 0.74 (BTC) and 0.18 vs 0.68 (ETH); only 22 and 16 trades; beat holding in 0 of 11 walk-forward windows on both."
+evidence = ["squeeze-breakout-on-btc-and-eth"]
+
+[[decision]]
+strategy = "monthly-rotation"
+name = "Monthly rotation across BTC, ETH and SOL"
+market = "BTC/ETH/SOL 1d"
+decision = "watch"
+decided = 2026-11-15
+reason = "Watch (Luke, 2026-11-15). The note failed its scorecard and is rejected, but it is the only YouTube strategy that beat holding BTC over 2018-01 to 2025-10: Sharpe 1.13, 1.25 and 1.26 (365/180/90-day lookbacks) against 0.74. It fails the drawdown limit (-59%), luck (deflated 30-43%) and out of sample: it beat BTC in only 3 of 11 walk-forward windows, almost all of its lead coming from holding ETH and SOL in 2021. No further work without new evidence; a version with a drawdown control would be a new note with new trials."
+evidence = ["monthly-rotation-across-btc-eth-and-sol"]
+
+[[decision]]
+strategy = "rsi-dip"
+name = "RSI dip-buying"
+market = "BTCUSDT and ETHUSDT 1d"
+decision = "drop"
+decided = 2026-11-15
+reason = "Dropped (Luke, 2026-11-15). Failed the scorecard (2018-01 to 2025-10) on all six runs: Sharpe 0.04-0.36 vs 0.74 on BTC and 0.23-0.52 vs 0.68 on ETH; walk-forward 0-3 of 11 windows; deflated 0-1%. The fourth dip-buying test to fail."
+evidence = ["rsi-dip-buying-on-btc-and-eth"]
+
+[[decision]]
+strategy = "basket-breakout"
+name = "Breakouts across a coin basket"
+market = "Coin universe 1d"
+decision = "drop"
+decided = 2026-11-15
+reason = "Dropped (Luke, 2026-11-15). Failed the scorecard (2020-01 to 2025-10): Sharpe 0.85 (Bollinger) and 0.89 (20% off the low) vs 1.07 for BTC held; drawdowns -77% and -62% (limit 50%); walk-forward 1 and 0 of 7 windows."
+evidence = ["breakouts-across-a-coin-basket"]
+
+[[decision]]
+strategy = "xs-momentum"
+name = "Cross-sectional momentum top 3, 1-3 months"
+market = "Coin universe 1d"
+decision = "drop"
+decided = 2026-11-15
+reason = "Dropped (Luke, 2026-11-15). Failed the scorecard (2020-01 to 2025-10): Sharpe 0.38 vs 1.07 for BTC held; drawdown -95%; break-even cost 0; walk-forward 0 of 7 windows, out-of-sample Sharpe -0.28. The second cross-sectional momentum version to crash."
+evidence = ["cross-sectional-momentum-top-3-over-1-3-months"]
+
+[[decision]]
+strategy = "pattern-macd"
+name = "Candle pattern and MACD turn"
+market = "BTCUSDT and ETHUSDT 4h"
+decision = "drop"
+decided = 2026-11-15
+reason = "Dropped (Luke, 2026-11-15). Failed the scorecard (2020-01 to 2025-10): +0.05R and +0.17R a trade, beating only 70% (BTC) and 88% (ETH) of 200 random-entry paths with the same stops and targets (95% needed); Sharpe 0.17 vs 1.07 and 0.56 vs 1.12."
+evidence = ["candle-pattern-and-macd-turn-on-btc-and-eth"]

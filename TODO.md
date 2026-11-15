@@ -78,9 +78,6 @@ Strategies, most to least promising:
   revisit only if both pass on their own.
 
 ## Waiting on Luke
-- [ ] YouTube batches 2-3 tested (2026-11-15): all eight notes FAIL the scorecard (findings,
-      "Every hypothesis"). Reject the notes and drop them, or keep any open? Your call.
-      Closest: monthly rotation (Sharpe 1.26 vs 0.74 for BTC, but drawdown -59% and luck 43%).
 - [ ] Read and freeze `paper-trading-trend-vol-target-btc` (drafted 2026-11-14). Then:
       `kestrel paper open tvt-btc ... --venue testnet` (the note's rules), `kestrel paper
       schedule tvt-btc`, and load the job with the launchctl command it prints. The
@@ -119,6 +116,7 @@ Strategies, most to least promising:
 - [ ] HMM regime filter (backlog S2) as a strategy: needs a note that passes the entry bar.
 
 ## Done recently
+- 2026-11-15 Eight YouTube notes rejected (Luke): monthly rotation on watch, the other seven dropped.
 - 2026-11-15 Eight YouTube notes run (22 settings, trials 193 -> 473): every one fails.
 - 2026-11-15 Validation additions from batch 2: the max drawdown on 2,000 reshuffled paths
   (median and 1 in 20) on every backtest. Results by year and walk-forward's

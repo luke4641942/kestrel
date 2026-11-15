@@ -1,0 +1,28 @@
+{
+  "slug": "candle-pattern-and-macd-turn-on-btc-and-eth",
+  "name": "Candle pattern and MACD turn on BTC and ETH",
+  "created_at": "2026-11-14T23:42:22.709711+00:00",
+  "status": "rejected",
+  "history": [
+    {
+      "status": "idea",
+      "at": "2026-11-14T23:42:22.709711+00:00",
+      "reason": "Created"
+    },
+    {
+      "status": "specified",
+      "at": "2026-11-14T23:53:30.663407+00:00",
+      "reason": "v1 frozen"
+    },
+    {
+      "status": "backtested",
+      "at": "2026-11-14T23:57:46.014912+00:00",
+      "reason": "first run on v1"
+    },
+    {
+      "status": "rejected",
+      "at": "2026-11-15T00:24:22.710755+00:00",
+      "reason": "Failed the scorecard (Luke, 2026-11-15). (2020-01 to 2025-10): +0.05R and +0.17R a trade, beating only 70% (BTC) and 88% (ETH) of 200 random-entry paths with the same stops and targets (95% needed); Sharpe 0.17 vs 1.07 and 0.56 vs 1.12."
+    }
+  ]
+}

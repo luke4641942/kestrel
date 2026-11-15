@@ -1,0 +1,28 @@
+{
+  "slug": "bollinger-pullback-across-a-coin-basket",
+  "name": "Bollinger pullback across a coin basket",
+  "created_at": "2026-11-14T23:47:05.396651+00:00",
+  "status": "rejected",
+  "history": [
+    {
+      "status": "idea",
+      "at": "2026-11-14T23:47:05.396651+00:00",
+      "reason": "Created"
+    },
+    {
+      "status": "specified",
+      "at": "2026-11-14T23:53:27.099142+00:00",
+      "reason": "v1 frozen"
+    },
+    {
+      "status": "backtested",
+      "at": "2026-11-15T00:05:13.821034+00:00",
+      "reason": "first run on v1"
+    },
+    {
+      "status": "rejected",
+      "at": "2026-11-15T00:24:22.705294+00:00",
+      "reason": "Failed the scorecard (Luke, 2026-11-15). (2020-01 to 2025-10): Sharpe 0.54 (3% limit), 0.82 (7%) and 0.32 (with the BTC filter) against 1.07 for BTC held; walk-forward beat BTC in 2, 1 and 0 of 7 windows; deflated 1-9%. Dip-buying failed again, now across alts."
+    }
+  ]
+}
