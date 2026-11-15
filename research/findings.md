@@ -140,6 +140,11 @@ risk-managed holding rather than a proven edge.
     1.2% in funding, and 3 of 12 were liquidated, including HIFI's +1,357% squeeze during
     its window in 2025-09. The fall is real, but on Binance it was mostly not shortable,
     and where it was, a crowded short got squeezed.
+12. **Trend-vol-target hasn't been shown outside crypto.** Run unchanged on gold, EUR and
+    GBP (2026-11-16), it lost to holding gold at the same exposure and lost money on both
+    currencies. Its edge is shown only on BTC, ETH and SOL, which trended hard in 2020-25;
+    time-series momentum's long record in commodities and currencies didn't show up here in
+    five years of daily bars.
 
 ## The holdout year (2025-11 to 2026-10)
 
@@ -224,6 +229,7 @@ edge, and the holdout can't be used again for either strategy.
 | Order flow Model 2 (YouTube batch 2 C) | ETH, SOL 5m 2020-25 | ETH -81% (Sharpe -3.67, 790 trades, 30% won, -0.68R a trade); SOL -80% (-3.42, 637 trades, -0.73R); negative before costs on both; walk-forward 0 of 7 and 0 of 6; ETH no better than random entries (beat 19% of paths) | Drop (Luke) |
 | CHoCH + FVG at the New York open (YouTube batch 1 S2) | SOL 5m 2020-08 to 2025-10 | -40%, Sharpe -0.92, 308 trades, 21% won, -0.55R a trade (about +0.04R before 0.59R of costs); walk-forward 1 of 6; no better than random entries (beat 79% of paths, 95% needed) | Drop (Luke) |
 | Set and Forget, mechanical zones (YouTube batch 1 S1) | BTC, ETH 1H 2020-25 | BTC +0.6% (Sharpe 0.04) vs +12% held at the same exposure, 62 trades, +0.02R; ETH -6.2% (-0.18) vs +15%, 59 trades, -0.09R; costs small (0.06-0.07R): no edge before them; walk-forward 0 of 7 and 1 of 7; BTC no better than random entries (beat 50% of paths) | Drop (Luke) |
+| Trend-vol-target, unchanged, on gold and currencies (Luke) | PAXGUSDT 1d 2020-08 to 2025-10; EURUSDT 2020-25; GBPUSDT 2020-07 to 2023-12 | Fails on all three. Gold +40% (Sharpe 0.58) vs +56% for gold held at the same exposure (Sharpe 0.93), robust and walk-forward 1 of 6, 0 of 35 start windows; costs were 75 of its 206 USDT before costs, mostly an assumed volume-band spread likely too high for gold, but even near-zero spread would only tie holding. EUR -20% (Sharpe -0.68) and GBP -21% (-0.88), negative before costs. On these markets the 50% volatility target always caps at 100%, so it is the trend votes alone | Luke's call |
 
 Each strategy was judged by its own note's pass test, written before it ran. From
 2026-11-14 every strategy is judged on one scorecard instead.

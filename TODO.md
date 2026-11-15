@@ -10,10 +10,9 @@ Decisions and rules live in CLAUDE.md; results in `research/findings.md`.
       (around 2027-05-15); verdict at 395 days (around 2027-12-14).
 
 ## Next
-- [ ] Other markets (Luke, 2026-11-16): trend-vol-target, unchanged, on gold (PAXGUSDT),
-      EURUSDT and GBPUSDT daily (silver isn't on Binance spot; AUD stopped 2023-06). Data in
-      and clean. Waiting on Luke: freeze `trend-vol-target-on-gold-eur-and-gbp-unseen`,
-      then the scorecard (about 60 trials).
+- [ ] Other markets: trend-vol-target on gold, EUR, GBP run 2026-11-16: fails on all three
+      (gold +40% vs +56% held at its exposure; EUR -20%, GBP -21%). Waiting on Luke: drop
+      the three markets and reject `trend-vol-target-on-gold-eur-and-gbp-unseen`?
 - [x] Walk-forward for basket strategies: built 2026-11-15 (portfolio engine per window, against
       BTC held); the five basket walk-forwards rerun with the notes' settings.
 - [ ] Delistings study: run 2026-11-15, verdict EXIT RULE (coins fell 39.8% on average from
