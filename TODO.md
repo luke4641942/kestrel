@@ -78,6 +78,9 @@ Strategies, most to least promising:
   revisit only if both pass on their own.
 
 ## Waiting on Luke
+- [ ] Freeze three drafted notes: `cost-re-check-trend-vol-target-btc-at-bnb-fees`,
+      `cost-re-check-monthly-rotation-at-bnb-fees` (BNB fees, 7.5 bps; no new trials) and
+      `does-stablecoin-supply-growth-lead-prices` (a raw-effect study, one look).
 - [ ] Rotation + MACD FAILED its one-sided holdout (-25.2% vs -5.4% for BTC at its exposure).
       The note's agreed rule: a fail means drop. Drop rotation, or keep it on watch? Your call.
 - [ ] Read and freeze `paper-trading-trend-vol-target-btc` (drafted 2026-11-14). Then:
@@ -100,6 +103,11 @@ Strategies, most to least promising:
       coins' prices before the study is written down.
 
 ## Later
+- [ ] Pay fees in BNB for real: the Binance venue must account for commissions charged in BNB
+      (it raises today), keep a small BNB balance, and value fees at BNB's price. Then switch
+      kestrel.toml to 7.5 bps (kestrel.bnb.toml has it). Limit orders were considered and
+      left out: daily strategies fill at the open, BTC's spread is about 1 bp, and a resting
+      order risks not filling.
 - [ ] Other markets (Luke's idea, 2026-11-15; nothing to work on now). Forex and commodities
       without leaving Binance spot: EURUSDT (euro), PAXGUSDT (gold, one token per ounce),
       and tokenized stocks/ETFs (AAPLBUSDT... from June 2026, too short for now). Wider
