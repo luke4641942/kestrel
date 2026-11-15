@@ -84,6 +84,12 @@ Strategies, most to least promising:
       395-day test (90%, a 6-month failure-only check) starts at its first decision.
 
 ## Next
+- [ ] Testnet keys from the macOS keychain, not ~/.zshrc (Luke, 2026-11-15). Luke adds them
+      himself (`security add-generic-password -s kestrel-testnet -a key -w`, and `-a secret`);
+      Claude never sees the values. Kestrel reads them at run time; the keychain item's access
+      list allows only Kestrel's Python (`-T .venv/bin/python`), not `security` in general, so
+      any other reader (including a command Claude runs) triggers a macOS prompt Luke can deny.
+      Then remove them from ~/.zshrc and stop the launchd job sourcing it. Before any live keys.
 - [x] Walk-forward for basket strategies: built 2026-11-15 (portfolio engine per window, against
       BTC held); the five basket walk-forwards rerun with the notes' settings.
 - [ ] Delistings (Luke's idea, 2026-11-14): a raw-effect study before any strategy.
