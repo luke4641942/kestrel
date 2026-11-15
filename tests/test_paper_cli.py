@@ -164,3 +164,26 @@ def test_schedule_writes_a_job_without_secrets_and_removes_it(
     assert "launchctl bootout" in removed.output
     assert not path.exists()
     assert invoke(tmp_path, "schedule", "nobody", "--agents-dir", str(agents)).exit_code == 1
+
+
+def test_a_run_brings_every_input_market_up_to_date(
+    tmp_path: Path, setup: FakeBinance, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    from kestrel.execution.paper import Terms
+
+    store = ParquetStore(tmp_path)
+    store.write("ETHUSDT", Interval.D1, bars([50.0 + i for i in range(100)], step=DAY))
+    terms = Terms(
+        "eth", "btc-regime-trend", "ETHUSDT", Interval.D1, {}, Decimal(330), T0 + 99 * DAY
+    )
+    PaperAccount.open(tmp_path, terms)
+    updated: list[str] = []
+    real = live.update
+
+    def recording(store_, symbol, interval, http, now=None):  # type: ignore[no-untyped-def]
+        updated.append(symbol)
+        return real(store_, symbol, interval, http, now)
+
+    monkeypatch.setattr(live, "update", recording)
+    invoke(tmp_path, "run", "eth", "--config", REPO_CONFIG)
+    assert updated == ["ETHUSDT", "BTCUSDT"]  # the coin, then the market btc_close is read from

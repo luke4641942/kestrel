@@ -51,12 +51,16 @@ def backtest(frame, key: str = "ma-trend", params: dict[str, int] | None = None)
 
 @pytest.mark.parametrize(
     ("key", "params"),
-    [("ma-trend", {"fast": 5, "slow": 20}), ("trend-vol-target", {})],
+    [
+        ("ma-trend", {"fast": 5, "slow": 20}),
+        ("trend-vol-target", {}),
+        ("btc-regime-trend", {}),  # reads btc_close, a feature column
+    ],
 )
 def test_a_day_by_day_replay_reproduces_the_backtest(
     tmp_path: Path, key: str, params: dict[str, int]
 ) -> None:
-    frame = walk(300)
+    frame = walk(300).with_columns(btc_close=walk(300, seed=11)["close"])
     result = backtest(frame, key, params)
     paper = account(tmp_path, key, params)
     handled = run(paper, frame, config())
@@ -182,3 +186,20 @@ def test_the_ledger_only_writes_what_it_can_read_back(tmp_path: Path) -> None:
     ledger = Ledger(tmp_path / "l.jsonl")
     with pytest.raises(TypeError, match="can't write object"):
         ledger.append({"x": object()})
+
+
+def test_a_live_run_refuses_to_decide_on_missing_inputs(tmp_path: Path) -> None:
+    import polars as pl
+
+    frame = walk(60).with_columns(btc_close=walk(60, seed=11)["close"])
+    last = frame["open_time"][-1]
+    gappy = frame.with_columns(
+        btc_close=pl.when(pl.col("open_time") == last).then(None).otherwise(pl.col("btc_close"))
+    )
+    paper = account(tmp_path, "btc-regime-trend", {})
+    now = last + DAY + timedelta(minutes=10)  # the last bar has just closed
+    with pytest.raises(ValueError, match="missing inputs: btc_close on"):
+        run(paper, gappy, config(), lambda _: Decimal(100), now=now)
+    assert of(paper.ledger.events(), "decision") == []  # nothing written
+    handled = run(paper, frame, config(), lambda _: Decimal(100), now=now)
+    assert handled  # with the input present it trades

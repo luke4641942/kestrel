@@ -45,7 +45,7 @@ from kestrel.backtest.runs import (
 from kestrel.config import Config, ConfigError, load_config
 from kestrel.data import attention, delistings, funding, live, news, sentiment, stablecoins
 from kestrel.data.binance_vision import BinanceVisionClient, Month, last_complete_month
-from kestrel.data.features import attach_features
+from kestrel.data.features import attach_features, markets_for
 from kestrel.data.quality import check_klines
 from kestrel.data.schema import Interval
 from kestrel.data.store import ParquetStore
@@ -1391,15 +1391,16 @@ def paper_run(
         cfg = load_config(config)
         store = ParquetStore(data_dir)
         with httpx.Client(timeout=30) as http:
-            up = live.update(store, terms.symbol, terms.interval, http)
-            if not up.quality.is_clean:
-                raise ValueError(
-                    f"{terms.symbol} data has problems; not trading:\n{up.quality.summary()}"
-                )
+            features = spec_for(terms.strategy).features
+            # The traded market, and any market a feature is read from (BTC for btc_close).
+            for market in dict.fromkeys([terms.symbol.upper(), *markets_for(features)]):
+                up = live.update(store, market, terms.interval, http)
+                if not up.quality.is_clean:
+                    raise ValueError(
+                        f"{market} data has problems; not trading:\n{up.quality.summary()}"
+                    )
             bars = store.read(terms.symbol, terms.interval)
-            bars = attach_features(
-                bars, spec_for(terms.strategy).features, terms.symbol, terms.interval, data_dir
-            )
+            bars = attach_features(bars, features, terms.symbol, terms.interval, data_dir)
             venue = _paper_venue(terms, cfg, http)
             _reconcile(account, venue, cfg)
             handled = paper_trading.run(

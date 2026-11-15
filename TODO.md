@@ -11,9 +11,10 @@ Decisions and rules live in CLAUDE.md; results in `research/findings.md`.
 
 ## Next
 - [ ] btc-regime-trend on ETH and SOL: PURSUE (2026-11-16, Claude's call delegated by
-      Luke): passes every scorecard test but luck on both. Next: a paper-trading note for
-      Luke to freeze, beside trend-vol-target on the same coins; check the paper runner
-      supplies btc_close (BTC's daily bar) before opening the accounts.
+      Luke): passes every scorecard test but luck on both. Paper runner ready (2026-11-16:
+      refreshes BTC for btc_close, refuses missing inputs, replay matches the backtest).
+      Next: a paper-trading note for Luke to freeze, then testnet accounts beside
+      trend-vol-target on ETH and SOL.
 - [ ] Delistings study: run 2026-11-15, verdict EXIT RULE (coins fell 39.8% on average from
       the day after the announcement to removal; no rebound; findings item 11). Luke's call:
       write an exit-rule note (sell a held coin at the next open after its delisting is

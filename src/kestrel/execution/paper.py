@@ -34,7 +34,7 @@ from kestrel.backtest.costs import CostModel, Fill, Rejection, Side
 __all__ = ["Fill", "Handled", "Ledger", "PaperAccount", "Rejection", "State", "Terms", "run"]
 from kestrel.backtest.engine import half_spreads
 from kestrel.config import Config
-from kestrel.data.schema import Interval
+from kestrel.data.schema import KLINE_SCHEMA, Interval
 from kestrel.execution.rebalance import rebalance
 from kestrel.execution.safety import RiskGuard, check_mark, halt, halted, stale
 from kestrel.execution.venue import SimVenue
@@ -189,6 +189,22 @@ NextOpen = Callable[[datetime], Decimal | None]
 """The open of the bar starting at a time, if it has started; None if not yet."""
 
 
+def missing_inputs(bars: pl.DataFrame, pending: list[datetime]) -> str | None:
+    """Which strategy inputs (columns beyond the kline schema, e.g. ``btc_close``) are
+    unknown on a bar about to be decided. A strategy reads an unknown input as cash, so a
+    live run would sell on missing data rather than on a signal: refuse instead."""
+    extra = [c for c in bars.columns if c not in KLINE_SCHEMA]
+    if not extra or not pending:
+        return None
+    due = bars.filter(pl.col("open_time").is_in(pending))
+    found = []
+    for column in extra:
+        gaps = due.filter(pl.col(column).is_null())["open_time"].to_list()
+        if gaps:
+            found.append(f"{column} on {', '.join(f'{t:%Y-%m-%d}' for t in gaps[:3])}")
+    return "; ".join(found) or None
+
+
 def run(
     account: PaperAccount,
     bars: pl.DataFrame,
@@ -228,6 +244,9 @@ def run(
         problem = stale(bars, terms.interval, now)
         if problem:
             raise ValueError(f"not trading on stale data: {problem}")
+        missing = missing_inputs(bars, pending)
+        if missing:
+            raise ValueError(f"not trading on missing inputs: {missing}")
     guard = RiskGuard(
         venue or SimVenue(config, terms.initial_cash, rules=config.rules_for), config.risk
     )

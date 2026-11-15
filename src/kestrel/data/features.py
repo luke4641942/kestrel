@@ -37,6 +37,16 @@ BTC = "BTCUSDT"
 BTC_CLOSE = "btc_close"
 REGIME_VOLATILE = "regime_volatile"
 FEATURES = (sentiment.FEATURE, funding.FEATURE, BTC_CLOSE, REGIME_VOLATILE, stablecoins.FEATURE)
+INPUT_MARKETS = {BTC_CLOSE: BTC}
+"""Features read from another market's stored bars: a live run must bring that market up
+to date too, or the feature goes missing on the newest bar."""
+
+
+def markets_for(features: tuple[str, ...] | list[str]) -> list[str]:
+    """The other markets whose bars a strategy's features are read from."""
+    return sorted({INPUT_MARKETS[f] for f in features if f in INPUT_MARKETS})
+
+
 MARKET_WIDE = (sentiment.FEATURE, stablecoins.FEATURE)
 """Features that are the same for every coin on a day, so a coin panel can carry them."""
 
