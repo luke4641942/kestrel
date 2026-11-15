@@ -25,8 +25,9 @@ first real test: no better than random entries. Untested, all low priority:
       BTC held); the five basket walk-forwards rerun with the notes' settings.
 - [ ] Delistings (Luke's idea, 2026-11-14; started 2026-11-15): a raw-effect study before
       any strategy. Done: `kestrel ingest-delistings` (Binance's announcements catalog, from
-      2022-02: ~26 announcements, ~110 coins removed before the holdout). Next: the study
-      note for Luke to freeze, then the study code and one run. Measure the path from
+      2022-02: 87 coins in 22 announcements usable before the holdout) and the study
+      (`kestrel delisting-study`). Waiting on Luke: review and freeze the draft note
+      `what-happens-between-a-binance-delisting`, then one run. Measure the path from
       announcement to removal and whether any rebound beats a small coin's costs. Buying the
       rebound is the reversal family (entry bar); long-only can't take the short side; one
       study (Monero, 2024) found no rebound. Don't look at the delisted coins' prices before

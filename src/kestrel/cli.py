@@ -21,7 +21,7 @@ import plistlib
 import shlex
 import sys
 from collections.abc import Callable
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
 from decimal import Decimal
 from pathlib import Path
 from typing import Annotated, Any
@@ -48,7 +48,13 @@ from kestrel.data.features import attach_features
 from kestrel.data.quality import check_klines
 from kestrel.data.schema import Interval
 from kestrel.data.store import ParquetStore
-from kestrel.data.universe import ArchiveListing, CoinIngest, ingest_universe, manifest_path
+from kestrel.data.universe import (
+    NOT_COINS,
+    ArchiveListing,
+    CoinIngest,
+    ingest_universe,
+    manifest_path,
+)
 from kestrel.execution import paper as paper_trading
 from kestrel.execution import safety, tracking
 from kestrel.execution.binance import (
@@ -74,6 +80,14 @@ from kestrel.strategy import (
 )
 from kestrel.studies import cost_gate
 from kestrel.studies.anchor_day import format_study, run_study
+from kestrel.studies.delisting import (
+    NOT_COINS_EXTRA,
+    PRE_DAYS,
+    CoinPath,
+    coin_path,
+    format_delisting_study,
+    run_delisting_study,
+)
 from kestrel.studies.volatile_direction import format_study as format_volatile_study
 from kestrel.studies.volatile_direction import run_study as run_volatile_study
 from kestrel.studies.weekly_signal import (
@@ -628,6 +642,64 @@ def signal_study(
     if research is not None:
         store.mark_backtested(s.slug, note.version)
     typer.echo(format_signal_study(result))
+
+
+@app.command("delisting-study")
+def delisting_study(
+    research: Annotated[
+        str,
+        typer.Option(help="The frozen note that pre-registers this run (marked as run)."),
+    ],
+    research_dir: ResearchDir = Path("research"),
+    data_dir: DataDir = Path("data"),
+    config: Annotated[
+        Path, typer.Option("--config", envvar="KESTREL_CONFIG", help="Config file.")
+    ] = Path("kestrel.toml"),
+) -> None:
+    """What happens between a Binance delisting announcement and removal? Every coin
+    removed before the holdout, daily bars, run once through its frozen note."""
+    store = ResearchStore(research_dir)
+    try:
+        s, note = store.require_testable(research)
+        if note.implementation != "study:delistings":
+            raise ValueError(f"{research} names {note.implementation}, not study:delistings")
+        cfg = load_config(config)
+        holdout = cfg.backtest.holdout_start
+        bars_store = ParquetStore(data_dir)
+        found = delistings.load(data_dir).filter(pl.col("removal_at") < holdout)
+        tiers = [(float(v), float(bps) / 1e4) for v, bps in cfg.universe.spread_tiers]
+        fee = float(cfg.costs.taker_fee_bps) / 1e4
+        lead = timedelta(days=PRE_DAYS + cfg.universe.volume_window_days + 5)
+        paths: list[CoinPath] = []
+        problems: list[str] = []
+        for row in found.iter_rows(named=True):
+            coin = row["coin"]
+            if coin in NOT_COINS or coin in NOT_COINS_EXTRA:
+                problems.append(f"{coin}: a stablecoin or fiat token, left out")
+                continue
+            start = row["announced_at"] - lead
+            end = min(row["removal_at"] + timedelta(days=1), holdout)
+            measured = coin_path(
+                coin,
+                row["article"],
+                row["announced_at"],
+                row["removal_at"],
+                bars_store.read(f"{coin}USDT", Interval.D1, start, end),
+                bars_store.read("BTCUSDT", Interval.D1, start, end),
+                taker_fee=fee,
+                tiers=tiers,
+                volume_window=cfg.universe.volume_window_days,
+            )
+            if isinstance(measured, str):
+                problems.append(measured)
+            else:
+                paths.append(measured)
+        result = run_delisting_study(paths, problems)
+    except (ConfigError, ValueError) as e:
+        typer.echo(str(e), err=True)
+        raise typer.Exit(code=1) from None
+    store.mark_backtested(s.slug, note.version)
+    typer.echo(format_delisting_study(result))
 
 
 @app.command("holdout-test")

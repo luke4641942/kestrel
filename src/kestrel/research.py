@@ -305,6 +305,7 @@ STUDIES = {
     "study:news-tone": "kestrel signal-study news-tone",
     "study:stablecoins": "kestrel signal-study stablecoins",
     "study:volatile-stablecoins": "kestrel volatile-study --signal stablecoins",
+    "study:delistings": "kestrel delisting-study",
 }
 """Raw-effect studies a note can name instead of a strategy: a question measured before any
 trading rule exists. A backtest refuses them; each runs through its own command."""
