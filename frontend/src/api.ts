@@ -232,6 +232,14 @@ export interface Validation {
   studies: Study[];
 }
 
+/** The trial log after one saved run or study (GET /validation/history). */
+export interface LuckPoint {
+  at: string;
+  trials: number;
+  /** Annual Sharpe the best of that many worthless strategies would reach by luck. */
+  luck_bar: number;
+}
+
 /** How every strategy is judged (kestrel.validation.rules) and the lessons so far. */
 export interface Rules {
   reviewed: string;
@@ -671,6 +679,7 @@ export const api = {
     request<Job>("/jobs/backtest", { method: "POST", body: JSON.stringify(body) }),
   backtests: () => request<RunSummary[]>("/backtests"),
   validation: () => request<Validation>("/validation"),
+  validationHistory: () => request<LuckPoint[]>("/validation/history"),
   decisions: () => request<Decision[]>("/decisions"),
   paper: () => request<PaperSummary[]>("/paper"),
   paperAccount: (name: string) => request<PaperDetail>(`/paper/${enc(name)}`),

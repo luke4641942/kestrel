@@ -81,3 +81,33 @@ def test_the_trial_set_counts_distinct_configurations_once() -> None:
     assert t.count == 2
     assert t.sharpe_std * DAY == pytest.approx(math.sqrt(2) * 0.3)  # stdev of 0.4 and 1.0
     assert trial_set([run()]).sharpe_std == 0
+
+
+def test_the_history_replays_the_trial_set_after_each_trial() -> None:
+    from datetime import UTC, datetime
+
+    from kestrel.validation.deflated import trial_history
+
+    runs = [
+        run(sharpe=1.0, created="2026-01-01T00:00:00+00:00", params={"a": 1}),
+        run(sharpe=-2.0, created="2026-01-02T00:00:00+00:00", params={"a": 2}),
+        run("buy-and-hold", sharpe=0.9, created="2026-01-03T00:00:00+00:00"),  # not a trial
+        run(sharpe=0.5, created="2026-01-04T00:00:00+00:00", params={"a": 3}),
+    ]
+    study = {
+        "created_at": "2026-01-05T00:00:00+00:00",
+        "strategy": "ma-trend",
+        "symbol": "ETHUSDT",
+        "interval": "1d",
+        "start": "2020-01",
+        "end": "2025-10",
+        "looks": [{"params": {"b": 1}, "sharpe": 0.1}, {"params": {"b": 2}, "sharpe": None}],
+    }
+    history = trial_history(runs, [study])
+    assert [m for m, _ in history] == [
+        datetime(2026, 1, d, tzinfo=UTC) for d in (1, 2, 4, 5)
+    ]  # the benchmark run adds no point
+    assert [t.count for _, t in history] == [1, 2, 3, 4]
+    assert history[-1][1] == trial_set(runs, [study])
+    assert history[1][1] == trial_set(runs[:2])
+    assert trial_history([], []) == []

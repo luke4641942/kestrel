@@ -27,7 +27,7 @@ describe("navigation", () => {
     const tabs = within(nav)
       .getAllByRole("link")
       .map((a) => a.textContent);
-    expect(tabs).toEqual(["Overview", "Trading", "Strategies", "Backtests", "Charts"]);
+    expect(tabs).toEqual(["Overview", "Trading", "Strategies", "Research", "Backtests", "Charts"]);
     fireEvent.click(within(nav).getByRole("button", { name: /More/ }));
     const more = screen.getAllByRole("menuitem").map((a) => a.textContent);
     expect(more).toEqual(["What a trade costs", "Rules", "Regimes", "Data"]);

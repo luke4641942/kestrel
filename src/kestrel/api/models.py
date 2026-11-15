@@ -664,6 +664,15 @@ class LessonOut(BaseModel):
     text: str
 
 
+class LuckPointOut(BaseModel):
+    """The trial log after one saved run or study: how many distinct configurations had
+    been tried, and the annual Sharpe the best of that many worthless ones would reach."""
+
+    at: datetime
+    trials: int
+    luck_bar: float
+
+
 class RulesOut(BaseModel):
     """How strategies are judged (kestrel.validation.rules) and what the research found."""
 

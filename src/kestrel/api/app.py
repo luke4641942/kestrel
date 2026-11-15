@@ -45,6 +45,7 @@ from kestrel.api.models import (
     IngestRequest,
     JobOut,
     LessonOut,
+    LuckPointOut,
     NoteOut,
     PaperDecisionOut,
     PaperDetailOut,
@@ -115,7 +116,13 @@ from kestrel.strategy import (
 )
 from kestrel.studies import cost_gate
 from kestrel.validation import rules
-from kestrel.validation.deflated import TrialSet, counts_as_trial, deflated_sharpe, trial_set
+from kestrel.validation.deflated import (
+    TrialSet,
+    counts_as_trial,
+    deflated_sharpe,
+    trial_history,
+    trial_set,
+)
 from kestrel.validation.holdout import HoldoutLog
 from kestrel.validation.log import ValidationLog
 from kestrel.validation.scorecard import grade
@@ -702,6 +709,14 @@ def create_app(
             expected_max_sharpe=t.expected_max_sharpe_annual,
             studies=[StudyOut.model_validate(x) for x in studies.studies()],
         )
+
+    @api.get("/validation/history")
+    def get_validation_history() -> list[LuckPointOut]:
+        """How the luck bar moved: the trial log after each run or study that logged one."""
+        return [
+            LuckPointOut(at=d, trials=t.count, luck_bar=t.expected_max_sharpe_annual)
+            for d, t in trial_history(runs.summaries(), studies.studies())
+        ]
 
     def _deflated(metas: list[dict[str, Any]], trials: TrialSet | None = None) -> list[RunSummary]:
         """Run summaries with each one's Sharpe deflated for every strategy tried."""

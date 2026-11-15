@@ -50,6 +50,7 @@ Decisions and rules live in CLAUDE.md; results in `research/findings.md`.
 - [ ] HMM regime filter (backlog S2) as a strategy: needs a note that passes the entry bar.
 
 ## Done recently
+- 2026-11-16 Research tab: every decision by family, the luck bar over time (`/api/validation/history`), the findings. Next: talk through the exploration/confirmation rule (Luke).
 - 2026-11-16 Trend-vol-target on gold, EUR, GBP: fails on all three; dropped (Luke). Tabs reordered (Luke).
 - 2026-11-16 YouTube leftovers tested and dropped (Luke): order flow (ETH, SOL 5m), CHoCH + FVG (SOL 5m NY), Set and Forget (BTC, ETH 1H) all fail test 1. Engine: resting limit orders; spread-band fix for sub-daily bars.
 - 2026-11-16 Hypothetical delisting short (perps): INSUFFICIENT; 12 coins in 6 announcements shortable to removal, -7.8% net at 2x, 3 of 12 liquidated.

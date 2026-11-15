@@ -29,6 +29,7 @@ from __future__ import annotations
 import math
 from collections.abc import Iterable
 from dataclasses import dataclass
+from datetime import UTC, datetime
 from statistics import NormalDist, stdev
 from typing import Any
 
@@ -90,6 +91,27 @@ def trial_set(runs: Iterable[dict[str, Any]], studies: Iterable[dict[str, Any]] 
                 latest[key] = look["sharpe"] / math.sqrt(DAYS_PER_YEAR)
     values = list(latest.values())
     return TrialSet(len(values), stdev(values) if len(values) > 1 else 0.0)
+
+
+def trial_history(
+    runs: Iterable[dict[str, Any]], studies: Iterable[dict[str, Any]] = ()
+) -> list[tuple[datetime, TrialSet]]:
+    """The trial set as it stood after each saved run or study that logged a trial,
+    oldest first: how the luck bar moved as strategies were tried. Each point is the same
+    ``trial_set`` over everything logged by then, so the last one is today's bar."""
+    runs, studies = list(runs), list(studies)
+
+    def at(item: dict[str, Any]) -> datetime:
+        return datetime.fromisoformat(str(item["created_at"])).astimezone(UTC)
+
+    moments = sorted(
+        {at(r) for r in runs if counts_as_trial(r)}
+        | {at(s) for s in studies if any(look["sharpe"] is not None for look in s["looks"])}
+    )
+    return [
+        (m, trial_set([r for r in runs if at(r) <= m], [s for s in studies if at(s) <= m]))
+        for m in moments
+    ]
 
 
 def deflated_sharpe(

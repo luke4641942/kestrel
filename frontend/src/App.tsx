@@ -9,19 +9,21 @@ import { Costs } from "./pages/Costs";
 import { Data } from "./pages/Data";
 import { Overview } from "./pages/Overview";
 import { Regimes } from "./pages/Regimes";
+import { Research } from "./pages/Research";
 import { Rules } from "./pages/Rules";
 import { Strategies } from "./pages/Strategies";
 import { Backtests } from "./pages/Backtests";
 import { Trading } from "./pages/Trading";
 import { useTheme } from "./theme";
 
-export type Route = "overview" | "strategies" | "data" | "costs" | "rules" | "regimes" | "charts" | "backtests" | "trading";
+export type Route = "overview" | "strategies" | "research" | "data" | "costs" | "rules" | "regimes" | "charts" | "backtests" | "trading";
 
 // Main tabs are about strategies and trading; reference and data pages live under More.
 const NAV: { route: Route; label: string; later?: string; more?: boolean }[] = [
   { route: "overview", label: "Overview" },
   { route: "trading", label: "Trading" },
   { route: "strategies", label: "Strategies" },
+  { route: "research", label: "Research" },
   { route: "backtests", label: "Backtests" },
   { route: "charts", label: "Charts" },
   { route: "costs", label: "What a trade costs", more: true },
@@ -202,6 +204,9 @@ export function App() {
       break;
     case "rules":
       page = <Rules />;
+      break;
+    case "research":
+      page = <Research />;
       break;
     case "strategies":
       page = <Strategies jobs={jobList} onJobStarted={onJobStarted} />;

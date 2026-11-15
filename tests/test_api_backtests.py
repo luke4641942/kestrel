@@ -203,6 +203,9 @@ def test_runs_are_deflated_for_every_strategy_tried(client: TestClient) -> None:
     assert all(r["deflated_trials"] == 2 for r in tried)
     detail = client.get(f"/api/backtests/{tried[0]['id']}").json()
     assert detail["deflated_trials"] == 2
+    history = client.get("/api/validation/history").json()
+    assert [p["trials"] for p in history] == [1, 2]  # the benchmark run adds no point
+    assert history[-1]["luck_bar"] == pytest.approx(validation["expected_max_sharpe"])
 
 
 def test_signals_carry_indicators_over_the_same_bars(client: TestClient) -> None:
