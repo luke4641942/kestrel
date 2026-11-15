@@ -19,6 +19,9 @@ Signals, each fixed before it is run:
 - ``news-tone``: the average tone of the coin's news coverage (GDELT, kestrel.data.news)
   over the last 7 known days against the 4 weeks before; on when it is better (coverage
   turning more positive). Tone runs negative overall, so only the change means anything.
+- ``stablecoins``: the total USD-pegged stablecoin supply (DefiLlama, kestrel.data.
+  stablecoins) known at the close against its value 4 weeks before; on when it grew (new
+  dollars entering crypto).
 
 Attention rises with price, so the result also reports how often the past week rose when
 the signal was on and when it was off: a signal that only repeats last week's move is
@@ -33,11 +36,11 @@ from datetime import timedelta
 
 import polars as pl
 
-from kestrel.data import attention, news
+from kestrel.data import attention, news, stablecoins
 from kestrel.studies.volatile_direction import CONFIDENCE, Sample, Side, compare
 
 FEAR_BELOW = 25
-SIGNALS = ("attention", "extreme-fear", "news-tone")
+SIGNALS = ("attention", "extreme-fear", "news-tone", "stablecoins")
 
 
 def attention_flags(bars: pl.DataFrame, views: pl.DataFrame) -> list[bool | None]:
@@ -73,6 +76,17 @@ def news_flags(bars: pl.DataFrame, tone: pl.DataFrame) -> list[bool | None]:
         out.append(
             sum(v for v in last7 if v is not None) / 7 > sum(v for v in prior if v is not None) / 28
         )
+    return out
+
+
+def stablecoin_flags(bars: pl.DataFrame, supply: pl.DataFrame) -> list[bool | None]:
+    """On when the stablecoin supply known at the close is above its value 4 weeks before."""
+    by_day = dict(zip(supply["date"].to_list(), supply["supply"].to_list(), strict=True))
+    out: list[bool | None] = []
+    for t in bars["open_time"].to_list():
+        latest = (t + timedelta(days=1) - stablecoins.KNOWN_AFTER).date()
+        now, then = by_day.get(latest), by_day.get(latest - timedelta(days=28))
+        out.append(None if now is None or then is None else now > then)
     return out
 
 

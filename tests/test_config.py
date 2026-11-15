@@ -163,3 +163,15 @@ def test_fingerprint_is_stable_and_tracks_changes(document: dict[str, Any]) -> N
 def test_round_quantity_floors_to_step(qty: str, expected: str) -> None:
     rules = InstrumentRules("BTCUSDT", Decimal("0.00001"), Decimal("0.00001"), Decimal(5))
     assert rules.round_quantity(Decimal(qty)) == Decimal(expected)
+
+
+def test_the_bnb_config_differs_from_the_main_one_only_in_the_fee() -> None:
+    import tomllib
+
+    root = Path(__file__).resolve().parents[1]
+    main = tomllib.loads((root / "kestrel.toml").read_text())
+    bnb = tomllib.loads((root / "kestrel.bnb.toml").read_text())
+    assert bnb["costs"].pop("taker_fee_bps") == 7.5
+    assert main["costs"].pop("taker_fee_bps") == 10
+    assert bnb == main
+    load_config(root / "kestrel.bnb.toml")  # valid on its own

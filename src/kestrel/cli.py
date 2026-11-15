@@ -42,7 +42,7 @@ from kestrel.backtest.runs import (
     strategy_panel,
 )
 from kestrel.config import Config, ConfigError, load_config
-from kestrel.data import attention, funding, live, news, sentiment
+from kestrel.data import attention, funding, live, news, sentiment, stablecoins
 from kestrel.data.binance_vision import BinanceVisionClient, Month, last_complete_month
 from kestrel.data.features import attach_features
 from kestrel.data.quality import check_klines
@@ -82,6 +82,7 @@ from kestrel.studies.weekly_signal import (
     format_signal_study,
     news_flags,
     run_signal_study,
+    stablecoin_flags,
 )
 from kestrel.validation.control import PATHS, format_control, run_control
 from kestrel.validation.holdout import HoldoutLog, format_holdout, holdout_test
@@ -517,9 +518,29 @@ def ingest_news(symbols: list[str], data_dir: DataDir = Path("data")) -> None:
         raise typer.Exit(code=1)
 
 
+@app.command("ingest-stablecoins")
+def ingest_stablecoins(data_dir: DataDir = Path("data")) -> None:
+    """Download the daily USD-pegged stablecoin supply from DefiLlama (from 2017-11)."""
+    try:
+        with httpx.Client(timeout=60) as http:
+            frame = stablecoins.fetch(http)
+    except (httpx.HTTPError, stablecoins.StablecoinError) as e:
+        typer.echo(f"stablecoins: {e}", err=True)
+        raise typer.Exit(code=1) from None
+    stablecoins.save(frame, data_dir)
+    missing = stablecoins.gaps(frame)
+    typer.echo(
+        f"{frame.height} days of stablecoin supply, {frame['date'].min()} to "
+        f"{frame['date'].max()}"
+        + (f"; {len(missing)} missing days (not filled)" if missing else "")
+    )
+
+
 @app.command("signal-study")
 def signal_study(
-    signal: Annotated[str, typer.Argument(help="attention, extreme-fear or news-tone.")],
+    signal: Annotated[
+        str, typer.Argument(help="attention, extreme-fear, news-tone or stablecoins.")
+    ],
     symbols: list[str],
     research: Annotated[
         str | None,
@@ -554,9 +575,12 @@ def signal_study(
             elif signal == "extreme-fear":
                 bars = attach_features(bars, ("fear_greed",), symbol, Interval.D1, data_dir)
                 flags = fear_flags(bars)
+            elif signal == "stablecoins":
+                flags = stablecoin_flags(bars, stablecoins.load(data_dir))
             else:
                 raise ValueError(
-                    f"unknown signal {signal!r}; one of attention, extreme-fear, news-tone"
+                    f"unknown signal {signal!r}; one of attention, extreme-fear, news-tone, "
+                    "stablecoins"
                 )
             markets[symbol.upper()] = (bars, flags)
         c = cfg.costs
