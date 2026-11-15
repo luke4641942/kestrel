@@ -43,6 +43,7 @@ from kestrel.config import Config
 from kestrel.data.schema import Interval
 from kestrel.execution.rebalance import rebalance
 from kestrel.execution.venue import SimVenue
+from kestrel.exploration import check_symbols
 from kestrel.provenance import CodeVersion, code_version
 from kestrel.strategy import (
     BracketStrategy,
@@ -207,7 +208,10 @@ def run_backtest(
 def check_inputs(
     bars: pl.DataFrame, config: Config, name: str, symbol: str, allow_holdout: bool
 ) -> bool:
-    """Checks every engine runs first. Returns whether the holdout is used."""
+    """Checks every engine runs first. Returns whether the holdout is used. A coin in the
+    exploration experiment's confirmation half is refused unless the config is unlocked
+    (kestrel.exploration)."""
+    check_symbols([symbol], config.split, config.confirmation_unlocked, name)
     if bars.height < 2:
         raise ValueError("need at least two bars: decide on one, fill on the next")
     if not bars["open_time"].is_sorted() or bars["open_time"].n_unique() != bars.height:

@@ -125,9 +125,28 @@ Never pipe check output through `tail` or similar inside an `&&` chain: it hides
   is not a variant of a rejected family (pullbacks, chart patterns, reversals), and how
   many runs it will use. More history (2017+) is preferred to more ideas.
 - **Trials.** Every setting tried counts (`kestrel.validation.log`, `data/validation/`).
+  Runs in the exploration half are not trials (see Exploration experiment).
   172 trials by 2026-11-14 (robustness grids count every setting), luck bar Sharpe ~1.45.
   The bar depends on how spread out the trials' Sharpes are as well as their number. It may
   be that nothing passes; that is an acceptable result.
+- **Exploration experiment (started 2026-11-16; a trial run of the method, Luke's
+  call; revert by deleting this section and its line under Trials).**
+  The coins in research/exploration/split.toml are split, fixed before any look:
+  - Exploration half: anything goes (grid searches, mining, machine learning,
+    overfitting). Runs are saved apart (data/exploration/), are not trials, and are
+    never evidence: nothing found there is a result.
+  - Confirmation half: locked like the holdout. The engine refuses it except
+    through a frozen confirmation note.
+  - At most 3 ideas graduate, each as a frozen note with its exact rule and a
+    who-pays story (outside evidence not required; a rejected family is allowed
+    but disclosed). Each is run once on the confirmation half under the full
+    scorecard, with its own trial count (only confirmation trials), not the main
+    luck bar.
+  - Pre-registered test of the method: it works if at least one graduate beats
+    holding at the same exposure on most confirmation coins and passes walk-forward.
+  - One round only. Then Luke decides: keep the method, or revert.
+  - The holdout rule is unchanged: a graduate that passes still needs its own
+    holdout test before it could be pursued.
 - **Don't rescue a strategy by tuning.** A setting chosen after seeing results is a new
   trial. A genuinely new reason means a new note version, and its runs count.
 - **Holdout starts 2025-11-01 00:00 UTC (fixed, pre-registered 2026-10-31).** All

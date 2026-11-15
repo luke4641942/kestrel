@@ -16,6 +16,7 @@ kestrel cost-gate BTCUSDT ETHUSDT SOLUSDT --interval 1m
 
 from __future__ import annotations
 
+import json
 import math
 import plistlib
 import shlex
@@ -59,6 +60,16 @@ from kestrel.execution.binance import (
     Credentials,
 )
 from kestrel.execution.venue import SimVenue
+from kestrel.exploration import (
+    CONFIRMATION_PREFIX,
+    MIN_MONTHS,
+    SEARCHED,
+    SEED,
+    ConfirmationLockedError,
+    Split,
+    make_split,
+    write_split,
+)
 from kestrel.regimes import format_regimes
 from kestrel.regimes import walk_forward as walk_regimes
 from kestrel.research import ResearchStore, run_target
@@ -285,14 +296,55 @@ def backtest(
         str,
         typer.Option(help="event (reference, exact) or vectorised (fast, weight strategies)."),
     ] = "event",
+    explore: Annotated[
+        bool,
+        typer.Option(
+            help="Exploration experiment: any strategy, no note, an exploration-half coin "
+            "only; saved under data/exploration, never a trial and never evidence."
+        ),
+    ] = False,
+    confirmation: Annotated[
+        bool,
+        typer.Option(
+            help="Exploration experiment: run a frozen confirmation note (slug starting "
+            "'confirmation-') on a confirmation-half coin; counted in its own trial pool."
+        ),
+    ] = False,
 ) -> None:
     """Backtest a strategy on stored bars and print its metrics."""
     if engine not in ("event", "vectorised"):
         raise typer.BadParameter("engine must be event or vectorised")
+    if explore and (confirmation or research):
+        raise typer.BadParameter(
+            "--explore runs without a note, and never on the confirmation half"
+        )
     notes = ResearchStore(research_dir)
     try:
-        key, link = run_target(notes, strategy, research)
+        cfg = load_config(config)
+        if explore or confirmation:
+            side = cfg.split.side(symbol) if cfg.split else None
+            if cfg.split is None:
+                raise ValueError("no exploration split yet; run kestrel exploration-split")
+            if explore and side != "exploration":
+                raise ValueError(f"{symbol.upper()} isn't in the exploration half")
+            if confirmation:
+                if not research or not research.startswith(CONFIRMATION_PREFIX):
+                    raise ValueError(
+                        f"--confirmation needs a frozen note whose slug starts with "
+                        f"{CONFIRMATION_PREFIX!r}"
+                    )
+                if side != "confirmation":
+                    raise ValueError(f"{symbol.upper()} isn't in the confirmation half")
+                cfg = cfg.unlock_confirmation()
+        if explore:
+            spec_for(strategy)  # any registered strategy, research ones included
+            key, link = strategy, None
+        else:
+            key, link = run_target(notes, strategy, research)
         params = resolve_params(key, _parse_params(param or []))
+    except ConfigError as e:
+        typer.echo(str(e), err=True)
+        raise typer.Exit(code=1) from None
     except ValueError as e:
         raise typer.BadParameter(str(e)) from None
     request = RunRequest(
@@ -306,21 +358,66 @@ def backtest(
         params=params,
         research=link,
         engine="vectorised" if engine == "vectorised" else "event",
+        confirmation=confirmation,
     )
     try:
-        cfg = load_config(config)
         outcome = execute(request, ParquetStore(data_dir), cfg)
-    except (HoldoutError, ConfigError, ValueError) as e:
+    except (HoldoutError, ConfigError, ValueError, ConfirmationLockedError) as e:
         typer.echo(str(e), err=True)
         raise typer.Exit(code=1) from None
     typer.echo(
         format_report(outcome.result, outcome.metrics, outcome.analysis, outcome.benchmark.asset)
     )
-    if save:
+    if save and explore:
+        saved = RunStore(Path(data_dir) / "exploration").save(outcome, cfg)
+        typer.echo(f"\nSaved apart as exploration run {saved}: not a trial, not evidence")
+    elif save:
         typer.echo(f"\nSaved as run {RunStore(data_dir).save(outcome, cfg)}")
         if link:
             notes.mark_backtested(*link)
             typer.echo(f"Logged as a trial of {link[0]} v{link[1]}")
+
+
+@app.command("exploration-split")
+def exploration_split(
+    data_dir: DataDir = Path("data"),
+    research_dir: ResearchDir = Path("research"),
+    config: Annotated[
+        Path, typer.Option("--config", envvar="KESTREL_CONFIG", help="Config file.")
+    ] = Path("kestrel.toml"),
+) -> None:
+    """Split the coins for the exploration experiment, once (CLAUDE.md). Reads only each
+    coin's months of daily bars and its median daily volume before the holdout, never its
+    returns; refuses if a split already exists."""
+    target = Path(research_dir) / "exploration" / "split.toml"
+    try:
+        cfg = load_config(config)
+        store = ParquetStore(data_dir)
+        path = manifest_path(store, Interval.D1)
+        if not path.exists():
+            raise ValueError("no daily coin universe stored; run kestrel ingest-universe")
+        holdout = cfg.backtest.holdout_start
+        volumes: dict[str, float] = {}
+        for symbol in sorted(json.loads(path.read_text())["coins"]):
+            if symbol in SEARCHED:
+                continue
+            months = [m for m in store.months(symbol, Interval.D1) if m < f"{holdout:%Y-%m}"]
+            if len(months) < MIN_MONTHS:
+                continue
+            bars = store.read(symbol, Interval.D1, None, holdout)
+            volumes[symbol] = float(bars["quote_volume"].median() or 0.0)  # type: ignore[arg-type]
+        exploration, confirmation = make_split(volumes)
+        write_split(
+            target,
+            Split(datetime.now(UTC).date(), SEED, frozenset(exploration), frozenset(confirmation)),
+        )
+    except (ConfigError, ValueError) as e:
+        typer.echo(str(e), err=True)
+        raise typer.Exit(code=1) from None
+    typer.echo(
+        f"{len(volumes)} eligible coins: {len(exploration)} to exploration, "
+        f"{len(confirmation)} to confirmation -> {target} (commit it; it is never rewritten)"
+    )
 
 
 @app.command("anchor-study")

@@ -120,6 +120,7 @@ from kestrel.validation.deflated import (
     TrialSet,
     counts_as_trial,
     deflated_sharpe,
+    pool_of,
     trial_history,
     trial_set,
 )
@@ -719,11 +720,18 @@ def create_app(
         ]
 
     def _deflated(metas: list[dict[str, Any]], trials: TrialSet | None = None) -> list[RunSummary]:
-        """Run summaries with each one's Sharpe deflated for every strategy tried."""
-        t = trials or trial_set(runs.summaries(), studies.studies())
+        """Run summaries with each one's Sharpe deflated for every strategy tried in its
+        pool (confirmation runs of the exploration experiment are counted apart)."""
+        main = trials or trial_set(runs.summaries(), studies.studies())
+        confirming: TrialSet | None = None
         out = []
         for meta in metas:
             m = meta["metrics"]
+            t = main
+            if pool_of(meta) == "confirmation":
+                if confirming is None:
+                    confirming = trial_set(runs.summaries(), studies.studies(), "confirmation")
+                t = confirming
             dsr = (
                 deflated_sharpe(m.get("sharpe"), m["days"], m.get("skew"), m.get("kurtosis"), t)
                 if counts_as_trial(meta)

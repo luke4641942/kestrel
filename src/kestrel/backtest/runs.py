@@ -79,6 +79,8 @@ class RunRequest:
     """(research slug, note version) this run tests, making it a logged trial."""
     engine: Literal["event", "vectorised"] = "event"
     """The event engine is the reference; the vectorised one is for fast research."""
+    confirmation: bool = False
+    """A frozen confirmation note's run in the exploration experiment: its own trial pool."""
 
 
 @dataclass(frozen=True)
@@ -277,6 +279,7 @@ class RunStore:
             "initial_cash": str(req.initial_cash),
             "account_currency": config.account_currency,
             "used_holdout": res.used_holdout,
+            "confirmation": req.confirmation,
             "config_fingerprint": res.config_fingerprint,
             "config": config.document,
             "code": asdict(res.code) if res.code else None,

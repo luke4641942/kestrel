@@ -44,6 +44,7 @@ from kestrel.backtest.spread import with_half_spread
 from kestrel.config import Config
 from kestrel.data.schema import Interval
 from kestrel.execution.venue import SimVenue
+from kestrel.exploration import check_symbols
 from kestrel.provenance import code_version
 from kestrel.strategy import UNIVERSE, LookaheadError, PortfolioStrategy
 
@@ -133,6 +134,12 @@ def run_portfolio(
     dates: list[datetime] = panel["open_time"].unique().sort().to_list()
     used_holdout = check_inputs(
         pl.DataFrame({"open_time": dates}), config, strategy.name, UNIVERSE, allow_holdout
+    )
+    check_symbols(
+        panel["symbol"].unique().to_list(),
+        config.split,
+        config.confirmation_unlocked,
+        strategy.name,
     )
     decisions = validated_decisions(strategy, panel)
     priced = with_half_spread(

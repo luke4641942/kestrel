@@ -13,11 +13,13 @@ from __future__ import annotations
 import hashlib
 import json
 import tomllib
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from datetime import UTC, date, datetime
 from decimal import ROUND_FLOOR, Decimal, InvalidOperation
 from pathlib import Path
 from typing import Any
+
+from kestrel.exploration import SPLIT_FILE, ExplorationError, Split, load_split
 
 
 class ConfigError(ValueError):
@@ -92,6 +94,16 @@ class Config:
     universe: UniverseConfig
     risk: RiskConfig
     document: dict[str, Any]
+    split: Split | None = None
+    """The exploration experiment's split (kestrel.exploration), read from beside the
+    config file; not part of the fingerprint, which covers the TOML document only."""
+    confirmation_unlocked: bool = False
+    """Set only for a frozen confirmation note's run: lets the engine use the confirmation
+    half. Never read from a file."""
+
+    def unlock_confirmation(self) -> Config:
+        """This config, allowed to touch the confirmation half (one confirmation run)."""
+        return replace(self, confirmation_unlocked=True)
 
     def rules_for(self, symbol: str) -> InstrumentRules:
         """A coin's own exchange rules if configured, else the universe's."""
@@ -124,7 +136,12 @@ def load_config(path: Path | str = "kestrel.toml") -> Config:
         raise ConfigError(f"config file not found: {path}") from None
     except tomllib.TOMLDecodeError as e:
         raise ConfigError(f"{path} is not valid TOML: {e}") from None
-    return parse_config(document)
+    config = parse_config(document)
+    try:
+        split = load_split(path.parent / SPLIT_FILE)
+    except ExplorationError as e:
+        raise ConfigError(str(e)) from None
+    return replace(config, split=split)
 
 
 def parse_config(document: dict[str, Any]) -> Config:

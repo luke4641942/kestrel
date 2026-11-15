@@ -31,7 +31,7 @@ from collections.abc import Iterable
 from dataclasses import dataclass
 from datetime import UTC, datetime
 from statistics import NormalDist, stdev
-from typing import Any
+from typing import Any, Literal
 
 from kestrel.backtest.metrics import DAYS_PER_YEAR
 from kestrel.backtest.runs import trial_key
@@ -63,20 +63,39 @@ class TrialSet:
         return self.expected_max_sharpe * math.sqrt(DAYS_PER_YEAR)
 
 
-def counts_as_trial(run: dict[str, Any]) -> bool:
+Pool = Literal["main", "confirmation"]
+
+
+def pool_of(item: dict[str, Any]) -> Pool:
+    """Which trial pool a run or study belongs to: confirmation runs of the exploration
+    experiment (kestrel.exploration) are counted apart from everything else."""
+    return "confirmation" if item.get("confirmation") else "main"
+
+
+def counts_as_trial(run: dict[str, Any], pool: Pool | None = None) -> bool:
+    """Whether a saved run is a trial: of its own pool, or of ``pool`` if given."""
+    if pool is not None and pool_of(run) != pool:
+        return False
     return run["strategy"] != "buy-and-hold" and not run.get("used_holdout", False)
 
 
-def trial_set(runs: Iterable[dict[str, Any]], studies: Iterable[dict[str, Any]] = ()) -> TrialSet:
+def trial_set(
+    runs: Iterable[dict[str, Any]],
+    studies: Iterable[dict[str, Any]] = (),
+    pool: Pool = "main",
+) -> TrialSet:
     """The trials among saved runs (``RunStore.summaries()``) and validation studies
     (``ValidationLog.studies()``): one Sharpe per distinct configuration, the latest of
-    each."""
+    each, within one pool (the main research, or the exploration experiment's
+    confirmation runs)."""
     latest: dict[tuple[Any, ...], float] = {}
     for run in sorted(runs, key=lambda r: r["created_at"]):
         sharpe = run["metrics"].get("sharpe")
-        if counts_as_trial(run) and sharpe is not None:
+        if counts_as_trial(run, pool) and sharpe is not None:
             latest[trial_key(run)] = sharpe / math.sqrt(DAYS_PER_YEAR)
     for study in sorted(studies, key=lambda s: s["created_at"]):
+        if pool_of(study) != pool:
+            continue
         for look in study["looks"]:
             if look["sharpe"] is not None:
                 key = (
@@ -97,16 +116,20 @@ def trial_history(
     runs: Iterable[dict[str, Any]], studies: Iterable[dict[str, Any]] = ()
 ) -> list[tuple[datetime, TrialSet]]:
     """The trial set as it stood after each saved run or study that logged a trial,
-    oldest first: how the luck bar moved as strategies were tried. Each point is the same
-    ``trial_set`` over everything logged by then, so the last one is today's bar."""
+    oldest first: how the main luck bar moved as strategies were tried. Each point is the
+    same ``trial_set`` over everything logged by then, so the last one is today's bar."""
     runs, studies = list(runs), list(studies)
 
     def at(item: dict[str, Any]) -> datetime:
         return datetime.fromisoformat(str(item["created_at"])).astimezone(UTC)
 
     moments = sorted(
-        {at(r) for r in runs if counts_as_trial(r)}
-        | {at(s) for s in studies if any(look["sharpe"] is not None for look in s["looks"])}
+        {at(r) for r in runs if counts_as_trial(r, "main")}
+        | {
+            at(s)
+            for s in studies
+            if pool_of(s) == "main" and any(look["sharpe"] is not None for look in s["looks"])
+        }
     )
     return [
         (m, trial_set([r for r in runs if at(r) <= m], [s for s in studies if at(s) <= m]))
