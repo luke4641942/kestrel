@@ -24,17 +24,23 @@ from collections.abc import Callable
 from datetime import UTC, datetime
 from decimal import Decimal
 from pathlib import Path
-from typing import Annotated
+from typing import Annotated, Any
 
 import httpx
 import polars as pl
 import typer
 
 from kestrel.backtest.costs import CostModel
-from kestrel.backtest.engine import HoldoutError, run_backtest
+from kestrel.backtest.engine import BacktestResult, HoldoutError, run_backtest
 from kestrel.backtest.metrics import Metrics, compute_metrics, format_report
 from kestrel.backtest.portfolio import run_portfolio
-from kestrel.backtest.runs import RunRequest, RunStore, execute, universe_panel
+from kestrel.backtest.runs import (
+    UNIVERSE_BENCHMARK,
+    RunRequest,
+    RunStore,
+    execute,
+    universe_panel,
+)
 from kestrel.config import Config, ConfigError, load_config
 from kestrel.data import attention, funding, live, news, sentiment
 from kestrel.data.binance_vision import BinanceVisionClient, Month, last_complete_month
@@ -58,7 +64,9 @@ from kestrel.regimes import walk_forward as walk_regimes
 from kestrel.research import ResearchStore, run_target
 from kestrel.strategy import (
     STRATEGIES,
+    UNIVERSE,
     BracketStrategy,
+    BuyAndHold,
     make_portfolio_strategy,
     make_strategy,
     resolve_params,
@@ -656,25 +664,49 @@ def walk_forward_cmd(
         cfg = load_config(config)
         first, last = Month.parse(start), Month.parse(end)
         after = last.next()
-        bars = ParquetStore(data_dir).read(
-            symbol,
-            interval,
-            datetime(first.year, first.month, 1, tzinfo=UTC),
-            datetime(after.year, after.month, 1, tzinfo=UTC),
-        )
-        bars = attach_features(bars, spec_for(key).features, symbol, interval, data_dir)
+        money = Decimal(str(cash))
+        plug: dict[str, Any] = {}
+        if spec_for(key).universe:
+            # A basket: each window's panel through the portfolio engine, against BTC held.
+            bars = universe_panel(ParquetStore(data_dir), interval, first, last)
+            btc = ParquetStore(data_dir).read(
+                UNIVERSE_BENCHMARK,
+                interval,
+                datetime(first.year, first.month, 1, tzinfo=UTC),
+                datetime(after.year, after.month, 1, tzinfo=UTC),
+            )
+
+            def hold_btc(t0: datetime, t2: datetime) -> BacktestResult:
+                window = btc.filter((pl.col("open_time") >= t0) & (pl.col("open_time") < t2))
+                return run_backtest(BuyAndHold(UNIVERSE_BENCHMARK), window, interval, cfg, money)
+
+            plug = {
+                "build": lambda p: make_portfolio_strategy(key, p),
+                "run": lambda s, frame: run_portfolio(s, frame, interval, cfg, money),
+                "hold": hold_btc,
+            }
+            symbol = UNIVERSE
+        else:
+            bars = ParquetStore(data_dir).read(
+                symbol,
+                interval,
+                datetime(first.year, first.month, 1, tzinfo=UTC),
+                datetime(after.year, after.month, 1, tzinfo=UTC),
+            )
+            bars = attach_features(bars, spec_for(key).features, symbol, interval, data_dir)
         result = walk_forward(
             key,
             symbol.upper(),
             bars,
             interval,
             cfg,
-            Decimal(str(cash)),
+            money,
             values,
             start=first,
             end=last,
             train_months=train_months,
             test_months=test_months,
+            **plug,
         )
     except (HoldoutError, ConfigError, ValueError) as e:
         typer.echo(str(e), err=True)

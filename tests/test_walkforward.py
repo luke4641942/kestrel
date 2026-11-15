@@ -278,3 +278,27 @@ def test_a_grid_point_that_never_trades_is_skipped_not_chosen() -> None:
     )  # fmt: skip
     assert all(f.chosen["slow"] == 10 for f in wf.folds)
     assert [p for p, _ in wf.looks] == [{"fast": 3, "slow": 10}]
+
+
+def test_the_cli_walks_a_coin_basket_forward_against_btc(tmp_path: Path) -> None:
+    from kestrel.research import SECTIONS, ResearchStore
+    from tests.backtest.test_universe_runs import _store_universe
+
+    _store_universe(tmp_path)
+    notes = ResearchStore(tmp_path / "r")
+    note = notes.create("basket")
+    notes.edit(note.slug, 1, {k: "x" for k in SECTIONS}, "xs-momentum")
+    notes.freeze(note.slug, 1)
+    args = [
+        "walk-forward", "UNIVERSE", "--strategy", "xs-momentum", "--research", note.slug,
+        "--grid", "min_history_days=30", "--interval", "1d", "--start", "2023-01",
+        "--end", "2023-12", "--train-months", "4", "--test-months", "2",
+        "--data-dir", str(tmp_path), "--config", REPO_CONFIG, "--research-dir", str(tmp_path / "r"),
+    ]  # fmt: skip
+    result = runner.invoke(app, args)
+    assert result.exit_code == 0, result.output
+    assert "UNIVERSE 1d" in result.output
+    (saved,) = ValidationLog(tmp_path).studies()
+    assert saved["symbol"] == "UNIVERSE"
+    assert saved["detail"]["folds"] == 4
+    assert saved["detail"]["benchmark_sharpe"] is not None  # BTC held over the test windows

@@ -21,6 +21,11 @@ warm when the test window opens; only the test window's daily returns count. A p
 it already holds at the window's start carries in at that day's mark (its entry cost
 fell in training).
 
+Coin baskets. A strategy that ranks the coin universe passes ``build``, ``run`` and
+``hold``: each window's panel runs through the portfolio engine, and it is compared with
+holding BTC (kestrel.backtest.runs.UNIVERSE_BENCHMARK), the benchmark its backtest and
+scorecard already use. One-coin strategies use the defaults: the coin itself, held.
+
 Every grid point is a trial: each is saved with its average training Sharpe
 (kestrel.validation.log) and counted by the deflated Sharpe. With no grid, nothing is
 chosen: the fixed rule is judged window by window (one look).
@@ -30,13 +35,15 @@ from __future__ import annotations
 
 import itertools
 import math
+from collections.abc import Callable
 from dataclasses import dataclass
 from datetime import UTC, datetime
 from decimal import Decimal
+from typing import Any
 
 import polars as pl
 
-from kestrel.backtest.engine import run_backtest
+from kestrel.backtest.engine import BacktestResult, run_backtest
 from kestrel.backtest.metrics import DAYS_PER_YEAR, compute_metrics, daily_equity
 from kestrel.config import Config
 from kestrel.data.binance_vision import Month
@@ -170,8 +177,25 @@ def walk_forward(
     end: Month,
     train_months: int,
     test_months: int,
+    build: Callable[[dict[str, int]], Any] | None = None,
+    run: Callable[[Any, pl.DataFrame], BacktestResult] | None = None,
+    hold: Callable[[datetime, datetime], BacktestResult] | None = None,
 ) -> WalkForward:
-    """Walk ``key`` forward over ``bars`` from ``start`` to ``end`` (inclusive months)."""
+    """Walk ``key`` forward over ``bars`` from ``start`` to ``end`` (inclusive months).
+
+    ``build`` makes the strategy for a grid point (a ValueError skips an impossible one),
+    ``run`` backtests it on a window's bars, and ``hold`` is the benchmark from one instant
+    to another. The defaults trade and hold ``symbol`` alone."""
+    if build is None:
+        build = lambda point: make_strategy(key, symbol, point)  # noqa: E731
+    if run is None:
+        run = lambda strategy, frame: run_backtest(strategy, frame, interval, config, cash)  # noqa: E731
+    if hold is None:
+
+        def hold(t0: datetime, t2: datetime) -> BacktestResult:
+            window = bars.filter((pl.col("open_time") >= t0) & (pl.col("open_time") < t2))
+            return run_backtest(BuyAndHold(symbol), window, interval, config, cash)
+
     if train_months < 1 or test_months < 1:
         raise ValueError("train and test windows must be at least a month")
     # No grid: nothing is chosen, and each test window simply judges the fixed rule (its
@@ -191,12 +215,10 @@ def walk_forward(
         best: tuple[float, dict[str, int]] | None = None
         for point in points:
             try:
-                strategy = make_strategy(key, symbol, point)
+                strategy = build(point)
             except ValueError:
                 continue  # an impossible combination, e.g. fast >= slow
-            sharpe = compute_metrics(
-                run_backtest(strategy, train_bars, interval, config, cash)
-            ).sharpe
+            sharpe = compute_metrics(run(strategy, train_bars)).sharpe
             if math.isnan(sharpe):
                 if len(points) == 1:  # a fixed rule is tested even if training can't score it
                     best = (sharpe, point)
@@ -207,9 +229,8 @@ def walk_forward(
         if best is None:
             raise ValueError(f"no grid point produced a Sharpe in the window from {train}")
 
-        chosen = make_strategy(key, symbol, best[1])
-        tested = daily_equity(run_backtest(chosen, both, interval, config, cash))
-        held = daily_equity(run_backtest(BuyAndHold(symbol), both, interval, config, cash))
+        tested = daily_equity(run(build(best[1]), both))
+        held = daily_equity(hold(t0, t2))
         folds.append(
             Fold(
                 train_start=t0,

@@ -91,10 +91,8 @@ Strategies, most to least promising:
       are still open after its drop: reject them, or leave them? Your call.
 
 ## Next
-- [ ] Walk-forward for basket strategies: `walk_forward` only runs one coin, so every universe
-      strategy stops at its first window. Run each window through the portfolio engine and
-      compare with the large-basket control. Then rerun the five basket walk-forwards
-      (same settings: no new trials). It can't turn any of today's fails into a pass.
+- [x] Walk-forward for basket strategies: built 2026-11-15 (portfolio engine per window, against
+      BTC held); the five basket walk-forwards rerun with the notes' settings.
 - [ ] Delistings (Luke's idea, 2026-11-14): a raw-effect study before any strategy.
       Needs Binance delisting announcement dates (no official history: scrape the public
       announcements catalog, "Delistings"). Measure the path from announcement to removal
