@@ -129,8 +129,8 @@ Never pipe check output through `tail` or similar inside an `&&` chain: it hides
   172 trials by 2026-11-14 (robustness grids count every setting), luck bar Sharpe ~1.45.
   The bar depends on how spread out the trials' Sharpes are as well as their number. It may
   be that nothing passes; that is an acceptable result.
-- **Exploration experiment (started 2026-11-16; a trial run of the method, Luke's
-  call; revert by deleting this section and its line under Trials).**
+- **Exploration experiment (started 2026-11-16, kept after round 1; Luke's call;
+  revert by deleting this section and its line under Trials).**
   The coins in research/exploration/split.toml are split, fixed before any look:
   - Exploration half: anything goes (grid searches, mining, machine learning,
     overfitting). Runs are saved apart (data/exploration/), are not trials, and are
@@ -144,7 +144,10 @@ Never pipe check output through `tail` or similar inside an `&&` chain: it hides
     luck bar.
   - Pre-registered test of the method: it works if at least one graduate beats
     holding at the same exposure on most confirmation coins and passes walk-forward.
-  - One round only. Then Luke decides: keep the method, or revert.
+  - One round only. Then Luke decides: keep the method, or revert. Round 1 (2026-11-16):
+    btc-regime-trend PASSED (83% of coins, 55% of windows), crash-rebound FAILED; Luke
+    kept the method. The confirmation half is now spent: a second round needs fresh,
+    unsearched data (new listings, or time going forward) and its own split.
   - The holdout rule is unchanged: a graduate that passes still needs its own
     holdout test before it could be pursued.
 - **Don't rescue a strategy by tuning.** A setting chosen after seeing results is a new

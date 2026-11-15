@@ -448,3 +448,12 @@ decision = "drop"
 decided = 2026-11-16
 reason = "Dropped (Luke, 2026-11-16). Unchanged from BTC, 2020-07 to 2023-12 (Binance stopped the pair): -21%, Sharpe -0.88 against -0.10 for GBP held; negative before costs; walk-forward 1 of 3. No holdout year exists."
 evidence = ["trend-vol-target-on-gold-eur-and-gbp-unseen"]
+
+[[decision]]
+strategy = "crash-rebound"
+name = "Altcoin crash rebound (exploration graduate)"
+market = "Confirmation-half altcoins 1d"
+decision = "drop"
+decided = 2026-11-16
+reason = "Dropped (Luke, 2026-11-16). Run once on the 180 unsearched confirmation coins: beat holding on 62% of coins but won only 36% of 771 walk-forward windows; FAIL by its pre-registered test. It looked good on the searched half and fell apart on fresh coins."
+evidence = ["confirmation-altcoin-crash-rebound"]

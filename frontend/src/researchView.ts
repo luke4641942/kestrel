@@ -92,6 +92,12 @@ export const FAMILIES: Family[] = [
     what: "Always in the market, sized down when it is volatile.",
     strategies: ["vol-hold"],
   },
+  {
+    key: "exploration",
+    name: "Exploration graduates",
+    what: "Rules found by searching half the altcoins, then run once on the unsearched half.",
+    strategies: ["btc-regime-trend", "crash-rebound"],
+  },
 ];
 
 const OTHER: Family = { key: "other", name: "Other", what: "Not yet given a family.", strategies: [] };

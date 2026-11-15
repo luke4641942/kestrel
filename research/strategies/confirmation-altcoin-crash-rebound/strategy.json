@@ -1,0 +1,28 @@
+{
+  "slug": "confirmation-altcoin-crash-rebound",
+  "name": "Confirmation: altcoin crash rebound",
+  "created_at": "2026-11-15T23:10:19.875309+00:00",
+  "status": "rejected",
+  "history": [
+    {
+      "status": "idea",
+      "at": "2026-11-15T23:10:19.875309+00:00",
+      "reason": "Created"
+    },
+    {
+      "status": "specified",
+      "at": "2026-11-15T23:14:54.540835+00:00",
+      "reason": "v1 frozen"
+    },
+    {
+      "status": "backtested",
+      "at": "2026-11-15T23:16:21.691203+00:00",
+      "reason": "first run on v1"
+    },
+    {
+      "status": "rejected",
+      "at": "2026-11-15T23:30:12.413541+00:00",
+      "reason": "FAIL, rejected with Luke's say-so (2026-11-16). Run once on the 180 confirmation-half coins: beat holding's Sharpe on 111 (62%) but won only 274 of 771 walk-forward windows (36%; more than half needed); median Sharpe 0.44. It looked good where it was searched (67% and 73%) and fell apart window by window on fresh coins."
+    }
+  ]
+}
