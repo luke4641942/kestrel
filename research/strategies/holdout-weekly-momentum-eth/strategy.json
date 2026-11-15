@@ -2,7 +2,7 @@
   "slug": "holdout-weekly-momentum-eth",
   "name": "Holdout: weekly momentum ETH",
   "created_at": "2026-11-14T10:13:53.034167+00:00",
-  "status": "backtested",
+  "status": "rejected",
   "history": [
     {
       "status": "idea",
@@ -18,6 +18,11 @@
       "status": "backtested",
       "at": "2026-11-14T10:22:52.251365+00:00",
       "reason": "first run on v1"
+    },
+    {
+      "status": "rejected",
+      "at": "2026-11-15T01:15:07.568938+00:00",
+      "reason": "Failed the holdout (-25.1% vs -16.7% for ETH at its exposure); weekly momentum dropped 2026-11-14. Cleanup (Luke, 2026-11-15)."
     }
   ]
 }

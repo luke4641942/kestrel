@@ -86,8 +86,6 @@ Strategies, most to least promising:
       395-day test (90%, a 6-month failure-only check) starts at its first decision.
 - [ ] Trend-vol-target BTC walk-forward note failed its pre-registered rule (2 of 7 windows,
       4 needed). Its status is still frozen: reject it, or keep it open? Your call.
-- [ ] Weekly momentum ETH's notes (`holdout-weekly-momentum-eth`, `weekly-momentum-eth-scorecard`)
-      are still open after its drop: reject them, or leave them? Your call.
 
 ## Next
 - [x] Walk-forward for basket strategies: built 2026-11-15 (portfolio engine per window, against
@@ -124,6 +122,7 @@ Strategies, most to least promising:
 - [ ] HMM regime filter (backlog S2) as a strategy: needs a note that passes the entry bar.
 
 ## Done recently
+- 2026-11-15 Strategies page cleaned up (Luke): three notes of dropped strategies rejected; trend walk-forward and rotation holdout notes kept.
 - 2026-11-15 Rotation + MACD: 7 of 9 tests (fails drawdown by 0.7 points, luck 57%); watch. BTC/gold rotation: dropped.
 - 2026-11-15 Monthly rotation holdout: FAILED (-31.5% vs -6.6% for BTC at its exposure); kept on watch (Luke).
 - 2026-11-15 Eight YouTube notes rejected (Luke): monthly rotation on watch, the other seven dropped.
