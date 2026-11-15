@@ -1,0 +1,15 @@
+{
+  "version": 1,
+  "created_at": "2026-11-14T12:08:33.554045+00:00",
+  "sections": {
+    "hypothesis": "Trend-vol-target on BTC, traded forward through Kestrel on Binance's Spot Testnet, (a) behaves exactly as the backtest model says it should, and (b) keeps beating BTC held at the same average exposure on data that didn't exist when it was designed.",
+    "rationale": "On pursue since 2026-11-14: it beat exposure-matched holding over 2020-25 and passed the holdout (-2.4% vs -8.9% in a falling year), but fails the luck test (deflated 28%) and won only 2 of 7 walk-forward windows. Only new data can settle luck. Its minimum track record (Bailey and Lopez de Prado, from its 2020-25 daily returns) is about 395 days for 90% confidence that its true Sharpe is above zero, and 650 for 95%; Luke chose 90% on 2026-11-14, so the test runs 395 days. The testnet proves the plumbing (signed orders, reconciliation, safety); its prices come from Binance's test order book, not the real market, so the strategy is judged on the model replay at real Binance prices, which makes the same decisions by construction.",
+    "rules": "One account, tvt-btc: kestrel paper open tvt-btc --symbol BTCUSDT --strategy trend-vol-target --research <this note> --venue testnet --cash 330, then kestrel paper schedule tvt-btc (hourly at 10 past; idempotent). Default settings (20/60/120-day votes, 30-day volatility, 50% target), daily bars, the [risk] limits in kestrel.toml. Runs 395 days from its first decision. Reviewed every 3 months with kestrel paper track tvt-btc and the Trading page. Interim reviews report; only the 6-month check can end it, and only for failure (no stopping early on a good run).",
+    "falsification": "Plumbing, at every review: any decision that differs from the model is a bug, fixed before the test continues (not a strategy failure); missed days must stay under 5% of days handled. Early failure, at 182 days only: if the model replay is behind BTC held at its average exposure on both Sharpe and return, Claude recommends stopping and Luke decides; a good result at 182 days ends nothing. Strategy, at 395 days: the model replay must (1) have a probabilistic Sharpe of at least 90% (true Sharpe above zero), (2) beat BTC held at its average exposure over the whole period, by Sharpe if holding's Sharpe is positive and by return if it isn't (the holdout's rule), and (3) keep its worst drawdown no deeper than 50%. Failing any one means Claude recommends drop and Luke decides. A safety halt (the 50% drawdown limit) pauses the test for Luke to decide; it isn't resumed without a recorded reason.",
+    "parameters": "fast_days 20, mid_days 60, slow_days 120, vol_days 30, target_vol_pct 50 (the defaults; never changed during the test).",
+    "costs": "Modelled at about 22 bps a round trip; every fill's real cost is tracked against the model. Testnet fees and prices aren't real costs; only live fills would measure those. Paper trading is not a trial: nothing is chosen from it."
+  },
+  "implementation": "trend-vol-target",
+  "frozen_at": "2026-11-15T06:52:52.764548+00:00",
+  "change_reason": null
+}

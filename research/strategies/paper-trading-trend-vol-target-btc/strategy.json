@@ -1,0 +1,18 @@
+{
+  "slug": "paper-trading-trend-vol-target-btc",
+  "name": "Paper trading: trend-vol-target BTC",
+  "created_at": "2026-11-14T12:08:33.554045+00:00",
+  "status": "specified",
+  "history": [
+    {
+      "status": "idea",
+      "at": "2026-11-14T12:08:33.554045+00:00",
+      "reason": "Created"
+    },
+    {
+      "status": "specified",
+      "at": "2026-11-15T06:52:52.764557+00:00",
+      "reason": "v1 frozen"
+    }
+  ]
+}

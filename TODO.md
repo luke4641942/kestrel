@@ -78,9 +78,10 @@ Strategies, most to least promising:
   revisit only if both pass on their own.
 
 ## Waiting on Luke
-- [ ] Freeze the three paper-trading notes: `paper-trading-trend-vol-target-btc`, `-eth`, `-sol`
-      (395 days each, own testnet account and 330 USDT). Then Claude opens tvt-btc, tvt-eth and
-      tvt-sol and writes their schedules; Luke loads the launchctl jobs it prints.
+- [ ] Load the three paper jobs (Luke): `launchctl bootstrap gui/$(id -u)
+      ~/Library/LaunchAgents/com.kestrel.paper.tvt-{btc,eth,sol}.plist`, one command each.
+      Accounts tvt-btc, tvt-eth, tvt-sol are open (testnet, 330 USDT each, first decision the
+      2026-11-14 bar). 395 days; reviews every 3 months; failure-only check at 182 days.
 
 ## Next
 - [ ] Testnet keys from the macOS keychain, not ~/.zshrc (Luke, 2026-11-15). Luke adds them
@@ -127,6 +128,7 @@ Strategies, most to least promising:
 - [ ] HMM regime filter (backlog S2) as a strategy: needs a note that passes the entry bar.
 
 ## Done recently
+- 2026-11-15 Paper trading opened: tvt-btc, tvt-eth, tvt-sol on the testnet, schedules written. Trend-trio: watch.
 - 2026-11-15 Trend-vol-target on ETH and SOL: pursue (Luke), after passing their holdouts.
 - 2026-11-15 Trend-vol-target finished on ETH and SOL: both match BTC's standard; holdout notes drafted. Strategies page cleaned (three rotation notes rejected).
 - 2026-11-15 Three stablecoin pairings tested: two dropped, the volatility-sized hold folded into the stablecoin watch (Luke).
