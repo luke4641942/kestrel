@@ -26,6 +26,7 @@ from kestrel.strategies.basket import LargeCoinBasket
 from kestrel.strategies.basket_breakout import BasketBreakout
 from kestrel.strategies.bollinger_pullback import BollingerPullback
 from kestrel.strategies.brake import TrendVolTargetBrake, WeeklyMomentumBrake
+from kestrel.strategies.choch_fvg import ChochFvg
 from kestrel.strategies.eth_btc import BtcEthHalf, EthBtcValue
 from kestrel.strategies.funding import FundingHold, FundingTrend
 from kestrel.strategies.levels import LevelBreakout, LevelRetest
@@ -98,7 +99,13 @@ class BracketStrategy(Protocol):
     ``brackets`` returns one row per bar with columns ``enter`` (go long at the next
     open), ``stop`` and ``target`` (price levels, set on entry rows), and optionally
     ``exit`` (sell an open trade at the next open, e.g. a time exit). ``target`` may be
-    null: the trade then ends at its stop, an exit signal or the end of the data. The
+    null: the trade then ends at its stop, an exit signal or the end of the data.
+
+    Optionally ``limit`` and ``valid_bars`` on an entry row make it a resting buy limit
+    instead of a market order: it waits for ``valid_bars`` bars after the signal, fills
+    on the first bar whose low reaches it (at the open if the bar opens below it), and is
+    replaced by a newer entry. On the bar it fills only the stop can end the trade: when
+    the high came is unknown, so a target touched that bar doesn't count. The
     strategy decides *where* the levels are; the engine decides *how much* to buy, from
     the risk per trade in kestrel.toml and the distance to the stop, so a stop is
     always required.
@@ -110,8 +117,15 @@ class BracketStrategy(Protocol):
     def brackets(self, bars: pl.DataFrame) -> pl.DataFrame: ...
 
 
-BRACKET_SCHEMA = {"enter": pl.Boolean, "stop": pl.Float64, "target": pl.Float64, "exit": pl.Boolean}
-OPTIONAL_BRACKET_COLUMNS = {"exit"}
+BRACKET_SCHEMA = {
+    "enter": pl.Boolean,
+    "stop": pl.Float64,
+    "target": pl.Float64,
+    "exit": pl.Boolean,
+    "limit": pl.Float64,
+    "valid_bars": pl.Int64,
+}
+OPTIONAL_BRACKET_COLUMNS = {"exit", "limit", "valid_bars"}
 
 
 class BuyAndHold:
@@ -599,6 +613,20 @@ STRATEGIES: dict[str, StrategySpec] = {
             ),
         ),
         StrategySpec(
+            "choch-fvg",
+            "research",
+            "A bullish change of character at the New York open (13:00-16:00 UTC), then a "
+            "resting limit at the leg's fair value gap midpoint; stop at the gap's first bar's "
+            "low, target_r target. Research: runs only through its frozen note.",
+            ChochFvg,
+            (
+                Param("swing_bars", 3, 2, 6, "Bars either side of a swing high"),
+                Param("min_gap_atr_tenths", 3, 1, 6, "Smallest gap, tenths of ATR(14)"),
+                Param("expiry_bars", 6, 3, 12, "Bars the limit order rests"),
+                Param("target_r", 4, 2, 6, "Target as a multiple of the risk to the stop"),
+            ),
+        ),
+        StrategySpec(
             "order-flow",
             "research",
             "Order flow Model 2: a failed breakdown below the previous UTC day's value area, "
@@ -962,6 +990,18 @@ def validated_brackets(
     )
     if bad.height:
         raise ValueError(f"{strategy.name}: every entry needs 0 < stop, and stop < target if set")
+    limits = entries.filter(pl.col("limit").is_not_null())
+    bad_limits = limits.filter(
+        pl.col("limit").is_nan()
+        | (pl.col("limit") <= pl.col("stop"))
+        | (pl.col("limit") >= pl.col("target"))
+        | pl.col("valid_bars").is_null()
+        | (pl.col("valid_bars") < 1)
+    )
+    if bad_limits.height:
+        raise ValueError(
+            f"{strategy.name}: a limit entry needs stop < limit < target and valid_bars >= 1"
+        )
 
     def compute(b: pl.DataFrame) -> pl.DataFrame:
         return _normalised_brackets(strategy.name, strategy.brackets(b))
@@ -971,7 +1011,8 @@ def validated_brackets(
 
 
 def _normalised_brackets(name: str, frame: pl.DataFrame) -> pl.DataFrame:
-    """Every bracket column, in schema order and type, with an absent ``exit`` as False."""
+    """Every bracket column, in schema order and type: an absent ``exit`` is False, an
+    absent ``limit`` or ``valid_bars`` null (market entries)."""
     columns = set(frame.columns)
     required = set(BRACKET_SCHEMA) - OPTIONAL_BRACKET_COLUMNS
     if not required <= columns <= set(BRACKET_SCHEMA):
@@ -981,6 +1022,9 @@ def _normalised_brackets(name: str, frame: pl.DataFrame) -> pl.DataFrame:
         )
     if "exit" not in columns:
         frame = frame.with_columns(exit=pl.lit(False))
+    for optional in ("limit", "valid_bars"):
+        if optional not in columns:
+            frame = frame.with_columns(pl.lit(None).alias(optional))
     frame = frame.select([pl.col(c).cast(t) for c, t in BRACKET_SCHEMA.items()])
     return frame.with_columns(pl.col("enter").fill_null(False), pl.col("exit").fill_null(False))
 

@@ -122,3 +122,36 @@ class FixedBrackets:
         if self.exits is not None:
             out = out.with_columns(exit=pl.Series([i in self.exits for i in range(n)]))
         return out
+
+
+class FixedLimits:
+    """Replays fixed limit entries: ``entries`` maps bar index -> (limit, stop, target,
+    valid_bars). Decided at that bar's close; the order rests from the next bar."""
+
+    def __init__(
+        self, entries: dict[int, tuple[float, float, float | None, int]], symbol: str = "BTCUSDT"
+    ) -> None:
+        self.entries, self.symbol, self.name = entries, symbol, "fixed limits"
+
+    def brackets(self, frame: pl.DataFrame) -> pl.DataFrame:
+        n = frame.height
+
+        def col(k: int) -> list[float | int | None]:
+            return [self.entries[i][k] if i in self.entries else None for i in range(n)]
+
+        return pl.DataFrame(
+            {
+                "enter": [i in self.entries for i in range(n)],
+                "limit": col(0),
+                "stop": col(1),
+                "target": col(2),
+                "valid_bars": col(3),
+            },
+            schema={
+                "enter": pl.Boolean,
+                "limit": pl.Float64,
+                "stop": pl.Float64,
+                "target": pl.Float64,
+                "valid_bars": pl.Int64,
+            },
+        )

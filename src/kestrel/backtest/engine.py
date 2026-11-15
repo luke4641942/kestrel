@@ -311,7 +311,7 @@ def _run_brackets(
     opens, highs, lows, closes = prices("open"), prices("high"), prices("low"), prices("close")
     volumes = prices("quote_volume")
     enters, stops, targets = frame["enter"].to_list(), levels("stop"), levels("target")
-    exits = frame["exit"].to_list()
+    exits, limits, valid = frame["exit"].to_list(), levels("limit"), frame["valid_bars"].to_list()
     times = bars["open_time"].to_list()
 
     def close_trade(trade: _OpenTrade, exit_fill: Fill, at: datetime, reason: ExitReason) -> None:
@@ -333,7 +333,47 @@ def _run_brackets(
             )
         )
 
+    def enter(
+        i: int, price: Decimal, stop: Decimal, target: Decimal | None, what: str
+    ) -> _OpenTrade | None:
+        """Buy at ``price`` on bar ``i``, sized to risk the configured share of cash."""
+        last_volume, last_spread = volumes[i - 1], spreads[i - 1]
+        if not (stop < price and (target is None or price < target)):
+            reason = (
+                f"{what}, outside stop {stop} and target {target}; skipped"
+                if target is not None
+                else f"{what}, at or below stop {stop}; skipped"
+            )
+            result.rejections.append(
+                RejectionRecord(times[i], Rejection(symbol, Side.BUY, Decimal(0), reason))
+            )
+            return None
+        cash = venue.cash()
+        wanted = risk_fraction * cash / (price - stop)
+        rate = (
+            model.cost_rate(Side.BUY, min(wanted * price, cash), last_volume, last_spread)
+            if last_volume > 0
+            else Decimal(0)
+        )
+        affordable = cash / (1 + rate) / price
+        venue.set_market(symbol, price, last_volume, last_spread)
+        order = venue.submit_market(symbol, Side.BUY, min(wanted, affordable))
+        if not isinstance(order, Fill):
+            result.rejections.append(RejectionRecord(times[i], order))
+            return None
+        result.fills.append(FillRecord(times[i], order))
+        return _OpenTrade(
+            entry=order,
+            entry_time=times[i],
+            stop=stop,
+            target=target,
+            risk=order.quantity * (price - stop),
+            capped=affordable < wanted,
+        )
+
     open_trade: _OpenTrade | None = None
+    pending: tuple[Decimal, Decimal, Decimal | None, int] | None = None
+    """A resting limit order: (limit, stop, target, the last bar it may fill on)."""
     rows: list[Row] = [(result.initial_cash, result.initial_cash, Decimal(0))]
     for i in range(1, bars.height):
         o, h, lo, c = opens[i], highs[i], lows[i], closes[i]
@@ -349,47 +389,27 @@ def _run_brackets(
             else:
                 result.rejections.append(RejectionRecord(times[i], sell))
 
-        # 1. Entry at the open on the previous close's signal.
+        # 1. Entry on the previous close's signal: a market order fills at this open; a
+        # limit order rests (replacing an older one) and fills when a bar reaches it.
+        filled_on_limit = False
         if open_trade is None and enters[i - 1]:
             stop, target = stops[i - 1], targets[i - 1]
             assert stop is not None  # validated_brackets guarantees a stop on entry rows
-            if not (stop < o and (target is None or o < target)):
-                result.rejections.append(
-                    RejectionRecord(
-                        times[i],
-                        Rejection(
-                            symbol,
-                            Side.BUY,
-                            Decimal(0),
-                            f"opened at {o}, outside stop {stop} and target {target}; skipped"
-                            if target is not None
-                            else f"opened at {o}, at or below stop {stop}; skipped",
-                        ),
-                    )
-                )
+            limit = limits[i - 1]
+            if limit is not None:
+                pending = (limit, stop, target, i - 1 + int(valid[i - 1]))
             else:
-                cash = venue.cash()
-                wanted = risk_fraction * cash / (o - stop)
-                rate = (
-                    model.cost_rate(Side.BUY, min(wanted * o, cash), last_volume, last_spread)
-                    if last_volume > 0
-                    else Decimal(0)
-                )
-                affordable = cash / (1 + rate) / o
-                venue.set_market(symbol, o, last_volume, last_spread)
-                order = venue.submit_market(symbol, Side.BUY, min(wanted, affordable))
-                if isinstance(order, Fill):
-                    result.fills.append(FillRecord(times[i], order))
-                    open_trade = _OpenTrade(
-                        entry=order,
-                        entry_time=times[i],
-                        stop=stop,
-                        target=target,
-                        risk=order.quantity * (o - stop),
-                        capped=affordable < wanted,
-                    )
-                else:
-                    result.rejections.append(RejectionRecord(times[i], order))
+                pending = None
+                open_trade = enter(i, o, stop, target, f"opened at {o}")
+        if open_trade is None and pending is not None:
+            limit, stop, target, last_bar = pending
+            if i > last_bar:
+                pending = None
+            elif lo <= limit:
+                pending = None
+                price = min(o, limit)
+                open_trade = enter(i, price, stop, target, f"limit filled at {price}")
+                filled_on_limit = open_trade is not None
 
         # 2. Exits inside the bar. The stop is checked first: when one bar reaches both
         # levels its order is unknown, so assume the worse outcome.
@@ -397,8 +417,9 @@ def _run_brackets(
             exit_at: Decimal | None = None
             reason: ExitReason = "stop"
             if lo <= open_trade.stop:
-                exit_at = o if o <= open_trade.stop else open_trade.stop  # a gap fills at the open
-            elif open_trade.target is not None and h >= open_trade.target:
+                gapped = o <= open_trade.stop and not filled_on_limit
+                exit_at = o if gapped else open_trade.stop  # a gap fills at the open
+            elif open_trade.target is not None and h >= open_trade.target and not filled_on_limit:
                 exit_at, reason = (o if o >= open_trade.target else open_trade.target), "target"
             if exit_at is not None:
                 venue.set_market(symbol, exit_at, last_volume, last_spread)

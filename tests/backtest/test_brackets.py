@@ -14,7 +14,7 @@ from kestrel.backtest.engine import run_backtest
 from kestrel.backtest.metrics import compute_metrics, format_report
 from kestrel.data.schema import Interval
 from kestrel.strategy import ChannelBreakout, LookaheadError, validated_brackets
-from tests.backtest.helpers import FixedBrackets, bars, config
+from tests.backtest.helpers import FixedBrackets, FixedLimits, bars, config
 
 D = Decimal
 H4 = Interval.H4
@@ -335,3 +335,61 @@ def test_a_failed_exit_keeps_the_trade_and_records_why() -> None:
     assert result.rejections[0].time == frame["open_time"][3]
     assert "below the minimum" in result.rejections[0].rejection.reason
     assert result.trades == []  # never closed: kept, not silently dropped
+
+
+def limit_run(frame: pl.DataFrame, entries: dict[int, tuple[float, float, float | None, int]]):  # type: ignore[no-untyped-def]
+    return run_backtest(FixedLimits(entries), frame, H4, config(costs=False), D(1000))
+
+
+def test_a_limit_fills_when_a_bar_reaches_it_and_is_sized_from_its_price() -> None:
+    # Limit 98, stop 93: 5 of risk a unit, so 2 units. Bar 1 stays above 98; bar 2 reaches it.
+    frame = bars(
+        [100, 100, 99, 104, 105],
+        highs=[100, 101, 100, 109, 106],
+        lows=[99, 99, 97, 103, 104],
+    )
+    (t,) = limit_run(frame, {0: (98.0, 93.0, 108.0, 3)}).trades
+    assert t.entry_price == D(98)
+    assert t.quantity == D(2)
+    assert t.entry_time == frame["open_time"][2]
+    assert t.exit_reason == "target"  # bar 3 reaches 108
+    assert t.r_multiple == D(2)
+
+
+def test_a_bar_opening_below_the_limit_fills_at_its_open() -> None:
+    frame = bars([100, 96, 104], highs=[100, 97, 109], lows=[99, 95, 103])
+    (t,) = limit_run(frame, {0: (98.0, 93.0, 108.0, 3)}).trades
+    assert t.entry_price == D(96)
+
+
+def test_an_unfilled_limit_expires() -> None:
+    frame = bars([100, 100, 100, 100, 97], highs=[101] * 5, lows=[99, 99, 99, 99, 96])
+    assert limit_run(frame, {0: (98.0, 93.0, 108.0, 3)}).trades == []  # bar 4 is too late
+    assert len(limit_run(frame, {0: (98.0, 93.0, 108.0, 4)}).trades) == 1
+
+
+def test_on_the_fill_bar_a_target_doesnt_count_but_a_stop_does() -> None:
+    # Bar 1 reaches the limit and the target: the high may have come first, so no target.
+    frame = bars([100, 100, 104], highs=[100, 110, 105], lows=[99, 97, 103])
+    (t,) = limit_run(frame, {0: (98.0, 93.0, 108.0, 3)}).trades
+    assert t.exit_reason == "end of data"
+    stopped = bars([100, 100, 100], highs=[100, 101, 100], lows=[99, 92, 99])
+    (s,) = limit_run(stopped, {0: (98.0, 93.0, 108.0, 3)}).trades
+    assert s.exit_reason == "stop"
+    assert s.exit_price == D(93)  # the stop, not the bar's open above the limit
+    assert s.r_multiple == D(-1)
+
+
+def test_a_newer_limit_replaces_a_waiting_one() -> None:
+    frame = bars([100.0, 100.0, 100.0, 100.0], highs=[101.0] * 4, lows=[99.0, 99.0, 98.5, 99.0])
+    found = limit_run(frame, {0: (98.0, 93.0, 108.0, 3), 1: (99.0, 94.0, 109.0, 3)}).trades
+    (t,) = found
+    assert t.entry_price == D(99)
+
+
+def test_a_limit_must_sit_between_its_stop_and_target() -> None:
+    frame = bars([100, 100, 100], highs=[101] * 3, lows=[99] * 3)
+    with pytest.raises(ValueError, match="stop < limit < target"):
+        validated_brackets(FixedLimits({0: (92.0, 93.0, 108.0, 3)}), frame)
+    with pytest.raises(ValueError, match="valid_bars"):
+        validated_brackets(FixedLimits({0: (98.0, 93.0, 108.0, 0)}), frame)

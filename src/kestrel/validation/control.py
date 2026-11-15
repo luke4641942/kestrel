@@ -4,7 +4,8 @@ A bracket that wins 4R and loses 1R looks good on its best days whatever picks t
 The control keeps everything about the strategy except *when* it enters: the same number
 of entry signals, at bars drawn at random from the stretch where the strategy itself
 signalled, each given one of the strategy's own stop and target distances (as fractions
-of the signal close, shuffled). The same engine then sizes, fills and costs them exactly
+of the signal close, or of the limit price for a limit entry; shuffled), entered at the
+next open. The same engine then sizes, fills and costs them exactly
 as it does the strategy. Long only, like every Kestrel strategy, so only the entry time
 is random. Exit signals are not copied: a random trade ends at its stop, its target or
 the end of the data.
@@ -53,14 +54,14 @@ def brackets_of(frame: pl.DataFrame, bars: pl.DataFrame) -> tuple[list[int], lis
     rows: list[int] = []
     shapes: list[Bracket] = []
     closes = bars["close"].to_list()
-    for i, (enter, stop, target) in enumerate(
-        zip(frame["enter"], frame["stop"], frame["target"], strict=True)
+    limits = frame["limit"] if "limit" in frame.columns else [None] * frame.height
+    for i, (enter, stop, target, limit) in enumerate(
+        zip(frame["enter"], frame["stop"], frame["target"], limits, strict=True)
     ):
         if enter and stop is not None:
+            ref = closes[i] if limit is None else limit  # a limit's levels are from its price
             rows.append(i)
-            shapes.append(
-                Bracket(1 - stop / closes[i], None if target is None else target / closes[i] - 1)
-            )
+            shapes.append(Bracket(1 - stop / ref, None if target is None else target / ref - 1))
     return rows, shapes
 
 

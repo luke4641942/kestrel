@@ -125,3 +125,15 @@ def test_the_command_saves_a_study(tmp_path: Path) -> None:
     weights = CliRunner().invoke(app, [*args[:3], "ma-trend", *args[4:]])
     assert weights.exit_code == 1
     assert "holds weights, not brackets" in weights.output
+
+
+def test_a_limit_entrys_bracket_is_measured_from_its_limit_price() -> None:
+    from kestrel.validation.control import brackets_of
+    from tests.backtest.helpers import FixedLimits, bars
+
+    frame = bars([100.0, 100.0, 100.0], highs=[101.0] * 3, lows=[99.0] * 3)
+    signals = FixedLimits({0: (98.0, 93.1, 117.6, 3)}).brackets(frame)
+    rows, shapes = brackets_of(signals, frame)
+    assert rows == [0]
+    assert shapes[0].stop == pytest.approx(1 - 93.1 / 98)
+    assert shapes[0].target == pytest.approx(117.6 / 98 - 1)
