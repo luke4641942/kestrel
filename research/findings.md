@@ -135,8 +135,11 @@ holding the same coin at the strategy's average exposure.
 |---|---|---|---|---|---|
 | Trend-vol-target, BTC | -2.4% | -8.9% (33%) | -11% | -47% | Pass |
 | Weekly momentum, ETH | -25.1% | -16.7% (43%) | -35% | -60% | Fail |
+| Monthly rotation BTC/ETH/SOL, 180 days (read 2026-11-15) | -31.5% | -6.6% for BTC (25%) | -32% | -47% | Fail |
 
-On Sharpe the verdicts are the same (trend -0.06 vs -0.57 for holding; weekly -0.74 vs -0.57).
+On Sharpe the verdicts are the same (trend -0.06 vs -0.57 for holding; weekly -0.74 vs -0.57;
+rotation -1.21 vs -0.57 for BTC). Rotation lost more than BTC held in full while only a
+quarter invested: its months in the market were in ETH and SOL, which fell further.
 One falling year is a small sample: the pass is support for paper trading, not proof of an
 edge, and the holdout can't be used again for either strategy.
 
@@ -189,6 +192,12 @@ Each strategy was judged by its own note's pass test, written before it ran. Fro
 2026-11-14 every strategy is judged on one scorecard instead.
 
 ## Mistakes in the process, and what changed
+
+- **Duplicate bars in Binance's archive (found 2026-11-15).** The daily files for AXSUSDT
+  2026-02 (the 10th) and UMAUSDT 2026-07 (the 15th) each held one day twice, identical in
+  every column. The portfolio engine refused the coin basket until it was fixed; the extra
+  copies were removed by hand and recorded here. No other daily file has duplicates. Both
+  days are in the holdout, so no earlier result was affected.
 
 - **A faulty spread model** made cross-sectional momentum v1's result meaningless. It was
   voided, the spread model replaced (estimated per coin from daily highs and lows, with a

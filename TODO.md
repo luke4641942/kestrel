@@ -78,6 +78,8 @@ Strategies, most to least promising:
   revisit only if both pass on their own.
 
 ## Waiting on Luke
+- [ ] Monthly rotation FAILED its holdout (2026-11-15): -31.5% vs -6.6% for BTC at its 25%
+      exposure. Its note's rule says fail; it is still labelled watch. Drop it? Your call.
 - [ ] Read and freeze `paper-trading-trend-vol-target-btc` (drafted 2026-11-14). Then:
       `kestrel paper open tvt-btc ... --venue testnet` (the note's rules), `kestrel paper
       schedule tvt-btc`, and load the job with the launchctl command it prints. The
