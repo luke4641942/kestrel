@@ -22,8 +22,8 @@ export type Route = "overview" | "strategies" | "research" | "data" | "costs" | 
 const NAV: { route: Route; label: string; later?: string; more?: boolean }[] = [
   { route: "overview", label: "Overview" },
   { route: "trading", label: "Trading" },
-  { route: "strategies", label: "Strategies" },
   { route: "research", label: "Research" },
+  { route: "strategies", label: "Strategies" },
   { route: "backtests", label: "Backtests" },
   { route: "charts", label: "Charts" },
   { route: "costs", label: "What a trade costs", more: true },
