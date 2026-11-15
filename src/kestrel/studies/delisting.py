@@ -27,10 +27,16 @@ import random
 from collections.abc import Sequence
 from dataclasses import dataclass
 from datetime import date, datetime, timedelta
+from pathlib import Path
 
 import polars as pl
 
 from kestrel.backtest.spread import with_half_spread
+from kestrel.config import Config
+from kestrel.data import delistings
+from kestrel.data.schema import Interval
+from kestrel.data.store import ParquetStore
+from kestrel.data.universe import NOT_COINS
 
 CONFIDENCE = 0.90
 PRE_DAYS = 30
@@ -155,6 +161,41 @@ def coin_path(
         round_trip=2 * (taker_fee + float(spread[0])),
         flag=flag,
     )
+
+
+def measure_all(data_dir: Path | str, cfg: Config) -> tuple[list[CoinPath], list[str]]:
+    """Every delisted coin removed before the holdout, measured on its USDT spot bars, and
+    why each one that couldn't be measured was left out."""
+    holdout = cfg.backtest.holdout_start
+    bars_store = ParquetStore(data_dir)
+    found = delistings.load(data_dir).filter(pl.col("removal_at") < holdout)
+    tiers = [(float(v), float(bps) / 1e4) for v, bps in cfg.universe.spread_tiers]
+    lead = timedelta(days=PRE_DAYS + cfg.universe.volume_window_days + 5)
+    paths: list[CoinPath] = []
+    problems: list[str] = []
+    for row in found.iter_rows(named=True):
+        coin = row["coin"]
+        if coin in NOT_COINS or coin in NOT_COINS_EXTRA:
+            problems.append(f"{coin}: a stablecoin or fiat token, left out")
+            continue
+        start = row["announced_at"] - lead
+        end = min(row["removal_at"] + timedelta(days=1), holdout)
+        measured = coin_path(
+            coin,
+            row["article"],
+            row["announced_at"],
+            row["removal_at"],
+            bars_store.read(f"{coin}USDT", Interval.D1, start, end),
+            bars_store.read("BTCUSDT", Interval.D1, start, end),
+            taker_fee=float(cfg.costs.taker_fee_bps) / 1e4,
+            tiers=tiers,
+            volume_window=cfg.universe.volume_window_days,
+        )
+        if isinstance(measured, str):
+            problems.append(measured)
+        else:
+            paths.append(measured)
+    return paths, problems
 
 
 def events(paths: list[CoinPath]) -> list[Event]:

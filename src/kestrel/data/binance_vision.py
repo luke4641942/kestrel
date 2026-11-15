@@ -26,6 +26,8 @@ import polars as pl
 from kestrel.data.schema import Interval, conform
 
 BASE_URL = "https://data.binance.vision/data/spot/monthly/klines"
+UM_KLINES_URL = "https://data.binance.vision/data/futures/um/monthly/klines"
+"""USDT-M perpetual futures klines: the same file layout and columns as spot."""
 
 RAW_COLUMNS = [
     "open_time",
@@ -91,9 +93,9 @@ def archive_name(symbol: str, interval: Interval, month: Month) -> str:
     return f"{symbol.upper()}-{interval.value}-{month}.zip"
 
 
-def archive_url(symbol: str, interval: Interval, month: Month) -> str:
+def archive_url(symbol: str, interval: Interval, month: Month, base: str = BASE_URL) -> str:
     sym = symbol.upper()
-    return f"{BASE_URL}/{sym}/{interval.value}/{archive_name(sym, interval, month)}"
+    return f"{base}/{sym}/{interval.value}/{archive_name(sym, interval, month)}"
 
 
 def verify_checksum(payload: bytes, checksum_text: str) -> None:
@@ -141,17 +143,21 @@ class IngestResult:
 
 
 class BinanceVisionClient:
-    """Downloads and verifies monthly kline archives.
+    """Downloads and verifies monthly kline archives: spot by default, or USDT-M perpetuals
+    with ``base=UM_KLINES_URL``.
 
     The HTTP client is injectable so tests run offline against a mock transport.
     """
 
-    def __init__(self, http: httpx.Client | None = None, timeout: float = 60.0) -> None:
+    def __init__(
+        self, http: httpx.Client | None = None, timeout: float = 60.0, base: str = BASE_URL
+    ) -> None:
         self._http = http or httpx.Client(timeout=timeout, follow_redirects=True)
+        self._base = base
 
     def fetch_month(self, symbol: str, interval: Interval, month: Month) -> pl.DataFrame | None:
         """Return the month's bars, or ``None`` if Binance has no file for it."""
-        url = archive_url(symbol, interval, month)
+        url = archive_url(symbol, interval, month, self._base)
         response = self._http.get(url)
         if response.status_code == 404:
             return None

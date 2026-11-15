@@ -48,13 +48,7 @@ from kestrel.data.features import attach_features
 from kestrel.data.quality import check_klines
 from kestrel.data.schema import Interval
 from kestrel.data.store import ParquetStore
-from kestrel.data.universe import (
-    NOT_COINS,
-    ArchiveListing,
-    CoinIngest,
-    ingest_universe,
-    manifest_path,
-)
+from kestrel.data.universe import ArchiveListing, CoinIngest, ingest_universe, manifest_path
 from kestrel.execution import paper as paper_trading
 from kestrel.execution import safety, tracking
 from kestrel.execution.binance import (
@@ -81,12 +75,18 @@ from kestrel.strategy import (
 from kestrel.studies import cost_gate
 from kestrel.studies.anchor_day import format_study, run_study
 from kestrel.studies.delisting import (
-    NOT_COINS_EXTRA,
-    PRE_DAYS,
-    CoinPath,
-    coin_path,
     format_delisting_study,
+    measure_all,
     run_delisting_study,
+)
+from kestrel.studies.delisting_short import (
+    ShortPath,
+    format_short_study,
+    ingest_perps,
+    load_perp,
+    perp_symbols,
+    run_short_study,
+    short_path,
 )
 from kestrel.studies.volatile_direction import format_study as format_volatile_study
 from kestrel.studies.volatile_direction import run_study as run_volatile_study
@@ -663,43 +663,87 @@ def delisting_study(
         s, note = store.require_testable(research)
         if note.implementation != "study:delistings":
             raise ValueError(f"{research} names {note.implementation}, not study:delistings")
-        cfg = load_config(config)
-        holdout = cfg.backtest.holdout_start
-        bars_store = ParquetStore(data_dir)
-        found = delistings.load(data_dir).filter(pl.col("removal_at") < holdout)
-        tiers = [(float(v), float(bps) / 1e4) for v, bps in cfg.universe.spread_tiers]
-        fee = float(cfg.costs.taker_fee_bps) / 1e4
-        lead = timedelta(days=PRE_DAYS + cfg.universe.volume_window_days + 5)
-        paths: list[CoinPath] = []
-        problems: list[str] = []
-        for row in found.iter_rows(named=True):
-            coin = row["coin"]
-            if coin in NOT_COINS or coin in NOT_COINS_EXTRA:
-                problems.append(f"{coin}: a stablecoin or fiat token, left out")
-                continue
-            start = row["announced_at"] - lead
-            end = min(row["removal_at"] + timedelta(days=1), holdout)
-            measured = coin_path(
-                coin,
-                row["article"],
-                row["announced_at"],
-                row["removal_at"],
-                bars_store.read(f"{coin}USDT", Interval.D1, start, end),
-                bars_store.read("BTCUSDT", Interval.D1, start, end),
-                taker_fee=fee,
-                tiers=tiers,
-                volume_window=cfg.universe.volume_window_days,
-            )
-            if isinstance(measured, str):
-                problems.append(measured)
-            else:
-                paths.append(measured)
+        paths, problems = measure_all(data_dir, load_config(config))
         result = run_delisting_study(paths, problems)
     except (ConfigError, ValueError) as e:
         typer.echo(str(e), err=True)
         raise typer.Exit(code=1) from None
     store.mark_backtested(s.slug, note.version)
     typer.echo(format_delisting_study(result))
+
+
+@app.command("ingest-delisting-perps")
+def ingest_delisting_perps(
+    data_dir: DataDir = Path("data"),
+    config: Annotated[
+        Path, typer.Option("--config", envvar="KESTREL_CONFIG", help="Config file.")
+    ] = Path("kestrel.toml"),
+) -> None:
+    """USDT-M perp daily bars and funding for each delisted coin the spot study measured,
+    only for the months its window spans (for the hypothetical delisting short study)."""
+    try:
+        paths, _ = measure_all(data_dir, load_config(config))
+        with httpx.Client(timeout=60, follow_redirects=True) as http:
+            found = ingest_perps(
+                paths, str(data_dir), http, on_coin=lambda c, s: typer.echo(f"  {c}: {s}")
+            )
+    except (ConfigError, ValueError, httpx.HTTPError) as e:
+        typer.echo(str(e), err=True)
+        raise typer.Exit(code=1) from None
+    have = sum(s is not None for s in found.values())
+    typer.echo(f"{have} of {len(found)} coins have perp bars for their window")
+
+
+@app.command("delisting-short-study")
+def delisting_short_study(
+    research: Annotated[
+        str,
+        typer.Option(help="The frozen note that pre-registers this run (marked as run)."),
+    ],
+    research_dir: ResearchDir = Path("research"),
+    data_dir: DataDir = Path("data"),
+    config: Annotated[
+        Path, typer.Option("--config", envvar="KESTREL_CONFIG", help="Config file.")
+    ] = Path("kestrel.toml"),
+) -> None:
+    """Hypothetical: shorting each delisted coin's USDT-M perp from day 1 to removal, at 2x
+    with liquidations. Run once through its frozen note; never the holdout."""
+    store = ResearchStore(research_dir)
+    try:
+        s, note = store.require_testable(research)
+        if note.implementation != "study:delisting-short":
+            raise ValueError(f"{research} names {note.implementation}, not study:delisting-short")
+        cfg = load_config(config)
+        spot_fee = float(cfg.costs.taker_fee_bps) / 1e4
+        spot_store = ParquetStore(data_dir)
+        paths: list[ShortPath] = []
+        problems: list[str] = []
+        for spot in measure_all(data_dir, cfg)[0]:
+            measured: ShortPath | str = f"{spot.coin}: no perp bars stored for its window"
+            for symbol in perp_symbols(spot.coin):
+                bars, rates = load_perp(str(data_dir), spot, symbol)
+                if bars.is_empty():
+                    continue
+                day1 = datetime.combine(spot.announced, datetime.min.time(), tzinfo=UTC)
+                spot_day1 = spot_store.read(
+                    f"{spot.coin}USDT",
+                    Interval.D1,
+                    day1 + timedelta(days=1),
+                    day1 + timedelta(days=2),
+                )
+                open1 = float(spot_day1["open"][0]) if spot_day1.height else None
+                measured = short_path(spot, symbol, bars, rates, open1, spot_fee=spot_fee)
+                break
+            if isinstance(measured, str):
+                problems.append(measured)
+            else:
+                paths.append(measured)
+        result = run_short_study(paths, problems)
+    except (ConfigError, ValueError) as e:
+        typer.echo(str(e), err=True)
+        raise typer.Exit(code=1) from None
+    store.mark_backtested(s.slug, note.version)
+    typer.echo(format_short_study(result))
 
 
 @app.command("holdout-test")
