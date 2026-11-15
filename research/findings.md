@@ -145,6 +145,17 @@ risk-managed holding rather than a proven edge.
     currencies. Its edge is shown only on BTC, ETH and SOL, which trended hard in 2020-25;
     time-series momentum's long record in commodities and currencies didn't show up here in
     five years of daily bars.
+13. **Searching freely, then confirming on unsearched coins, found one rule that held up
+    (the exploration experiment, 2026-11-16).** About 230 daily rules were searched on 181
+    exploration coins (not trials, not evidence); two graduated, and each was run once on
+    the 180 confirmation coins nobody had looked at. Holding an altcoin only while BTC is
+    above its 50-day average and the coin is up over 30 days, sized to 50% volatility,
+    beat holding on 149 of 180 coins (83%) and won 427 of 771 walk-forward windows (55%):
+    PASS. Buying a 30% weekly crash for 3 days beat holding on 62% of coins but won only
+    36% of windows: FAIL. Caveats: most altcoins lost about 90% in 2020-25, so beating
+    them on Sharpe is a low bar, and 55% of windows is a narrow margin; the rule leans on
+    BTC's trend, as trend-vol-target does. A pass is not a pursue: it still needs its own
+    scorecard, a rule for which coins to hold, and a holdout test.
 
 ## The holdout year (2025-11 to 2026-10)
 
@@ -230,6 +241,8 @@ edge, and the holdout can't be used again for either strategy.
 | CHoCH + FVG at the New York open (YouTube batch 1 S2) | SOL 5m 2020-08 to 2025-10 | -40%, Sharpe -0.92, 308 trades, 21% won, -0.55R a trade (about +0.04R before 0.59R of costs); walk-forward 1 of 6; no better than random entries (beat 79% of paths, 95% needed) | Drop (Luke) |
 | Set and Forget, mechanical zones (YouTube batch 1 S1) | BTC, ETH 1H 2020-25 | BTC +0.6% (Sharpe 0.04) vs +12% held at the same exposure, 62 trades, +0.02R; ETH -6.2% (-0.18) vs +15%, 59 trades, -0.09R; costs small (0.06-0.07R): no edge before them; walk-forward 0 of 7 and 1 of 7; BTC no better than random entries (beat 50% of paths) | Drop (Luke) |
 | Trend-vol-target, unchanged, on gold and currencies (Luke) | PAXGUSDT 1d 2020-08 to 2025-10; EURUSDT 2020-25; GBPUSDT 2020-07 to 2023-12 | Fails on all three. Gold +40% (Sharpe 0.58) vs +56% for gold held at the same exposure (Sharpe 0.93), robust and walk-forward 1 of 6, 0 of 35 start windows; costs were 75 of its 206 USDT before costs, mostly an assumed volume-band spread likely too high for gold, but even near-zero spread would only tie holding. EUR -20% (Sharpe -0.68) and GBP -21% (-0.88), negative before costs. On these markets the 50% volatility target always caps at 100%, so it is the trend votes alone | Drop (Luke) |
+| Exploration graduate: BTC regime + coin trend, volatility-sized | 180 confirmation-half altcoins 1d, first bar to 2025-10 | Searched on the other 181 coins; run once here: beat holding's Sharpe on 149 of 180 coins (83%), 427 of 771 walk-forward windows (55%), median Sharpe 0.57. PASS (both above half) | Luke's call |
+| Exploration graduate: altcoin crash rebound (-30% in 7 days, hold 3) | 180 confirmation-half altcoins 1d | Beat holding on 111 of 180 coins (62%) but only 274 of 771 walk-forward windows (36%), median Sharpe 0.44. FAIL | Luke's call |
 
 Each strategy was judged by its own note's pass test, written before it ran. From
 2026-11-14 every strategy is judged on one scorecard instead.

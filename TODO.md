@@ -10,12 +10,11 @@ Decisions and rules live in CLAUDE.md; results in `research/findings.md`.
       (around 2027-05-15); verdict at 395 days (around 2027-12-14).
 
 ## Next
-- [ ] Exploration experiment (Luke, 2026-11-16; CLAUDE.md "Exploration experiment").
-      Exploration done (research/exploration/log.md, not evidence). Two graduates (Luke):
-      `btc-regime-trend` and `crash-rebound`, with `kestrel confirm` (every confirmation
-      coin once, one look in its own pool). Waiting on Luke: freeze
-      `confirmation-btc-regime-and-coin-trend` and `confirmation-altcoin-crash-rebound`,
-      then one `kestrel confirm` each.
+- [ ] Exploration experiment: confirmation run 2026-11-16. BTC regime + coin trend PASSED
+      (83% of coins, 55% of windows); crash rebound FAILED (62%, 36%). The method worked by
+      its pre-registered test. Waiting on Luke: keep the method or revert (CLAUDE.md says
+      one round, then Luke decides); decisions for both graduates; whether to take the
+      BTC regime rule on (needs a coin-selection rule, its own scorecard and a holdout).
 - [ ] Delistings study: run 2026-11-15, verdict EXIT RULE (coins fell 39.8% on average from
       the day after the announcement to removal; no rebound; findings item 11). Luke's call:
       write an exit-rule note (sell a held coin at the next open after its delisting is
