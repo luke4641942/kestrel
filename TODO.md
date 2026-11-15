@@ -10,6 +10,10 @@ Decisions and rules live in CLAUDE.md; results in `research/findings.md`.
       (around 2027-05-15); verdict at 395 days (around 2027-12-14).
 
 ## Next
+- [ ] Other markets (Luke, 2026-11-16): trend-vol-target, unchanged, on gold (PAXGUSDT),
+      EURUSDT and GBPUSDT daily (silver isn't on Binance spot; AUD stopped 2023-06). Data in
+      and clean. Waiting on Luke: freeze `trend-vol-target-on-gold-eur-and-gbp-unseen`,
+      then the scorecard (about 60 trials).
 - [x] Walk-forward for basket strategies: built 2026-11-15 (portfolio engine per window, against
       BTC held); the five basket walk-forwards rerun with the notes' settings.
 - [ ] Delistings study: run 2026-11-15, verdict EXIT RULE (coins fell 39.8% on average from
@@ -37,11 +41,6 @@ Decisions and rules live in CLAUDE.md; results in `research/findings.md`.
       the Binance venue stops on a fee charged in BNB. Account for it (value the BNB fee at
       BNB's price), keep a small BNB balance and top it up. Until then testnet and live fills
       pay 10 bps in the traded assets, and tracking will show fees above the model.
-- [ ] Other markets (Luke's idea, 2026-11-15; nothing to work on now). Forex and commodities
-      without leaving Binance spot: EURUSDT (euro), PAXGUSDT (gold, one token per ounce),
-      and tokenized stocks/ETFs (AAPLBUSDT... from June 2026, too short for now). Wider
-      markets give trend strategies more setups (Rayner's point) and test whether an edge
-      is crypto-only. Each needs its own spread assumption and its own holding benchmark.
 - [ ] News-tone study (Luke's pick over Twitter, 2026-11-14): code built (`kestrel.data.news`,
       `kestrel signal-study news-tone`). Needs `kestrel ingest-news BTCUSDT ETHUSDT` first:
       GDELT allows ~1 request every 5-10s, so the 2017-25 history takes ~40+ minutes (run it in
