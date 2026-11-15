@@ -1,0 +1,28 @@
+{
+  "slug": "trend-vol-target-on-gold-eur-and-gbp-unseen",
+  "name": "Trend-vol-target on gold, EUR and GBP (unseen markets)",
+  "created_at": "2026-11-15T15:43:06.087751+00:00",
+  "status": "rejected",
+  "history": [
+    {
+      "status": "idea",
+      "at": "2026-11-15T15:43:06.087751+00:00",
+      "reason": "Created"
+    },
+    {
+      "status": "specified",
+      "at": "2026-11-15T15:46:24.126847+00:00",
+      "reason": "v1 frozen"
+    },
+    {
+      "status": "backtested",
+      "at": "2026-11-15T15:46:47.197835+00:00",
+      "reason": "first run on v1"
+    },
+    {
+      "status": "rejected",
+      "at": "2026-11-15T15:58:56.246702+00:00",
+      "reason": "FAIL, rejected with Luke's say-so (2026-11-16). Trend-vol-target unchanged fails the scorecard on all three markets. PAXGUSDT 2020-08 to 2025-10: +40%, Sharpe 0.58 vs 0.93 for gold held, +56% at the same exposure; walk-forward 1 of 6, 0 of 35 start windows; robust, drawdown -24%, costs pass (126 vs 46 bps) but costs were mostly an assumed volume-band spread: even near zero it would only tie holding. EURUSDT 2020-01 to 2025-10: -20%, Sharpe -0.68 vs 0.10; GBPUSDT 2020-07 to 2023-12: -21%, -0.88 vs -0.10; both negative before costs. The rule's edge is shown only on crypto. PAXG's and EUR's holdout years stay unused."
+    }
+  ]
+}

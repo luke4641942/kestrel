@@ -376,3 +376,75 @@ decided = 2026-11-15
 reason = "Watch (Luke, 2026-11-15). The highest Sharpe in Kestrel: 1.59 over 2020-01 to 2025-10 (a third of 990 USDT per coin), against 1.31 for holding a third of each (its added test: pass) and 1.07 for BTC; drawdown -42% vs -85% for the held thirds; break-even 376 bps vs 18; robust. Fails luck (deflated 59%) and out of sample (2 of 7 windows), like each coin alone. Every part is on pursue and passed its own holdout, so there is no unused holdout for the whole; the three paper accounts (tvt-btc, tvt-eth, tvt-sol) are its forward test, and a shared account split in thirds is the natural live form later."
 evidence = ["trend-vol-target-on-btc-eth-and-sol-together"]
 
+
+[[decision]]
+strategy = "order-flow"
+name = "Order flow Model 2 (YouTube batch 2 C)"
+market = "ETHUSDT 5m"
+decision = "drop"
+decided = 2026-11-16
+reason = "Dropped (Luke, 2026-11-16). 2020-01 to 2025-10: -81%, Sharpe -3.67, 790 trades, 30% won, -0.68R a trade after costs and negative before them; walk-forward 0 of 7; no better than random entries (beat 19% of paths, 95% needed). Its cost gate had warned: the point of control sits about 1.5R away, needing about 55% winners to break even."
+evidence = ["order-flow-model-2-on-eth-and-sol-5m"]
+
+[[decision]]
+strategy = "order-flow"
+name = "Order flow Model 2 (YouTube batch 2 C)"
+market = "SOLUSDT 5m"
+decision = "drop"
+decided = 2026-11-16
+reason = "Dropped (Luke, 2026-11-16). 2020-08 to 2025-10: -80%, Sharpe -3.42, 637 trades, 31% won, -0.73R a trade after costs and negative before them; walk-forward 0 of 6. Run after the spread-band fix (the first run is void)."
+evidence = ["order-flow-model-2-on-eth-and-sol-5m"]
+
+[[decision]]
+strategy = "choch-fvg"
+name = "CHoCH + FVG at the New York open (YouTube batch 1 S2)"
+market = "SOLUSDT 5m"
+decision = "drop"
+decided = 2026-11-16
+reason = "Dropped (Luke, 2026-11-16). The one case the cost gate didn't fail. 2020-08 to 2025-10: -40%, Sharpe -0.92, 308 trades, 21% won, -0.55R a trade after costs (about +0.04R before, against 0.59R of costs); walk-forward 1 of 6; no better than random entries (beat 79% of paths, 95% needed). Run after the spread-band fix (the first run is void)."
+evidence = ["choch-and-fvg-at-the-new-york-open-on-sol-5m"]
+
+[[decision]]
+strategy = "set-and-forget"
+name = "Set and Forget, mechanical zones (YouTube batch 1 S1)"
+market = "BTCUSDT 1h"
+decision = "drop"
+decided = 2026-11-16
+reason = "Dropped (Luke, 2026-11-16). 2020-01 to 2025-10: +0.6%, Sharpe 0.04, against +12% for BTC held at the same exposure; 62 trades, +0.02R a trade; break-even 19 bps vs 17 paid; walk-forward 0 of 7; no better than random entries (beat 50% of paths). Costs were small; the coded method has no edge before them."
+evidence = ["set-and-forget-on-btc-and-eth-1h"]
+
+[[decision]]
+strategy = "set-and-forget"
+name = "Set and Forget, mechanical zones (YouTube batch 1 S1)"
+market = "ETHUSDT 1h"
+decision = "drop"
+decided = 2026-11-16
+reason = "Dropped (Luke, 2026-11-16). 2020-01 to 2025-10: -6.2%, Sharpe -0.18, against +15% for ETH held at the same exposure; 59 trades, -0.09R a trade; walk-forward 1 of 7."
+evidence = ["set-and-forget-on-btc-and-eth-1h"]
+
+[[decision]]
+strategy = "trend-vol-target"
+name = "Trend following with volatility targeting"
+market = "PAXGUSDT 1d"
+decision = "drop"
+decided = 2026-11-16
+reason = "Dropped (Luke, 2026-11-16). Unchanged from BTC, 2020-08 to 2025-10: +40%, Sharpe 0.58 against 0.93 for gold held and +56% at the same exposure; walk-forward 1 of 6; better than holding in 0 of 35 two-year start windows. Robust and within the drawdown limit, but no edge over holding gold; a lower assumed spread would only tie it. Its holdout year is unused."
+evidence = ["trend-vol-target-on-gold-eur-and-gbp-unseen"]
+
+[[decision]]
+strategy = "trend-vol-target"
+name = "Trend following with volatility targeting"
+market = "EURUSDT 1d"
+decision = "drop"
+decided = 2026-11-16
+reason = "Dropped (Luke, 2026-11-16). Unchanged from BTC, 2020-01 to 2025-10: -20%, Sharpe -0.68 against 0.10 for EUR held; negative before costs; walk-forward 1 of 7. Its holdout year is unused."
+evidence = ["trend-vol-target-on-gold-eur-and-gbp-unseen"]
+
+[[decision]]
+strategy = "trend-vol-target"
+name = "Trend following with volatility targeting"
+market = "GBPUSDT 1d"
+decision = "drop"
+decided = 2026-11-16
+reason = "Dropped (Luke, 2026-11-16). Unchanged from BTC, 2020-07 to 2023-12 (Binance stopped the pair): -21%, Sharpe -0.88 against -0.10 for GBP held; negative before costs; walk-forward 1 of 3. No holdout year exists."
+evidence = ["trend-vol-target-on-gold-eur-and-gbp-unseen"]

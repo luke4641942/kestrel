@@ -1,0 +1,23 @@
+{
+  "slug": "shorting-the-delisting-window-with-perps",
+  "name": "Shorting the delisting window with perps (hypothetical)",
+  "created_at": "2026-11-15T14:15:06.209093+00:00",
+  "status": "backtested",
+  "history": [
+    {
+      "status": "idea",
+      "at": "2026-11-15T14:15:06.209093+00:00",
+      "reason": "Created"
+    },
+    {
+      "status": "specified",
+      "at": "2026-11-15T14:25:33.454579+00:00",
+      "reason": "v1 frozen"
+    },
+    {
+      "status": "backtested",
+      "at": "2026-11-15T14:31:30.512544+00:00",
+      "reason": "first run on v1"
+    }
+  ]
+}

@@ -10,9 +10,6 @@ Decisions and rules live in CLAUDE.md; results in `research/findings.md`.
       (around 2027-05-15); verdict at 395 days (around 2027-12-14).
 
 ## Next
-- [ ] Other markets: trend-vol-target on gold, EUR, GBP run 2026-11-16: fails on all three
-      (gold +40% vs +56% held at its exposure; EUR -20%, GBP -21%). Waiting on Luke: drop
-      the three markets and reject `trend-vol-target-on-gold-eur-and-gbp-unseen`?
 - [x] Walk-forward for basket strategies: built 2026-11-15 (portfolio engine per window, against
       BTC held); the five basket walk-forwards rerun with the notes' settings.
 - [ ] Delistings study: run 2026-11-15, verdict EXIT RULE (coins fell 39.8% on average from
@@ -53,6 +50,7 @@ Decisions and rules live in CLAUDE.md; results in `research/findings.md`.
 - [ ] HMM regime filter (backlog S2) as a strategy: needs a note that passes the entry bar.
 
 ## Done recently
+- 2026-11-16 Trend-vol-target on gold, EUR, GBP: fails on all three; dropped (Luke). Tabs reordered (Luke).
 - 2026-11-16 YouTube leftovers tested and dropped (Luke): order flow (ETH, SOL 5m), CHoCH + FVG (SOL 5m NY), Set and Forget (BTC, ETH 1H) all fail test 1. Engine: resting limit orders; spread-band fix for sub-daily bars.
 - 2026-11-16 Hypothetical delisting short (perps): INSUFFICIENT; 12 coins in 6 announcements shortable to removal, -7.8% net at 2x, 3 of 12 liquidated.
 - 2026-11-15 Delisting study: EXIT RULE (-39.8% from day 1 to removal, no rebound).

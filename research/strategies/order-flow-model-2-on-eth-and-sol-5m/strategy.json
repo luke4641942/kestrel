@@ -1,0 +1,28 @@
+{
+  "slug": "order-flow-model-2-on-eth-and-sol-5m",
+  "name": "Order flow Model 2 on ETH and SOL 5m",
+  "created_at": "2026-11-15T14:56:06.703417+00:00",
+  "status": "rejected",
+  "history": [
+    {
+      "status": "idea",
+      "at": "2026-11-15T14:56:06.703417+00:00",
+      "reason": "Created"
+    },
+    {
+      "status": "specified",
+      "at": "2026-11-15T15:04:12.875227+00:00",
+      "reason": "v1 frozen"
+    },
+    {
+      "status": "backtested",
+      "at": "2026-11-15T15:05:31.914684+00:00",
+      "reason": "first run on v1"
+    },
+    {
+      "status": "rejected",
+      "at": "2026-11-15T15:28:20.525349+00:00",
+      "reason": "FAIL, rejected with Luke's say-so (2026-11-16). Fails test 1 on both coins by a wide margin: ETH 5m 2020-01 to 2025-10 -81%, Sharpe -3.67, 790 trades, 30% won, -0.68R a trade after costs (0.61R of costs); SOL 5m 2020-08 to 2025-10 -80%, Sharpe -3.42, 637 trades, 31% won, -0.73R (rerun after the spread-band fix; the first SOL run, -94%, is void). Negative before costs on both. Walk-forward beat holding in 0 of 7 (ETH) and 0 of 6 (SOL) windows; on ETH it beat 19% of random-entry paths (95% needed). Robustness not run (Luke): it can't change a test-1 failure and would add about 30 trials."
+    }
+  ]
+}

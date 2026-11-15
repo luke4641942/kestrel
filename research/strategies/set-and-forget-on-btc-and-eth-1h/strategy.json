@@ -1,0 +1,28 @@
+{
+  "slug": "set-and-forget-on-btc-and-eth-1h",
+  "name": "Set and Forget on BTC and ETH 1H",
+  "created_at": "2026-11-15T14:56:06.706631+00:00",
+  "status": "rejected",
+  "history": [
+    {
+      "status": "idea",
+      "at": "2026-11-15T14:56:06.706631+00:00",
+      "reason": "Created"
+    },
+    {
+      "status": "specified",
+      "at": "2026-11-15T15:26:54.740482+00:00",
+      "reason": "v1 frozen"
+    },
+    {
+      "status": "backtested",
+      "at": "2026-11-15T15:27:03.649847+00:00",
+      "reason": "first run on v1"
+    },
+    {
+      "status": "rejected",
+      "at": "2026-11-15T15:28:20.528556+00:00",
+      "reason": "FAIL, rejected with Luke's say-so (2026-11-16). Fails test 1 on both coins, 1H 2020-01 to 2025-10: BTC +0.6% (Sharpe 0.04) against +12% for BTC held at the same exposure, 62 trades, +0.02R a trade, break-even 19 bps vs 17 (2x needed); ETH -6.2% (Sharpe -0.18) against +15%, 59 trades, -0.09R. Costs were small (0.06-0.07R): the mechanical version of the method has no edge before costs. Robustness not run (Luke)."
+    }
+  ]
+}

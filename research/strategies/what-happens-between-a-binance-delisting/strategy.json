@@ -1,0 +1,23 @@
+{
+  "slug": "what-happens-between-a-binance-delisting",
+  "name": "What happens between a Binance delisting announcement and removal",
+  "created_at": "2026-11-15T13:52:09.636613+00:00",
+  "status": "backtested",
+  "history": [
+    {
+      "status": "idea",
+      "at": "2026-11-15T13:52:09.636613+00:00",
+      "reason": "Created"
+    },
+    {
+      "status": "specified",
+      "at": "2026-11-15T13:58:29.113994+00:00",
+      "reason": "v1 frozen"
+    },
+    {
+      "status": "backtested",
+      "at": "2026-11-15T13:58:42.311040+00:00",
+      "reason": "first run on v1"
+    }
+  ]
+}

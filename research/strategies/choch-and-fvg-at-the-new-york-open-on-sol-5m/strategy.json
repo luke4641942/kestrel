@@ -1,0 +1,28 @@
+{
+  "slug": "choch-and-fvg-at-the-new-york-open-on-sol-5m",
+  "name": "CHoCH and FVG at the New York open on SOL 5m",
+  "created_at": "2026-11-15T14:56:06.705371+00:00",
+  "status": "rejected",
+  "history": [
+    {
+      "status": "idea",
+      "at": "2026-11-15T14:56:06.705371+00:00",
+      "reason": "Created"
+    },
+    {
+      "status": "specified",
+      "at": "2026-11-15T15:17:50.368564+00:00",
+      "reason": "v1 frozen"
+    },
+    {
+      "status": "backtested",
+      "at": "2026-11-15T15:18:20.325500+00:00",
+      "reason": "first run on v1"
+    },
+    {
+      "status": "rejected",
+      "at": "2026-11-15T15:28:20.527460+00:00",
+      "reason": "FAIL, rejected with Luke's say-so (2026-11-16). SOL 5m at the New York open, 2020-08 to 2025-10: -40%, Sharpe -0.92 (95% CI below zero), 308 trades, 21% won, -0.55R a trade after costs (0.59R of costs; about +0.04R before), break-even cost 9 bps against 26 paid. Rerun after the spread-band fix; the first run (-69%) is void. Walk-forward beat holding in 1 of 6 windows. Robustness not run (Luke)."
+    }
+  ]
+}
