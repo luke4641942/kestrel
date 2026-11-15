@@ -862,7 +862,8 @@ class LookOut(BaseModel):
 
 
 class StudyOut(BaseModel):
-    """A robustness check or walk-forward (kestrel.validation.log)."""
+    """A robustness check, walk-forward, random-entry control or exploration confirmation
+    run (kestrel.validation.log)."""
 
     id: str
     created_at: datetime
@@ -875,6 +876,8 @@ class StudyOut(BaseModel):
     looks: list[LookOut]
     verdict: str
     detail: dict[str, Any] = Field(default_factory=dict)
+    confirmation: bool = False
+    """A confirmation run of the exploration experiment (its own trial pool)."""
 
 
 class ValidationOut(BaseModel):

@@ -281,7 +281,8 @@ export function deflatedNote(r: Pick<RunSummary, "deflated_sharpe" | "deflated_t
 
 /** How a validation study's verdict reads: passed, failed, or nothing to test. */
 export function studyTone(verdict: string): Tone {
-  if (verdict === "ROBUST" || verdict === "SURVIVES" || verdict === "BEATS RANDOM") return "ok";
+  if (verdict === "ROBUST" || verdict === "SURVIVES" || verdict === "BEATS RANDOM" || verdict === "PASS")
+    return "ok";
   if (verdict === "NO EDGE" || verdict === "NO TRADES") return "neutral";
   return "bad";
 }
@@ -290,6 +291,7 @@ const STUDY_KINDS: Record<Study["kind"], string> = {
   robustness: "Robustness",
   "walk-forward": "Walk-forward",
   "random-entry": "Random-entry control",
+  confirmation: "Confirmation run",
 };
 
 /** "Robustness of channel-breakout" / "Walk-forward of ma-trend". */

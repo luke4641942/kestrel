@@ -1,5 +1,5 @@
 // The Research page's logic, kept out of the component so it can be tested directly.
-import type { Decision, LuckPoint } from "./api";
+import type { Decision, LuckPoint, Study } from "./api";
 
 /** A kind of strategy, and which strategy keys belong to it. Descriptions say what the
  * family is, never how it did: results come from research/decisions.toml. */
@@ -145,4 +145,69 @@ export function luckSeries(points: LuckPoint[]): { time: number; value: number; 
 export function luckReadout(point: { time: number; value: number; trials: number }): string {
   const day = new Date(point.time * 1000).toISOString().slice(0, 10);
   return `${day}: ${point.trials.toLocaleString("en-AU")} trials, luck bar ${point.value.toFixed(2)}`;
+}
+
+/** One coin in a confirmation run. */
+export interface ConfirmationCoin {
+  symbol: string;
+  sharpe: number | null;
+  heldSharpe: number | null;
+  windows: number;
+  windowsBeating: number;
+  /** The strategy's Sharpe less holding's; null when either is unknown. */
+  gap: number | null;
+}
+
+/** A graduate's confirmation run, read from its saved study. */
+export interface ConfirmationRun {
+  id: string;
+  note: string;
+  strategy: string;
+  verdict: string;
+  coins: number;
+  beatsShare: number;
+  windows: number;
+  windowsShare: number;
+  medianSharpe: number | null;
+  perCoin: ConfirmationCoin[];
+}
+
+const num = (x: unknown): number | null => (typeof x === "number" && Number.isFinite(x) ? x : null);
+
+/** Every confirmation run among saved studies, oldest first, its coins sorted from most
+ * ahead of holding to most behind (unknown gaps last). */
+export function confirmationRuns(studies: Study[]): ConfirmationRun[] {
+  return studies
+    .filter((s) => s.kind === "confirmation")
+    .map((s) => {
+      const d = s.detail ?? {};
+      const rows = Array.isArray(d.per_coin) ? (d.per_coin as Record<string, unknown>[]) : [];
+      const perCoin = rows
+        .map((r) => {
+          const sharpe = num(r.sharpe);
+          const heldSharpe = num(r.held_sharpe);
+          return {
+            symbol: String(r.symbol),
+            sharpe,
+            heldSharpe,
+            windows: num(r.windows) ?? 0,
+            windowsBeating: num(r.windows_beating) ?? 0,
+            gap: sharpe === null || heldSharpe === null ? null : sharpe - heldSharpe,
+          };
+        })
+        .sort((a, b) => (b.gap ?? -Infinity) - (a.gap ?? -Infinity));
+      return {
+        id: s.id,
+        note: String(d.note ?? ""),
+        strategy: s.strategy,
+        verdict: s.verdict,
+        coins: num(d.coins) ?? perCoin.length,
+        beatsShare: num(d.beats_share) ?? 0,
+        windows: num(d.windows) ?? 0,
+        windowsShare: num(d.windows_share) ?? 0,
+        medianSharpe: num(d.median_sharpe),
+        perCoin,
+      };
+    })
+    .sort((a, b) => a.id.localeCompare(b.id));
 }

@@ -33,7 +33,35 @@ const DECISIONS: Decision[] = [
 
 beforeEach(() => {
   api.decisions = vi.fn().mockResolvedValue(DECISIONS);
-  api.validation = vi.fn().mockResolvedValue({ trials: 751, sharpe_std: 0.5, expected_max_sharpe: 2.23, studies: [] });
+  api.validation = vi.fn().mockResolvedValue({
+    trials: 751,
+    sharpe_std: 0.5,
+    expected_max_sharpe: 2.23,
+    studies: [
+      {
+        id: "20261115-231551-21a19d",
+        created_at: "2026-11-15T23:15:51Z",
+        kind: "confirmation",
+        strategy: "btc-regime-trend",
+        symbol: "CONFIRMATION",
+        interval: "1d",
+        start: "first bar",
+        end: "2025-11 (exclusive)",
+        looks: [],
+        verdict: "PASS",
+        confirmation: true,
+        detail: {
+          note: "confirmation-btc-regime-and-coin-trend",
+          coins: 2,
+          beats_share: 0.5,
+          windows: 4,
+          windows_share: 0.75,
+          median_sharpe: 0.57,
+          per_coin: [{ symbol: "AMPUSDT", sharpe: 0.9, held_sharpe: -0.37, windows: 4, windows_beating: 3 }],
+        },
+      },
+    ],
+  });
   api.validationHistory = vi.fn().mockResolvedValue([{ at: "2026-11-15T15:46:57Z", trials: 751, luck_bar: 2.23 }]);
   api.rules = vi.fn().mockResolvedValue({
     reviewed: "2026-11-14",
@@ -67,6 +95,18 @@ describe("Research", () => {
     expect(screen.getByText("Sharpe 0.04 against 0.68.")).toBeInTheDocument();
     fireEvent.click(family);
     expect(screen.queryByText("Sharpe 0.04 against 0.68.")).not.toBeInTheDocument();
+  });
+
+  it("shows each graduate's confirmation run and opens its coins", async () => {
+    render(<Research />);
+    const graduate = await screen.findByRole("button", { name: "btc-regime-trend" });
+    expect(screen.getByText("confirmation-btc-regime-and-coin-trend")).toBeInTheDocument();
+    expect(screen.getByText("PASS")).toBeInTheDocument();
+    expect(screen.getByText("75% of 4")).toBeInTheDocument();
+    expect(screen.queryByText("AMPUSDT")).not.toBeInTheDocument();
+    fireEvent.click(graduate);
+    expect(screen.getByText("AMPUSDT")).toBeInTheDocument();
+    expect(screen.getByText("3/4")).toBeInTheDocument();
   });
 
   it("says so when decisions can't be read", async () => {

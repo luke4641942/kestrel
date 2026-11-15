@@ -489,3 +489,11 @@ describe("cost gate setups", () => {
     expect(hasOwnTarget([{ target_r: null }, { target_r: 1.8 }])).toBe(true);
   });
 });
+
+describe("confirmation studies", () => {
+  it("are named and coloured like the other studies", () => {
+    expect(studyTitle({ kind: "confirmation", strategy: "btc-regime-trend" })).toBe("Confirmation run of btc-regime-trend");
+    expect(studyTone("PASS")).toBe("ok");
+    expect(studyTone("FAIL")).toBe("bad");
+  });
+});

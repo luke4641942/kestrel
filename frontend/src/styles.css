@@ -2356,3 +2356,13 @@ p {
 .family-decisions p {
   margin: 4px 0 0;
 }
+
+.coin-table {
+  margin: 4px 0 8px;
+}
+
+.coin-table th,
+.coin-table td {
+  padding-top: 4px;
+  padding-bottom: 4px;
+}

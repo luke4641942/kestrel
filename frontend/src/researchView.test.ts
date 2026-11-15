@@ -57,3 +57,42 @@ describe("the luck bar series", () => {
     expect(luckReadout(series[1]!)).toBe("2026-11-15: 751 trials, luck bar 2.23");
   });
 });
+
+describe("confirmation runs", () => {
+  it("reads each run's summary and sorts its coins by how far ahead of holding", async () => {
+    const { confirmationRuns } = await import("./researchView");
+    const study = {
+      id: "20261115-231551-21a19d",
+      created_at: "2026-11-15T23:15:51Z",
+      kind: "confirmation" as const,
+      strategy: "btc-regime-trend",
+      symbol: "CONFIRMATION",
+      interval: "1d" as const,
+      start: "first bar",
+      end: "2025-11 (exclusive)",
+      looks: [],
+      verdict: "PASS",
+      confirmation: true,
+      detail: {
+        note: "confirmation-btc-regime-and-coin-trend",
+        coins: 3,
+        beats_share: 2 / 3,
+        windows: 10,
+        windows_share: 0.6,
+        median_sharpe: 0.57,
+        per_coin: [
+          { symbol: "AAA", sharpe: 0.1, held_sharpe: 0.5, windows: 4, windows_beating: 1 },
+          { symbol: "BBB", sharpe: 0.9, held_sharpe: -0.4, windows: 6, windows_beating: 5 },
+          { symbol: "CCC", sharpe: null, held_sharpe: 0.2, windows: 0, windows_beating: 0 },
+        ],
+      },
+    };
+    const robustness = { ...study, id: "x", kind: "robustness" as const, detail: {} };
+    const [run, ...rest] = confirmationRuns([robustness, study]);
+    expect(rest).toEqual([]);
+    expect(run).toMatchObject({ note: "confirmation-btc-regime-and-coin-trend", verdict: "PASS", coins: 3, windows: 10 });
+    expect(run!.perCoin.map((c) => c.symbol)).toEqual(["BBB", "AAA", "CCC"]);
+    expect(run!.perCoin[0]!.gap).toBeCloseTo(1.3);
+    expect(run!.perCoin[2]!.gap).toBeNull();
+  });
+});
