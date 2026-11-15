@@ -85,6 +85,7 @@ from kestrel.studies.weekly_signal import (
 )
 from kestrel.validation.control import PATHS, format_control, run_control
 from kestrel.validation.holdout import HoldoutLog, format_holdout, holdout_test
+from kestrel.validation.holdout import score as score_holdout
 from kestrel.validation.log import Look, Study, ValidationLog
 from kestrel.validation.robustness import check_robustness, format_robustness
 from kestrel.validation.walkforward import format_walk_forward, walk_forward
@@ -580,6 +581,10 @@ def holdout_test_cmd(
     start: Annotated[str, typer.Option(help="First scored month, YYYY-MM.")],
     end: Annotated[str, typer.Option(help="Last scored month, YYYY-MM (inclusive).")],
     interval: IntervalOpt = Interval.D1,
+    param: Annotated[
+        list[str] | None,
+        typer.Option(help="A setting the note names, as name=value; repeatable."),
+    ] = None,
     cash: Annotated[float, typer.Option(help="Starting cash in USDT.")] = 330.0,
     research_dir: ResearchDir = Path("research"),
     data_dir: DataDir = Path("data"),
@@ -604,22 +609,30 @@ def holdout_test_cmd(
         after = last.next()
         begin = datetime(scored.year, scored.month, 1, tzinfo=UTC)
         until = datetime(after.year, after.month, 1, tzinfo=UTC)
-        bars = ParquetStore(data_dir).read(
-            symbol, interval, datetime(first.year, first.month, 1, tzinfo=UTC), until
-        )
-        bars = attach_features(bars, spec_for(key).features, symbol, interval, data_dir)
-        typer.echo(f"HOLDOUT USED: {key} on {symbol.upper()} for {link[0]} v{link[1]}")
-        result = holdout_test(
-            key,
-            symbol.upper(),
-            bars,
-            interval,
-            cfg,
-            Decimal(str(cash)),
-            resolve_params(key, {}),
-            start=begin,
-            end=until,
-        )
+        params = resolve_params(key, _parse_params(param or []))
+        money = Decimal(str(cash))
+        warm = datetime(first.year, first.month, 1, tzinfo=UTC)
+        store_ = ParquetStore(data_dir)
+        if spec_for(key).universe:
+            # A basket: the portfolio engine on the universe panel, against BTC held.
+            panel = universe_panel(store_, interval, first, last)
+            btc = store_.read(UNIVERSE_BENCHMARK, interval, warm, until)
+            typer.echo(f"HOLDOUT USED: {key} on {UNIVERSE} for {link[0]} v{link[1]}")
+            mine = run_portfolio(
+                make_portfolio_strategy(key, params), panel, interval, cfg, money,
+                allow_holdout=True,
+            )  # fmt: skip
+            held = run_backtest(
+                BuyAndHold(UNIVERSE_BENCHMARK), btc, interval, cfg, money, allow_holdout=True
+            )
+            result = score_holdout(key, UNIVERSE, params, mine, held, start=begin, end=until)
+        else:
+            bars = store_.read(symbol, interval, warm, until)
+            bars = attach_features(bars, spec_for(key).features, symbol, interval, data_dir)
+            typer.echo(f"HOLDOUT USED: {key} on {symbol.upper()} for {link[0]} v{link[1]}")
+            result = holdout_test(
+                key, symbol.upper(), bars, interval, cfg, money, params, start=begin, end=until
+            )
         log.record(link[0], link[1], result, datetime(first.year, first.month, 1, tzinfo=UTC))
     except (ConfigError, ValueError) as e:
         typer.echo(str(e), err=True)

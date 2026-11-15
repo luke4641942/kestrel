@@ -16,6 +16,9 @@ lost far less as worse (lower volatility makes a negative Sharpe more negative),
 strategy's return must instead beat holding at the strategy's average exposure. The worst
 drawdown inside the year must also be no deeper than 50%.
 
+A coin-basket strategy is scored the same way, with its own run (the portfolio engine on
+the universe panel) against BTC held, the benchmark its backtests use: see ``score``.
+
 Each note may use the holdout once: the record in ``<data>/holdout/<note>.json`` is
 written before the result is shown and refuses a second run. Holdout runs are never
 trials (they would leak the holdout into the deflated Sharpe) and never reach the API.
@@ -33,7 +36,7 @@ from typing import Any
 
 import polars as pl
 
-from kestrel.backtest.engine import run_backtest
+from kestrel.backtest.engine import BacktestResult, run_backtest
 from kestrel.backtest.metrics import daily_equity
 from kestrel.config import Config
 from kestrel.data.schema import Interval
@@ -116,6 +119,20 @@ def holdout_test(
         make_strategy(key, symbol, params), bars, interval, config, cash, allow_holdout=True
     )
     held = run_backtest(BuyAndHold(symbol), bars, interval, config, cash, allow_holdout=True)
+    return score(key, symbol, params, mine, held, start=start, end=end)
+
+
+def score(
+    key: str,
+    symbol: str,
+    params: dict[str, int],
+    mine: BacktestResult,
+    held: BacktestResult,
+    *,
+    start: datetime,
+    end: datetime,
+) -> HoldoutResult:
+    """Score a strategy's run and the benchmark's over [start, end), both warmed up first."""
     my_returns = window_returns(daily_equity(mine), start, end)
     held_returns = window_returns(daily_equity(held), start, end)
     if len(my_returns) < 2:

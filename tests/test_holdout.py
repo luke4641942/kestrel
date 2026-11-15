@@ -191,3 +191,32 @@ def test_the_api_lists_records_and_cannot_run_one(tmp_path: Path) -> None:
     assert client.post("/api/holdout", json={}).status_code == 405
     paths = [getattr(r, "path", "") for r in client.app.routes]  # type: ignore[attr-defined]
     assert not [p for p in paths if "holdout" in p and "jobs" in p]
+
+
+def test_a_coin_basket_is_scored_against_btc_held(tmp_path: Path) -> None:
+    from kestrel.data.universe import manifest_path
+
+    store = ParquetStore(tmp_path)
+    coins = {"BTCUSDT": 2, "ETHUSDT": 3, "SOLUSDT": 4}
+    for name, seed in coins.items():
+        store.write(name, D1, daily(seed=seed))
+    path = manifest_path(store, D1)
+    path.parent.mkdir(parents=True)
+    path.write_text(json.dumps({"coins": dict.fromkeys(coins, 18)}))
+    research = ResearchStore(tmp_path / "r")
+    s = research.create("Holdout: rotation")
+    sections = ("hypothesis", "rationale", "rules", "falsification", "parameters", "costs")
+    research.edit(s.slug, 1, dict.fromkeys(sections, "x"), "monthly-rotation")
+    research.freeze(s.slug, 1)
+    args = [
+        "holdout-test", "UNIVERSE", "--strategy", "monthly-rotation", "--research", s.slug,
+        "--warmup-start", "2025-05", "--start", "2025-11", "--end", "2026-10",
+        "--param", "lookback_days=30", "--param", "trend_days=50",
+        "--data-dir", str(tmp_path), "--research-dir", str(tmp_path / "r"), "--config", REPO_CONFIG,
+    ]  # fmt: skip
+    got = CliRunner().invoke(app, args)
+    assert got.exit_code == 0, got.output
+    assert "HOLDOUT USED: monthly-rotation on UNIVERSE" in got.output
+    saved = json.loads((tmp_path / "holdout" / f"{s.slug}.json").read_text())
+    assert saved["params"]["lookback_days"] == 30
+    assert saved["symbol"] == "UNIVERSE"
