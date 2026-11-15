@@ -7,6 +7,10 @@ module decides when its values are known (kestrel.data.sentiment, kestrel.data.f
 and only values known by a bar's close are attached to it. Market-wide features ignore the
 symbol; per-coin ones (funding) read that coin's history.
 
+``stablecoins_up`` is 1.0 when the stablecoin supply known at the close grew over 4 weeks
+(kestrel.data.stablecoins), 0.0 when it didn't. Market-wide, like Fear & Greed, so it can
+also go on a coin panel (``MARKET_WIDE``).
+
 ``btc_close`` is BTC's close on the same bar (matched by open time), so it is known at the
 same moment as the bar's own close. A bar with no BTC bar gets null, never a neighbour's.
 
@@ -24,7 +28,7 @@ from pathlib import Path
 
 import polars as pl
 
-from kestrel.data import funding, sentiment
+from kestrel.data import funding, sentiment, stablecoins
 from kestrel.data.schema import Interval
 from kestrel.data.store import ParquetStore
 from kestrel.regimes import RegimeStore
@@ -32,7 +36,9 @@ from kestrel.regimes import RegimeStore
 BTC = "BTCUSDT"
 BTC_CLOSE = "btc_close"
 REGIME_VOLATILE = "regime_volatile"
-FEATURES = (sentiment.FEATURE, funding.FEATURE, BTC_CLOSE, REGIME_VOLATILE)
+FEATURES = (sentiment.FEATURE, funding.FEATURE, BTC_CLOSE, REGIME_VOLATILE, stablecoins.FEATURE)
+MARKET_WIDE = (sentiment.FEATURE, stablecoins.FEATURE)
+"""Features that are the same for every coin on a day, so a coin panel can carry them."""
 
 
 def attach_features(
@@ -51,6 +57,10 @@ def attach_features(
             bars = attach_btc_close(bars, interval, data_dir)
         elif feature == REGIME_VOLATILE:
             bars = attach_regime_volatile(bars, symbol, interval, data_dir)
+        elif feature == stablecoins.FEATURE:
+            if interval is not Interval.D1:
+                raise ValueError(f"{feature} is daily; it needs 1d bars")
+            bars = stablecoins.attach(bars, stablecoins.load(data_dir))
         else:
             raise ValueError(f"unknown feature {feature!r}; one of {', '.join(FEATURES)}")
     return bars

@@ -75,3 +75,37 @@ def test_the_ingest_command(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> 
     got = CliRunner().invoke(app, ["ingest-stablecoins", "--data-dir", str(tmp_path)])
     assert got.exit_code == 0, got.output
     assert "2 days of stablecoin supply" in got.output
+
+
+def test_hold_while_stablecoins_grow_decides_on_sundays() -> None:
+    from kestrel.strategies.stablecoin_hold import StablecoinHold
+    from kestrel.strategy import STRATEGIES, validated_weights
+
+    bars = daily([0.0] * 20)  # 2024-01-01 (Monday) to 2024-01-21; Sundays are days 6, 13, 20
+    flags = [1.0] * 7 + [0.0] * 7 + [None] * 7
+    w = validated_weights(StablecoinHold(), bars.with_columns(stablecoins_up=pl.Series(flags)))
+    assert w.to_list() == [0.0] * 6 + [1.0] * 7 + [0.0] * 8  # in from day 6, out from 13
+    with pytest.raises(ValueError, match="stablecoins_up"):
+        StablecoinHold().target_weights(bars)
+    assert STRATEGIES["stablecoin-hold"].features == ("stablecoins_up",)
+
+
+def test_the_feature_goes_on_every_coin_of_a_day(tmp_path: Path) -> None:
+    from kestrel.data.features import attach_features
+    from kestrel.data.schema import Interval
+
+    supply = [100.0 + i for i in range(80)]  # always growing
+    stablecoins.save(
+        pl.DataFrame(
+            {"date": [START + timedelta(days=i) for i in range(80)], "supply": supply},
+            schema=stablecoins.SCHEMA,
+        ),
+        tmp_path,
+    )
+    bars = daily([0.0] * 20)
+    two = pl.concat([bars.with_columns(symbol=pl.lit(s)) for s in ("A", "B")])
+    got = attach_features(two, ("stablecoins_up",), "UNIVERSE", Interval.D1, tmp_path)
+    assert got.filter(pl.col("open_time") == bars["open_time"][10])["stablecoins_up"].to_list() == [
+        1.0,
+        1.0,
+    ]

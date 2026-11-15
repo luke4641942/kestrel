@@ -476,3 +476,21 @@ def test_eth_btc_value_tilts_to_the_cheap_coin_and_otherwise_holds_half_each() -
     )  # fmt: skip
     assert STRATEGIES["eth-btc-value"].assets == ("BTCUSDT", "ETHUSDT")
     assert STRATEGIES["btc-eth-half"].kind == "control"
+
+
+# ---------- stablecoins ----------
+
+
+def test_rotation_holds_cash_at_a_month_end_when_stablecoins_shrank() -> None:
+    from kestrel.strategies.monthly_rotation import RotationWithStablecoins
+
+    p = coins({"BTCUSDT": (steady(0.01, 61), 9e9), "ETHUSDT": (steady(0.02, 61), 9e9)})
+    s = RotationWithStablecoins(lookback_days=20, trend_days=10)
+    up = validated_decisions(s, p.with_columns(stablecoins_up=pl.lit(1.0)))
+    plain = validated_decisions(rotation(lookback_days=20, trend_days=10), p)
+    assert up.equals(plain)  # growing every day: exactly the plain rotation
+    down = last(s, p.with_columns(stablecoins_up=pl.lit(0.0)))
+    assert down["symbol"].to_list() == [None]
+    with pytest.raises(ValueError, match="stablecoins_up"):
+        s.target_weights(p)
+    assert STRATEGIES["rotation-stablecoins"].features == ("stablecoins_up",)

@@ -22,6 +22,8 @@ API = "https://stablecoins.llama.fi/stablecoincharts/all"
 USER_AGENT = "kestrel-research/0.1 (https://github.com/luke4641942/kestrel)"
 KNOWN_AFTER = timedelta(days=2)
 SCHEMA = {"date": pl.Date, "supply": pl.Float64}
+FEATURE = "stablecoins_up"
+GROWTH_DAYS = 28
 
 
 class StablecoinError(ValueError):
@@ -77,3 +79,26 @@ def load(data_dir: Path | str) -> pl.DataFrame:
     if not target.exists():
         raise StablecoinError("no stablecoin data; run kestrel ingest-stablecoins first")
     return pl.read_parquet(target)
+
+
+def growing(open_times: list[datetime], supply: pl.DataFrame) -> list[bool | None]:
+    """For each daily bar: was the supply known at its close above its value 28 days before?
+    None when either figure is missing."""
+    by_day = dict(zip(supply["date"].to_list(), supply["supply"].to_list(), strict=True))
+    out: list[bool | None] = []
+    for t in open_times:
+        latest = (t + timedelta(days=1) - KNOWN_AFTER).date()
+        now, then = by_day.get(latest), by_day.get(latest - timedelta(days=GROWTH_DAYS))
+        out.append(None if now is None or then is None else now > then)
+    return out
+
+
+def attach(bars: pl.DataFrame, supply: pl.DataFrame) -> pl.DataFrame:
+    """``stablecoins_up`` (1.0 growing, 0.0 not, null unknown) on each daily bar. Market-wide,
+    so a panel of many coins gets the same value on every coin's bar of a day."""
+    days = bars.select("open_time").unique().sort("open_time")
+    flags = growing(days["open_time"].to_list(), supply)
+    known = days.with_columns(
+        pl.Series(FEATURE, [None if f is None else float(f) for f in flags], dtype=pl.Float64)
+    )
+    return bars.join(known, on="open_time", how="left")

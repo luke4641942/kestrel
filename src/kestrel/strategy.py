@@ -30,7 +30,11 @@ from kestrel.strategies.eth_btc import BtcEthHalf, EthBtcValue
 from kestrel.strategies.funding import FundingHold, FundingTrend
 from kestrel.strategies.levels import LevelBreakout, LevelRetest
 from kestrel.strategies.momentum import CrossSectionalMomentum
-from kestrel.strategies.monthly_rotation import BtcGoldRotation, MonthlyRotation
+from kestrel.strategies.monthly_rotation import (
+    BtcGoldRotation,
+    MonthlyRotation,
+    RotationWithStablecoins,
+)
 from kestrel.strategies.pattern_macd import PatternMacd
 from kestrel.strategies.pivots import PivotReversal
 from kestrel.strategies.regime import TrendVolTargetRegime
@@ -39,6 +43,7 @@ from kestrel.strategies.rotation import DualMomentum
 from kestrel.strategies.rsi_dip import RsiDip
 from kestrel.strategies.sentiment import FearGreedContrarian
 from kestrel.strategies.squeeze import SqueezeBreakout
+from kestrel.strategies.stablecoin_hold import StablecoinHold
 from kestrel.strategies.structure import StructurePullback
 from kestrel.strategies.trend import TrendVolTarget
 from kestrel.strategies.trend_basket import TrendBasket
@@ -744,6 +749,29 @@ STRATEGIES: dict[str, StrategySpec] = {
             BtcEthHalf,
             universe=True,
             assets=("BTCUSDT", "ETHUSDT"),
+        ),
+        StrategySpec(
+            "rotation-stablecoins",
+            "research",
+            "Monthly BTC/ETH/SOL rotation (top_n by lookback_days return, above the trend_days "
+            "average) that holds cash at a month end when stablecoin supply shrank over 4 "
+            "weeks. Research: runs only through its frozen note.",
+            RotationWithStablecoins,
+            (
+                Param("lookback_days", 180, 30, 365, "Days of return ranked"),
+                Param("trend_days", 200, 50, 365, "Trend filter average, days"),
+                Param("top_n", 2, 1, 3, "Coins held"),
+            ),
+            universe=True,
+            features=("stablecoins_up",),
+        ),
+        StrategySpec(
+            "stablecoin-hold",
+            "research",
+            "Each Sunday, hold the coin for the next week if stablecoin supply grew over the last "
+            "4 weeks, else cash. Research: runs only through its frozen note.",
+            StablecoinHold,
+            features=("stablecoins_up",),
         ),
         StrategySpec(
             "btc-gold-rotation",

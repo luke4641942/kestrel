@@ -41,7 +41,7 @@ from kestrel.backtest.portfolio import run_portfolio
 from kestrel.backtest.vectorised import run_vectorised
 from kestrel.config import Config
 from kestrel.data.binance_vision import Month
-from kestrel.data.features import attach_features
+from kestrel.data.features import MARKET_WIDE, attach_features
 from kestrel.data.panel import load_panel
 from kestrel.data.schema import Interval
 from kestrel.data.store import ParquetStore
@@ -159,16 +159,22 @@ def strategy_panel(
     store: ParquetStore, key: str, interval: Interval, start: Month, end: Month
 ) -> pl.DataFrame:
     """The panel a universe strategy runs on: its named assets if it has them (each
-    ingested on its own, like PAXGUSDT), else the coin universe."""
-    assets = spec_for(key).assets
-    if not assets:
-        return universe_panel(store, interval, start, end)
-    panel = load_panel(store, list(assets), interval, start, end)
-    missing = sorted(set(assets) - set(panel["symbol"].unique().to_list()))
-    if missing:
-        raise ValueError(
-            f"no {interval.value} bars stored for {', '.join(missing)}; ingest them first"
-        )
+    ingested on its own, like PAXGUSDT), else the coin universe; with its market-wide
+    features attached."""
+    spec = spec_for(key)
+    if spec.assets:
+        panel = load_panel(store, list(spec.assets), interval, start, end)
+        missing = sorted(set(spec.assets) - set(panel["symbol"].unique().to_list()))
+        if missing:
+            names = ", ".join(missing)
+            raise ValueError(f"no {interval.value} bars stored for {names}; ingest them first")
+    else:
+        panel = universe_panel(store, interval, start, end)
+    if spec.features:
+        coinwise = sorted(set(spec.features) - set(MARKET_WIDE))
+        if coinwise:
+            raise ValueError(f"a coin panel can only carry market-wide features, not {coinwise}")
+        panel = attach_features(panel, spec.features, UNIVERSE, interval, store.root)
     return panel
 
 

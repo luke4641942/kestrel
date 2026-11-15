@@ -16,6 +16,9 @@ unfilled slot stays in cash. Positions only change at month ends. A coin listed 
 With ``macd_filter`` 1, a coin is also only eligible while its daily MACD (12, 26, 9)
 histogram is above zero at the month-end close (Luke's 2026-11-15 variant).
 
+``RotationWithStablecoins`` adds one condition at each month end: hold nothing unless the
+stablecoin supply grew over the last 4 weeks (``stablecoins_up``, kestrel.data.features).
+
 ``BtcGoldRotation`` is the same rule over BTC and gold (PAXGUSDT, one token per troy
 ounce): assets that don't move together, which is what rotation is meant to exploit.
 """
@@ -24,6 +27,7 @@ from __future__ import annotations
 
 import polars as pl
 
+from kestrel.data.stablecoins import FEATURE
 from kestrel.indicators import macd
 from kestrel.strategies.basket import BY, DECISIONS, no_decisions, require_daily
 
@@ -98,3 +102,38 @@ class BtcGoldRotation(MonthlyRotation):
         macd_filter: int = 0,
     ) -> None:
         super().__init__(symbol, lookback_days, trend_days, top_n, macd_filter)
+
+
+class RotationWithStablecoins(MonthlyRotation):
+    """BTC/ETH/SOL rotation that holds cash at month ends when stablecoin supply shrank."""
+
+    label = "BTC/ETH/SOL"
+
+    def __init__(
+        self,
+        symbol: str = "UNIVERSE",
+        lookback_days: int = 180,
+        trend_days: int = 200,
+        top_n: int = 2,
+    ) -> None:
+        super().__init__(symbol, lookback_days, trend_days, top_n, 0)
+        self.name += ", stablecoin filter"
+
+    def target_weights(self, panel: pl.DataFrame) -> pl.DataFrame:
+        if FEATURE not in panel.columns:
+            raise ValueError(f"{self.name} needs the {FEATURE} feature attached to its panel")
+        decisions = super().target_weights(panel)
+        # Month ends whose supply didn't grow (or is unknown) hold nothing.
+        growing = panel.filter(pl.col(FEATURE) == 1.0).select("open_time").unique()
+        kept = decisions.join(growing, on="open_time", how="semi")
+        cash = (
+            decisions.join(growing, on="open_time", how="anti")
+            .select("open_time")
+            .unique()
+            .with_columns(symbol=pl.lit(None, pl.Utf8), weight=pl.lit(0.0))
+        )
+        return (
+            pl.concat([kept, cash.select(kept.columns)])
+            .select([pl.col(c).cast(t) for c, t in DECISIONS.items()])
+            .sort("open_time", "symbol", nulls_last=True)
+        )

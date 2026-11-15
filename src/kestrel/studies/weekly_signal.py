@@ -81,13 +81,7 @@ def news_flags(bars: pl.DataFrame, tone: pl.DataFrame) -> list[bool | None]:
 
 def stablecoin_flags(bars: pl.DataFrame, supply: pl.DataFrame) -> list[bool | None]:
     """On when the stablecoin supply known at the close is above its value 4 weeks before."""
-    by_day = dict(zip(supply["date"].to_list(), supply["supply"].to_list(), strict=True))
-    out: list[bool | None] = []
-    for t in bars["open_time"].to_list():
-        latest = (t + timedelta(days=1) - stablecoins.KNOWN_AFTER).date()
-        now, then = by_day.get(latest), by_day.get(latest - timedelta(days=28))
-        out.append(None if now is None or then is None else now > then)
-    return out
+    return stablecoins.growing(bars["open_time"].to_list(), supply)
 
 
 def fear_flags(bars: pl.DataFrame) -> list[bool | None]:
