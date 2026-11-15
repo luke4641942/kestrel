@@ -208,3 +208,51 @@ def test_the_cli_splits_once_explores_apart_and_confirms_only_through_a_note(
     assert confirmed.exit_code == 0, confirmed.output
     (saved,) = list((data / "runs").glob("*/run.json"))
     assert json.loads(saved.read_text())["confirmation"] is True
+
+
+def test_a_confirmation_run_covers_the_half_once_and_counts_as_one_look(tmp_path: Path) -> None:
+    from kestrel.validation.log import ValidationLog
+
+    cfg, data, research = setup(tmp_path)
+    where = ["--data-dir", str(data), "--config", str(cfg), "--research-dir", str(research)]
+    assert cli("exploration-split", *where).exit_code == 0
+    notes = ResearchStore(research)
+    graduate = notes.create("Confirmation: crash rebound").slug
+    notes.edit(graduate, 1, dict.fromkeys(SECTIONS, "x"), "crash-rebound")
+    plain = notes.create("Crash rebound, not a confirmation").slug
+    for slug in (graduate, plain):
+        notes.edit(slug, 1, dict.fromkeys(SECTIONS, "x"), "crash-rebound")
+        notes.freeze(slug, 1)
+
+    assert cli("confirm", "--research", plain, *where).exit_code == 1
+    ran = cli("confirm", "--research", graduate, *where)
+    assert ran.exit_code == 0, ran.output
+    assert "2 confirmation coins with 24+ months" in ran.output
+    assert "Verdict: FAIL" in ran.output or "Verdict: PASS" in ran.output
+    (study,) = ValidationLog(data).studies()
+    assert study["kind"] == "confirmation"
+    assert study["confirmation"] is True
+    assert study["detail"]["note"] == graduate
+    assert len(study["detail"]["per_coin"]) == 2
+    assert len(study["looks"]) == 1  # the whole run is one look
+    assert trial_set([], [study]).count == 0  # not in the main luck bar
+    assert trial_set([], [study], pool="confirmation").count == 1
+    assert ResearchStore(research).get(graduate).status == "backtested"
+    again = cli("confirm", "--research", graduate, *where)
+    assert again.exit_code == 1
+    assert "never rerun" in again.output
+
+
+def test_a_coin_too_short_for_a_window_still_counts_for_the_first_test(tmp_path: Path) -> None:
+    from kestrel.validation.confirmation import confirm
+
+    store = ParquetStore(tmp_path)
+    months_of_daily("LONGUSDT", store, 40, 2e7)
+    months_of_daily("SHORTUSDT", store, 26, 2e7)  # 24+ months, but no 24 + 6 window
+    cfg = replace(config(costs=False), split=SPLIT)
+    result = confirm("crash-rebound", {}, ["LONGUSDT", "SHORTUSDT"], store, cfg, Decimal(330))
+    by = {c.symbol: c for c in result.coins}
+    assert set(by) == {"LONGUSDT", "SHORTUSDT"}
+    assert by["SHORTUSDT"].windows == 0
+    assert by["LONGUSDT"].windows > 0
+    assert result.windows == by["LONGUSDT"].windows

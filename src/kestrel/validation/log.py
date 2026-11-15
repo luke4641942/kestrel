@@ -30,7 +30,7 @@ class Look:
 
 @dataclass(frozen=True)
 class Study:
-    kind: Literal["robustness", "walk-forward", "random-entry"]
+    kind: Literal["robustness", "walk-forward", "random-entry", "confirmation"]
     strategy: str
     symbol: str
     interval: str
@@ -40,6 +40,8 @@ class Study:
     verdict: str
     detail: dict[str, Any] = field(default_factory=dict)
     """What the report showed: per-setting results, folds, ratios."""
+    confirmation: bool = False
+    """A confirmation run of the exploration experiment: counted in its own trial pool."""
 
 
 class ValidationLog:

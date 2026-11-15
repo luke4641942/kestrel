@@ -109,6 +109,7 @@ from kestrel.studies.weekly_signal import (
     run_signal_study,
     stablecoin_flags,
 )
+from kestrel.validation.confirmation import confirm, format_confirmation
 from kestrel.validation.control import PATHS, format_control, run_control
 from kestrel.validation.holdout import HoldoutLog, format_holdout, holdout_test
 from kestrel.validation.holdout import score as score_holdout
@@ -418,6 +419,71 @@ def exploration_split(
         f"{len(volumes)} eligible coins: {len(exploration)} to exploration, "
         f"{len(confirmation)} to confirmation -> {target} (commit it; it is never rewritten)"
     )
+
+
+@app.command("confirm")
+def confirm_cmd(
+    research: Annotated[
+        str, typer.Option(help="The frozen confirmation note (slug starting 'confirmation-').")
+    ],
+    cash: Annotated[float, typer.Option(help="Starting cash in USDT.")] = 330.0,
+    research_dir: ResearchDir = Path("research"),
+    data_dir: DataDir = Path("data"),
+    config: Annotated[
+        Path, typer.Option("--config", envvar="KESTREL_CONFIG", help="Config file.")
+    ] = Path("kestrel.toml"),
+) -> None:
+    """The exploration experiment's confirmation run: one graduate on every coin in the
+    confirmation half, daily bars, before the holdout. Once per note; one look in the
+    confirmation trial pool."""
+    notes = ResearchStore(research_dir)
+    log = ValidationLog(data_dir)
+    try:
+        if not research.startswith(CONFIRMATION_PREFIX):
+            raise ValueError(f"a confirmation note's slug starts with {CONFIRMATION_PREFIX!r}")
+        s, note = notes.require_testable(research)
+        key = note.implementation
+        assert key is not None  # freezing requires one
+        if spec_for(key).universe:
+            raise ValueError(f"{key} ranks the whole universe; a graduate trades one coin")
+        if any(
+            st["kind"] == "confirmation" and st.get("detail", {}).get("note") == research
+            for st in log.studies()
+        ):
+            raise ValueError(f"{research} has already had its confirmation run; never rerun")
+        cfg = load_config(config)
+        if cfg.split is None:
+            raise ValueError("no exploration split; run kestrel exploration-split")
+        params = resolve_params(key, {})
+        result = confirm(
+            key,
+            params,
+            sorted(cfg.split.confirmation),
+            ParquetStore(data_dir),
+            cfg.unlock_confirmation(),
+            Decimal(str(cash)),
+        )
+    except (ConfigError, ValueError) as e:
+        typer.echo(str(e), err=True)
+        raise typer.Exit(code=1) from None
+    holdout = cfg.backtest.holdout_start
+    study_id = log.save(
+        Study(
+            kind="confirmation",
+            strategy=key,
+            symbol="CONFIRMATION",
+            interval=Interval.D1.value,
+            start="first bar",
+            end=f"{holdout:%Y-%m} (exclusive)",
+            looks=[Look(params, result.median_sharpe)],
+            verdict=result.verdict,
+            detail={**result.detail(), "note": research, "version": note.version},
+            confirmation=True,
+        )
+    )
+    notes.mark_backtested(s.slug, note.version)
+    typer.echo(format_confirmation(result, research))
+    typer.echo(f"Saved as study {study_id}")
 
 
 @app.command("anchor-study")

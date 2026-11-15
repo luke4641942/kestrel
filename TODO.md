@@ -10,14 +10,12 @@ Decisions and rules live in CLAUDE.md; results in `research/findings.md`.
       (around 2027-05-15); verdict at 395 days (around 2027-12-14).
 
 ## Next
-- [ ] Exploration experiment (Luke, 2026-11-16; CLAUDE.md "Exploration experiment"). Session 1
-      done: split fixed (181 exploration, 180 confirmation coins; research/exploration/
-      split.toml), engine lock on the confirmation half, `backtest --explore` (saved apart,
-      not a trial), `backtest --confirmation` (frozen `confirmation-` note, own trial pool).
-      Next: explore freely on the exploration half; pick 3 graduates; `--confirmation` for
-      walk-forward/robustness/random-entry when a graduate needs them.
-- [x] Walk-forward for basket strategies: built 2026-11-15 (portfolio engine per window, against
-      BTC held); the five basket walk-forwards rerun with the notes' settings.
+- [ ] Exploration experiment (Luke, 2026-11-16; CLAUDE.md "Exploration experiment").
+      Exploration done (research/exploration/log.md, not evidence). Two graduates (Luke):
+      `btc-regime-trend` and `crash-rebound`, with `kestrel confirm` (every confirmation
+      coin once, one look in its own pool). Waiting on Luke: freeze
+      `confirmation-btc-regime-and-coin-trend` and `confirmation-altcoin-crash-rebound`,
+      then one `kestrel confirm` each.
 - [ ] Delistings study: run 2026-11-15, verdict EXIT RULE (coins fell 39.8% on average from
       the day after the announcement to removal; no rebound; findings item 11). Luke's call:
       write an exit-rule note (sell a held coin at the next open after its delisting is

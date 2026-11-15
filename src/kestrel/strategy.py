@@ -26,7 +26,9 @@ from kestrel.strategies.basket import LargeCoinBasket
 from kestrel.strategies.basket_breakout import BasketBreakout
 from kestrel.strategies.bollinger_pullback import BollingerPullback
 from kestrel.strategies.brake import TrendVolTargetBrake, WeeklyMomentumBrake
+from kestrel.strategies.btc_regime import BtcRegimeTrend
 from kestrel.strategies.choch_fvg import ChochFvg
+from kestrel.strategies.crash_rebound import CrashRebound
 from kestrel.strategies.eth_btc import BtcEthHalf, EthBtcValue
 from kestrel.strategies.funding import FundingHold, FundingTrend
 from kestrel.strategies.levels import LevelBreakout, LevelRetest
@@ -611,6 +613,33 @@ STRATEGIES: dict[str, StrategySpec] = {
                 Param("swing_bars", 10, 3, 50, "Bars the pattern's low must be lowest of"),
                 Param("expiry_bars", 3, 1, 10, "Bars a pattern waits for its breakout"),
                 Param("target_r", 2, 1, 6, "Target as a multiple of the risk to the stop"),
+            ),
+        ),
+        StrategySpec(
+            "btc-regime-trend",
+            "research",
+            "Hold an altcoin while BTC closes above its btc_days average and the coin is up "
+            "over coin_days, sized to target_vol_pct over its vol_days volatility (capped at "
+            "100%). Exploration graduate: runs only through its frozen confirmation note.",
+            BtcRegimeTrend,
+            (
+                Param("btc_days", 50, 20, 200, "BTC's moving average, days"),
+                Param("coin_days", 30, 5, 120, "Lookback for the coin's own trend, days"),
+                Param("vol_days", 30, 10, 90, "Days of returns in the volatility"),
+                Param("target_vol_pct", 50, 10, 100, "Annualised volatility target, %"),
+            ),
+            features=("btc_close",),
+        ),
+        StrategySpec(
+            "crash-rebound",
+            "research",
+            "Buy a coin after it falls more than drop_pct% over days, hold hold_days. "
+            "Exploration graduate: runs only through its frozen confirmation note.",
+            CrashRebound,
+            (
+                Param("drop_pct", 30, 10, 60, "Fall that counts as a crash, %"),
+                Param("days", 7, 1, 30, "Days the fall is measured over"),
+                Param("hold_days", 3, 1, 30, "Days held after a crash"),
             ),
         ),
         StrategySpec(
