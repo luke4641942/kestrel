@@ -13,7 +13,9 @@ export function ShortStudies() {
   const studies = useResource(api.shortStudies, []);
   const list = studies.data ?? [];
   const [chosen, setChosen] = useState<string>();
-  const current = list.find((s) => s.name === chosen) ?? list[0];
+  // Nothing open until a row is clicked (and a second click closes it), so the runs below
+  // stay near the top of the page.
+  const current = list.find((s) => s.name === chosen);
   if (studies.error || list.length === 0) return null;
   const v = current ? shortVerdict(current) : null;
   const [main, versus] = current?.curves ?? [];
@@ -24,7 +26,7 @@ export function ShortStudies() {
   return (
     <Section
       title="Hypothetical shorting studies"
-      description="Measured outside the engine, which can't short: each was run once from its frozen note with kestrel short-study, after costs. A pass is labelled needs-shorting and is never traded."
+      description="Measured outside the engine, which can't short: each was run once from its frozen note with kestrel short-study, after costs. A pass is labelled needs-shorting and is never traded. Select a study to see its results."
     >
       <Panel>
         <div className="table-wrap">
@@ -41,7 +43,7 @@ export function ShortStudies() {
                 <tr
                   key={s.name}
                   className={`clickable${s.name === current?.name ? " selected" : ""}`}
-                  onClick={() => setChosen(s.name)}
+                  onClick={() => setChosen(s.name === chosen ? undefined : s.name)}
                   aria-selected={s.name === current?.name}
                 >
                   <td>

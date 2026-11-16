@@ -1,4 +1,4 @@
-import { render, screen } from "@testing-library/react";
+import { fireEvent, render, screen } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { api } from "../api";
 import { shortStudy } from "../shortStudies.test";
@@ -15,9 +15,11 @@ beforeEach(() => {
 });
 
 describe("ShortStudies", () => {
-  it("lists the studies and shows the first with its tests, curve and report", async () => {
+  it("lists the studies with nothing open, and opens one when clicked", async () => {
     render(<ShortStudies />);
     expect(await screen.findByText("Hypothetical shorting studies")).toBeInTheDocument();
+    expect(screen.queryByTestId("equity-chart")).not.toBeInTheDocument();
+    fireEvent.click(screen.getByText("Cash-and-carry on BTC, ETH and SOL perps"));
     expect(screen.getAllByText("Cash-and-carry on BTC, ETH and SOL perps")).toHaveLength(2);
     expect(screen.getByText("Needs shorting")).toBeInTheDocument();
     expect(screen.getByText("Failed")).toBeInTheDocument();
@@ -26,6 +28,8 @@ describe("ShortStudies", () => {
     expect(screen.getByText(/Verdict: NEEDS-SHORTING/)).toBeInTheDocument();
     expect(screen.getByText("Net profit, after costs")).toBeInTheDocument();
     expect(screen.getByText("+23.10 USDT")).toBeInTheDocument();  // 330 x 7%
+    fireEvent.click(screen.getAllByText("Cash-and-carry on BTC, ETH and SOL perps")[0]!);
+    expect(screen.queryByTestId("equity-chart")).not.toBeInTheDocument();  // a second click closes it
   });
 
   it("shows nothing when no study has been run", async () => {
