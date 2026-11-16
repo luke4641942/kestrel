@@ -2,7 +2,7 @@
   "slug": "confirmation-btc-regime-rotation-top-3-of-8",
   "name": "Confirmation: BTC-regime rotation, top 3 of 8",
   "created_at": "2026-11-16T01:48:24.689473+00:00",
-  "status": "backtested",
+  "status": "validated",
   "history": [
     {
       "status": "idea",
@@ -18,6 +18,11 @@
       "status": "backtested",
       "at": "2026-11-16T01:53:41.466654+00:00",
       "reason": "first run on v1"
+    },
+    {
+      "status": "validated",
+      "at": "2026-11-16T02:05:16.532249+00:00",
+      "reason": "PASSED its holdout confirmation (2026-11-16): +0.0% while BTC fell 29.2%, against -4.7% for BTC at its 18% exposure; drawdown -11%. G1 pursued (Luke)."
     }
   ]
 }

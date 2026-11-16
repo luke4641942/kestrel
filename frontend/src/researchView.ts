@@ -96,7 +96,7 @@ export const FAMILIES: Family[] = [
     key: "exploration",
     name: "Exploration graduates",
     what: "Rules found by searching half the altcoins, then run once on the unsearched half.",
-    strategies: ["btc-regime-trend", "crash-rebound"],
+    strategies: ["btc-regime-trend", "crash-rebound", "btc-rotation-8", "btc-rotation-4"],
   },
 ];
 

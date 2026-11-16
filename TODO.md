@@ -14,11 +14,10 @@ Rules live in CLAUDE.md; results in `research/findings.md`; ideas not yet schedu
   sleeps; the Raspberry Pi item fixes that.
 
 ## Waiting on Luke
-- [ ] Rotation graduates confirmed on unseen coins' holdout year (2026-11-16): G1 (top 3 of 8)
-      PASSED, G2 (top 1 of 4) FAILED; G1's full scorecard fails only luck and walk-forward
-      (5 of 11). Findings 15. Waiting on Luke: G1 pursue (its note
-      says forward paper next) and G2 drop? Forward paper for G1 needs the paper runner to
-      trade a basket (one session).
+- [ ] G1 `btc-rotation-8` pursued, G2 dropped (Luke, 2026-11-16). Paper note
+      `paper-trading-btc-regime-rotation-g1` drafted for Luke to freeze. Before account rot-g1
+      opens: the paper runner must trade a basket (one session; replay must match the
+      portfolio backtest).
 - [ ] Raspberry Pi: which model and RAM, is it running anything, SD card or USB SSD?
       Then the Pi item below.
 - [ ] Delisting exit rule (findings 11): write a note (sell a held coin at the next open
