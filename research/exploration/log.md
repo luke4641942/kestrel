@@ -102,3 +102,12 @@ than 10% above). Sixteen filter combinations each:
   margin alone: choosing it would be fitting.
 
 Graduated (Luke, 2026-11-16): G1 and G2, each with the 3% margin and nothing else.
+
+## How round 2 ended (2026-11-16)
+
+Confirmed on the unspent holdout year of baskets of large coins neither rule had seen (BTC
+plus the largest confirmation-half coins by pre-holdout volume), under Kestrel's holdout
+rule: G1 (top 3 of 8) PASSED, flat while BTC fell 29% (-4.7% for BTC at its exposure);
+G2 (top 1 of 4) FAILED, -22.6% (-5.7%). The search ranked them as equals (Sharpe 1.55 and
+1.51 on the engine); the fresh year separated the diversified one from the concentrated
+one. Findings item 15.

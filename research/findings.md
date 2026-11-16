@@ -213,6 +213,16 @@ from 2026-11-16) is the test that's left.
     a week per SD (P(> 0) 9%), and its top fifth lost 87% after costs; the crowded side
     lost 53%. Long-only, both are only coin pickers, and only inside a rule that already
     decides when to hold altcoins at all; the BTC regime rule is the candidate.
+15. **A BTC-regime momentum rotation passed a holdout year on coins it had never seen
+    (2026-11-16).** Exploration round 2 searched 1,760 rotation settings on BTC, ETH, SOL
+    and large exploration-half coins (not evidence): the BTC 50-day filter did most of the
+    work, and under it 90-day momentum picks beat random picks. Two graduates, each weekly
+    while BTC closes 3% above its 50-day average and volatility-sized, were run once on
+    the unspent holdout year of BTC plus the largest confirmation-half coins, chosen by
+    volume alone. Holding the top 3 of 8 finished flat while BTC fell 29% (BTC at its 18%
+    exposure: -4.7%), worst drawdown -11%: PASS. Holding only the top 1 of 4 lost 22.6%
+    (BTC at its exposure -5.7%): FAIL; one coin was too concentrated. One falling year and
+    about 50 weekly decisions: support for forward paper trading, not proof.
 
 ## The holdout year (2025-11 to 2026-10)
 
@@ -229,6 +239,8 @@ holding the same coin at the strategy's average exposure.
 | Monthly rotation with a MACD filter (read 2026-11-15; one-sided) | -25.2% | -5.4% for BTC (21%) | -31% | -47% | Fail |
 | Trend-vol-target, ETH (read 2026-11-15) | -7.1% | -12.2% (32%) | -16% | -60% | Pass |
 | Trend-vol-target, SOL (read 2026-11-15) | +2.6% | -13.8% (28%) | -19% | -67% | Pass |
+| BTC-regime rotation G1, top 3 of BTC + 7 unseen large coins (read 2026-11-16) | +0.0% | -4.7% for BTC (18%) | -11% | -47% | Pass |
+| BTC-regime rotation G2, top 1 of BTC + 3 unseen large coins (read 2026-11-16) | -22.6% | -5.7% for BTC (22%) | -23% | -47% | Fail |
 
 On Sharpe the verdicts are the same (trend -0.06 vs -0.57 for holding; weekly -0.74 vs -0.57;
 rotation -1.21 vs -0.57 for BTC). Rotation lost more than BTC held in full while only a
@@ -303,6 +315,8 @@ edge, and the holdout can't be used again for either strategy.
 | Study: buyer-led taker flow as a next-week coin picker | Same | Slope +0.17% a week per SD (P 86%, 90% needed); top fifth +0.52% a week vs the average coin (P 96%) but as money -38% after costs (drawdown -92%) against -57% for the average coin and +102% for BTC: KILL | Drop (Luke) |
 | Exploration graduate: altcoin crash rebound (-30% in 7 days, hold 3) | 180 confirmation-half altcoins 1d | Beat holding on 111 of 180 coins (62%) but only 274 of 771 walk-forward windows (36%), median Sharpe 0.44. FAIL | Drop (Luke) |
 | BTC regime + coin trend on ETH and SOL (Luke's question; not a confirmation) | ETH 1d 2020-25; SOL 1d 2020-08 to 2025-10 | Unchanged rule. ETH Sharpe 1.33 vs 1.12 held, +1,094% vs +398% at the same exposure, drawdown -35%; SOL 1.72 vs 1.24, +1,759% vs +380%, drawdown -32%; both above trend-vol-target on the same coins (1.24, 1.52). Pass edge, start dates (76%, 100%), costs (19x, 29x), trades, drawdown, walk-forward (4 of 7, 4 of 6) and robustness (94% of neighbours on both); fail only luck against the main bar (deflated 1%, 8%). Both coins' holdouts are already spent (trend-vol-target) | Pursue (Claude, delegated by Luke): paper trading |
+| Exploration graduate G1: BTC-regime rotation, top 3 of 8 large coins | Own coins 2018-25 (engine); holdout year 2025-11 to 2026-10 on BTC + XRP, SUI, TRX, ADA, AVAX, UNI, ARB | Own coins: Sharpe 1.55 vs BTC 0.74, drawdown -37%. Holdout on unseen coins: +0.0% vs -29.2% for BTC held and -4.7% at its 18% exposure, drawdown -11%: PASS | Luke's call (the note says forward paper next) |
+| Exploration graduate G2: BTC-regime rotation, top 1 of 4 large coins | Own coins 2018-25; holdout year on BTC + XRP, SUI, TRX | Own coins: Sharpe 1.51 vs 0.74, drawdown -36%. Holdout: -22.6% vs -5.7% for BTC at its 22% exposure: FAIL | Luke's call |
 
 Each strategy was judged by its own note's pass test, written before it ran. From
 2026-11-14 every strategy is judged on one scorecard instead.
@@ -356,7 +370,9 @@ Each strategy was judged by its own note's pass test, written before it ran. Fro
 - **Mostly one market cycle.** 2020-25 contains one full bull and bear market in crypto.
   Results from 2017-19 were sometimes different, as weekly momentum showed.
 - **Daily and 4-hour bars.** At 330 USDT, costs rule out anything faster.
-- **The holdout is spent for BTC, ETH and SOL.** It was used once each for trend-vol-target
-  (passed) and weekly momentum and the rotations (failed). It is unused for every other coin.
+- **The holdout is spent for BTC, ETH and SOL**, used for trend-vol-target (passed) and
+  weekly momentum and the rotations (failed), and for XRP, SUI, TRX, ADA, AVAX, UNI and ARB,
+  used by the two rotation graduates' confirmation (2026-11-16). It is unused for every
+  other coin.
 - **Exploration results are not evidence.** Numbers in research/exploration/log.md were
   found by searching; only the confirmation run and later pre-registered tests count.
