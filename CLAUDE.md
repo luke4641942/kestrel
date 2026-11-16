@@ -95,7 +95,8 @@ Never pipe check output through `tail` or similar inside an `&&` chain: it hides
       its own testnet account. Next: move them to an always-on Raspberry Pi.
 - [x] Research tooling: the Research tab (decisions by family, the luck bar over time, the
       exploration experiment), the exploration split and confirmation run, cross-sectional
-      studies, delisting studies, the minute-chart cost gate.
+      studies, delisting studies, the minute-chart cost gate, the overlap report
+      (`kestrel overlap`: how much saved runs are one bet).
 - Parked: P5 perps (see Parked), multi-strategy portfolios, Settings page.
 
 ## Research rules (reviewed 2026-11-14)

@@ -226,6 +226,26 @@ from 2026-11-16) is the test that's left.
     G1's full scorecard on its own coins (2018-25) fails only luck and walk-forward (5 of
     11 windows, its out-of-sample Sharpe equal to in-sample): trend-vol-target's standard,
     with a pass on unseen coins added.
+    **Survivorship (disclosed 2026-11-16, after an outside review):** G1's 8 coins are
+    today's large coins, picked in 2026. Its 2018-25 backtest never holds a coin before
+    it lists, but it only contains coins that went on to succeed (SOL and DOT didn't exist
+    in 2018; large coins of 2018 that faded aren't in it), so those numbers flatter it. The
+    holdout year is clean of this: that basket was fixed from volume before 2025-11.
+
+16. **The pursued strategies are mostly one bet: long crypto while it trends up
+    (2026-11-16, `kestrel overlap`).** Daily returns of the six pursued runs (trend-vol-target
+    on BTC, ETH, SOL; btc-regime-trend on ETH, SOL; G1), 2020-08-13 to 2025-10-31 (1,907
+    days), read from saved runs (no trials). Correlation follows the coin, not the
+    strategy: trend-vol-target and btc-regime-trend correlate 0.82 on ETH and 0.83 on SOL,
+    0.35-0.69 across coins; G1 0.42-0.58 with each. BTC explains 64% of trend-vol-target
+    BTC's daily variance, 39% on ETH, 8-23% for the rest (betas 0.18-0.45). By BTC's
+    month, all six earn only in rising months (+0.30 to +0.40% a day) and lose in falling
+    ones (-0.06 to -0.22% a day), except G1 (+0.01%); flat months are flat. On BTC's 206
+    worst days (down over 3%) their link to BTC weakens (mostly in cash), but G1 and
+    btc-regime-trend ETH move together more (0.73). An equal mix has a Sharpe of 1.79
+    against 1.73 for the best alone; it rises without trend-vol-target ETH (1.87) or BTC
+    (1.81). In-sample Sharpes of selected strategies, so optimistic; this decides nothing,
+    but a second edge has to come from somewhere other than trend.
 
 ## The holdout year (2025-11 to 2026-10)
 

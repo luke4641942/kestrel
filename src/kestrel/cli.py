@@ -493,6 +493,57 @@ def confirm_cmd(
     typer.echo(f"Saved as study {study_id}")
 
 
+@app.command("overlap")
+def overlap_report(
+    runs: Annotated[
+        list[str], typer.Argument(help="Saved runs as name=run_id, e.g. tvt-btc=20261115-...")
+    ],
+    data_dir: DataDir = Path("data"),
+) -> None:
+    """How much saved strategies overlap: correlation (all days and BTC's bad days), BTC
+    beta, returns by BTC's month, and what each adds to an equal mix. Descriptive: reads
+    saved runs, so it counts no trials."""
+    from kestrel.validation.overlap import daily_returns, overlap
+
+    try:
+        pairs = [r.split("=", 1) for r in runs]
+        if any(len(p) != 2 for p in pairs):
+            raise ValueError("each run is name=run_id")
+        saved = RunStore(data_dir)
+        for _, run_id in pairs:
+            if saved.load(run_id).meta.get("used_holdout"):
+                raise ValueError(f"{run_id} used the holdout; overlap reads pre-holdout runs")
+        strategies = {n: daily_returns(saved.load(i).equity, n) for n, i in pairs}
+        bars = ParquetStore(data_dir).read("BTCUSDT", Interval.D1, None, None).sort("open_time")
+        btc = bars.select(
+            (pl.col("open_time") + pl.duration(days=1)).alias("close_time"),
+            pl.col("close").pct_change().alias("BTC"),
+        ).drop_nulls()
+        o = overlap(strategies, btc)
+    except (ValueError, FileNotFoundError) as e:
+        typer.echo(f"error: {e}", err=True)
+        raise typer.Exit(1) from e
+    typer.echo(f"{o.days} common days, {o.first} to {o.last}")
+    with pl.Config(
+        tbl_width_chars=200, float_precision=2, tbl_rows=30, tbl_hide_dataframe_shape=True
+    ):
+        typer.echo("\nDaily-return correlation, all days:")
+        typer.echo(str(o.correlation))
+        typer.echo(f"\nOn BTC's bad days (down more than 3%; {o.bad_days} days):")
+        typer.echo(str(o.bad_correlation))
+        typer.echo("\nMean daily return (%) by BTC's month (falling < -5%, rising > +5%):")
+        typer.echo(str(o.by_btc_month))
+    typer.echo("\nBTC beta and share of daily variance BTC explains:")
+    for n, x in o.exposure.items():
+        typer.echo(f"  {n:<12} beta {x.beta:.2f}  R2 {x.r2:.0%}")
+    typer.echo("\nSharpe over the common days (in-sample; selected strategies, so optimistic):")
+    for n, s in o.alone.items():
+        typer.echo(f"  {n:<12} {s:.2f}")
+    typer.echo(f"  equal mix    {o.mix_sharpe:.2f}")
+    for n, s in o.without.items():
+        typer.echo(f"  mix without {n:<12} {s:.2f}")
+
+
 @app.command("cross-study")
 def cross_study(
     signal: Annotated[str, typer.Argument(help="funding or taker-flow.")],

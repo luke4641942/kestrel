@@ -15,7 +15,7 @@ Rules live in CLAUDE.md; results in `research/findings.md`; ideas not yet schedu
 
 ## Waiting on Luke
 - [ ] G1 `btc-rotation-8` pursued, G2 dropped (Luke, 2026-11-16). Paper note
-      `paper-trading-btc-regime-rotation-g1` drafted for Luke to freeze. The paper runner
+      `paper-trading-btc-regime-rotation-g1` frozen. The paper runner
       trades a basket on the simulated venue; before rot-g1 opens on testnet: a multi-coin
       Binance venue (reconciles every holding), basket `paper track` and Trading page.
 - [ ] Raspberry Pi: which model and RAM, is it running anything, SD card or USB SSD?
@@ -39,14 +39,6 @@ Rules live in CLAUDE.md; results in `research/findings.md`; ideas not yet schedu
       coins (a picker inside the regime rule; findings 14 showed pickers alone lose with
       the market), the delisting exit rule, a note, the scorecard, and an unspent holdout
       (any coin but BTC, ETH and SOL).
-- [ ] Strategy overlap report (outside review, 2026-11-16): for the pursued strategies,
-      daily-return correlation (all days, and on BTC's drawdown days), share of each one's
-      return explained by BTC (beta), how each does when BTC is flat or falling. Descriptive,
-      no trials; pre-holdout backtests now, paper ledgers as they grow. Expect trend-vol-target
-      and btc-regime-trend to be largely one bet; G1 partly.
-- [ ] Disclose G1's survivorship: its 8 coins are today's large coins, so its 2018-25
-      backtest picks winners in hindsight (its holdout year used a basket fixed by volume
-      before 2025-11, so that test is clean). One line in findings and the paper note.
 - [ ] Strategies page: re-fetch a note when the browser tab regains focus (notes change
       from the CLI and the page shows a stale copy).
 
@@ -94,6 +86,9 @@ exists and Luke has checked the Swyftx employee trading policy.
 - [ ] Dashboard at phone width: the top menu and pages spill off the screen.
 
 ## Done recently
+- 2026-11-16 Strategy overlap report (`kestrel overlap`, findings 16): the pursued strategies
+  are mostly one bet, long crypto while it trends; correlation follows the coin. G1's
+  survivorship disclosed (findings 15, decisions).
 - 2026-11-16 Basket paper trading (simulated venue): the portfolio engine and the paper
   runner share one day step (`kestrel.execution.basket`); a day-by-day replay reproduces
   the backtest's fills and marks exactly.
