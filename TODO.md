@@ -10,10 +10,8 @@ Decisions and rules live in CLAUDE.md; results in `research/findings.md`.
       (around 2027-05-15); verdict at 395 days (around 2027-12-14).
 
 ## Next
-- [ ] Two cross-sectional studies (Luke, 2026-11-16, from an outside review): low funding,
-      and buyer-led taker flow, as long-only coin pickers. Code built (`kestrel cross-study`);
-      funding history downloading. Waiting on Luke: freeze
-      `does-low-funding-pick-next-week-s-winners` and `does-a-week-of-buyer-led-flow-pick-next-week-s`.
+- [ ] Two cross-sectional studies run 2026-11-16: funding KILL (wrong sign), taker flow
+      KILL (near miss; -38% as money). Findings item 14. Waiting on Luke: reject both notes?
 - [ ] btc-regime-trend on ETH and SOL: PURSUE (2026-11-16, Claude's call delegated by
       Luke): passes every scorecard test but luck on both. Paper runner ready (2026-11-16:
       refreshes BTC for btc_close, refuses missing inputs, replay matches the backtest).

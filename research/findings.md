@@ -161,6 +161,17 @@ risk-managed holding rather than a proven edge.
     (Sharpe 1.33 and 1.72) with drawdowns near -33%, and passed walk-forward and
     robustness; it fails only luck against the main bar, and both coins' holdout years
     are already spent. Pursued to paper trading (Claude's call, delegated by Luke).
+14. **Neither funding nor taker flow picks next week's winners among liquid coins
+    (2026-11-16, after an outside review proposed market-structure signals).** On the
+    exploration half plus BTC, ETH and SOL, 234 Sunday closes (2020-09 to 2025-10, a median
+    of 19 liquid coins a week), with past week and size as controls: buyer-led taker flow
+    had a slope of +0.17% a week per SD (P 86%, 90% needed) and its top fifth beat the
+    average coin by 0.52% a week, but as money that top fifth lost 38% after costs
+    (drawdown -92%) because the average liquid altcoin lost 57%; most of its edge was the
+    past week's rise. Low funding (the uncrowded side) did worse, not better: slope -0.26%
+    a week per SD (P(> 0) 9%), and its top fifth lost 87% after costs; the crowded side
+    lost 53%. Long-only, both are only coin pickers, and only inside a rule that already
+    decides when to hold altcoins at all; the BTC regime rule is the candidate.
 
 ## The holdout year (2025-11 to 2026-10)
 
@@ -247,6 +258,8 @@ edge, and the holdout can't be used again for either strategy.
 | Set and Forget, mechanical zones (YouTube batch 1 S1) | BTC, ETH 1H 2020-25 | BTC +0.6% (Sharpe 0.04) vs +12% held at the same exposure, 62 trades, +0.02R; ETH -6.2% (-0.18) vs +15%, 59 trades, -0.09R; costs small (0.06-0.07R): no edge before them; walk-forward 0 of 7 and 1 of 7; BTC no better than random entries (beat 50% of paths) | Drop (Luke) |
 | Trend-vol-target, unchanged, on gold and currencies (Luke) | PAXGUSDT 1d 2020-08 to 2025-10; EURUSDT 2020-25; GBPUSDT 2020-07 to 2023-12 | Fails on all three. Gold +40% (Sharpe 0.58) vs +56% for gold held at the same exposure (Sharpe 0.93), robust and walk-forward 1 of 6, 0 of 35 start windows; costs were 75 of its 206 USDT before costs, mostly an assumed volume-band spread likely too high for gold, but even near-zero spread would only tie holding. EUR -20% (Sharpe -0.68) and GBP -21% (-0.88), negative before costs. On these markets the 50% volatility target always caps at 100%, so it is the trend votes alone | Drop (Luke) |
 | Exploration graduate: BTC regime + coin trend, volatility-sized | 180 confirmation-half altcoins 1d, first bar to 2025-10 | Searched on the other 181 coins; run once here: beat holding's Sharpe on 149 of 180 coins (83%), 427 of 771 walk-forward windows (55%), median Sharpe 0.57. PASS (both above half) | Luke's call |
+| Study: low funding as a next-week coin picker | Exploration half + BTC/ETH/SOL 1d, 234 weeks 2020-09 to 2025-10 | Slope -0.26% a week per SD (P(> 0) 9%); top fifth -0.16% a week vs the average coin; as money -87% after costs (drawdown -98%), the crowded fifth -53%: KILL (the opposite sign to the idea) | Luke's call |
+| Study: buyer-led taker flow as a next-week coin picker | Same | Slope +0.17% a week per SD (P 86%, 90% needed); top fifth +0.52% a week vs the average coin (P 96%) but as money -38% after costs (drawdown -92%) against -57% for the average coin and +102% for BTC: KILL | Luke's call |
 | Exploration graduate: altcoin crash rebound (-30% in 7 days, hold 3) | 180 confirmation-half altcoins 1d | Beat holding on 111 of 180 coins (62%) but only 274 of 771 walk-forward windows (36%), median Sharpe 0.44. FAIL | Drop (Luke) |
 | BTC regime + coin trend on ETH and SOL (Luke's question; not a confirmation) | ETH 1d 2020-25; SOL 1d 2020-08 to 2025-10 | Unchanged rule. ETH Sharpe 1.33 vs 1.12 held, +1,094% vs +398% at the same exposure, drawdown -35%; SOL 1.72 vs 1.24, +1,759% vs +380%, drawdown -32%; both above trend-vol-target on the same coins (1.24, 1.52). Pass edge, start dates (76%, 100%), costs (19x, 29x), trades, drawdown, walk-forward (4 of 7, 4 of 6) and robustness (94% of neighbours on both); fail only luck against the main bar (deflated 1%, 8%). Both coins' holdouts are already spent (trend-vol-target) | Pursue (Claude, delegated by Luke): paper trading |
 
