@@ -2,9 +2,10 @@ import { useState } from "react";
 import { api } from "../api";
 import { dateTime } from "../format";
 import { useResource } from "../hooks";
-import { shortVerdict, studyName } from "../shortStudies";
+import { STUDY_CASH, curveMoney, shortVerdict, studyName } from "../shortStudies";
+import { money } from "../summary";
 import { EquityChart } from "./EquityChart";
-import { Empty, Panel, Section, Status } from "./ui";
+import { Empty, Panel, Section, Stat, Status } from "./ui";
 
 /** The hypothetical shorting studies: not engine runs (the engine is spot, long-only), so
  * they sit apart from the runs, each with its tests, its curve and its full report. */
@@ -16,6 +17,10 @@ export function ShortStudies() {
   if (studies.error || list.length === 0) return null;
   const v = current ? shortVerdict(current) : null;
   const [main, versus] = current?.curves ?? [];
+  const m = curveMoney(main);
+  const alt = curveMoney(versus);
+  const pct = (x: number) => `${x >= 0 ? "+" : "−"}${Math.abs(x * 100).toFixed(1)}%`;
+  const year = (t: number) => new Date(t * 1000).toISOString().slice(0, 7);
   return (
     <Section
       title="Hypothetical shorting studies"
@@ -60,6 +65,20 @@ export function ShortStudies() {
               <h3>{studyName(current)}</h3>
               <p className="secondary">{v.text}</p>
             </div>
+            {m && (
+              <div className="stats">
+                <Stat
+                  label="Net profit, after costs"
+                  value={`${money(m.profit)} USDT`}
+                  note={`On ${STUDY_CASH} USDT, ${year(m.first)} to ${year(m.last)}`}
+                />
+                <Stat label="Return" value={pct(m.total)} note={`${pct(m.perYear)} a year`} />
+                <Stat label="Worst drawdown" value={pct(m.worst)} note="Price gap between spot and perp not modelled" />
+                {alt && versus && (
+                  <Stat label={versus.label} value={`${money(alt.profit)} USDT`} note={`${pct(alt.total)} over the same years`} />
+                )}
+              </div>
+            )}
             <ul className="safety-events">
               {Object.entries(current.tests).map(([name, ok]) => (
                 <li key={name}>

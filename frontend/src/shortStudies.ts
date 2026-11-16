@@ -26,3 +26,28 @@ export function shortVerdict(s: ShortStudy): { tone: Tone; label: string; text: 
   }
   return { tone: "bad", label: "Failed", text: `Passed ${passed} of ${tests.length} of its pre-registered tests.` };
 }
+
+/** The research account size (CLAUDE.md): what a study's growth is shown on. */
+export const STUDY_CASH = 330;
+
+/** A curve's money view on ``cash``: net profit after costs, total and yearly return, and
+ * the worst drawdown. Null without a curve. */
+export function curveMoney(
+  curve: ShortStudy["curves"][number] | undefined,
+  cash = STUDY_CASH,
+): { profit: number; total: number; perYear: number; worst: number; first: number; last: number } | null {
+  const s = curve?.series;
+  if (!s || s.equity.length < 2) return null;
+  const growth = s.equity.at(-1)! / s.equity[0]!;
+  const first = s.time[0]!;
+  const last = s.time.at(-1)!;
+  const years = (last - first) / (365 * 86_400);
+  return {
+    profit: cash * (growth - 1),
+    total: growth - 1,
+    perYear: years > 0 ? growth ** (1 / years) - 1 : 0,
+    worst: Math.min(...s.drawdown),
+    first,
+    last,
+  };
+}

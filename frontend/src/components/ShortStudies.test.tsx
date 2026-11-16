@@ -22,8 +22,10 @@ describe("ShortStudies", () => {
     expect(screen.getByText("Needs shorting")).toBeInTheDocument();
     expect(screen.getByText("Failed")).toBeInTheDocument();
     expect(screen.getByTestId("equity-chart")).toBeInTheDocument();
-    expect(screen.getByText("A 4% stablecoin yield")).toBeInTheDocument();
+    expect(screen.getAllByText("A 4% stablecoin yield")).toHaveLength(2);  // the stat and the chart key
     expect(screen.getByText(/Verdict: NEEDS-SHORTING/)).toBeInTheDocument();
+    expect(screen.getByText("Net profit, after costs")).toBeInTheDocument();
+    expect(screen.getByText("+23.10 USDT")).toBeInTheDocument();  // 330 x 7%
   });
 
   it("shows nothing when no study has been run", async () => {

@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { ShortStudy } from "./api";
-import { shortVerdict, studyName } from "./shortStudies";
+import { curveMoney, shortVerdict, studyName } from "./shortStudies";
 
 export function shortStudy(over: Partial<ShortStudy> = {}): ShortStudy {
   return {
@@ -35,5 +35,17 @@ describe("shortVerdict", () => {
   it("names each study", () => {
     expect(studyName({ name: "cash-and-carry" })).toBe("Cash-and-carry on BTC, ETH and SOL perps");
     expect(studyName({ name: "new-one" })).toBe("new-one");
+  });
+});
+
+describe("curveMoney", () => {
+  it("turns a growth curve into net profit on the research account", () => {
+    const year = 365 * 86_400;
+    const m = curveMoney({ label: "x", series: { time: [0, 2 * year], equity: [1, 1.21], drawdown: [0, -0.05] } });
+    expect(m!.profit).toBeCloseTo(330 * 0.21);
+    expect(m!.total).toBeCloseTo(0.21);
+    expect(m!.perYear).toBeCloseTo(0.1);
+    expect(m!.worst).toBe(-0.05);
+    expect(curveMoney(undefined)).toBeNull();
   });
 });
