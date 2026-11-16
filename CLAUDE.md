@@ -138,8 +138,8 @@ Never pipe check output through `tail` or similar inside an `&&` chain: it hides
   many runs it will use. More history (2017+) is preferred to more ideas.
 - **Trials.** Every setting tried counts (`kestrel.validation.log`, `data/validation/`).
   Runs in the exploration half are not trials (see Exploration experiment).
-  805 trials by 2026-11-16 (robustness and walk-forward grids count every setting), luck
-  bar Sharpe 2.29; the Research tab shows how it moved. The bar depends on how spread out
+  846 trials by 2026-11-16 (robustness and walk-forward grids count every setting), luck
+  bar Sharpe 2.30; the Research tab shows how it moved. The bar depends on how spread out
   the trials' Sharpes are as well as their number, so very bad strategies raise it too.
   Confirmation runs have their own pool. It may be that nothing passes; that is an
   acceptable result. Scripts reading runs use `RunStore("data")` (it adds `runs/`).

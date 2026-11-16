@@ -38,12 +38,10 @@ financing charge on both sides) and a Binance perp (its real funding). A result 
 be pursue or watch is recorded as **needs-shorting** (add the decision value when the first
 one lands: `kestrel.decisions` and the Research tab), never traded until a licensed route
 exists and Luke has checked the Swyftx employee trading policy.
-- [ ] Five notes drafted for Luke to freeze (2026-11-16), each run once as a study
-      (`kestrel short-study ...`, to build after freezing): `shorting-with-the-btc-regime-rule`
-      (ETH, SOL), `g1-with-a-short-side`, `trend-vol-target-long-and-short` (BTC, ETH, SOL),
-      `long-short-momentum-among-liquid-coins` (market-neutral),
-      `cash-and-carry-on-btc-eth-and-sol-perps` (perps only). About 8 trials in all.
-      Check Eightcap's short swap rate before freezing.
+- [ ] Five shorting studies run (2026-11-16, findings 17). Luke: reject the four that failed
+      (btc-regime-trend mirror, G1 short side, symmetric trend-vol-target, long/short
+      momentum)? Cash-and-carry passed: close its note as validated and record it as
+      needs-shorting (add that decision value), and check the perp minimum order at 330 USDT.
 - [ ] Delisting short: the open note `shorting-the-delisting-window-with-perps` was
       INSUFFICIENT at 6 announcements (10 needed). Re-run once 10 exist, rather than reject.
 - [ ] Short before large token unlocks (sized against daily volume): needs an unlock

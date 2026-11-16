@@ -247,6 +247,27 @@ from 2026-11-16) is the test that's left.
     (1.81). In-sample Sharpes of selected strategies, so optimistic; this decides nothing,
     but a second edge has to come from somewhere other than trend.
 
+17. **Shorting the trend doesn't pay; collecting funding does (hypothetical, 2026-11-16,
+    `kestrel short-study`).** Five frozen notes, each run once on 2020-01 to 2025-10
+    (funding history starts 2020), costed as a 2:1 CFD (2x the spread band, 5% a year
+    financing) with a Binance perp reported. Adding a short side to every pursued trend
+    rule made it worse: btc-regime-trend's mirror short on ETH and SOL (Sharpe 1.30 and 1.35
+    against 1.47 and 1.64 long-only; short legs +13% and +6%, P 72% and 68%), G1 shorting
+    its 3 weakest coins (1.13 against 1.66; short leg -49%) and symmetric trend-vol-target
+    (0.82-0.97 against 1.23-1.45; short legs -35% to -46%). Each beat its long-only rule only
+    in 2022, the one long bear year, and lost to it in the others: crypto's rebounds take
+    back what the shorts make. Long/short momentum among liquid coins (top 3 against bottom
+    3, weekly, near market-neutral: beta -0.05) made +39% in six years (Sharpe 0.44, P 84%,
+    95% needed), all from the long leg (+119%; shorts -50%): FAIL. **Cash-and-carry passed
+    every test**: holding BTC, ETH and SOL against their perps while the last week's funding
+    was positive earned +6.6% a year on equity, positive in 5 of 6 years (2022 -5.9%, when
+    funding turned negative), drawdown -6.6%, 53 trades, 14 margin calls. It is a
+    collection of leveraged longs' funding, not a price bet. Caveats: the spot-perp basis
+    isn't modelled (perp prices aren't stored), so the drawdown is a floor; Schmeling,
+    Schrimpf and Todorov (BIS 2023) find high carry predicts crashes; at 330 USDT each hedge
+    is about 73 USDT, which may be under a perp's minimum order (unchecked); and it needs a
+    real perp, wholesale-only in Australia today. 8 trials (846 in all; luck bar 2.30).
+
 ## The holdout year (2025-11 to 2026-10)
 
 Reserved on 2026-10-31, before any research, and read once on 2026-11-14 for the two watched
@@ -340,6 +361,11 @@ edge, and the holdout can't be used again for either strategy.
 | BTC regime + coin trend on ETH and SOL (Luke's question; not a confirmation) | ETH 1d 2020-25; SOL 1d 2020-08 to 2025-10 | Unchanged rule. ETH Sharpe 1.33 vs 1.12 held, +1,094% vs +398% at the same exposure, drawdown -35%; SOL 1.72 vs 1.24, +1,759% vs +380%, drawdown -32%; both above trend-vol-target on the same coins (1.24, 1.52). Pass edge, start dates (76%, 100%), costs (19x, 29x), trades, drawdown, walk-forward (4 of 7, 4 of 6) and robustness (94% of neighbours on both); fail only luck against the main bar (deflated 1%, 8%). Both coins' holdouts are already spent (trend-vol-target) | Pursue (Claude, delegated by Luke): paper trading |
 | Exploration graduate G1: BTC-regime rotation, top 3 of 8 large coins | Own coins 2018-25 (engine); holdout year 2025-11 to 2026-10 on BTC + XRP, SUI, TRX, ADA, AVAX, UNI, ARB | Own coins (note btc-regime-rotation-g1-on-its-own-coins): Sharpe 1.55 vs BTC 0.74, +4,048% vs +149% at the same exposure, drawdown -37%, start dates 70%, costs 23x, robust (100% of 22 neighbours); fails luck (deflated 1%) and walk-forward (5 of 11, out-of-sample Sharpe 1.33 = in-sample). Holdout on unseen coins: +0.0% vs -29.2% for BTC held and -4.7% at its 18% exposure, drawdown -11%: PASS | Pursue (Luke): forward paper |
 | Exploration graduate G2: BTC-regime rotation, top 1 of 4 large coins | Own coins 2018-25; holdout year on BTC + XRP, SUI, TRX | Own coins: Sharpe 1.51 vs 0.74, drawdown -36%. Holdout: -22.6% vs -5.7% for BTC at its 22% exposure: FAIL | Drop (Luke) |
+| Short side: btc-regime-trend's mirror (hypothetical) | ETH, SOL 1d 2020-01 to 2025-10 | Sharpe 1.30 and 1.35 vs 1.47 and 1.64 long-only; short legs +13% (P 72%) and +6% (P 68%); beat long-only in 1 of 6 years each (2022). DROP by its note | Awaiting Luke |
+| Short side: G1 shorting its 3 weakest coins while BTC is 3% below its 50-day (hypothetical) | G1's 8 coins 1d 2020-01 to 2025-10 | Sharpe 1.13 vs 1.66; short leg -49% (loses before costs); drawdown -54%. DROP | Awaiting Luke |
+| Trend-vol-target long and short, (up - down votes) / 3 (hypothetical) | BTC, ETH, SOL 1d 2020-01 to 2025-10 | Sharpe 0.82, 0.84, 0.97 vs 1.23, 1.28, 1.45 long-only; short legs -46%, -35%, -38%. DROP | Awaiting Luke |
+| Long/short momentum, top 3 vs bottom 3 by 90 days, weekly (hypothetical) | Liquid exploration-half coins + BTC/ETH/SOL with a perp, 2020-01 to 2025-10 | +39%, Sharpe 0.44, mean week +0.13% (P 84%, 95% needed), beta -0.05, positive in 3 of 6 years; long leg +119%, short leg -50%. DROP | Awaiting Luke |
+| Cash-and-carry: spot long, perp short while 7-day funding is positive (hypothetical) | BTC, ETH, SOL 2020-01 to 2025-10 | +6.6% a year on equity, P 100%, 5 of 6 years positive, drawdown -6.6% (basis not modelled), 53 trades, 14 margin calls: NEEDS-SHORTING (passes every test; needs a real perp) | Awaiting Luke |
 
 Each strategy was judged by its own note's pass test, written before it ran. From
 2026-11-14 every strategy is judged on one scorecard instead.
