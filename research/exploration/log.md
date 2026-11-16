@@ -58,3 +58,30 @@ showed, a weak window test (34% on a 10-coin preview), held on fresh coins (36%)
 the method. btc-regime-trend was then tested on ETH and SOL and pursued to paper trading
 (findings item 13). The confirmation half is spent: a second round needs fresh data and
 its own split.
+
+# Round 2: rotation among large coins (2026-11-16, Luke; not evidence)
+
+Script `rotation_round1.py`. Coins: BTC, ETH, SOL (in neither half; heavily searched
+already) and the exploration-half large coins BNB, DOGE, LINK, DOT, LTC; confirmation-half
+coins never read. 2018-01 to 2025-10, costs on every change. 1,760 settings over universe,
+lookback (30-365 days), top 1-3, weekly or monthly, absolute momentum, a BTC moving-average
+filter and volatility sizing. "Robust" below: beat both BTC held and an equal-weight hold of
+the same coins in both halves (2018-21, 2022-25), drawdown inside 50%.
+
+- The BTC filter does most of the work: 60% of settings with BTC above its 50-day average
+  were robust, 5% with no filter (100-day 25%, 200-day 6%). Weekly beat monthly (33% vs
+  15%); volatility sizing helped (37% vs 11%). The lookback mattered little.
+- The ranking still adds something. Under the same filter (BTC > 50-day, weekly,
+  volatility-sized, 90-day lookback), momentum picks beat 95-100% of 100 random picks of
+  the same number of coins over 2018-25 in every universe. Over 2022-25 alone (after
+  SOL's 2021 run) they still beat BTC held (Sharpe 0.97-1.26 vs 0.69) and beat 68-99% of
+  random picks: weakest on BTC/ETH/SOL (68-86%, little to choose between), strongest on
+  the 8 large coins (94-99%).
+- The original monthly rotation without a filter is the weak version: monthly and
+  unfiltered settings were rarely robust, which matches its failed walk-forward and
+  holdout.
+
+Leading shape, if anything graduates: each week, while BTC is above its 50-day average,
+hold the top 2-3 of a set of large coins by 90-day return, each sized to 50% volatility;
+otherwise cash. That is btc-regime-trend's timing with a momentum picker, the altcoin
+portfolio TODO.md already names. How graduates would be confirmed is still open (Luke).
