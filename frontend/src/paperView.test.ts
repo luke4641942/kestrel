@@ -1,12 +1,12 @@
 import { describe, expect, it } from "vitest";
 import type { PaperDetail } from "./api";
-import { trackingVerdict, venueLabel } from "./paperView";
+import { holdingView, isBasket, targetsText, trackingVerdict, venueLabel } from "./paperView";
 
 export function paperDetail(over: Partial<PaperDetail> = {}, tracking: Partial<PaperDetail["tracking"]> = {}): PaperDetail {
   return {
     name: "btc", strategy: "trend-vol-target", symbol: "BTCUSDT", interval: "1d", venue: "testnet",
     research: "holdout-trend-vol-target-btc", initial_cash: 330, trade_from: "2026-11-13T00:00:00Z",
-    last_bar: "2026-11-14T00:00:00Z", equity: 331.5, cash: 222.4, position: 0.0016, halted: null,
+    last_bar: "2026-11-14T00:00:00Z", equity: 331.5, cash: 222.4, position: 0.0016, positions: {}, halted: null,
     equity_series: { time: [1, 2], equity: [330, 331.5], drawdown: [0, 0] },
     expected: { time: [1, 2], equity: [330, 332], drawdown: [0, 0] },
     fills: [], decisions: [], events: [],
@@ -39,5 +39,20 @@ describe("trackingVerdict", () => {
 
   it("names the venue", () => {
     expect([venueLabel("testnet"), venueLabel("sim"), venueLabel("live")]).toEqual(["Binance testnet", "Simulated", "live"]);
+  });
+});
+
+describe("baskets", () => {
+  it("shows a single coin's holding, a basket's coins, or cash", () => {
+    expect(holdingView(paperDetail())).toEqual({ value: "0.0016 BTC", note: "Cash 222.40 USDT" });
+    const basket = paperDetail({ symbol: "UNIVERSE", positions: { SOLUSDT: 0.5, DOGEUSDT: 300 } });
+    expect(isBasket(basket)).toBe(true);
+    expect(holdingView(basket)).toEqual({ value: "2 coins", note: "300 DOGE, 0.5 SOL; cash 222.40 usdt" });
+    expect(holdingView(paperDetail({ symbol: "UNIVERSE" })).value).toBe("Cash only");
+  });
+
+  it("puts a basket decision in a line, largest first", () => {
+    expect(targetsText({ SOLUSDT: 0.15, DOGEUSDT: 0.17, BTCUSDT: null })).toBe("DOGE 17%, SOL 15%, BTC kept");
+    expect(targetsText({})).toBe("Cash");
   });
 });

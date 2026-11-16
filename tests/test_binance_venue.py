@@ -295,3 +295,30 @@ def test_the_edges() -> None:
     client = fake.client()
     client.balances()
     client.balances()  # the server's clock is read once, then reused
+
+
+def test_a_basket_venue_trades_and_accounts_each_coin_separately() -> None:
+    fake = FakeBinance()
+    fake.commission = ("0.01", "USDT")
+    v = BinanceVenue(
+        fake.client(), ["BTCUSDT", "ETHUSDT"], "USDT", CostModel(config().costs), D(330)
+    )
+    for s in v.symbols:
+        v.set_market(s, D(100), D(1e9))
+    assert isinstance(v.submit_market("BTCUSDT", Side.BUY, D(1)), Fill)
+    assert isinstance(v.submit_market("ETHUSDT", Side.BUY, D("0.5")), Fill)
+    assert v.holdings() == {"BTCUSDT": D(1), "ETHUSDT": D("0.5")}
+    assert [o["symbol"] for o in fake.orders] == ["BTCUSDT", "ETHUSDT"]
+    assert v.cash() == D(330) - D("150.75") - D("0.02")  # 1.5 coins at 100.5, two fees
+    assert v.assets(v.cash(), v.holdings()) == [
+        ("BTC", D(1)),
+        ("ETH", D("0.5")),
+        ("USDT", v.cash()),
+    ]
+    with pytest.raises(ValueError, match="BTCUSDT, ETHUSDT, not SOLUSDT"):
+        v.submit_market("SOLUSDT", Side.BUY, D(1))
+    with pytest.raises(ValueError, match="doesn't trade"):
+        v.restore(D(1), {"SOLUSDT": D(1)})
+    with pytest.raises(ValueError, match="restored from its ledger"):
+        BinanceVenue(fake.client(), ["BTCUSDT", "ETHUSDT"], "USDT", CostModel(config().costs),
+                     D(1), D(1))  # fmt: skip

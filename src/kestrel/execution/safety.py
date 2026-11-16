@@ -210,3 +210,47 @@ def kill(
     )
     halt(account, f"killed: {reason}")
     return event
+
+
+def kill_basket(
+    account: PaperAccount,
+    venue: PaperVenue,
+    prices: dict[str, Decimal],
+    volumes: dict[str, Decimal],
+    reason: str,
+) -> dict[str, Any]:
+    """``kill`` for a basket account: sell every coin held at market now, then halt.
+    ``prices`` and ``volumes`` (each held coin's last closed bar's quote volume) size the
+    simulated venue's costs. Each sale, or its refusal, is listed in the event's ``sales``."""
+    terms, state = account.terms(), account.state()
+    venue.restore(state.cash, state.positions)
+    sales: list[dict[str, Any]] = []
+    for symbol, held in sorted(state.positions.items()):
+        if held <= 0:
+            continue
+        venue.set_market(symbol, prices[symbol], volumes.get(symbol, Decimal(0)))
+        order = venue.submit_market(symbol, Side.SELL, held)
+        sales.append(
+            {
+                "symbol": symbol,
+                "side": "sell",
+                "quantity": order.quantity,
+                "fill_price": order.price,
+            }
+            if isinstance(order, Fill)
+            else {"symbol": symbol, "rejected": order.reason}
+        )
+    event: dict[str, Any] = {"type": "kill", "at": datetime.now(UTC), "sales": sales}
+    account.ledger.append(event)
+    left = {s: venue.position(s) for s in state.positions if venue.position(s) > 0}
+    account.ledger.append(
+        {
+            "type": "state",
+            "bar": state.last_bar or terms.trade_from,
+            "cash": venue.cash(),
+            "positions": left,
+            "book": state.book,
+        }
+    )
+    halt(account, f"killed: {reason}")
+    return event

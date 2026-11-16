@@ -573,7 +573,27 @@ def create_app(
             equity=float(marks[-1]["equity"]) if marks else None,
             cash=float(state.cash),
             position=float(state.position),
+            positions={k: float(v) for k, v in state.positions.items() if v > 0},
             halted=safety.halted(account),
+        )
+
+    def _decision_out(e: dict[str, Any]) -> PaperDecisionOut:
+        if "targets" in e:  # a basket
+            targets = {k: None if w is None else float(w) for k, w in (e["targets"] or {}).items()}
+            return PaperDecisionOut(
+                bar=datetime.fromisoformat(e["bar"]),
+                target=sum(w or 0.0 for w in targets.values()),
+                current=None,
+                missed=bool(e.get("missed")),
+                band_skip=False,
+                targets=targets,
+            )
+        return PaperDecisionOut(
+            bar=datetime.fromisoformat(e["bar"]),
+            target=float(e["target"]),
+            current=float(e["current"]),
+            missed=bool(e.get("missed")),
+            band_skip=bool(e.get("band_skip")),
         )
 
     @api.get("/paper")
@@ -587,14 +607,19 @@ def create_app(
             raise HTTPException(status.HTTP_404_NOT_FOUND, "no such paper account")
         account = paper.PaperAccount(data_dir, name)
         terms = account.terms()
-        bars = attach_features(
-            store.read(terms.symbol, terms.interval),
-            spec_for(terms.strategy).features,
-            terms.symbol,
-            terms.interval,
-            data_dir,
-        )
-        tracked = tracking.track(account, bars, load_config(config_path))
+        spec = spec_for(terms.strategy)
+        if spec.universe:
+            panel = paper.basket_panel(store, terms, list(spec.assets), datetime.now(UTC))
+            tracked = tracking.track_basket(account, panel, load_config(config_path))
+        else:
+            bars = attach_features(
+                store.read(terms.symbol, terms.interval),
+                spec.features,
+                terms.symbol,
+                terms.interval,
+                data_dir,
+            )
+            tracked = tracking.track(account, bars, load_config(config_path))
         step = terms.interval.duration
 
         def series(times: list[datetime], values: list[float]) -> Series:
@@ -610,6 +635,7 @@ def create_app(
             fills=[
                 PaperFillOut(
                     at=datetime.fromisoformat(f.at),
+                    symbol=f.symbol,
                     side=f.side,
                     quantity=float(e["quantity"]),
                     reference_price=float(e["reference_price"]),
@@ -623,14 +649,10 @@ def create_app(
                 )
             ],
             decisions=[
-                PaperDecisionOut(
-                    bar=datetime.fromisoformat(e["bar"]),
-                    target=float(e["target"]),
-                    current=float(e["current"]),
-                    missed=bool(e.get("missed")),
-                    band_skip=bool(e.get("band_skip")),
-                )
+                _decision_out(e)
                 for e in reversed([e for e in events if e["type"] == "decision"])
+                # A basket decides weekly: its other days carry no decision.
+                if "targets" not in e or e["targets"] is not None or e.get("missed")
             ],
             events=[
                 PaperEventOut(

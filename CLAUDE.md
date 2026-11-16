@@ -87,7 +87,9 @@ Never pipe check output through `tail` or similar inside an `&&` chain: it hides
       stale data stops a run without halting; `kestrel kill` sells to cash and halts.
       A live account that was behind records missed days (no trade) and trades the latest.
       `kestrel.execution.tracking` compares an account with its sim replay (decisions must
-      match). `kestrel paper schedule` writes a launchd job (keys from ~/.zshrc at run time).
+      match). A basket strategy (G1) trades through the portfolio engine's own day step
+      (`kestrel.execution.basket`, `paper.run_basket`); its Binance venue holds a fixed coin set,
+      and reconciliation adds up every testnet account (they share one exchange account). `kestrel paper schedule` writes a launchd job (keys from ~/.zshrc at run time).
       A run refreshes every market a strategy's features read (`kestrel.data.features
       .markets_for`: BTC for `btc_close`) and refuses to decide a bar with a missing input.
       The dashboard's Trading page is read-only; every action is a CLI command. Running

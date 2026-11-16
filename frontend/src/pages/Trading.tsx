@@ -4,7 +4,7 @@ import { EquityChart } from "../components/EquityChart";
 import { Empty, PageHeader, Panel, Section, Stat, Status } from "../components/ui";
 import { date, dateTime } from "../format";
 import { useResource } from "../hooks";
-import { trackingVerdict, venueLabel } from "../paperView";
+import { holdingView, isBasket, targetsText, trackingVerdict, venueLabel } from "../paperView";
 
 const usd = (x: number | null) => (x === null ? "n/a" : x.toLocaleString("en-AU", { minimumFractionDigits: 2, maximumFractionDigits: 2 }));
 const pct = (x: number) => `${(x * 100).toFixed(0)}%`;
@@ -92,7 +92,7 @@ function AccountsTable({
                   <div className="mono small tertiary">{a.strategy}</div>
                 </td>
                 <td className="nw">
-                  {a.symbol} {a.interval}
+                  {isBasket(a) ? "Basket" : a.symbol} {a.interval}
                 </td>
                 <td className="nw">{venueLabel(a.venue)}</td>
                 <td className="num">{usd(a.equity)}</td>
@@ -124,10 +124,11 @@ function AccountView({ name }: { name: string }) {
   if (!d || d.name !== name) return null;
   const verdict = trackingVerdict(d);
   const t = d.tracking;
+  const holding = holdingView(d);
   return (
     <Section
       title={`${d.name} · ${d.strategy}`}
-      description={`${d.symbol} ${d.interval} on ${venueLabel(d.venue)}, ${usd(d.initial_cash)} USDT from ${date(d.trade_from)}${
+      description={`${isBasket(d) ? "A basket of coins" : d.symbol} ${d.interval} on ${venueLabel(d.venue)}, ${usd(d.initial_cash)} USDT from ${date(d.trade_from)}${
         d.research ? `, under note ${d.research}` : ""
       }.`}
     >
@@ -140,7 +141,7 @@ function AccountView({ name }: { name: string }) {
           </div>
           <div className="stats">
             <Stat label="Equity" value={`${usd(d.equity)}`} note={`Model: ${usd(d.expected.equity.at(-1) ?? null)}`} />
-            <Stat label="Holding" value={`${d.position} ${d.symbol.replace("USDT", "")}`} note={`Cash ${usd(d.cash)} USDT`} />
+            <Stat label="Holding" value={holding.value} note={holding.note} />
             <Stat label="Days handled" value={t.days} note={t.missed ? `${t.missed} missed` : "None missed"} />
             <Stat
               label="Cost per fill"
@@ -201,6 +202,7 @@ function FillsTable({ account: d }: { account: PaperDetail }) {
             <thead>
               <tr>
                 <th>Filled</th>
+                {isBasket(d) && <th>Coin</th>}
                 <th>Side</th>
                 <th className="num">Quantity</th>
                 <th className="num">Price</th>
@@ -211,8 +213,9 @@ function FillsTable({ account: d }: { account: PaperDetail }) {
             </thead>
             <tbody>
               {[...d.fills].reverse().map((f) => (
-                <tr key={f.at}>
+                <tr key={`${f.at}-${f.symbol}`}>
                   <td className="nw">{dateTime(f.at)}</td>
+                  {isBasket(d) && <td className="nw">{f.symbol.replace(/USDT$/, "")}</td>}
                   <td className="nw">{f.side}</td>
                   <td className="num">{f.quantity}</td>
                   <td className="num">{usd(f.price)}</td>
@@ -249,8 +252,8 @@ function DecisionsTable({ account: d }: { account: PaperDetail }) {
             {d.decisions.slice(0, DECISIONS_SHOWN).map((x) => (
               <tr key={x.bar}>
                 <td className="nw">{date(x.bar)}</td>
-                <td className="num">{pct(x.target)}</td>
-                <td className="num secondary">{pct(x.current)}</td>
+                <td className="num">{x.targets ? targetsText(x.targets) : pct(x.target)}</td>
+                <td className="num secondary">{x.current === null ? "n/a" : pct(x.current)}</td>
                 <td className="nw">
                   {x.missed ? (
                     <Status tone="warn">Missed: the run was late</Status>

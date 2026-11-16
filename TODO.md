@@ -15,9 +15,8 @@ Rules live in CLAUDE.md; results in `research/findings.md`; ideas not yet schedu
 
 ## Waiting on Luke
 - [ ] G1 `btc-rotation-8` pursued, G2 dropped (Luke, 2026-11-16). Paper note
-      `paper-trading-btc-regime-rotation-g1` frozen. The paper runner
-      trades a basket on the simulated venue; before rot-g1 opens on testnet: a multi-coin
-      Binance venue (reconciles every holding), basket `paper track` and Trading page.
+      `paper-trading-btc-regime-rotation-g1` frozen; basket paper trading is built. Open
+      rot-g1 on the testnet, then load its launchd job.
 - [ ] Raspberry Pi: which model and RAM, is it running anything, SD card or USB SSD?
       Then the Pi item below.
 - [ ] Delisting exit rule (findings 11): write a note (sell a held coin at the next open
@@ -86,6 +85,9 @@ exists and Luke has checked the Swyftx employee trading policy.
 - [ ] Dashboard at phone width: the top menu and pages spill off the screen.
 
 ## Done recently
+- 2026-11-16 Basket paper trading on the Binance testnet: a multi-coin venue, reconciliation
+  summed over every testnet account, a basket kill switch, `paper track` and the Trading
+  page for baskets. A missing open never forces a sale (the run waits).
 - 2026-11-16 Strategy overlap report (`kestrel overlap`, findings 16): the pursued strategies
   are mostly one bet, long crypto while it trends; correlation follows the coin. G1's
   survivorship disclosed (findings 15, decisions).

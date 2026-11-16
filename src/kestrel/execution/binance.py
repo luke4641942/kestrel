@@ -1,11 +1,12 @@
 """Binance spot as an ExecutionVenue: the Spot Testnet now, live later, the same code.
 
-A paper account trades its own allocation (e.g. 330 USDT), not everything in the exchange
-account: Binance's testnet hands out thousands of fake USDT and BTC. So the venue keeps the
-allocation's cash and coin, resumed from the ledger, and changes them only by what each
-order really filled: the quote spent or received and the commission, in whichever asset
-Binance charged it. ``balances()`` reads the whole exchange account for reconciliation
-(P4 S4), which checks the exchange holds at least what every allocation says it does.
+A paper account trades its own allocation (e.g. 330 USDT) of one coin or a fixed basket,
+not everything in the exchange account: Binance's testnet hands out thousands of fake USDT
+and BTC. So the venue keeps the allocation's cash and coins, resumed from the ledger, and
+changes them only by what each order really filled: the quote spent or received and the
+commission, in whichever asset Binance charged it. ``balances()`` reads the whole exchange
+account for reconciliation, which checks the exchange holds at least what every testnet
+allocation says it does, added up.
 
 Orders are market orders sized in the base asset, rounded down to the symbol's LOT_SIZE
 step and checked against its minimum quantity and notional (read from exchangeInfo, not
@@ -29,7 +30,7 @@ import hashlib
 import hmac
 import os
 import time
-from collections.abc import Callable
+from collections.abc import Callable, Sequence
 from dataclasses import dataclass
 from decimal import Decimal
 from typing import Any
@@ -153,7 +154,8 @@ like the simulator's. Every other error raises."""
 
 
 class BinanceVenue:
-    """An allocation of a Binance spot account, trading one symbol."""
+    """An allocation of a Binance spot account, trading one symbol or a fixed set of them
+    (a basket), all quoted in ``quote``."""
 
     live = True
     """Orders fill now, at the market: a decision can't be traded at a past open."""
@@ -161,21 +163,36 @@ class BinanceVenue:
     def __init__(
         self,
         client: BinanceClient,
-        symbol: str,
+        symbols: str | Sequence[str],
         quote: str,
         cost_model: CostModel,
         cash: Decimal,
         position: Decimal = Decimal(0),
     ) -> None:
-        if not symbol.endswith(quote):
-            raise ValueError(f"{symbol} isn't quoted in {quote}")
+        names = (symbols,) if isinstance(symbols, str) else tuple(symbols)
+        if not names:
+            raise ValueError("a venue needs at least one symbol")
+        for s in names:
+            if not s.endswith(quote) or s == quote:
+                raise ValueError(f"{s} isn't quoted in {quote}")
+        if position and len(names) > 1:
+            raise ValueError("a basket's positions are restored from its ledger")
         self._client = client
-        self.symbol = symbol
-        self.base, self.quote = symbol[: -len(quote)], quote
+        self.symbols, self.quote = names, quote
         self._model = cost_model
-        self._cash, self._position = cash, position
-        self._rules = client.rules(symbol)
-        self._reference: Decimal | None = None
+        self._cash = cash
+        self._positions = {names[0]: position} if position else {}
+        self._rules = {s: client.rules(s) for s in names}
+        self._reference: dict[str, Decimal] = {}
+
+    def base(self, symbol: str) -> str:
+        return symbol[: -len(self.quote)]
+
+    def assets(self, cash: Decimal, positions: dict[str, Decimal]) -> list[tuple[str, Decimal]]:
+        """An allocation as exchange assets (BTC, USDT...), for reconciliation."""
+        return [(self.base(s), q) for s, q in sorted(positions.items()) if q > 0] + [
+            (self.quote, cash)
+        ]
 
     # The paper runner's venue interface, as SimVenue offers it.
     def set_market(
@@ -185,12 +202,16 @@ class BinanceVenue:
         last_bar_volume: Decimal,
         half_spread: Decimal | None = None,
     ) -> None:
-        self._reference = reference_price
+        self._reference[symbol] = reference_price
 
     def restore(self, cash: Decimal, positions: dict[str, Decimal]) -> None:
         if cash < 0 or any(q < 0 for q in positions.values()):
             raise ValueError("a spot account can't hold negative cash or coins")
-        self._cash, self._position = cash, positions.get(self.symbol, Decimal(0))
+        unknown = set(positions) - set(self.symbols)
+        if any(positions[s] > 0 for s in unknown):
+            raise ValueError(f"the ledger holds {sorted(unknown)}, which this venue doesn't trade")
+        self._cash = cash
+        self._positions = {s: q for s, q in positions.items() if s in self.symbols}
 
     def cost_model(self) -> CostModel:
         return self._model
@@ -198,36 +219,40 @@ class BinanceVenue:
     def balances(self) -> dict[str, Decimal]:
         return self._client.balances()
 
+    def holdings(self) -> dict[str, Decimal]:
+        """Every coin the allocation holds, by symbol."""
+        return {s: q for s, q in self._positions.items() if q > 0}
+
     # ExecutionVenue
     def cash(self) -> Decimal:
         return self._cash
 
     def position(self, symbol: str) -> Decimal:
-        return self._position if symbol == self.symbol else Decimal(0)
+        return self._positions.get(symbol, Decimal(0))
 
     def submit_market(self, symbol: str, side: Side, quantity: Decimal) -> Fill | Rejection:
-        if symbol != self.symbol:
-            raise ValueError(f"this venue trades {self.symbol}, not {symbol}")
-        if self._reference is None:
-            raise RuntimeError("no reference price set; call set_market first")
-        rules = self._rules
+        if symbol not in self.symbols:
+            raise ValueError(f"this venue trades {', '.join(self.symbols)}, not {symbol}")
+        reference = self._reference.get(symbol)
+        if reference is None:
+            raise RuntimeError(f"no reference price for {symbol}; call set_market first")
+        rules = self._rules[symbol]
         qty = rules.round_quantity(quantity)
+        held = self.position(symbol)
 
         def reject(reason: str) -> Rejection:
             return Rejection(symbol, side, quantity, reason)
 
-        if side is Side.SELL and qty > self._position:
-            return reject(f"cannot sell {qty}, the allocation holds {self._position}")
+        if side is Side.SELL and qty > held:
+            return reject(f"cannot sell {qty}, the allocation holds {held}")
         if qty < rules.min_qty or qty == 0:
             return reject(f"quantity {qty} is below the minimum {rules.min_qty}")
-        if qty * self._reference < rules.min_notional:
+        if qty * reference < rules.min_notional:
             return reject(
-                f"notional {qty * self._reference:.2f} is below the minimum {rules.min_notional}"
+                f"notional {qty * reference:.2f} is below the minimum {rules.min_notional}"
             )
-        if side is Side.BUY and qty * self._reference > self._cash:
-            return reject(
-                f"needs about {qty * self._reference:.2f}, the allocation has {self._cash:.2f}"
-            )
+        if side is Side.BUY and qty * reference > self._cash:
+            return reject(f"needs about {qty * reference:.2f}, the allocation has {self._cash:.2f}")
         response = self._client.signed(
             "POST",
             "/api/v3/order",
@@ -243,9 +268,9 @@ class BinanceVenue:
             if _code(response) in ORDER_REFUSALS:
                 return reject(_message(response))
             raise BinanceError(_message(response))
-        return self._record(side, response.json(), self._reference)
+        return self._record(symbol, side, response.json(), reference)
 
-    def _record(self, side: Side, order: dict[str, Any], reference: Decimal) -> Fill:
+    def _record(self, symbol: str, side: Side, order: dict[str, Any], reference: Decimal) -> Fill:
         filled = Decimal(order["executedQty"])
         quote = Decimal(order["cummulativeQuoteQty"])
         if filled <= 0:
@@ -253,11 +278,12 @@ class BinanceVenue:
                 f"order {order.get('orderId')} filled nothing ({order.get('status')})"
             )
         price = quote / filled
+        base = self.base(symbol)
         fee_in_quote = Decimal(0)
         base_fee = quote_fee = Decimal(0)
         for f in order.get("fills", []):
             commission = Decimal(f["commission"])
-            if f["commissionAsset"] == self.base:
+            if f["commissionAsset"] == base:
                 base_fee += commission
                 fee_in_quote += commission * Decimal(f["price"])
             elif f["commissionAsset"] == self.quote:
@@ -266,18 +292,19 @@ class BinanceVenue:
             elif commission > 0:  # BNB or similar: not ours to move, but reported
                 raise BinanceError(
                     f"commission charged in {f['commissionAsset']}; this venue only "
-                    f"accounts for {self.base} and {self.quote}"
+                    f"accounts for {base} and {self.quote}"
                 )
+        held = self.position(symbol)
         if side is Side.BUY:
             self._cash -= quote + quote_fee
-            self._position += filled - base_fee
+            self._positions[symbol] = held + filled - base_fee
             slippage = (price - reference) * filled
         else:
             self._cash += quote - quote_fee
-            self._position -= filled + base_fee
+            self._positions[symbol] = held - filled - base_fee
             slippage = (reference - price) * filled
         return Fill(
-            self.symbol,
+            symbol,
             side,
             filled,
             reference,

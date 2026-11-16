@@ -24,7 +24,11 @@ from typing import Any
 import polars as pl
 
 from kestrel.config import Config
-from kestrel.execution.paper import PaperAccount, run
+from kestrel.execution.paper import PaperAccount, run, run_basket
+
+Decided = Decimal | dict[str, str | None] | None
+"""A single coin's target weight, or a basket's targets (symbol -> weight; None when the
+strategy made no decision that bar)."""
 
 
 @dataclass(frozen=True)
@@ -32,14 +36,15 @@ class DayTrack:
     bar: datetime
     equity: Decimal
     expected: Decimal
-    target: Decimal
-    expected_target: Decimal
+    target: Decided
+    expected_target: Decided
     missed: bool
 
 
 @dataclass(frozen=True)
 class FillTrack:
     at: str
+    symbol: str
     side: str
     cost_bps: Decimal
     """Price against the reference plus the fee, in bps of the order: the real cost."""
@@ -129,9 +134,56 @@ def track(account: PaperAccount, bars: pl.DataFrame, config: Config) -> Tracking
     fills = [
         FillTrack(
             f["at"],
+            terms.symbol,
             f["side"],
             _cost_bps(f),
             _cost_bps(model_fills[f["at"]]) if f["at"] in model_fills else None,
+        )
+        for f in actual
+        if f["type"] == "fill"
+    ]
+    return Tracking(days, fills)
+
+
+def track_basket(account: PaperAccount, panel: pl.DataFrame, config: Config) -> Tracking:
+    """``track`` for a basket account: replay its strategy on the simulated venue over
+    ``panel`` (the stored bars of every coin it can hold). A bar whose next open isn't
+    stored yet isn't compared until it is."""
+    actual = account.ledger.events()
+    decided = [e for e in actual if e["type"] == "decision"]
+    if not decided:
+        return Tracking([], [])
+    terms = replace(account.terms(), venue="sim")
+    last = datetime.fromisoformat(decided[-1]["bar"])
+    upto = panel.filter(pl.col("open_time") <= last + terms.interval.duration)
+    with tempfile.TemporaryDirectory() as tmp:
+        model = PaperAccount.open(tmp, terms)
+        run_basket(model, upto, config)
+        expected = model.ledger.events()
+    marks, model_marks = _by(actual, "mark", "bar"), _by(expected, "mark", "bar")
+    model_decisions = _by(expected, "decision", "bar")
+    days = [
+        DayTrack(
+            datetime.fromisoformat(d["bar"]),
+            Decimal(marks[d["bar"]]["equity"]),
+            Decimal(model_marks[d["bar"]]["equity"]),
+            d["targets"],
+            model_decisions[d["bar"]]["targets"],
+            bool(d.get("missed")),
+        )
+        for d in decided
+        if d["bar"] in model_marks
+    ]
+    model_fills = {(e["at"], e["symbol"]): e for e in expected if e["type"] == "fill"}
+    fills = [
+        FillTrack(
+            f["at"],
+            f["symbol"],
+            f["side"],
+            _cost_bps(f),
+            _cost_bps(model_fills[(f["at"], f["symbol"])])
+            if (f["at"], f["symbol"]) in model_fills
+            else None,
         )
         for f in actual
         if f["type"] == "fill"

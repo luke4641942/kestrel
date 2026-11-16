@@ -100,3 +100,76 @@ def test_a_basket_state_carries_positions_and_the_step_book(tmp_path: Path) -> N
     assert set(state.positions) <= {"BTCUSDT", "ETHUSDT", "SOLUSDT", "BNBUSDT"}
     assert set(state.book) == {"last_bar", "stranded", "previous"}
     assert state.position == 0  # single-coin field unused for a basket
+
+
+def chosen_sunday(panel: pl.DataFrame) -> Any:
+    """A Sunday the strategy holds coins on, late enough for a year of history."""
+    from kestrel.strategy import make_portfolio_strategy as make
+
+    picks = make(KEY, {}).target_weights(panel).filter(pl.col("weight") > 0)
+    return picks["open_time"].max()
+
+
+def test_a_testnet_basket_trades_only_the_latest_bar_one_order_per_coin(tmp_path: Path) -> None:
+    from kestrel.backtest.costs import CostModel, Fill
+    from kestrel.execution.binance import BinanceVenue
+    from tests.test_binance_venue import FakeBinance
+
+    panel = coins()
+    sunday = chosen_sunday(panel)
+    upto = panel.filter(pl.col("open_time") <= sunday)
+    fake = FakeBinance()
+    fake.commission = ("0.01", "USDT")
+    symbols = ["BTCUSDT", "ETHUSDT", "SOLUSDT", "BNBUSDT"]
+    venue = BinanceVenue(fake.client(), symbols, "USDT", CostModel(config().costs), CASH)
+    terms = Terms("t", KEY, "UNIVERSE", D1, {}, CASH, sunday - timedelta(days=3), venue="testnet")
+    paper = PaperAccount.open(tmp_path, terms)
+    opens = {s: Decimal(100) for s in symbols}
+    handled = run_basket(paper, upto, config(), lambda _: opens, venue=venue)
+    assert [h.missed for h in handled] == [True, True, True, False]  # a live venue can't
+    assert handled[-1].bar == sunday  # fill at a past open: only the latest trades
+    bought = [o for o in handled[-1].orders if isinstance(o, Fill)]
+    assert bought
+    assert len(fake.orders) == len(bought)
+    assert {o["symbol"] for o in fake.orders} == {o.symbol for o in bought}
+    state = paper.state()
+    assert set(state.positions) == {o.symbol for o in bought}
+    assert state.cash < CASH
+
+
+def test_a_basket_waits_for_every_coin_that_traded_yesterday() -> None:
+    from kestrel.execution.paper import complete_opens
+
+    day = timedelta(days=1)
+    at = MONDAY + 10 * day
+    seen = {"A": at - day, "B": at - day, "GONE": at - 30 * day}
+    one = Decimal(1)
+    assert complete_opens({"A": one, "B": one, "GONE": None}, seen, at, day) == {"A": one, "B": one}
+    assert complete_opens({"A": one, "B": None, "GONE": None}, seen, at, day) == {}  # wait
+    assert complete_opens({"A": None, "B": None}, seen, at, day) == {}  # not opened yet
+
+
+def test_killing_a_basket_sells_every_coin_and_halts(tmp_path: Path) -> None:
+    from kestrel.execution import safety
+    from kestrel.execution.venue import SimVenue
+
+    panel = coins()
+    paper = account(tmp_path)
+    run_basket(
+        paper,
+        panel.filter(pl.col("open_time") <= chosen_sunday(panel) + timedelta(days=1)),
+        config(),
+    )
+    held = paper.state().positions
+    assert held
+    prices = {s: Decimal(100) for s in held}
+    volumes = {s: Decimal(10**9) for s in held}
+    venue = SimVenue(config(), CASH, rules=config().rules_for)
+    event = safety.kill_basket(paper, venue, prices, volumes, "drill")
+    assert {x["symbol"] for x in event["sales"]} == set(held)
+    assert all("quantity" in x for x in event["sales"])
+    state = paper.state()
+    assert state.positions == {}
+    assert state.cash > 0
+    assert set(state.book) == {"last_bar", "stranded", "previous"}
+    assert safety.halted(paper) == "killed: drill"

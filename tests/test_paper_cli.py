@@ -126,6 +126,25 @@ def test_reconciliation_halts_an_exchange_account_holding_less(tmp_path: Path) -
     assert len(account.ledger.events()) == events
 
 
+def test_reconciliation_adds_up_every_testnet_account(tmp_path: Path) -> None:
+    from kestrel.config import load_config
+    from tests.test_binance_venue import FakeBinance as FakeExchange
+    from tests.test_binance_venue import venue
+
+    for name in ("a", "b"):  # 0.6 BTC each: fine alone, but the exchange holds 1
+        account = PaperAccount.open(tmp_path, paper_terms(name))
+        account.ledger.append({"type": "state", "bar": T0.isoformat(), "cash": "100",
+                               "position": "0.6", "target": "1"})  # fmt: skip
+    sim = PaperAccount.open(
+        tmp_path,
+        paper_terms("s").__class__("s", "ma-trend", "BTCUSDT", Interval.D1, {}, Decimal(330), T0),
+    )  # a simulated account isn't on the exchange
+    sim.ledger.append({"type": "state", "bar": T0.isoformat(), "cash": "100",
+                       "position": "5", "target": "1"})  # fmt: skip
+    cli._reconcile(PaperAccount(tmp_path, "a"), venue(FakeExchange()), load_config(REPO_CONFIG))
+    assert "BTC: ledger 1.2, exchange holds 1" in (safety.halted(PaperAccount(tmp_path, "a")) or "")
+
+
 def paper_terms(name: str):  # type: ignore[no-untyped-def]
     from kestrel.execution.paper import Terms
 
@@ -210,8 +229,8 @@ def test_a_basket_account_opens_runs_and_reports(tmp_path: Path, setup: FakeBina
     one_coin = invoke(tmp_path, "open", "b", "--symbol", "ETHUSDT", *common)
     assert one_coin.exit_code == 1
     assert "--symbol UNIVERSE" in one_coin.output
-    testnet = invoke(tmp_path, "open", "b", "--symbol", "UNIVERSE", "--venue", "testnet", *common)
-    assert testnet.exit_code == 1
+    testnet = invoke(tmp_path, "open", "t", "--symbol", "UNIVERSE", "--venue", "testnet", *common)
+    assert testnet.exit_code == 0, testnet.output  # a basket can trade on the testnet
     opened = invoke(tmp_path, "open", "b", "--symbol", "UNIVERSE", *common)
     assert opened.exit_code == 0, opened.output
     ran = invoke(tmp_path, "run", "b", "--config", REPO_CONFIG)

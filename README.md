@@ -41,7 +41,7 @@ bias, unrealistic fills, ignored costs, and research code that is rewritten
 | 2. Backtester | Event-driven and vectorised engines (parity-tested), cost model, metrics with uncertainty, stops/targets with risk sizing, resting limit orders, a portfolio engine for coin baskets | Done |
 | 3. Validation | Deflated Sharpe over every trial, walk-forward, robustness, random-entry control, the holdout test, one scorecard graded on every run | Done |
 | 3.5 Research method | Pre-registered notes, decisions per strategy and market, an explore-then-confirm experiment on a fixed split of coins | Done |
-| 4. Execution | Paper trading through the backtest's own code on a simulated venue or Binance Spot Testnet, reconciliation, risk limits, kill switch, tracking against the model, scheduled runs | Running (live venue later) |
+| 4. Execution | Paper trading through the backtest's own code (single coins and coin baskets) on a simulated venue or Binance Spot Testnet, reconciliation, risk limits, kill switch, tracking against the model, scheduled runs | Running (live venue later) |
 | Parked | Perps (not offered to Australian retail; ASIC caps retail crypto leverage at 2:1); multi-strategy portfolios; a settings page | Parked |
 
 ## Quick start

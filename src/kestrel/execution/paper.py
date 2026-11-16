@@ -36,7 +36,10 @@ from kestrel.backtest.engine import half_spreads
 from kestrel.backtest.portfolio import validated_decisions
 from kestrel.backtest.spread import with_half_spread
 from kestrel.config import Config
+from kestrel.data.binance_vision import Month
+from kestrel.data.panel import load_panel
 from kestrel.data.schema import KLINE_SCHEMA, Interval
+from kestrel.data.store import ParquetStore
 from kestrel.execution.basket import Bar, Book, close_day, open_day
 from kestrel.execution.rebalance import rebalance
 from kestrel.execution.safety import RiskGuard, behind, check_mark, halt, halted, stale
@@ -405,6 +408,36 @@ def _book_in(raw: dict[str, Any]) -> Book:
         set(raw.get("stranded", [])),
         {s: None if w is None else Decimal(w) for s, w in raw.get("previous", {}).items()},
     )
+
+
+BASKET_HISTORY = timedelta(days=500)
+"""Stored history a basket run reads before its first decision (its rules need a year)."""
+
+
+def basket_panel(
+    store: ParquetStore, terms: Terms, coins: list[str], now: datetime
+) -> pl.DataFrame:
+    """The stored bars a basket account decides on: every coin it can hold, from a little
+    over a year before its first decision to ``now``."""
+    first = terms.trade_from - BASKET_HISTORY
+    return load_panel(
+        store, coins, terms.interval, Month(first.year, first.month), Month(now.year, now.month)
+    )
+
+
+def complete_opens(
+    opens: dict[str, Decimal | None],
+    last_seen: dict[str, datetime],
+    at: datetime,
+    duration: timedelta,
+) -> dict[str, Decimal]:
+    """A basket's forming opens at ``at``, or none (wait for the next run) while a coin
+    that traded the bar before has no open yet: a price that hasn't arrived must never
+    look like a delisting and force a sale. ``last_seen``: each coin's newest stored bar."""
+    trading = {c for c, t in last_seen.items() if t >= at - duration}
+    if any(opens.get(c) is None for c in trading):
+        return {}
+    return {c: o for c, o in opens.items() if o is not None}
 
 
 def run_basket(

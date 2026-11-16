@@ -46,7 +46,6 @@ from kestrel.config import Config, ConfigError, load_config
 from kestrel.data import attention, delistings, funding, live, news, sentiment, stablecoins
 from kestrel.data.binance_vision import BinanceVisionClient, Month, last_complete_month
 from kestrel.data.features import attach_features, markets_for
-from kestrel.data.panel import load_panel
 from kestrel.data.quality import check_klines
 from kestrel.data.schema import Interval
 from kestrel.data.store import ParquetStore
@@ -1460,11 +1459,8 @@ def paper_open(
         if venue not in ("sim", "testnet"):
             raise ValueError(f"--venue must be sim or testnet, not {venue!r}")
         key, link = run_target(ResearchStore(research_dir), strategy, research)
-        if spec_for(key).universe:
-            if symbol.upper() != UNIVERSE:
-                raise ValueError(f"{key} trades a basket: open it with --symbol {UNIVERSE}")
-            if venue != "sim":
-                raise ValueError("a basket trades on the simulated venue for now; testnet next")
+        if spec_for(key).universe and symbol.upper() != UNIVERSE:
+            raise ValueError(f"{key} trades a basket: open it with --symbol {UNIVERSE}")
         now = datetime.now(UTC)
         step = interval.duration
         # The bar that closed most recently: its close is the first decision.
@@ -1551,24 +1547,36 @@ def paper_run(
 def _paper_venue(
     terms: paper_trading.Terms, cfg: Config, http: httpx.Client
 ) -> BinanceVenue | None:
-    """The account's venue: None for the simulated one (the runner makes it)."""
+    """The account's venue: None for the simulated one (the runner makes it). A basket's
+    venue trades its strategy's fixed coins."""
     if terms.venue != "testnet":
         return None
     client = BinanceClient(Credentials.from_env(), http, TESTNET_URL)
+    spec = spec_for(terms.strategy)
+    symbols = list(spec.assets) if spec.universe else terms.symbol
     return BinanceVenue(
-        client, terms.symbol, cfg.account_currency, CostModel(cfg.costs), terms.initial_cash
+        client, symbols, cfg.account_currency, CostModel(cfg.costs), terms.initial_cash
     )
 
 
 def _reconcile(
     account: paper_trading.PaperAccount, venue: BinanceVenue | None, cfg: Config
 ) -> None:
-    """An exchange account must hold at least what the ledger says; if not, halt."""
+    """The exchange account must hold at least what every testnet account's ledger says,
+    added up (they share one exchange account: two can hold BTC); if not, halt this one."""
     if venue is None or safety.halted(account) is not None:
         return
-    state = account.state()
-    holdings = [(venue.base, state.position), (venue.quote, state.cash)]
-    short = safety.reconcile(holdings, venue.balances())
+    root = account.dir.parent.parent
+    owed: dict[str, Decimal] = {}
+    for name in paper_trading.accounts(root):
+        other = paper_trading.PaperAccount(root, name)
+        terms, state = other.terms(), other.state()
+        if terms.venue != "testnet":
+            continue
+        positions = state.positions or ({terms.symbol: state.position} if state.position else {})
+        for asset, amount in venue.assets(state.cash, positions):
+            owed[asset] = owed.get(asset, Decimal(0)) + amount
+    short = safety.reconcile(sorted(owed.items()), venue.balances())
     if short:
         safety.halt(account, f"reconciliation failed: {safety.describe(short)}")
 
@@ -1591,21 +1599,23 @@ def _paper_run_basket(account: paper_trading.PaperAccount, data_dir: Path, confi
                 raise ValueError(
                     f"{market} data has problems; not trading:\n{up.quality.summary()}"
                 )
-        first = terms.trade_from - timedelta(days=500)  # history the rule needs (a year+)
-        newest = datetime.now(UTC)
-        panel = load_panel(
-            store,
-            coins,
-            terms.interval,
-            Month(first.year, first.month),
-            Month(newest.year, newest.month),
-        )
+        panel = paper_trading.basket_panel(store, terms, coins, datetime.now(UTC))
+
+        last_seen = dict(panel.group_by("symbol").agg(pl.col("open_time").max()).iter_rows())
 
         def forming(at: datetime) -> dict[str, Decimal]:
-            opens = {c: live.open_of(c, terms.interval, at, http) for c in coins}
-            return {c: o for c, o in opens.items() if o is not None}
+            opens = {c: live.open_of(c, terms.interval, at, http) for c in last_seen}
+            return paper_trading.complete_opens(opens, last_seen, at, terms.interval.duration)
 
-        handled = paper_trading.run_basket(account, panel, cfg, forming, now=datetime.now(UTC))
+        try:
+            venue = _paper_venue(terms, cfg, http)
+            _reconcile(account, venue, cfg)
+            handled = paper_trading.run_basket(
+                account, panel, cfg, forming, venue=venue, now=datetime.now(UTC)
+            )
+            _reconcile(account, venue, cfg)
+        except BinanceError as e:
+            raise ValueError(str(e)) from None
     halt_reason = safety.halted(account)
     if not handled and halt_reason is None:
         typer.echo(f"{account.dir.name}: nothing new (the next bar hasn't closed)")
@@ -1646,11 +1656,16 @@ def paper_track(
     account = paper_trading.PaperAccount(data_dir, name)
     try:
         terms = account.terms()
-        bars = ParquetStore(data_dir).read(terms.symbol, terms.interval)
-        bars = attach_features(
-            bars, spec_for(terms.strategy).features, terms.symbol, terms.interval, data_dir
-        )
-        result = tracking.track(account, bars, load_config(config))
+        spec = spec_for(terms.strategy)
+        if spec.universe:
+            panel = paper_trading.basket_panel(
+                ParquetStore(data_dir), terms, list(spec.assets), datetime.now(UTC)
+            )
+            result = tracking.track_basket(account, panel, load_config(config))
+        else:
+            bars = ParquetStore(data_dir).read(terms.symbol, terms.interval)
+            bars = attach_features(bars, spec.features, terms.symbol, terms.interval, data_dir)
+            result = tracking.track(account, bars, load_config(config))
     except (ValueError, ConfigError) as e:
         typer.echo(str(e), err=True)
         raise typer.Exit(code=1) from None
@@ -1740,14 +1755,35 @@ def kill(
     try:
         terms = account.terms()
         cfg = load_config(config)
-        stored = ParquetStore(data_dir).read(terms.symbol, terms.interval)
-        volume = Decimal(str(stored["quote_volume"][-1])) if stored.height else Decimal(0)
+        store = ParquetStore(data_dir)
+
+        def last_volume(symbol: str) -> Decimal:
+            stored = store.read(symbol, terms.interval)
+            return Decimal(str(stored["quote_volume"][-1])) if stored.height else Decimal(0)
+
         with httpx.Client(timeout=30) as http:
             venue = _paper_venue(terms, cfg, http) or SimVenue(
                 cfg, terms.initial_cash, rules=cfg.rules_for
             )
+            if spec_for(terms.strategy).universe:
+                held = [s for s, q in account.state().positions.items() if q > 0]
+                event = safety.kill_basket(
+                    account,
+                    venue,
+                    {s: live.last_price(s, http) for s in held},
+                    {s: last_volume(s) for s in held},
+                    reason,
+                )
+                sales = [
+                    f"sold {x['quantity']} {x['symbol']} at {Decimal(x['fill_price']):.4f}"
+                    if "quantity" in x
+                    else f"SALE OF {x['symbol']} REJECTED: {x['rejected']}"
+                    for x in event["sales"]
+                ]
+                typer.echo(f"KILLED {name}: {'; '.join(sales) or 'nothing held'}; halted")
+                return
             price = live.last_price(terms.symbol, http)
-            event = safety.kill(account, venue, price, volume, reason)
+            event = safety.kill(account, venue, price, last_volume(terms.symbol), reason)
     except (ValueError, ConfigError, httpx.HTTPError, BinanceError) as e:
         typer.echo(str(e), err=True)
         raise typer.Exit(code=1) from None
@@ -1772,6 +1808,7 @@ def paper_status(name: str, data_dir: DataDir = Path("data")) -> None:
     marks = [e for e in events if e["type"] == "mark"]
     # A kill's sale is a fill too: it is recorded as its own event.
     fills = sum(e["type"] == "fill" or (e["type"] == "kill" and "side" in e) for e in events)
+    fills += sum("side" in x for e in events if e["type"] == "kill" for x in e.get("sales", []))
     last = (
         f"{float(marks[-1]['equity']):.2f} USDT on {marks[-1]['bar'][:10]}"
         if marks

@@ -804,12 +804,15 @@ class PaperSummaryOut(BaseModel):
     """At the latest mark."""
     cash: float
     position: float
+    positions: dict[str, float]
+    """A basket account's coins by symbol (empty for a single-coin account)."""
     halted: str | None
     """Why it is halted, or None."""
 
 
 class PaperFillOut(BaseModel):
     at: datetime
+    symbol: str
     side: str
     quantity: float
     reference_price: float
@@ -822,9 +825,13 @@ class PaperFillOut(BaseModel):
 class PaperDecisionOut(BaseModel):
     bar: datetime
     target: float
-    current: float
+    """Total target weight (a basket's weights added up; a coin kept as held counts 0)."""
+    current: float | None
+    """Weight held before; not recorded for a basket."""
     missed: bool
     band_skip: bool
+    targets: dict[str, float | None] | None = None
+    """A basket's targets by symbol (None: keep as held)."""
 
 
 class PaperEventOut(BaseModel):

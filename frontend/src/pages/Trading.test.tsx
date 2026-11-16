@@ -23,7 +23,7 @@ beforeEach(() => {
       paperDetail({
         name,
         halted: name === "eth" ? "killed: drill" : null,
-        fills: [{ at: "2026-11-14T00:00:00Z", side: "buy", quantity: 0.0016, reference_price: 68314, price: 67250, fee: 0, cost_bps: -155.7, expected_bps: 11.3 }],
+        fills: [{ at: "2026-11-14T00:00:00Z", symbol: "BTCUSDT", side: "buy", quantity: 0.0016, reference_price: 68314, price: 67250, fee: 0, cost_bps: -155.7, expected_bps: 11.3 }],
         decisions: [
           { bar: "2026-11-14T00:00:00Z", target: 0.33, current: 0.33, missed: false, band_skip: true },
           { bar: "2026-11-13T00:00:00Z", target: 0.33, current: 0, missed: true, band_skip: false },
@@ -52,6 +52,25 @@ describe("Trading", () => {
     fireEvent.click(await screen.findByText("eth"));
     expect(await screen.findByRole("alert")).toHaveTextContent('Halted: killed: drill. It won\'t trade until resumed from the terminal: kestrel paper resume eth --reason "..."');
     await waitFor(() => expect(api.paperAccount).toHaveBeenLastCalledWith("eth"));
+  });
+
+  it("shows a basket's coins, its fills by coin and its weekly targets", async () => {
+    const basket = paperDetail({
+      name: "rot",
+      symbol: "UNIVERSE",
+      positions: { SOLUSDT: 0.5 },
+      fills: [{ at: "2026-11-16T00:00:00Z", symbol: "SOLUSDT", side: "buy", quantity: 0.5, reference_price: 140, price: 140.1, fee: 0.05, cost_bps: 7.9, expected_bps: 8.2 }],
+      decisions: [{ bar: "2026-11-15T00:00:00Z", target: 0.17, current: null, missed: false, band_skip: false, targets: { SOLUSDT: 0.17 } }],
+    });
+    const { equity_series, expected, fills, decisions, events, tracking, ...rest } = basket;
+    void equity_series, expected, fills, decisions, events, tracking;
+    api.paper = vi.fn().mockResolvedValue([rest]);
+    api.paperAccount = vi.fn().mockResolvedValue(basket);
+    render(<Trading />);
+    expect(await screen.findByText("1 coin")).toBeInTheDocument();
+    expect(screen.getByText("Basket 1d")).toBeInTheDocument();
+    expect(screen.getByText("SOL 17%")).toBeInTheDocument();
+    expect(screen.getByText("SOL")).toBeInTheDocument();  // the fill's coin
   });
 
   it("explains how to open an account when there are none", async () => {

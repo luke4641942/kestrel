@@ -367,6 +367,8 @@ export interface PaperSummary {
   equity: number | null;
   cash: number;
   position: number;
+  /** A basket account's coins by symbol; empty for a single-coin account. */
+  positions: Record<string, number>;
   /** Why it is halted, or null. */
   halted: string | null;
 }
@@ -377,6 +379,7 @@ export interface PaperDetail extends PaperSummary {
   expected: EquitySeries;
   fills: {
     at: string;
+    symbol: string;
     side: Side;
     quantity: number;
     reference_price: number;
@@ -386,7 +389,17 @@ export interface PaperDetail extends PaperSummary {
     expected_bps: number | null;
   }[];
   /** Newest first. */
-  decisions: { bar: string; target: number; current: number; missed: boolean; band_skip: boolean }[];
+  decisions: {
+    bar: string;
+    /** Total target weight (a basket's weights added up). */
+    target: number;
+    /** Weight held before; null for a basket. */
+    current: number | null;
+    missed: boolean;
+    band_skip: boolean;
+    /** A basket's targets by symbol (null: keep as held). */
+    targets?: Record<string, number | null> | null;
+  }[];
   events: { type: "halt" | "resume" | "kill"; at: string; reason: string | null }[];
   tracking: {
     days: number;
