@@ -85,6 +85,12 @@ from kestrel.strategy import (
 )
 from kestrel.studies import cost_gate
 from kestrel.studies.anchor_day import format_study, run_study
+from kestrel.studies.cross_section import (
+    MIN_VOLUME,
+    build_panel,
+    format_cross_study,
+    run_cross_study,
+)
 from kestrel.studies.delisting import (
     format_delisting_study,
     measure_all,
@@ -484,6 +490,49 @@ def confirm_cmd(
     notes.mark_backtested(s.slug, note.version)
     typer.echo(format_confirmation(result, research))
     typer.echo(f"Saved as study {study_id}")
+
+
+@app.command("cross-study")
+def cross_study(
+    signal: Annotated[str, typer.Argument(help="funding or taker-flow.")],
+    research: Annotated[
+        str, typer.Option(help="The frozen note that pre-registers this run (marked as run).")
+    ],
+    research_dir: ResearchDir = Path("research"),
+    data_dir: DataDir = Path("data"),
+    config: Annotated[
+        Path, typer.Option("--config", envvar="KESTREL_CONFIG", help="Config file.")
+    ] = Path("kestrel.toml"),
+) -> None:
+    """Does a coin's funding or taker flow predict its next week against the other coins,
+    beyond its past week and size? Exploration-half coins plus BTC, ETH and SOL (never the
+    locked confirmation half), Sunday closes, before the holdout."""
+    implementations = {"funding": "study:funding-cross-section", "taker-flow": "study:taker-flow"}
+    store = ResearchStore(research_dir)
+    try:
+        if signal not in implementations:
+            raise ValueError("signal must be funding or taker-flow")
+        s, note = store.require_testable(research)
+        if note.implementation != implementations[signal]:
+            raise ValueError(
+                f"{research} names {note.implementation}, not {implementations[signal]}"
+            )
+        cfg = load_config(config)
+        if cfg.split is None:
+            raise ValueError("no exploration split; the study's universe is its exploration half")
+        coins = sorted(cfg.split.exploration | SEARCHED)
+        panel = build_panel(str(data_dir), coins, cfg.backtest.holdout_start)
+        # One weekly round trip at the narrowest band an eligible (20M+) coin can't beat:
+        # the taker fee and the 20M-100M band's half-spread, both ways.
+        c = cfg.costs
+        band = min(float(b) for v, b in cfg.universe.spread_tiers if float(v) == MIN_VOLUME)
+        hurdle = math.log1p(2 * (float(c.taker_fee_bps) + band) / 1e4)
+        result = run_cross_study(panel, signal, hurdle)  # type: ignore[arg-type]
+    except (ConfigError, ValueError) as e:
+        typer.echo(str(e), err=True)
+        raise typer.Exit(code=1) from None
+    store.mark_backtested(s.slug, note.version)
+    typer.echo(format_cross_study(result))
 
 
 @app.command("anchor-study")
