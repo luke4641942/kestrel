@@ -15,7 +15,8 @@ Rules live in CLAUDE.md; results in `research/findings.md`; ideas not yet schedu
 
 ## Waiting on Luke
 - [ ] Rotation graduates confirmed on unseen coins' holdout year (2026-11-16): G1 (top 3 of 8)
-      PASSED, G2 (top 1 of 4) FAILED. Findings 15. Waiting on Luke: G1 pursue (its note
+      PASSED, G2 (top 1 of 4) FAILED; G1's full scorecard fails only luck and walk-forward
+      (5 of 11). Findings 15. Waiting on Luke: G1 pursue (its note
       says forward paper next) and G2 drop? Forward paper for G1 needs the paper runner to
       trade a basket (one session).
 - [ ] Raspberry Pi: which model and RAM, is it running anything, SD card or USB SSD?

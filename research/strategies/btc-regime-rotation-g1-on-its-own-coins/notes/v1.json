@@ -1,0 +1,15 @@
+{
+  "version": 1,
+  "created_at": "2026-11-16T01:59:01.591214+00:00",
+  "sections": {
+    "hypothesis": "btc-rotation-8 (G1) on its own 8 large coins beats BTC held on Sharpe after costs over 2018-01 to 2025-10, with the full scorecard on record.",
+    "rationale": "G1 came out of exploration round 2 (research/exploration/log.md) and passed its pre-registered confirmation on the unspent holdout year of 8 coins it had never seen (findings 15): flat while BTC fell 29%, against -4.7% for BTC at its exposure. Its own coins were searched, so this run is not new evidence of an edge; it puts the strategy's full record (equity, trades, scorecard) on the Backtests page, as the basis for a pursue decision, the way btc-regime-trend was recorded on ETH and SOL. Basket strategies are judged against BTC held (Kestrel's rule for universe strategies).",
+    "rules": "btc-rotation-8 with its defaults (top 3 of BTC, ETH, SOL, BNB, DOGE, LINK, DOT, LTC by 90-day return; each Sunday while BTC closes 3% above its 50-day average; each slot sized to 50% volatility), daily bars, 330 USDT, kestrel.toml's costs. 2018-01 to 2025-10. kestrel backtest UNIVERSE --strategy btc-rotation-8, then kestrel walk-forward (grid lookback_days 30,90,180 x btc_days 30,50,100; 24-month train, 6-month test) and kestrel robustness around the defaults. All before the holdout.",
+    "falsification": "The full scorecard against BTC held. Recorded whatever it shows; it doesn't decide the pursue on its own, because the confirmation is the real test. A failure on walk-forward or robustness would be reported to Luke before any paper account.",
+    "parameters": "top_n 3, lookback_days 90, btc_days 50, margin_pct 3, vol_days 30, target_vol_pct 50; the walk-forward grid and robustness neighbours above.",
+    "costs": "Weekly decisions on up to 3 coins, each paying its spread band. Trials: 1 backtest plus about 9 grid points and about 20 neighbours, in the main pool."
+  },
+  "implementation": "btc-rotation-8",
+  "frozen_at": "2026-11-16T01:59:59.789573+00:00",
+  "change_reason": null
+}
