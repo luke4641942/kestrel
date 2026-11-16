@@ -14,6 +14,11 @@ Rules live in CLAUDE.md; results in `research/findings.md`; ideas not yet schedu
   sleeps; the Raspberry Pi item fixes that.
 
 ## Waiting on Luke
+- [ ] Rotation graduates (exploration round 2): G1 `btc-rotation-8` (top 3 of 8 large
+      coins) and G2 `btc-rotation-4` (top 1 of BTC/ETH/SOL/BNB), weekly, BTC 3% above its
+      50-day average, volatility-sized. Built and tested; real engine 2018-25: Sharpe 1.55
+      and 1.51 vs BTC 0.74. Luke to choose the confirmation: holdout year on other large
+      coins now, plus forward paper; or forward paper only. Then the notes.
 - [ ] Raspberry Pi: which model and RAM, is it running anything, SD card or USB SSD?
       Then the Pi item below.
 - [ ] Delisting exit rule (findings 11): write a note (sell a held coin at the next open

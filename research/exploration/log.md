@@ -85,3 +85,20 @@ Leading shape, if anything graduates: each week, while BTC is above its 50-day a
 hold the top 2-3 of a set of large coins by 90-day return, each sized to 50% volatility;
 otherwise cash. That is btc-regime-trend's timing with a momentum picker, the altcoin
 portfolio TODO.md already names. How graduates would be confirmed is still open (Luke).
+
+## Round 2, part 2: extra filters (`rotation_round2.py`)
+
+The leading shapes: G1, the top 3 of the 8 large coins by 90-day return; G2, the top 1 of
+BTC/ETH/SOL/BNB; both weekly, only while BTC is above its 50-day average, each sized to 50%
+volatility. Weeks invested broken down by conditions: none lost on average, but weeks with
+BTC less than 3% above its average were the weakest (+0.5% a week against +3.0% when more
+than 10% above). Sixteen filter combinations each:
+
+- A 3% margin (BTC more than 3% above its average) was the one consistent help: Sharpe
+  1.65 to 1.67 (G1) and 1.65 to 1.68 (G2), better in the 2022-25 half on both, drawdown a
+  few points lower (-32% to -30%, -41% to -34%), some return given up.
+- Stablecoin growth hurt, mostly in 2022-25 (G1 1.20 to 0.86); breadth hurt G1.
+- The best of the 16 (margin plus BTC volatility under 80%) was barely better than the
+  margin alone: choosing it would be fitting.
+
+Graduated (Luke, 2026-11-16): G1 and G2, each with the 3% margin and nothing else.

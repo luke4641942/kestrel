@@ -27,6 +27,12 @@ from kestrel.strategies.basket_breakout import BasketBreakout
 from kestrel.strategies.bollinger_pullback import BollingerPullback
 from kestrel.strategies.brake import TrendVolTargetBrake, WeeklyMomentumBrake
 from kestrel.strategies.btc_regime import BtcRegimeTrend
+from kestrel.strategies.btc_rotation import (
+    LARGE_4,
+    LARGE_8,
+    BtcRegimeRotation,
+    BtcRegimeRotation4,
+)
 from kestrel.strategies.choch_fvg import ChochFvg
 from kestrel.strategies.crash_rebound import CrashRebound
 from kestrel.strategies.eth_btc import BtcEthHalf, EthBtcValue
@@ -915,6 +921,42 @@ STRATEGIES: dict[str, StrategySpec] = {
             "4 weeks, else cash. Research: runs only through its frozen note.",
             StablecoinHold,
             features=("stablecoins_up",),
+        ),
+        StrategySpec(
+            "btc-rotation-8",
+            "research",
+            "Each Sunday, while BTC closes margin_pct% above its btc_days average, hold the top "
+            "top_n of 8 large coins by lookback_days return, each sized to target_vol_pct "
+            "volatility; else cash. Exploration graduate G1: runs only through its frozen note.",
+            BtcRegimeRotation,
+            (
+                Param("top_n", 3, 1, 8, "Coins held"),
+                Param("lookback_days", 90, 30, 365, "Days of return ranked"),
+                Param("btc_days", 50, 20, 200, "BTC's moving average, days"),
+                Param("margin_pct", 3, 0, 10, "How far above its average BTC must close, %"),
+                Param("vol_days", 30, 10, 90, "Days of returns in each coin's volatility"),
+                Param("target_vol_pct", 50, 10, 100, "Annualised volatility target per slot, %"),
+            ),
+            universe=True,
+            assets=LARGE_8,
+        ),
+        StrategySpec(
+            "btc-rotation-4",
+            "research",
+            "Each Sunday, while BTC closes margin_pct% above its btc_days average, hold the top "
+            "top_n of BTC/ETH/SOL/BNB by lookback_days return, sized to target_vol_pct "
+            "volatility; else cash. Exploration graduate G2: runs only through its frozen note.",
+            BtcRegimeRotation4,
+            (
+                Param("top_n", 1, 1, 4, "Coins held"),
+                Param("lookback_days", 90, 30, 365, "Days of return ranked"),
+                Param("btc_days", 50, 20, 200, "BTC's moving average, days"),
+                Param("margin_pct", 3, 0, 10, "How far above its average BTC must close, %"),
+                Param("vol_days", 30, 10, 90, "Days of returns in each coin's volatility"),
+                Param("target_vol_pct", 50, 10, 100, "Annualised volatility target per slot, %"),
+            ),
+            universe=True,
+            assets=LARGE_4,
         ),
         StrategySpec(
             "btc-gold-rotation",
