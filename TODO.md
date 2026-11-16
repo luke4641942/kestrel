@@ -42,7 +42,8 @@ exists and Luke has checked the Swyftx employee trading policy.
       (`kestrel short-study ...`, to build after freezing): `shorting-with-the-btc-regime-rule`
       (ETH, SOL), `g1-with-a-short-side`, `trend-vol-target-long-and-short` (BTC, ETH, SOL),
       `long-short-momentum-among-liquid-coins` (market-neutral),
-      `cash-and-carry-on-btc-eth-and-sol-perps` (perps only). About 8 trials in all. Check Eightcap's short swap rate before freezing.
+      `cash-and-carry-on-btc-eth-and-sol-perps` (perps only). About 8 trials in all.
+      Check Eightcap's short swap rate before freezing.
 - [ ] Delisting short: the open note `shorting-the-delisting-window-with-perps` was
       INSUFFICIENT at 6 announcements (10 needed). Re-run once 10 exist, rather than reject.
 - [ ] Short before large token unlocks (sized against daily volume): needs an unlock
