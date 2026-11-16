@@ -8,15 +8,13 @@ Rules live in CLAUDE.md; results in `research/findings.md`; ideas not yet schedu
 - Paper trading on Binance's Spot Testnet, hourly at 10 past (launchd on the Mac):
   - tvt-btc, tvt-eth, tvt-sol: trend-vol-target, opened 2026-11-15.
   - brt-eth, brt-sol: btc-regime-trend, opened 2026-11-16.
+  - rot-g1: btc-rotation-8 (G1, a basket of 8 coins), opened 2026-11-16.
   Each runs 395 days from its first decision (the 2026-11-14 or 15 bar). Reviews every 3
   months (`kestrel paper track`; first around 2027-02-15), a failure-only check at 182 days
   (around 2027-05-15), verdicts around 2027-12-14. Runs are late or missed while the Mac
   sleeps; the Raspberry Pi item fixes that.
 
 ## Waiting on Luke
-- [ ] G1 `btc-rotation-8` pursued, G2 dropped (Luke, 2026-11-16). Paper note
-      `paper-trading-btc-regime-rotation-g1` frozen; basket paper trading is built. Open
-      rot-g1 on the testnet, then load its launchd job.
 - [ ] Raspberry Pi: which model and RAM, is it running anything, SD card or USB SSD?
       Then the Pi item below.
 - [ ] Delisting exit rule (findings 11): write a note (sell a held coin at the next open
@@ -85,6 +83,7 @@ exists and Luke has checked the Swyftx employee trading policy.
 - [ ] Dashboard at phone width: the top menu and pages spill off the screen.
 
 ## Done recently
+- 2026-11-16 rot-g1 opened (G1 pursued, G2 dropped; Luke); its paper note closed as paper.
 - 2026-11-16 Basket paper trading on the Binance testnet: a multi-coin venue, reconciliation
   summed over every testnet account, a basket kill switch, `paper track` and the Trading
   page for baskets. A missing open never forces a sale (the run waits).

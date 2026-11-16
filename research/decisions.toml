@@ -479,10 +479,10 @@ evidence = ["btc-regime-trend-on-eth-and-sol", "confirmation-btc-regime-and-coin
 [[decision]]
 strategy = "btc-rotation-8"
 name = "BTC-regime rotation, top 3 of 8 large coins (exploration graduate G1)"
-market = "8 large coins 1d"
+market = "BTC, ETH, SOL, BNB, DOGE, LINK, DOT, LTC 1d"
 decision = "pursue"
 decided = 2026-11-16
-reason = "Pursue (Luke, 2026-11-16): next is forward paper trading, not a proven edge. Found in exploration round 2; passed its pre-registered confirmation on the unspent holdout year of BTC plus 7 large coins it had never seen (+0.0% while BTC fell 29%, against -4.7% for BTC at its 18% exposure; drawdown -11%). On its own coins 2018-01 to 2025-10: Sharpe 1.55 vs BTC 0.74, +4,048%, drawdown -37%, start dates 70%, costs 23x, robust (100% of 22 neighbours); fails luck (deflated 1%) and walk-forward (5 of 11 windows, out-of-sample Sharpe equal to in-sample). Survivorship (disclosed 2026-11-16): its 8 coins are today's large coins, so its 2018-25 backtest flatters it; the holdout year used a basket fixed before 2025-11 and is clean of this (findings 15)."
+reason = "Pursue (Luke, 2026-11-16): next is forward paper trading, not a proven edge. Found in exploration round 2; passed its pre-registered confirmation on the unspent holdout year of BTC plus 7 large coins it had never seen (+0.0% while BTC fell 29%, against -4.7% for BTC at its 18% exposure; drawdown -11%). On its own coins 2018-01 to 2025-10: Sharpe 1.55 vs BTC 0.74, +4,048%, drawdown -37%, start dates 70%, costs 23x, robust (100% of 22 neighbours); fails luck (deflated 1%) and walk-forward (5 of 11 windows, out-of-sample Sharpe equal to in-sample). Survivorship (disclosed 2026-11-16): its 8 coins are today's large coins, so its 2018-25 backtest flatters it; the holdout year used a basket fixed before 2025-11 and is clean of this (findings 15). Paper account rot-g1 opened on the testnet 2026-11-16 (note paper-trading-btc-regime-rotation-g1, first decision the 2026-11-15 bar: cash)."
 evidence = ["confirmation-btc-regime-rotation-top-3-of-8", "btc-regime-rotation-g1-on-its-own-coins"]
 
 [[decision]]

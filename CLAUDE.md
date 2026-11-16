@@ -93,8 +93,8 @@ Never pipe check output through `tail` or similar inside an `&&` chain: it hides
       A run refreshes every market a strategy's features read (`kestrel.data.features
       .markets_for`: BTC for `btc_close`) and refuses to decide a bar with a missing input.
       The dashboard's Trading page is read-only; every action is a CLI command. Running
-      (TODO.md): trend-vol-target on BTC, ETH, SOL and btc-regime-trend on ETH, SOL, each
-      its own testnet account. Next: move them to an always-on Raspberry Pi.
+      (TODO.md): trend-vol-target on BTC, ETH, SOL, btc-regime-trend on ETH, SOL, and G1
+      (btc-rotation-8, one basket account, rot-g1), each its own testnet account. Next: move them to an always-on Raspberry Pi.
 - [x] Research tooling: the Research tab (decisions by family, the luck bar over time, the
       exploration experiment), the exploration split and confirmation run, cross-sectional
       studies, delisting studies, the minute-chart cost gate, the overlap report
@@ -126,7 +126,9 @@ Never pipe check output through `tail` or similar inside an `&&` chain: it hides
   carry on to paper trading, not "passed"; `watch`; `drop` (final). Pursued (2026-11-16):
   trend-vol-target on BTC, ETH and SOL (each beat exposure-matched holding, failed luck and
   walk-forward, and passed its holdout), and btc-regime-trend on ETH and SOL (passed its
-  confirmation on unsearched coins and every scorecard test but luck). The holdout is spent
+  confirmation on unsearched coins and every scorecard test but luck), and btc-rotation-8
+  (G1: passed a holdout year on unseen coins; fails luck and walk-forward on its own coins,
+  2018-25, whose coin list is survivorship-biased). The holdout is spent
   for BTC, ETH and SOL. A rejected *note* stays rejected; the decision file is the separate
   "what do we do with it" layer. A finished note closes as `validated` or `paper`.
 - **Entry bar for a new idea.** Its note states who pays you and why (an economic reason,
