@@ -16,7 +16,7 @@ Status as of 2026-11-16.
 | Delisting exit rule | A note: sell a held coin at the next open after its delisting is announced (findings 11). Belongs with the altcoin portfolio | Yes, as a safety rule |
 | News tone (GDELT) | Code built; the news history to download, then a note | Yes |
 | Funding momentum | Findings 14 found crowded (high-funding) coins did better than uncrowded ones, the opposite of the idea tested. A new note with that result disclosed; as money the crowded fifth still lost 53% alone, so only as a picker inside a regime rule | Signal yes |
-| Forward market-structure data | Binance's live liquidation and order-book streams recorded from now on, untouched by construction; needs an always-on machine (the Pi) | Data first |
+| Forward market-structure data | Binance's live liquidation and order-book streams recorded from now on, untouched by construction; needs an always-on machine (parked) | Data first |
 | Token unlocks | A clean history of unlock schedules (none free found). Measure an unlock against the coin's normal daily volume, not only its circulating supply: the market's capacity to absorb it is the mechanism (outside review, 2026-11-16) | Yes, as an exit rule |
 | BTC's regime turning volatile before ETH's | Only 11 such moments on daily regimes 2021-25: too few. Revisit with hourly regimes for more events | Yes |
 | HMM regime filter as a strategy | A note that passes the entry bar; a filter on trend-vol-target already failed (findings 8) | Yes, as a filter |

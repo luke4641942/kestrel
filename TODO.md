@@ -12,11 +12,9 @@ Rules live in CLAUDE.md; results in `research/findings.md`; ideas not yet schedu
   Each runs 395 days from its first decision (the 2026-11-14 or 15 bar). Reviews every 3
   months (`kestrel paper track`; first around 2027-02-15), a failure-only check at 182 days
   (around 2027-05-15), verdicts around 2027-12-14. Runs are late or missed while the Mac
-  sleeps; the Raspberry Pi item fixes that.
+  sleeps (a missed day is recorded, never traded late).
 
 ## Waiting on Luke
-- [ ] Raspberry Pi: which model and RAM, is it running anything, SD card or USB SSD?
-      Then the Pi item below.
 - [ ] Delisting exit rule (findings 11): write a note (sell a held coin at the next open
       after its delisting is announced), or park it. Only matters for a strategy that holds
       small coins, so it belongs with the altcoin portfolio below.
@@ -25,13 +23,6 @@ Rules live in CLAUDE.md; results in `research/findings.md`; ideas not yet schedu
       drawdowns too, and its return after removing BTC exposure. A rule change, so Luke's call.
 
 ## Next
-- [ ] Move paper trading to the Raspberry Pi (always on). Python environment, a systemd
-      timer (teach `kestrel paper schedule` to write one on Linux), keys in a file only
-      the Kestrel user can read, a read-only deploy key, releases by tag, nightly ledger
-      backup. Cut over in one step: copy `data/paper/` and the BTC/ETH/SOL daily bars,
-      unload the Mac's launchd jobs, confirm the first hour matches. Never two machines
-      on one account. Harden it: SSH keys only, firewall, no open ports, own user.
-- [ ] A dependency lock file with hashes (supply chain: needed before any server deploy).
 - [ ] An altcoin portfolio built on btc-regime-trend (up to 3 coins at 330 USDT): which
       coins (a picker inside the regime rule; findings 14 showed pickers alone lose with
       the market), the delisting exit rule, a note, the scorecard, and an unspent holdout
@@ -64,13 +55,18 @@ exists and Luke has checked the Swyftx employee trading policy.
 - [ ] Before each: a cheap check that the account size works (CFD minimums, margin at 2:1
       on about 330 USDT).
 
+## Parked
+- Always-on machine for paper trading (Luke, 2026-11-16: not for now). The "Pi" turned out
+  to be a microcontroller, so the candidate is the TrueNAS server (SCALE: a container; its
+  own user, keys in a file only Kestrel reads, no open ports, nightly ledger backups, one-step
+  cutover, never two machines on one account). Needs first: a dependency lock file with
+  hashes. Recording Binance's liquidation and order-book streams waits on this too.
+
 ## Later
-- [ ] Record Binance's live liquidation and order-book streams on the Pi: forward data,
-      untouched by construction, for structural studies later.
 - [ ] BNB fees on the venue: kestrel.toml models 7.5 bps (BNB discount), but the Binance
       venue stops on a fee charged in BNB. Value it at BNB's price and keep a small BNB
       balance. Until then testnet fills pay 10 bps and tracking shows fees above the model.
-- [ ] Keys from the macOS keychain (or the Pi's key file), not ~/.zshrc: before any live
+- [ ] Keys from the macOS keychain (or the server's key file), not ~/.zshrc: before any live
       (non-testnet) keys exist. Luke adds them himself; Claude never sees the values. Live
       keys: trading only, withdrawals off, restricted to the home IP.
 - [ ] News-tone study (`kestrel signal-study news-tone`): needs `kestrel ingest-news
