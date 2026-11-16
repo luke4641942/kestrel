@@ -210,8 +210,10 @@ def sharpe(r: np.ndarray) -> float:
 
 
 def max_drawdown(r: np.ndarray) -> float:
+    if not len(r):
+        return 0.0
     eq = np.cumprod(1 + r)
-    return float((eq / np.maximum.accumulate(eq) - 1).min()) if len(r) else 0.0
+    return float(np.min(eq / np.maximum.accumulate(eq) - 1))
 
 
 def growth(r: np.ndarray) -> float:
@@ -306,7 +308,7 @@ def leg_result(
     lo = simulate(g, long_only, fee, "cfd")
     perp = simulate(g, long_short, fee, "perp")
     stress = simulate(g, long_short, fee, "cfd-stress")
-    gross, costs = ls.short_gross.sum(), ls.short_costs.sum()
+    gross, costs = float(ls.short_gross.sum()), float(ls.short_costs.sum())
     a, b = by_year(ls.days, ls.total), by_year(lo.days, lo.total)
     r = ls.total
     centred = r - r.mean()
@@ -324,7 +326,7 @@ def leg_result(
         short_leg_return=growth(ls.short_leg),
         short_leg_p=p_positive(ls.short_leg),
         years={y: (a[y], b[y]) for y in a if y in b},
-        short_break_even=float(gross / costs) if costs > 0 and gross > 0 else None,
+        short_break_even=gross / costs if costs > 0 and gross > 0 else None,
         short_trades=ls.short_trades,
         close_outs=ls.close_outs,
         beta=beta(r, btc_returns),
@@ -524,8 +526,8 @@ def neutral_result(g: Grid, w: np.ndarray, fee: float, btc_returns: np.ndarray) 
     s = simulate(g, w, fee, "perp")
     wk = weekly(s.days, s.total)
     years = np.array([d.year for d in s.days])
-    gross = s.long_gross.sum() + s.short_gross.sum()
-    costs = s.long_costs.sum() + s.short_costs.sum()
+    gross = float(s.long_gross.sum() + s.short_gross.sum())
+    costs = float(s.long_costs.sum() + s.short_costs.sum())
     sundays = [i for i, d in enumerate(g.days) if d.isoweekday() == 7]
     counts = [int((w[i] != 0).sum()) for i in sundays]
     res = NeutralResult(
@@ -538,7 +540,7 @@ def neutral_result(g: Grid, w: np.ndarray, fee: float, btc_returns: np.ndarray) 
         beta=beta(s.total, btc_returns),
         years={int(y): growth(s.total[years == y]) for y in YEARS if (years == y).any()},
         max_drawdown=max_drawdown(s.total),
-        break_even=float(gross / costs) if costs > 0 and gross > 0 else None,
+        break_even=gross / costs if costs > 0 and gross > 0 else None,
         trades=s.long_trades + s.short_trades,
         sharpe=sharpe(s.total),
         ret=growth(s.total),
