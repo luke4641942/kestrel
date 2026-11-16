@@ -460,3 +460,51 @@ export function mostPromising(runs: RunSummary[], n = PROMISING): RunSummary[] {
 /** A note whose work is finished: rejected (its test failed) or validated (it passed).
  * Both are kept as evidence and folded away, so the pages show what is still live. */
 export const isSettled = (status: ResearchStatus) => status === "rejected" || status === "validated";
+
+const DECISION_RANK: Record<Decision["decision"], number> = { pursue: 0, watch: 1, drop: 2 };
+
+/** One strategy's decisions across the markets it was tested on. */
+export interface StrategyDecisions {
+  strategy: string;
+  /** The name on its best-ranked, most recent decision. */
+  name: string;
+  /** Its best decision on any market: pursue over watch over drop. */
+  decision: Decision["decision"];
+  /** Markets still pursued or watched, best first. */
+  live: Decision[];
+  /** Markets it was dropped on. */
+  dropped: Decision[];
+}
+
+/** Decisions grouped by strategy, so the same rule on several coins is one entry; groups
+ * ordered by their best decision, then by when last decided (newest first). */
+export function groupDecisions(decisions: Decision[]): StrategyDecisions[] {
+  const by = new Map<string, Decision[]>();
+  for (const d of decisions) by.set(d.strategy, [...(by.get(d.strategy) ?? []), d]);
+  const groups = [...by.entries()].map(([strategy, ds]) => {
+    const ranked = [...ds].sort(
+      (a, b) =>
+        DECISION_RANK[a.decision] - DECISION_RANK[b.decision] ||
+        b.decided.localeCompare(a.decided) ||
+        a.market.localeCompare(b.market),
+    );
+    const best = ranked[0]!;
+    return {
+      strategy,
+      name: best.name,
+      decision: best.decision,
+      live: ranked.filter((d) => d.decision !== "drop"),
+      dropped: ranked.filter((d) => d.decision === "drop"),
+      newest: ds.reduce((m, d) => (d.decided > m ? d.decided : m), ""),
+    };
+  });
+  groups.sort(
+    (a, b) => DECISION_RANK[a.decision] - DECISION_RANK[b.decision] || b.newest.localeCompare(a.newest),
+  );
+  return groups.map(({ newest: _newest, ...g }) => g);
+}
+
+/** "BTCUSDT 1d" -> "BTC 1d"; anything else is shown as it is. */
+export function shortMarket(market: string): string {
+  return market.replace(/^([A-Z0-9]+)USDT\b/, "$1");
+}

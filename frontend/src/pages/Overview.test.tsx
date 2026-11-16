@@ -45,6 +45,29 @@ describe("Overview", () => {
     expect(document.querySelectorAll(".decision-list > li")).toHaveLength(1);
   });
 
+  it("shows one entry per strategy with the coins it trades, and why it was dropped elsewhere", async () => {
+    const tvt = (market: string, decision: "pursue" | "drop", reason: string) => ({
+      strategy: "trend-vol-target", name: "Trend following with volatility targeting", market, decision,
+      decided: "2026-11-15", reason, evidence: [],
+    });
+    api.decisions = vi.fn().mockResolvedValue([
+      tvt("BTCUSDT 1d", "pursue", "BTC passed."),
+      tvt("ETHUSDT 1d", "pursue", "ETH passed."),
+      tvt("PAXGUSDT 1d", "drop", "Gold failed."),
+    ]);
+    render(<Overview jobs={[]} go={() => {}} openJobs={() => {}} />);
+    await screen.findByText("BTC passed.");
+    const items = [...document.querySelectorAll<HTMLElement>(".decision-list > li")];
+    expect(items).toHaveLength(1);
+    const chips = [...items[0]!.querySelectorAll(".market-chip")].map((c) => c.textContent);
+    expect(chips).toEqual(["BTC 1d · Pursue", "ETH 1d · Pursue", "PAXG 1d · Drop"]);
+    expect(within(items[0]!).getByText("ETH passed.")).toBeInTheDocument();
+    expect(within(items[0]!).getByText(/Also tried and dropped on PAXG 1d/)).toBeInTheDocument();
+    expect(screen.queryByText("Gold failed.")).not.toBeInTheDocument();
+    fireEvent.click(within(items[0]!).getByRole("button", { name: "Why" }));
+    expect(screen.getByText("Gold failed.")).toBeInTheDocument();
+  });
+
   it("folds rejected ideas in the research pipeline away until asked", async () => {
     const idea = (slug: string, status: string) => ({
       slug, name: `Idea ${slug}`, status, created_at: "2026-11-01T00:00:00Z", version: 1, frozen: true,

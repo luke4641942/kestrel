@@ -2,7 +2,7 @@ import { useState } from "react";
 import { api, type Job } from "../api";
 import type { Route } from "../App";
 import { Empty, FoldToggle, PageHeader, Panel, Section, Status } from "../components/ui";
-import { DECISION, RESEARCH_STATUS, datasetsLine, holdoutEdge, marketLabel, isSettled, newestFirst, splitClosed, studyTitle, studyTone } from "../summary";
+import { DECISION, RESEARCH_STATUS, groupDecisions, shortMarket, datasetsLine, holdoutEdge, marketLabel, isSettled, newestFirst, splitClosed, studyTitle, studyTone } from "../summary";
 import { ago, date, num } from "../format";
 import { useResource } from "../hooks";
 
@@ -294,9 +294,10 @@ function StudiesBoard() {
 
 function DecisionsBoard() {
   const decisions = useResource(api.decisions, []);
-  const list = decisions.data ?? [];
-  const { live, closed } = splitClosed(list, (d) => d.decision === "drop");
+  const groups = groupDecisions(decisions.data ?? []);
+  const { live, closed } = splitClosed(groups, (g) => g.decision === "drop");
   const [showDropped, setShowDropped] = useState(false);
+  const [openDropped, setOpenDropped] = useState<string | null>(null);
   if (decisions.error) {
     return (
       <Panel>
@@ -308,24 +309,60 @@ function DecisionsBoard() {
   }
   return (
     <Panel>
-      {list.length === 0 ? (
+      {groups.length === 0 ? (
         <Empty title={decisions.loading ? "Loading decisions" : "Nothing decided yet"}>
           {!decisions.loading && <p>Record a decision for each tested strategy in research/decisions.toml.</p>}
         </Empty>
       ) : (
         <ul className="decision-list">
-          {(showDropped ? [...live, ...closed] : live).map((d) => (
-            <li key={`${d.strategy} ${d.market}`} className={`decision-${d.decision}`}>
-              <Status tone={DECISION[d.decision].tone}>{DECISION[d.decision].label}</Status>
-              <div>
-                <div className="decision-name">
-                  {d.name} <span className="mono small tertiary">{d.strategy}</span>
+          {(showDropped ? [...live, ...closed] : live).map((g) => {
+            const shown = g.live.length ? g.live : g.dropped;
+            const others = g.live.length ? g.dropped : [];
+            const isOpen = openDropped === g.strategy;
+            return (
+              <li key={g.strategy} className={`decision-${g.decision}`}>
+                <Status tone={DECISION[g.decision].tone}>{DECISION[g.decision].label}</Status>
+                <div>
+                  <div className="decision-name">
+                    {g.name} <span className="mono small tertiary">{g.strategy}</span>
+                  </div>
+                  <div className="decision-markets">
+                    {[...g.live, ...g.dropped].map((d) => (
+                      <span key={d.market} className={`market-chip market-${d.decision}`}>
+                        {shortMarket(d.market)} · {DECISION[d.decision].label}
+                      </span>
+                    ))}
+                  </div>
+                  {shown.map((d) => (
+                    <p key={d.market} className="decision-reason">
+                      {g.live.length + g.dropped.length > 1 && <b>{shortMarket(d.market)}: </b>}
+                      {d.reason}
+                    </p>
+                  ))}
+                  {others.length > 0 && (
+                    <p className="small secondary">
+                      Also tried and dropped on {others.map((d) => shortMarket(d.market)).join(", ")}.{" "}
+                      <button
+                        type="button"
+                        className="link-button small"
+                        aria-expanded={isOpen}
+                        onClick={() => setOpenDropped(isOpen ? null : g.strategy)}
+                      >
+                        {isOpen ? "Hide why" : "Why"}
+                      </button>
+                    </p>
+                  )}
+                  {isOpen &&
+                    others.map((d) => (
+                      <p key={d.market} className="decision-reason secondary">
+                        <b>{shortMarket(d.market)}: </b>
+                        {d.reason}
+                      </p>
+                    ))}
                 </div>
-                <div className="small secondary">{d.market}</div>
-                <p className="decision-reason">{d.reason}</p>
-              </div>
-            </li>
-          ))}
+              </li>
+            );
+          })}
         </ul>
       )}
       <FoldToggle

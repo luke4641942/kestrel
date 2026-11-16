@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { breakEvenLabel, gateKey, gateSetupName, hasOwnTarget, drawdownPaths, mostPromising, newestFirst, gateTone, holdoutEdge, datasetsLine, scorecardHeadline, luckBar, splitClosed, startDateVerdict, windowLabel, DECISION, studyTitle, studyTone, deflatedNote, spreadBands, DEFAULT_RUN_SORT, KIND_LABEL, UNIVERSE, marketLabel, marketsFor, defaultDataset, nextSort, sortRuns, fewTrades, signalsCaption, MAX_LABELLED_TRADES, MAX_MARKED_TRADES, costHeadroom, paramsText, runRole, tradeCount, heldAsset, money, span, trackRecord, tradeMarkers, verdict } from "./summary";
+import { breakEvenLabel, groupDecisions, shortMarket, gateKey, gateSetupName, hasOwnTarget, drawdownPaths, mostPromising, newestFirst, gateTone, holdoutEdge, datasetsLine, scorecardHeadline, luckBar, splitClosed, startDateVerdict, windowLabel, DECISION, studyTitle, studyTone, deflatedNote, spreadBands, DEFAULT_RUN_SORT, KIND_LABEL, UNIVERSE, marketLabel, marketsFor, defaultDataset, nextSort, sortRuns, fewTrades, signalsCaption, MAX_LABELLED_TRADES, MAX_MARKED_TRADES, costHeadroom, paramsText, runRole, tradeCount, heldAsset, money, span, trackRecord, tradeMarkers, verdict } from "./summary";
 import { run, trade } from "./test/fixtures";
 
 describe("verdict", () => {
@@ -495,5 +495,35 @@ describe("confirmation studies", () => {
     expect(studyTitle({ kind: "confirmation", strategy: "btc-regime-trend" })).toBe("Confirmation run of btc-regime-trend");
     expect(studyTone("PASS")).toBe("ok");
     expect(studyTone("FAIL")).toBe("bad");
+  });
+});
+
+describe("decisions grouped by strategy", () => {
+  const d = (strategy: string, market: string, decision: "pursue" | "watch" | "drop", decided = "2026-11-15") => ({
+    strategy, name: `${strategy} name`, market, decision, decided, reason: `${market} reason`, evidence: [],
+  });
+
+  it("makes one entry per strategy, best decision first, with its markets split", () => {
+    const groups = groupDecisions([
+      d("tvt", "BTCUSDT 1d", "pursue", "2026-11-14"),
+      d("tvt", "PAXGUSDT 1d", "drop", "2026-11-16"),
+      d("tvt", "ETHUSDT 1d", "pursue", "2026-11-15"),
+      d("rsi", "ETHUSDT 1d", "drop"),
+      d("stable", "BTCUSDT 1d", "watch"),
+    ]);
+    expect(groups.map((g) => [g.strategy, g.decision])).toEqual([
+      ["tvt", "pursue"],
+      ["stable", "watch"],
+      ["rsi", "drop"],
+    ]);
+    const tvt = groups[0]!;
+    expect(tvt.live.map((x) => x.market)).toEqual(["ETHUSDT 1d", "BTCUSDT 1d"]); // newest first
+    expect(tvt.dropped.map((x) => x.market)).toEqual(["PAXGUSDT 1d"]);
+  });
+
+  it("shortens USDT markets and leaves others alone", () => {
+    expect(shortMarket("SOLUSDT 1d")).toBe("SOL 1d");
+    expect(shortMarket("BTC/ETH/SOL 1d")).toBe("BTC/ETH/SOL 1d");
+    expect(shortMarket("Confirmation-half altcoins 1d")).toBe("Confirmation-half altcoins 1d");
   });
 });

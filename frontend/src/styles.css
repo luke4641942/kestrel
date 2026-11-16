@@ -2366,3 +2366,28 @@ p {
   padding-top: 4px;
   padding-bottom: 4px;
 }
+
+.decision-markets {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: 4px 0 2px;
+}
+
+.market-chip {
+  font-size: 12px;
+  padding: 1px 8px;
+  border-radius: 999px;
+  border: 1px solid var(--line);
+  color: var(--text-2);
+}
+
+.market-chip.market-pursue {
+  color: var(--text);
+  font-weight: 500;
+}
+
+.market-chip.market-drop {
+  color: var(--text-3);
+  text-decoration: line-through;
+}
