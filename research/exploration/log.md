@@ -39,3 +39,22 @@ holding the coin (scorecard test 1), in the whole history and in each half.
 
 Every number above was found by searching, on coins chosen to be searched. Only the
 confirmation half can say whether any of it is real.
+
+## How round 1 ended (2026-11-16)
+
+Two ideas graduated (Luke): the BTC-filtered trend (`btc-regime-trend`) and the crash
+rebound (`crash-rebound`). Each was frozen as a confirmation note and run once with
+`kestrel confirm` on the 180 confirmation coins (pass: beat holding on more than half the
+coins and in more than half the pooled walk-forward windows):
+
+| Graduate | Beat holding | Windows won | Verdict |
+|---|---|---|---|
+| btc-regime-trend | 149 of 180 (83%) | 427 of 771 (55%) | PASS |
+| crash-rebound | 111 of 180 (62%) | 274 of 771 (36%) | FAIL |
+
+The search predicted the first well (83% beat holding in round 2, 83% on fresh coins). For
+the second it overstated the coin share (67% searched, 62% fresh), and the warning sign it
+showed, a weak window test (34% on a 10-coin preview), held on fresh coins (36%). Luke kept
+the method. btc-regime-trend was then tested on ETH and SOL and pursued to paper trading
+(findings item 13). The confirmation half is spent: a second round needs fresh data and
+its own split.

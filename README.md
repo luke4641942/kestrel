@@ -2,13 +2,16 @@
 
 A research-to-production platform for systematic crypto trading, built so that a
 strategy behaves the same way in research, backtest, paper trading and live
-trading.
+trading, and so that a result can't look better than it is.
 
-> **Status:** Data, API, dashboard, the backtester (two engines, costs, metrics,
-> bootstrap confidence) and validation (walk-forward, robustness, deflated Sharpe over
-> every trial) are built and tested. About 25 pre-registered hypotheses have been tested;
-> none has passed. See [research/findings.md](research/findings.md). Paper trading (P4) is built; trend-vol-target on BTC is next to run on the Binance testnet.
-> No strategy has yet earned real money, by design.
+> **Status (2026-11-16):** Data, backtester, validation, paper trading and the dashboard
+> are built and tested. 74 pre-registered research notes and 805 counted trials later,
+> two strategies are being paper-traded on Binance's Spot Testnet: trend following with
+> volatility targeting (BTC, ETH, SOL) and a BTC-regime trend rule found by an
+> explore-then-confirm experiment (ETH, SOL). Neither is a proven edge: both fail the
+> luck test once every trial is counted, so the forward record decides.
+> See [research/findings.md](research/findings.md). No strategy trades real money yet,
+> by design.
 
 ## Why this exists
 
@@ -19,27 +22,27 @@ bias, unrealistic fills, ignored costs, and research code that is rewritten
 **Design principles**
 
 1. **One strategy code path.** Strategies talk to an `ExecutionVenue` interface,
-   never to an exchange. Backtest, paper and live are interchangeable
-   implementations, and parity tests fail the build if they disagree.
+   never to an exchange. Backtest, paper and live share one rebalance step, and a
+   day-by-day paper replay must reproduce the backtest exactly.
 2. **Data you can trust.** Every source is normalised into one canonical schema,
    checksum-verified, and audited for gaps, duplicates and OHLC integrity before
    use. Problems are reported, never silently patched.
-3. **Costs are first-class.** Fees, spread and slippage are modelled from the
-   start, not bolted on after a backtest looks good.
-4. **Honest research.** Hypotheses are written down before testing, every variant
-   tried is logged, and a holdout period is reserved and touched once.
+3. **Costs are first-class.** Fees, spread and market impact are modelled on every fill.
+4. **Honest research.** Hypotheses are frozen before testing, every setting tried is
+   counted, results are deflated for the number of trials, and a holdout year was
+   reserved before any research and is used once.
 
 ## Roadmap
 
 | Phase | Scope | Status |
 |---|---|---|
-| 1. Data | Binance bulk ingestion, canonical schema, Parquet store, quality checks | Done |
+| 1. Data | Binance bulk ingestion, canonical schema, Parquet store, quality checks, live updates | Done |
 | 1.5 Platform | FastAPI service, job runner, React dashboard | Done |
-| 2. Backtester | Vectorised research engine, event-driven validation engine, cost model, metrics, stops/targets with risk-based sizing | Done |
-| 3. Validation | Walk-forward, parameter robustness, trial log, deflated Sharpe | Done |
-| 3.5 Scorecard | One pass/fail scorecard for every strategy, judged against holding at the same exposure, graded on every run | Done |
-| 4. Execution | Paper trading through the backtest's own code: simulated and Binance Spot Testnet venues, reconciliation, risk limits, kill switch, tracking against the model, Trading page | Built (live venue later) |
-| Parked | Perps (Binance perps aren't available to Australian retail; ASIC caps retail crypto leverage at 2:1); multi-strategy portfolios; settings for risk limits and exchange status | Parked |
+| 2. Backtester | Event-driven and vectorised engines (parity-tested), cost model, metrics with uncertainty, stops/targets with risk sizing, resting limit orders, a portfolio engine for coin baskets | Done |
+| 3. Validation | Deflated Sharpe over every trial, walk-forward, robustness, random-entry control, the holdout test, one scorecard graded on every run | Done |
+| 3.5 Research method | Pre-registered notes, decisions per strategy and market, an explore-then-confirm experiment on a fixed split of coins | Done |
+| 4. Execution | Paper trading through the backtest's own code on a simulated venue or Binance Spot Testnet, reconciliation, risk limits, kill switch, tracking against the model, scheduled runs | Running (live venue later) |
+| Parked | Perps (not offered to Australian retail; ASIC caps retail crypto leverage at 2:1); multi-strategy portfolios; a settings page | Parked |
 
 ## Quick start
 
@@ -50,21 +53,17 @@ python -m venv .venv && source .venv/bin/activate
 pip install -e ".[dev]"
 (cd frontend && npm install && npm run build)   # builds the dashboard into the package
 
-# Run the platform: dashboard at http://127.0.0.1:8000, API docs at /api/docs
+# Dashboard at http://127.0.0.1:8000, API docs at /api/docs
 kestrel serve
 ```
 
 Everything the dashboard does is also available from the CLI:
 
 ```bash
-# Download, checksum-verify and store hourly BTC/USDT history
-kestrel ingest BTCUSDT --interval 1h --start 2020-01
-
-# Audit it
-kestrel check BTCUSDT --interval 1h
-
-# Backtest the benchmark (buy-and-hold of the same market) before the holdout period
-kestrel backtest BTCUSDT --interval 4h --start 2022-01 --end 2025-10
+kestrel ingest BTCUSDT --interval 1d --start 2020-01      # download, verify, store
+kestrel check BTCUSDT --interval 1d                       # audit it
+kestrel backtest BTCUSDT --interval 1d --start 2020-01 --end 2025-10   # the benchmark
+kestrel paper status tvt-btc                              # a paper account
 ```
 
 Data lands in `./data` (override with `--data-dir` or `KESTREL_DATA`) as
@@ -74,8 +73,8 @@ Hive-partitioned Parquet, queryable directly from polars or DuckDB:
 import duckdb
 
 duckdb.sql("""
-    SELECT date_trunc('day', open_time) AS day, last(close ORDER BY open_time) AS close
-    FROM 'data/klines/venue=binance/symbol=BTCUSDT/interval=1h/*.parquet'
+    SELECT date_trunc('month', open_time) AS month, last(close ORDER BY open_time) AS close
+    FROM 'data/klines/venue=binance/symbol=BTCUSDT/interval=1d/*.parquet'
     GROUP BY 1 ORDER BY 1
 """)
 ```
@@ -86,19 +85,18 @@ duckdb.sql("""
 
 <sub>Screenshot uses synthetic test data. Light and dark themes; toggle in the top bar.</sub>
 
-One place to run every operation. Long-running work (ingestion now, backtests and
-validation runs later) executes as a **job** with live progress, logs and
-cancellation, so nothing blocks and every run leaves a record.
+The dashboard reads; research and trading actions run from the CLI or as **jobs** with
+live progress, logs and cancellation.
 
-| Page | What it does |
+| Page | What it shows |
 |---|---|
-| Overview | Platform health, data coverage, active and recent jobs, roadmap |
-| Data | Ingest from Binance, browse datasets, candlestick + volume chart, quality audit with gap list |
-| Jobs dock | Floating tray on every page: live progress when collapsed; expands to every job with logs and cancel |
-| What a trade costs | The live cost model: per-order breakdown, cost vs size, yearly drag by trading frequency, decision log |
-| Strategies | Research notes (hypothesis, rationale, rules, falsification, parameters, costs), frozen before testing; read-only code; signals chart; trials run from the note; trial log; a research assistant that never sees results |
-| Backtests | Launch runs as jobs; saved runs with return vs BTC, Sharpe CI, drawdown, equity and drawdown charts, costs, fills and provenance |
-| Trading | *Phase 4:* positions, live vs backtest drift, risk limits, kill switch |
+| Overview | What to pursue (one entry per strategy, with the coins it trades), holdout tests, the research pipeline, recent studies |
+| Trading | Each paper account: equity, positions, decisions, fills, safety state, tracking against the model |
+| Research | Every decision grouped by strategy family, the luck bar over time, the exploration experiment coin by coin, the findings |
+| Strategies | Research notes, frozen before testing, with versions, the code they run, signals, their trial log and a research assistant that never sees results |
+| Backtests | Saved runs with the scorecard, equity and drawdown, costs, start-date and bootstrap analysis, fills and provenance |
+| Charts | Any market and bar size, a fixed menu of textbook indicators, each with a plain-English reading |
+| More | What a trade costs (the live cost model and the minute-chart cost gate), Rules, Regimes (HMM states), Data |
 
 ## Architecture
 
@@ -111,99 +109,65 @@ cancellation, so nothing blocks and every run leaves a record.
             │  FastAPI + JobManager    │   kestrel.api   (thin adapter, no logic)
             └────────────┬─────────────┘
                          │ plain function calls
-┌────────────────────────▼─────────────────────────────────────────────┐
-│ Engine: kestrel.data (and later kestrel.backtest, kestrel.execution) │
-│ never imports the API, so CLI, scripts and tests use it directly     │
-└──────────────────────────────────────────────────────────────────────┘
+┌────────────────────────▼──────────────────────────────────────────────┐
+│ Engine: data, backtest, validation, strategies, studies, execution    │
+│ never imports the API, so the CLI, scripts and tests use it directly  │
+└───────────────────────────────────────────────────────────────────────┘
 ```
 
 The engine has no idea a web server exists. The API is a thin adapter over it and
 the dashboard only talks to the API, so each layer can be tested and replaced on
 its own.
 
-### Data pipeline
-
-```
-data.binance.vision ──► BinanceVisionClient ──► parse_archive ──► ParquetStore ──► check_klines
-   (monthly zips)        (download + SHA-256)   (canonical schema)  (month-partitioned,  (gaps, dupes,
-                                                 ms/µs normalised)    atomic writes)       OHLC integrity)
-```
-
-| Module | Responsibility |
+| Package | Responsibility |
 |---|---|
-| `kestrel.data.schema` | Canonical kline schema and intervals; the contract every source must meet |
-| `kestrel.data.binance_vision` | Download, checksum verification, parsing of Binance bulk archives |
-| `kestrel.data.store` | Idempotent, atomic, month-partitioned Parquet storage |
-| `kestrel.data.quality` | Integrity audit that reports rather than repairs |
-| `kestrel.config` | Strict loader for `kestrel.toml`: no defaults in code, exact decimals, fingerprint per config |
-| `kestrel.backtest.costs` | Fee, spread and square-root impact model; simulated market fills with exchange order rules |
-| `kestrel.strategy` | Strategy interface (target weights from closed bars) and the automatic lookahead check |
-| `kestrel.execution.venue` | `ExecutionVenue` interface and `SimVenue`, the simulated spot account |
-| `kestrel.backtest.engine` | Event-driven engine: decide at close, fill at next open, no-trade band, holdout guard; stops and targets inside bars with risk-based sizing |
-| `kestrel.backtest.metrics` | Daily-marked metrics with uncertainty: Sharpe CI, probabilistic Sharpe, drawdown, costs |
-| `kestrel.strategies` | Research strategies and the plainer controls each must beat; `geometry` holds ATR, swings known without hindsight, and lines through them |
-| `kestrel.studies` | Raw-effect studies run before any trading rule, such as the anchor-day range study (`kestrel anchor-study`) |
-| `kestrel.validation` | P3: deflated Sharpe (corrected for every strategy tried), walk-forward (`kestrel walk-forward`), parameter robustness (`kestrel robustness`), and the log of every validation study |
-| `kestrel.backtest.portfolio` | One strategy holding several coins, with each coin's spread banded by its volume |
-| `kestrel.research` | Versioned research notes with enforced pre-registration, and the single rule set for starting a backtest |
-| `kestrel.assistant` | Research assistant on Claude, given the note and code only, never results |
-| `kestrel.backtest.vectorised` | Second, independent engine in polars columns; a parity test requires it to agree with the event engine |
-| `kestrel.backtest.analysis` | Block-bootstrap confidence, break-even cost, BTC beta and exposure-matched BTC, tails, calendar years, FIFO tax view |
-| `kestrel.backtest.runs` | Runs a strategy plus the BTC benchmark and saves every run (metrics, config snapshot, code version) |
-| `kestrel.api.app` | REST endpoints for datasets, bars, quality and jobs |
-| `kestrel.api.jobs` | Thread-pool job runner: progress, logs, cooperative cancellation |
-| `kestrel.cli` | `ingest`, `check`, `list`, `serve` commands |
-| `frontend/` | React + TypeScript dashboard, typed API client, light/dark theme tokens, TradingView Lightweight Charts |
+| `kestrel.data` | Canonical schema, Binance archive download and checksums, atomic Parquet store, quality audit, live updates, the coin universe (delisted coins included), features (funding, Fear & Greed, BTC's close, stablecoin supply, attention, news), delisting announcements |
+| `kestrel.backtest` | Cost model, event-driven engine (weights or brackets, limit entries), vectorised engine, portfolio engine, per-coin spread bands, metrics and analysis, saved runs |
+| `kestrel.strategy`, `kestrel.strategies` | The strategy interfaces, the registry, the lookahead check, and every strategy and control tested |
+| `kestrel.indicators` | One tested implementation of each indicator |
+| `kestrel.studies` | Raw-effect studies run before any trading rule (anchor day, volatile spells, weekly signals, delistings, cross-sectional funding and flow) and the minute-chart cost gate |
+| `kestrel.validation` | Deflated Sharpe and the trial pools, walk-forward, robustness, the random-entry control, the holdout test, the scorecard, the confirmation run |
+| `kestrel.research`, `kestrel.decisions` | Versioned, frozen research notes; the one rule set for starting a backtest; decisions per strategy and market |
+| `kestrel.exploration` | The explore-then-confirm split and its engine lock |
+| `kestrel.regimes` | A Gaussian HMM on filtered probabilities, refitted monthly; describes, never trades |
+| `kestrel.execution` | The venue interface, the shared rebalance step, the paper runner and ledger, the Binance testnet venue, safety limits and kill switch, tracking against the model |
+| `kestrel.assistant` | The research assistant on Claude, given the note and code only, never results |
+| `kestrel.api` | REST endpoints and the job runner |
+| `kestrel.cli` | Every operation, from `ingest` to `paper run` |
+| `frontend/` | React + TypeScript dashboard, typed API client, theme tokens, TradingView Lightweight Charts |
 
 ### Notable details
 
-- **Timestamp units.** Binance spot archives switched from milliseconds to
-  microseconds on 2025-01-01. Units are detected per row, and a test asserts that
-  the same bars encoded both ways parse to identical frames.
-- **Atomic writes.** Each month is written to a temp file and renamed, so a crash
-  cannot leave a half-written partition.
-- **Offline tests.** HTTP is injected, so the suite runs against byte-compatible
-  fixture archives with no network. A `network`-marked test checks the real site.
-- **Jobs never fake success.** An ingest that finds nothing to download fails
-  with a clear reason instead of reporting success with zero data.
-- **Costs, attributed.** Every simulated fill splits its cost into fee, spread and
-  market impact. As configured, a round trip in liquid BTC costs about 22 bps, so a
-  strategy needs more than that per trade just to break even. Impact is sized from the
-  last *closed* bar's volume, so a fill never uses information from its own bar.
-- **One cost formula, two engines.** The per-order fill (event-driven engine) and the
-  cost rate (vectorised engine) share a formula, and a test asserts they agree.
 - **Lookahead is checked, not trusted.** Before a backtest runs, the engine recomputes
-  the strategy's weights on truncated histories. A strategy that peeks at a future bar
-  gives different answers and is refused.
-- **A pre-registered holdout.** Data from 2025-11-01 is reserved for one final test.
-  The engine refuses it unless explicitly allowed, and the report flags any run that
-  used it.
-- **Validated against an independent calculation.** On real BTCUSDT 4h data
-  (2022-01 to 2025-10), the engine's buy-and-hold result matches a hand calculation
-  from the raw bars to within the 0.00001 BTC quantity rounding.
-- **Pre-registration is enforced.** A research strategy can't be backtested until its
-  note (hypothesis, why the edge exists, rules, what would prove it wrong, parameters,
-  expected costs) is frozen. A frozen note can't be edited, only superseded by a new
-  version with a written reason. Notes live in `research/` in the repo, so git history
-  independently dates each freeze.
-- **Every run is a counted trial.** Runs record the note version and parameters; the
-  trial log counts distinct configurations (identical re-runs count once) for P3's
-  deflated Sharpe.
-- **An AI assistant outside the tuning loop.** The research assistant (Claude) is given
-  the note and the code, never backtest results, so it can challenge an idea but can't
-  fit it to past data. A test runs a trial and checks nothing from it reaches the API.
-- **Two engines that must agree.** A vectorised engine (whole columns, floats, ~6x
-  faster) re-implements the event engine's model, including how a position's weight
-  drifts between trades. A parity test runs both on the same data and requires daily
-  returns to match within 0.01%; planting a timing bug or ignoring drift makes it fail.
-- **Stops and targets, measured in R.** Bracket strategies set a stop and a target;
-  the engine sizes each trade from the risk per trade and the stop distance (spot, no
-  leverage) and exits inside bars from the high and low. When a bar reaches both, the
-  stop is assumed first, and a gap through the stop fills at the open. Results, costs
-  and expectancy are reported in units of risk.
-- **Config is versioned, not a settings page.** `kestrel.toml` has no defaults in
-  code and rejects unknown keys. Each run will store the config and its fingerprint,
-  so changing a fee never silently changes what an old result meant.
+  the strategy on truncated histories; a strategy that peeks at a future bar gives
+  different answers and is refused.
+- **Two engines that must agree.** A vectorised engine re-implements the event engine's
+  model, including weight drift between trades; a parity test requires daily returns to
+  match within 0.01%.
+- **Costs, attributed.** Every fill splits its cost into fee, spread and square-root market
+  impact. A BTC round trip costs about 17 bps (7.5 bps fees with the BNB discount). Smaller
+  coins pay a spread band set by their daily volume. Impact is sized from the last closed
+  bar's volume, so a fill never uses its own bar.
+- **Stops, targets and limits, measured in R.** Bracket strategies are sized from the risk
+  per trade and the stop distance. A bar reaching both stop and target counts as the stop.
+  A resting limit order fills only when a bar reaches it, and on its fill bar only the
+  stop can end the trade.
+- **Every run is a counted trial.** The deflated Sharpe measures each result against the
+  best of every configuration tried (805 so far, a luck bar of 2.29). The dashboard shows
+  how the bar has moved.
+- **A pre-registered holdout.** Data from 2025-11-01 was reserved on 2026-10-31. The
+  engine refuses it unless a finished strategy's one holdout test asks.
+- **Explore, then confirm.** Coins were split once, by a seeded draw balanced by volume.
+  Ideas are searched freely on one half without being counted. A few graduates are run
+  once on the locked other half, under a test fixed in advance.
+- **Paper trading is the backtest.** The paper runner handles each closed bar as the engine
+  does (mark, decide, trade at the next open) and keeps an append-only ledger. It refreshes
+  every market a strategy reads, and refuses to decide on missing or stale data. Breaches
+  halt an account until it is resumed by hand, with a reason.
+- **An AI assistant outside the tuning loop.** The research assistant (Claude) sees the
+  note and code, never results, so it can challenge an idea but can't fit it.
+- **Config is versioned, not a settings page.** `kestrel.toml` has no defaults in code and
+  rejects unknown keys. Every run stores the config, its fingerprint and the git commit.
 
 ## Development
 
@@ -211,18 +175,14 @@ data.binance.vision ──► BinanceVisionClient ──► parse_archive ──
 kestrel serve --reload                  # API with auto-reload on :8000
 cd frontend && npm run dev              # dashboard with hot reload on :5173 (proxies /api)
 
-scripts/check.sh                        # everything below that CI runs; stops at the first failure
-
-ruff check . && ruff format --check .   # lint + format
-mypy                                    # strict type-checking
-pytest -m "not network"                 # offline suite
-pytest -m network                       # live check against data.binance.vision
-cd frontend && npm run typecheck        # strict TypeScript
-cd frontend && npm test                 # dashboard tests (Vitest, jsdom)
+scripts/check.sh                        # everything CI runs; stops at the first failure
 ```
 
-CI runs the Python checks on 3.11 to 3.13 and tests, type-checks and builds the
-dashboard on every push.
+`scripts/check.sh` runs ruff, the format check, strict mypy, the offline test suite (967
+tests), a check that every decision's notes are committed, and the dashboard's tests (160)
+and build. CI runs the same checks on every push, the Python ones on 3.11 to 3.13, all but
+the commit check, which reads uncommitted files and so only makes sense locally.
+`pytest -m network` checks the real data sources.
 
 Charts use [TradingView Lightweight Charts](https://github.com/tradingview/lightweight-charts) (Apache 2.0).
 

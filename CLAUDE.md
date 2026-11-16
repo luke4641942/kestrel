@@ -88,8 +88,14 @@ Never pipe check output through `tail` or similar inside an `&&` chain: it hides
       A live account that was behind records missed days (no trade) and trades the latest.
       `kestrel.execution.tracking` compares an account with its sim replay (decisions must
       match). `kestrel paper schedule` writes a launchd job (keys from ~/.zshrc at run time).
-      The dashboard's Trading page is read-only; every action is a CLI command. First strategy: trend-vol-target on
-      BTC (pursue), as risk-managed holding, to prove the plumbing.
+      A run refreshes every market a strategy's features read (`kestrel.data.features
+      .markets_for`: BTC for `btc_close`) and refuses to decide a bar with a missing input.
+      The dashboard's Trading page is read-only; every action is a CLI command. Running
+      (TODO.md): trend-vol-target on BTC, ETH, SOL and btc-regime-trend on ETH, SOL, each
+      its own testnet account. Next: move them to an always-on Raspberry Pi.
+- [x] Research tooling: the Research tab (decisions by family, the luck bar over time, the
+      exploration experiment), the exploration split and confirmation run, cross-sectional
+      studies, delisting studies, the minute-chart cost gate.
 - Parked: P5 perps (see Parked), multi-strategy portfolios, Settings page.
 
 ## Research rules (reviewed 2026-11-14)
@@ -114,21 +120,23 @@ Never pipe check output through `tail` or similar inside an `&&` chain: it hides
   Luke may run because it smooths the ride. It is labelled "not a proven edge" and never
   counts as a pass.
 - **Decisions** (`research/decisions.toml`, one per strategy and market): `pursue` means
-  carry on to paper trading, not "passed"; `watch`; `drop` (final). One pursue
-  (2026-11-14): trend-vol-target on BTC. It beats exposure-matched holding on 2020-25 (1.21
-  vs 1.07) but deflates to 28% and won only 2 of 7 walk-forward windows; it passed the
-  holdout (-2.4% vs -8.9% for BTC at its exposure in a falling year). Weekly momentum on ETH
-  failed the holdout and was dropped. The holdout is spent for both. A rejected *note* stays
-  rejected; the decision file is the separate "what do we do with it" layer.
+  carry on to paper trading, not "passed"; `watch`; `drop` (final). Pursued (2026-11-16):
+  trend-vol-target on BTC, ETH and SOL (each beat exposure-matched holding, failed luck and
+  walk-forward, and passed its holdout), and btc-regime-trend on ETH and SOL (passed its
+  confirmation on unsearched coins and every scorecard test but luck). The holdout is spent
+  for BTC, ETH and SOL. A rejected *note* stays rejected; the decision file is the separate
+  "what do we do with it" layer. A finished note closes as `validated` or `paper`.
 - **Entry bar for a new idea.** Its note states who pays you and why (an economic reason,
   not a chart pattern), outside evidence (published or out-of-sample elsewhere), that it
   is not a variant of a rejected family (pullbacks, chart patterns, reversals), and how
   many runs it will use. More history (2017+) is preferred to more ideas.
 - **Trials.** Every setting tried counts (`kestrel.validation.log`, `data/validation/`).
   Runs in the exploration half are not trials (see Exploration experiment).
-  172 trials by 2026-11-14 (robustness grids count every setting), luck bar Sharpe ~1.45.
-  The bar depends on how spread out the trials' Sharpes are as well as their number. It may
-  be that nothing passes; that is an acceptable result.
+  805 trials by 2026-11-16 (robustness and walk-forward grids count every setting), luck
+  bar Sharpe 2.29; the Research tab shows how it moved. The bar depends on how spread out
+  the trials' Sharpes are as well as their number, so very bad strategies raise it too.
+  Confirmation runs have their own pool. It may be that nothing passes; that is an
+  acceptable result. Scripts reading runs use `RunStore("data")` (it adds `runs/`).
 - **Exploration experiment (started 2026-11-16, kept after round 1; Luke's call;
   revert by deleting this section and its line under Trials).**
   The coins in research/exploration/split.toml are split, fixed before any look:
@@ -188,12 +196,16 @@ Agreed with Luke; don't re-litigate without a reason.
   fractional-weights parity case: it catches drift bugs.
 - **Stops and sizing:** intrabar stop/target exits from the bar's high/low, the stop
   assumed first when a bar touches both; size = risk% x equity / stop distance, capped at
-  100%; results in R. Bracket strategies may emit an `exit` column and a null target. A
-  fixed R:R exit is a hypothesis to test, not an edge.
+  100%; results in R. Bracket strategies may emit an `exit` column and a null target, and
+  a `limit` with `valid_bars` for a resting buy limit (fills when a bar reaches it, at the
+  open if it opens below; on its fill bar only the stop can end the trade). A fixed R:R
+  exit is a hypothesis to test, not an edge.
 - **Universe:** `kestrel.data.universe` reads every USDT pair, delisted ones included.
   Binance reuses symbols (LUNAUSDT is two coins), so `kestrel.data.panel` numbers each
-  coin's unbroken histories and nothing is computed across a gap. Each coin pays its own
-  spread (`kestrel.backtest.spread`, Abdi-Ranaldo, 1 bp floor). Tokenized stocks listed
+  coin's unbroken histories and nothing is computed across a gap. Each coin without its own
+  `[instruments]` entry pays a half-spread band set by its 30-day median daily volume
+  (`kestrel.backtest.spread`, `[universe] spread_tiers`; on sub-daily bars, the complete
+  days before; Abdi-Ranaldo was tried and dropped as too noisy). Tokenized stocks listed
   from June 2026 (AAPLBUSDT...) aren't excluded yet; fix from Binance's metadata before
   any holdout run.
 - **Regimes** (`kestrel.regimes`): Gaussian HMM written here on numpy (no hmmlearn: its
@@ -202,8 +214,8 @@ Agreed with Luke; don't re-litigate without a reason.
   calmest first after every fit. Fixed `PRESET` (3 states; log return and log 20-day
   volatility). Other inputs are compared by out-of-sample log-likelihood, never by trading
   results. A strategy that trades on states needs its own note and the scorecard.
-- **Features** (`kestrel.data.features`: Fear & Greed, funding, BTC's close) are joined on
-  `open_time` and must be known by the bar's close.
+- **Features** (`kestrel.data.features`: Fear & Greed, funding, BTC's close, the volatile
+  regime, stablecoin supply) are joined on `open_time` and must be known by the bar's close.
 - **Metrics.** Headline row, in order: return vs buy-and-hold of the same market · Sharpe
   with 95% CI and P(true SR > 0) · net expectancy per trade with 95% CI · max drawdown and
   longest time underwater · break-even vs actual cost (bps) · number of trades, warning

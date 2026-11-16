@@ -1,50 +1,41 @@
 # Strategy backlog
 
-Every idea Luke has researched or proposed, and where it stands in Kestrel. Results
-recorded before Kestrel (Nov 2024 – Oct 2026) don't count: they came from scripts with
-synthetic data, in-sample fitting, lookahead in indicators, sweeps on the test data, or
-missing costs. Each idea is rebuilt as a pre-registered research note
-(`research/strategies/<slug>/`) and tested once on real Binance data before the holdout.
+Ideas not yet scheduled, and where each stands. What has been tested, and what it found,
+is in `findings.md`; decisions are in `decisions.toml`; the active work is in `TODO.md`.
+Results recorded before Kestrel (Nov 2024 - Oct 2026) don't count: they came from scripts
+with synthetic data, in-sample fitting, lookahead, sweeps on the test data, or missing
+costs. Each idea is rebuilt as a pre-registered note and tested on real Binance data.
 
-Status as of 2026-11-11.
+Status as of 2026-11-16.
 
-## Decided
+## Candidates
 
-Every idea tested so far has been rejected against rules set before its results were seen.
-
-| Idea | Outcome |
-|---|---|
-| Backtester sanity gate | **Passed.** Exact buy-and-hold, lookahead refused, random signals lose exactly their costs. |
-| Structure pullback | Rejected: +0.06R, P(>0) 63%. |
-| S1 Monday range | Rejected at the raw-effect study: Monday's range is no different from other days'. |
-| S2-C pivot reversal | Rejected: -0.14R / -0.10R; costs ate an edge of about zero. |
-| Level retest, trendline bounce, trendline breakout, wedge | Rejected; three of four lost to their plainer comparison. |
-| Trend + volatility targeting (2020-25) | Rejected: BTC drawdown -48% vs -38% limit; ETH passed. |
-| Trend + volatility targeting (2017-18, unseen) | Rejected: drawdown -35% / -44% vs -83% / -94%, but lost money in the bear market. |
-| Cross-sectional momentum | Rejected (v2): Sharpe 0.69 vs BTC 1.07, drawdown -92%. v1 void (faulty spread model). |
-| Channel breakout (engine test) | Robust to its settings on 2020-25 (every neighbour positive), but fails walk-forward: out-of-sample Sharpe 0.41 (BTC), -0.58 (ETH). Deflated Sharpe 2-3%. |
-
-With 73 trials logged (runs plus every setting a validation study tried), a Sharpe has
-to beat about 1.26 to stand out from luck (P3's deflated Sharpe).
-
-## Waiting, and why
-
-| Idea | Blocked on | Spot-viable? |
+| Idea | What it needs | Spot-viable? |
 |---|---|---|
-| S2 HMM regime filter | Luke's call: HMM work comes later. Needs a walk-forward HMM (rolling refit, filtered probabilities, states relabelled by emission means each refit) and a base strategy with an edge to filter. | Yes, as a filter |
-| S3 HMM regime playbook | Same, after S2's walk-forward HMM exists. Must beat a plain 200-day moving-average filter after costs. | Yes, long-only version |
-| Funding-rate extremes (as a signal) | A new data source: perpetual funding history (published in Binance's bulk archive). Only the signal comes from perps; trades stay spot. | Signal yes, carry no |
-| Reversion after liquidation cascades | Liquidation and open-interest history; Binance's public archive covers it only partly. Check coverage before writing a note. | Yes, long after down-cascades |
-| Perp/spot basis | Perpetuals, which need the P5 rethink (not offered to Australian retail). | No |
-| Cross-exchange lead-lag | Tick or order-book data from several venues and low latency; A$500 is far too small to trade it. | Research only |
+| Altcoin portfolio on the BTC regime rule | A rule for which 3 coins to hold inside the regime (findings 14: pickers alone lose with the market), the delisting exit rule, an unspent holdout (any coin but BTC, ETH and SOL). Next in TODO.md | Yes |
+| Delisting exit rule | A note: sell a held coin at the next open after its delisting is announced (findings 11). Belongs with the altcoin portfolio | Yes, as a safety rule |
+| News tone (GDELT) | Code built; the news history to download, then a note | Yes |
+| Funding momentum | Findings 14 found crowded (high-funding) coins did better than uncrowded ones, the opposite of the idea tested. A new note with that result disclosed; as money the crowded fifth still lost 53% alone, so only as a picker inside a regime rule | Signal yes |
+| Forward market-structure data | Binance's live liquidation and order-book streams recorded from now on, untouched by construction; needs an always-on machine (the Pi) | Data first |
+| Token unlocks | A clean history of unlock schedules (none free found) | Yes, as an exit rule |
+| BTC's regime turning volatile before ETH's | Only 11 such moments on daily regimes 2021-25: too few. Revisit with hourly regimes for more events | Yes |
+| HMM regime filter as a strategy | A note that passes the entry bar; a filter on trend-vol-target already failed (findings 8) | Yes, as a filter |
+
+## Out of reach for this account
+
+| Idea | Why |
+|---|---|
+| Funding carry, perp/spot basis, delisting shorts | Need shorting; Binance perps aren't offered to Australian retail (P5 parked). The delisting short was also mostly not shortable on Binance (findings 11) |
+| Options volatility premium | Needs selling options |
+| Liquidation, order-book and lead-lag trading at minute horizons | Costs at 330 USDT rule out minute horizons (the cost gate and three failed 1-5 minute strategies) |
 
 ## Rules every test follows
 
-- Spot, long only, costs always included (10 bps taker fee, 1 bp half-spread, square-root
-  impact), decide at a bar's close and fill at the next open.
-- The note is frozen before the first run; every run is logged as a trial; a parameter
-  sweep is never part of a first test.
-- The backlog's kill criteria map onto Kestrel as follows. "Edge gone at 2x costs": the
-  break-even cost must be at least twice the cost paid. "Out-of-sample Sharpe below half
-  of in-sample": P3's walk-forward, not yet built.
-- The holdout (from 2025-11-01) is used once, for a finished strategy's final verdict.
+- Spot, long only, costs always included (7.5 bps fee with the BNB discount, each coin's
+  half-spread band, square-root impact); decide at a bar's close, fill at the next open.
+- The note is frozen before the first run; every run is a counted trial; a setting chosen
+  after seeing results is a new trial.
+- The full scorecard (CLAUDE.md); a study comes before a strategy when the effect itself
+  is in doubt.
+- The holdout (from 2025-11-01) is used once per strategy, for a finished strategy's final
+  verdict; it is spent for BTC, ETH and SOL.

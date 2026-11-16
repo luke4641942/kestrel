@@ -1,12 +1,20 @@
 # Findings
 
-Kestrel has tested about 30 pre-registered trading hypotheses on Binance spot data, at
-175 trials in all. None has passed. Two came close: trend following with volatility
-targeting on BTC and one-week momentum on ETH both beat holding the same coin at the same
-exposure over 2020-25, but by too little to rule out luck once every trial is counted
-(deflated Sharpe 28% and 29%, against 95% required), and trend following beat holding in
-only 2 of 7 out-of-sample windows. This document explains how the tests were run, what they found, where the
-process went wrong, and what the results can't tell us.
+Kestrel has tested 74 pre-registered research notes on Binance spot data (805 counted
+trials by 2026-11-16, plus an uncounted exploration search). Nothing has passed the full
+scorecard: every survivor fails the luck test once every trial is counted. Two strategies
+are being paper-traded as the forward test:
+
+- **Trend following with volatility targeting** on BTC, ETH and SOL. It beat holding each
+  coin at the same exposure over 2020-25 and passed the one-off holdout year on all three,
+  but won only 2 of 7 out-of-sample windows (2 of 6 on SOL) and deflates to 28-59%.
+- **The BTC regime rule** (hold a coin while BTC is above its 50-day average and the coin
+  is rising, sized by volatility). It was found by searching one half of the altcoins and
+  confirmed once on the other, unsearched half. On ETH and SOL it passes every scorecard
+  test but luck. Both coins' holdout years were already spent.
+
+This document explains how the tests were run, what they found, where the process went
+wrong, and what the results can't tell us.
 
 The decision on each strategy is in `research/decisions.toml` (shown on the dashboard's
 Overview). Each links to frozen research notes in `research/strategies/` holding the
@@ -29,10 +37,14 @@ hypothesis, rules and pass test, written down before the strategy saw market dat
 - **A holdout nobody has looked at.** Data from 2025-11-01 was set aside on 2026-10-31,
   before any research, for one final test of a finished strategy. Everything here uses data
   before it, mostly 2020-01 to 2025-10, with some ideas retested on 2017-19.
-- **Every trial counted.** 172 distinct settings had been tried by 2026-11-14, including
-  every setting of the robustness grids. With that many, the best backtest Sharpe you would
-  expect from luck alone is about 1.45. The deflated Sharpe (Bailey and López de Prado)
-  measures each result against that bar, allowing for skew and fat tails.
+- **Every trial counted.** 805 distinct settings had been tried by 2026-11-16, including
+  every setting of the robustness and walk-forward grids. With that many, the best backtest
+  Sharpe you would expect from luck alone is about 2.29 (it was 1.45 at 172 trials). The
+  deflated Sharpe (Bailey and López de Prado) measures each result against that bar,
+  allowing for skew and fat tails.
+- **Search, then confirm.** Since 2026-11-16, ideas can also be searched freely on one half
+  of the altcoins, uncounted and never evidence, and a few graduates run once on the other,
+  locked half under a test fixed in advance, with their own trial count.
 - **Costs checked before building.** A minute-chart idea first goes through a cost gate:
   how wide its stops are against a 22 bp round trip, in R, measured without looking at
   outcomes. A bracket strategy must also beat random entries with the same stops, targets
@@ -42,7 +54,7 @@ hypothesis, rules and pass test, written down before the strategy saw market dat
   cash half the time halves drawdowns for free, so only beating the second is skill.
 
 Two engines (event-driven and vectorised) are tested against each other and agree to
-within 0.13% of final equity. 665 backend and 96 dashboard tests run on every change.
+within 0.13% of final equity. 967 backend and 160 dashboard tests run on every change.
 
 ## The closest call: trend following with volatility targeting
 
@@ -81,6 +93,35 @@ ETH it did well in-sample but failed walk-forward (out-of-sample Sharpe 0.28).
 
 It then passed the one-off holdout test (below) and goes to paper trading (P4), labelled
 risk-managed holding rather than a proven edge.
+
+## The strongest result: the BTC regime rule
+
+Hold an altcoin only while BTC closes above its 50-day average and the coin is above its
+close 30 days earlier, sized to 50% annual volatility (capped at 100%); otherwise cash.
+Daily bars, no tuning after it was found.
+
+It came from the exploration experiment (CLAUDE.md, research/exploration/log.md): about
+230 daily rules searched on 181 altcoins, two graduates, each run once on 180 coins nobody
+had looked at. On those it beat holding on 149 of 180 coins and won 427 of 771
+walk-forward windows (55%); the other graduate, a crash rebound, failed.
+
+Then, unchanged, on the two large coins Kestrel already trades:
+
+| 2020-25, after costs | ETH | SOL |
+|---|---|---|
+| Sharpe (holding; trend-vol-target) | 1.33 (1.12; 1.24) | 1.72 (1.24; 1.52) |
+| Return (holding at the same exposure) | +1,094% (+398%) | +1,759% (+380%) |
+| Worst drawdown | -35% | -32% |
+| Walk-forward windows beating holding | 4 of 7 | 4 of 6 |
+| Neighbouring settings beating holding | 94% | 94% |
+| Deflated Sharpe | 1% | 8% |
+
+It passes every scorecard test but luck on both coins, a higher bar than trend-vol-target
+cleared. The luck test counts all 805 trials, though this rule wasn't found on these
+coins; its cleaner evidence is the confirmation run. Its weaknesses: it leans on BTC's
+trend as trend-vol-target does, beating altcoins that mostly lost 90% is a low bar, and
+both coins' holdout years were spent before it existed. Paper trading (brt-eth, brt-sol,
+from 2026-11-16) is the test that's left.
 
 ## What the evidence says
 
@@ -200,7 +241,7 @@ edge, and the holdout can't be used again for either strategy.
 | Strategy | Market | Result | Decision |
 |---|---|---|---|
 | Trend following + volatility targeting | BTC 1d | Beat exposure-matched holding (Sharpe 1.21 vs 1.07); beat holding in only 2 of 7 walk-forward windows; deflated 28%; passed the holdout | Pursue (paper trading) |
-| Trend following + volatility targeting | ETH 1d | Walk-forward Sharpe 0.28, a third of in-sample | Drop |
+| Trend following + volatility targeting (first test, 2026-11-12) | ETH 1d | Walk-forward Sharpe 0.28, a third of in-sample, under an older rule | Superseded: finished 2026-11-15 (below), pursue |
 | Channel breakout | BTC, ETH 4h | Sharpe under half of holding; failed walk-forward on both | Drop |
 | Structure pullback | BTC, ETH 4h | +0.06R a trade, P(> 0) 63% against 90% needed | Drop |
 | Level retest | BTC, ETH 4h | Lost money; worse than buying the breakout | Drop |
@@ -251,13 +292,13 @@ edge, and the holdout can't be used again for either strategy.
 | Basket breakouts | Coins 1d 2020-25 | Sharpe 0.85 (Bollinger) and 0.89 (20% off the low) vs 1.07 for BTC; drawdowns -77% and -62%; walk-forward 1 and 0 of 7 windows | Drop |
 | Cross-sectional momentum top 3, 1-3 months | Coins 1d 2020-25 | Sharpe 0.38 vs 1.07; drawdown -95%; break-even cost 0; walk-forward 0 of 7 windows, out-of-sample Sharpe -0.28 | Drop |
 | Candle pattern + MACD turn | BTC, ETH 4h 2020-25 | +0.05R and +0.17R a trade; beat 70% and 88% of random-entry paths (95% needed); Sharpe 0.17 vs 1.07 and 0.56 vs 1.12 | Drop |
-| Study: Binance delisting announcement to removal | 80 delisted coins 1d, 21 announcements 2022-10 to 2025-09 | Day 1's open to the removal day's open: -39.8% on average (-41.9% vs BTC), P(< 0) 100%, after -31% on the announcement day; no rebound. EXIT RULE: sell held coins at once | Study passed (exit rule); next step Luke's |
+| Study: Binance delisting announcement to removal | 80 delisted coins 1d, 21 announcements 2022-10 to 2025-09 | Day 1's open to the removal day's open: -39.8% on average (-41.9% vs BTC), P(< 0) 100%, after -31% on the announcement day; no rebound. EXIT RULE: sell held coins at once | Study passed (exit rule); an exit-rule note waits for an altcoin portfolio |
 | Study: shorting the delisting window with perps (hypothetical) | 12 coins with a perp that traded to removal, 6 announcements 2024-02 to 2025-09 | Net at 2x after funding and 2x costs -7.8% (P > 0: 29%); 3 of 12 liquidated (HIFI +1,357%); funding -1.2%; 16 of 28 perps stopped before the spot removal. INSUFFICIENT (10 announcements needed) | No reason to hurry into derivatives for this |
 | Order flow Model 2 (YouTube batch 2 C) | ETH, SOL 5m 2020-25 | ETH -81% (Sharpe -3.67, 790 trades, 30% won, -0.68R a trade); SOL -80% (-3.42, 637 trades, -0.73R); negative before costs on both; walk-forward 0 of 7 and 0 of 6; ETH no better than random entries (beat 19% of paths) | Drop (Luke) |
 | CHoCH + FVG at the New York open (YouTube batch 1 S2) | SOL 5m 2020-08 to 2025-10 | -40%, Sharpe -0.92, 308 trades, 21% won, -0.55R a trade (about +0.04R before 0.59R of costs); walk-forward 1 of 6; no better than random entries (beat 79% of paths, 95% needed) | Drop (Luke) |
 | Set and Forget, mechanical zones (YouTube batch 1 S1) | BTC, ETH 1H 2020-25 | BTC +0.6% (Sharpe 0.04) vs +12% held at the same exposure, 62 trades, +0.02R; ETH -6.2% (-0.18) vs +15%, 59 trades, -0.09R; costs small (0.06-0.07R): no edge before them; walk-forward 0 of 7 and 1 of 7; BTC no better than random entries (beat 50% of paths) | Drop (Luke) |
 | Trend-vol-target, unchanged, on gold and currencies (Luke) | PAXGUSDT 1d 2020-08 to 2025-10; EURUSDT 2020-25; GBPUSDT 2020-07 to 2023-12 | Fails on all three. Gold +40% (Sharpe 0.58) vs +56% for gold held at the same exposure (Sharpe 0.93), robust and walk-forward 1 of 6, 0 of 35 start windows; costs were 75 of its 206 USDT before costs, mostly an assumed volume-band spread likely too high for gold, but even near-zero spread would only tie holding. EUR -20% (Sharpe -0.68) and GBP -21% (-0.88), negative before costs. On these markets the 50% volatility target always caps at 100%, so it is the trend votes alone | Drop (Luke) |
-| Exploration graduate: BTC regime + coin trend, volatility-sized | 180 confirmation-half altcoins 1d, first bar to 2025-10 | Searched on the other 181 coins; run once here: beat holding's Sharpe on 149 of 180 coins (83%), 427 of 771 walk-forward windows (55%), median Sharpe 0.57. PASS (both above half) | Luke's call |
+| Exploration graduate: BTC regime + coin trend, volatility-sized | 180 confirmation-half altcoins 1d, first bar to 2025-10 | Searched on the other 181 coins; run once here: beat holding's Sharpe on 149 of 180 coins (83%), 427 of 771 walk-forward windows (55%), median Sharpe 0.57. PASS (both above half) | Validated; pursued on ETH and SOL (below) |
 | Study: low funding as a next-week coin picker | Exploration half + BTC/ETH/SOL 1d, 234 weeks 2020-09 to 2025-10 | Slope -0.26% a week per SD (P(> 0) 9%); top fifth -0.16% a week vs the average coin; as money -87% after costs (drawdown -98%), the crowded fifth -53%: KILL (the opposite sign to the idea) | Drop (Luke) |
 | Study: buyer-led taker flow as a next-week coin picker | Same | Slope +0.17% a week per SD (P 86%, 90% needed); top fifth +0.52% a week vs the average coin (P 96%) but as money -38% after costs (drawdown -92%) against -57% for the average coin and +102% for BTC: KILL | Drop (Luke) |
 | Exploration graduate: altcoin crash rebound (-30% in 7 days, hold 3) | 180 confirmation-half altcoins 1d | Beat holding on 111 of 180 coins (62%) but only 274 of 771 walk-forward windows (36%), median Sharpe 0.44. FAIL | Drop (Luke) |
@@ -296,7 +337,14 @@ Each strategy was judged by its own note's pass test, written before it ran. Fro
   with `scripts/check.sh`, which stops at the first failure.
 - **A wrong trial count** (72 rather than 172) was quoted during the 2026-11-14 review,
   from reading the study log in the wrong folder. Caught on the dashboard, which reads it
-  correctly.
+  correctly. It happened again on 2026-11-16 (629 and a luck bar of 2.12 rather than 751
+  and 2.23): a script opened the run store one folder too deep and found no runs. Caught
+  while building the Research tab; CLAUDE.md now names the right call.
+- **The paper runner didn't refresh markets a strategy reads (found 2026-11-16, before any
+  account used one).** btc-regime-trend reads BTC's close; a run updated only the traded
+  coin, so a day's missing BTC bar would have read as "unknown", meaning cash, and sold the
+  position on missing data. Every input market is now refreshed, and a live run refuses to
+  decide on a missing input.
 
 ## What these results can't tell you
 
@@ -308,4 +356,7 @@ Each strategy was judged by its own note's pass test, written before it ran. Fro
 - **Mostly one market cycle.** 2020-25 contains one full bull and bear market in crypto.
   Results from 2017-19 were sometimes different, as weekly momentum showed.
 - **Daily and 4-hour bars.** At 330 USDT, costs rule out anything faster.
-- **The holdout is still unused.** No result here has been confirmed on it.
+- **The holdout is spent for BTC, ETH and SOL.** It was used once each for trend-vol-target
+  (passed) and weekly momentum and the rotations (failed). It is unused for every other coin.
+- **Exploration results are not evidence.** Numbers in research/exploration/log.md were
+  found by searching; only the confirmation run and later pre-registered tests count.
