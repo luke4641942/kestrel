@@ -27,7 +27,7 @@ Status as of 2026-11-16.
 |---|---|
 | Funding carry, perp/spot basis, delisting shorts | Need shorting; Binance perps aren't offered to Australian retail (P5 parked). The delisting short was also mostly not shortable on Binance (findings 11) |
 | Options volatility premium | Needs selling options |
-| Perp positioning: funding extremes, open-interest divergence (outside review, 2026-11-16) | As trades they need perps. As a long-only spot signal, funding was already tested as a picker and lost (findings 14). Open-interest history isn't stored; Binance serves only about the last month, so it would be recorded forward like liquidations |
+| Perp positioning: funding extremes, open-interest divergence (outside review, 2026-11-16) | As trades they need perps. As a long-only spot signal, funding was already tested as a picker and lost (findings 14). Open-interest history isn't stored (Binance's API serves about a month; its bulk metrics files may go back further, unchecked) |
 | Liquidation, order-book and lead-lag trading at minute horizons | Costs at 330 USDT rule out minute horizons (the cost gate and three failed 1-5 minute strategies) |
 
 ## Rules every test follows
