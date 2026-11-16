@@ -187,3 +187,38 @@ def test_a_run_brings_every_input_market_up_to_date(
     monkeypatch.setattr(live, "update", recording)
     invoke(tmp_path, "run", "eth", "--config", REPO_CONFIG)
     assert updated == ["ETHUSDT", "BTCUSDT"]  # the coin, then the market btc_close is read from
+
+
+def test_a_basket_account_opens_runs_and_reports(tmp_path: Path, setup: FakeBinance) -> None:
+    from kestrel.research import SECTIONS, ResearchStore
+
+    store = ParquetStore(tmp_path)
+    for coin in ("ETHUSDT", "SOLUSDT", "BNBUSDT"):
+        store.write(coin, Interval.D1, bars([50.0 + i for i in range(100)], step=DAY))
+    notes = ResearchStore(tmp_path / "r")
+    slug = notes.create("Paper basket").slug
+    notes.edit(slug, 1, dict.fromkeys(SECTIONS, "x"), "btc-rotation-4")
+    notes.freeze(slug, 1)
+    common = [
+        "--strategy",
+        "btc-rotation-4",
+        "--research",
+        slug,
+        "--research-dir",
+        str(tmp_path / "r"),
+    ]
+    one_coin = invoke(tmp_path, "open", "b", "--symbol", "ETHUSDT", *common)
+    assert one_coin.exit_code == 1
+    assert "--symbol UNIVERSE" in one_coin.output
+    testnet = invoke(tmp_path, "open", "b", "--symbol", "UNIVERSE", "--venue", "testnet", *common)
+    assert testnet.exit_code == 1
+    opened = invoke(tmp_path, "open", "b", "--symbol", "UNIVERSE", *common)
+    assert opened.exit_code == 0, opened.output
+    ran = invoke(tmp_path, "run", "b", "--config", REPO_CONFIG)
+    assert ran.exit_code == 0, ran.output
+    assert ran.output.startswith("2024-04-11: equity 330.00")
+    for coin in ("BTCUSDT", "ETHUSDT", "SOLUSDT", "BNBUSDT"):  # every coin brought up to date
+        assert store.read(coin, Interval.D1).height == 102
+    status = invoke(tmp_path, "status", "b")
+    assert "btc-rotation-4 on UNIVERSE" in status.output
+    assert "holding nothing, cash 330.00" in status.output

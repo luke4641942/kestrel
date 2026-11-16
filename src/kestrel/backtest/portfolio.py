@@ -38,11 +38,12 @@ from decimal import Decimal
 
 import polars as pl
 
-from kestrel.backtest.costs import Fill, Rejection, Side
+from kestrel.backtest.costs import Fill
 from kestrel.backtest.engine import BacktestResult, FillRecord, RejectionRecord, check_inputs
 from kestrel.backtest.spread import with_half_spread
 from kestrel.config import Config
 from kestrel.data.schema import Interval
+from kestrel.execution.basket import Book, close_day, open_day
 from kestrel.execution.venue import SimVenue
 from kestrel.exploration import check_symbols
 from kestrel.provenance import code_version
@@ -186,104 +187,23 @@ def run_portfolio(
         code=code_version(),
         account_currency=config.account_currency,
     )
-    last_bar: dict[str, datetime] = {}  # each held coin's latest bar
-    stranded: set[str] = set()  # held coins whose forced sale was refused; never retried
+    book = Book()
     rows: list[tuple[Decimal, Decimal, Decimal]] = [(initial_cash, initial_cash, Decimal(0))]
-    previous: dict[str, Decimal | None] = {}
-
-    def submit(
-        symbol: str, side: Side, qty: Decimal, price: Decimal, at: datetime, known: datetime
-    ) -> Fill | Rejection:
-        _, _, volume, spread = bars[(symbol, known)]
-        venue.set_market(symbol, price, volume, spread)
-        order = venue.submit_market(symbol, side, qty)
-        if isinstance(order, Fill):
-            result.fills.append(FillRecord(at, order))
-        else:
-            result.rejections.append(RejectionRecord(at, order))
-        return order
-
     for i in range(1, len(dates)):
         day, before = dates[i], dates[i - 1]
-
-        # Forced exits: a held coin with no bar today is sold at its last close.
-        # A refused sale is recorded once: retrying at the same stale price can't succeed.
-        for s, qty in venue.holdings().items():
-            if (s, day) not in bars and s not in stranded:
-                seen = last_bar[s]
-                close = bars[(s, seen)][1]
-                order = submit(s, Side.SELL, qty, close, seen + interval.duration, seen)
-                if isinstance(order, Fill):
-                    result.forced_exits += 1
-                    log.info("forced exit: %s had no bar on %s", s, day)
-                else:
-                    stranded.add(s)
-
-        # A decision at yesterday's close trades at today's open.
-        if before in targets:
-            target = targets[before]
-            opens = {
-                s: bars[(s, day)][0]
-                for s in set(target) | set(venue.holdings())
-                if (s, day) in bars
-            }
-            # A stranded coin has no price today: it counts at its last close and can't trade.
-            holdings = venue.holdings()
-            equity = venue.cash() + sum(
-                q * (opens[s] if s in opens else bars[(s, last_bar[s])][1])
-                for s, q in holdings.items()
-            )
-            current = {s: q * opens[s] / equity for s, q in holdings.items() if s in opens}
-            wanted: dict[str, Decimal] = {}
-            for s in set(target) | set(current):
-                if s in opens:
-                    w = target.get(s, Decimal(0))
-                    wanted[s] = current.get(s, Decimal(0)) if w is None else w
-            changes = {s: w - current.get(s, Decimal(0)) for s, w in wanted.items()}
-            # Resizing within the band is skipped (and counted when the target changed);
-            # a coin dropped from the target is always sold in full.
-            for s, change in changes.items():
-                new = wanted[s] != previous.get(s, Decimal(0))
-                if wanted[s] > 0 and 0 < abs(change) <= band and new:
-                    result.band_skips += 1
-            sells = [
-                s for s, ch in changes.items() if ch < -band or (wanted[s] == 0 and s in current)
-            ]
-            for s in sorted(sells):
-                held = venue.position(s)
-                qty = held if wanted[s] == 0 else min(held, -changes[s] * equity / opens[s])
-                submit(s, Side.SELL, qty, opens[s], day, before)
-            model = venue.cost_model()
-            resting = limits.get(before, {})
-            buys = sorted(s for s, ch in changes.items() if ch > band)
-            # Market buys at the open first; limit buys rest during the bar.
-            for s in [b for b in buys if b not in resting or b in current] + [
-                b for b in buys if b in resting and b not in current
-            ]:
-                price = opens[s]
-                if s in resting and s not in current:
-                    low = lows[(s, day)]
-                    if low > resting[s]:
-                        continue  # the bar never reached the limit: the order lapses
-                    price = min(resting[s], opens[s])
-                _, _, volume, spread = bars[(s, before)]
-                notional = min(changes[s] * equity, venue.cash())
-                rate = (
-                    model.cost_rate(Side.BUY, notional, volume, spread)
-                    if volume > 0
-                    else Decimal(0)
-                )
-                if notional > 0:
-                    submit(s, Side.BUY, notional / (1 + rate) / price, price, day, before)
-            previous = target
-
-        for s in venue.holdings():
-            if (s, day) in bars:
-                last_bar[s] = day
-        # A coin whose forced sale was refused (e.g. below the exchange minimum) is
-        # valued at its last close.
-        value = sum(q * bars[(s, last_bar[s])][1] for s, q in venue.holdings().items())
-        rows.append((venue.cash() + value, venue.cash(), Decimal(len(venue.holdings()))))
+        step = open_day(
+            venue, book, day, before, bars, targets.get(before), band, interval.duration,
+            limits.get(before), lows,
+        )  # fmt: skip
+        for at, order in step.orders:
+            if isinstance(order, Fill):
+                result.fills.append(FillRecord(at, order))
+            else:
+                result.rejections.append(RejectionRecord(at, order))
+        result.forced_exits += step.forced_exits
+        result.band_skips += step.band_skips
+        equity = close_day(venue, book, day, bars)
+        rows.append((equity, venue.cash(), Decimal(len(venue.holdings()))))
 
     result.equity = pl.DataFrame(
         {

@@ -15,9 +15,9 @@ Rules live in CLAUDE.md; results in `research/findings.md`; ideas not yet schedu
 
 ## Waiting on Luke
 - [ ] G1 `btc-rotation-8` pursued, G2 dropped (Luke, 2026-11-16). Paper note
-      `paper-trading-btc-regime-rotation-g1` drafted for Luke to freeze. Before account rot-g1
-      opens: the paper runner must trade a basket (one session; replay must match the
-      portfolio backtest).
+      `paper-trading-btc-regime-rotation-g1` drafted for Luke to freeze. The paper runner
+      trades a basket on the simulated venue; before rot-g1 opens on testnet: a multi-coin
+      Binance venue (reconciles every holding), basket `paper track` and Trading page.
 - [ ] Raspberry Pi: which model and RAM, is it running anything, SD card or USB SSD?
       Then the Pi item below.
 - [ ] Delisting exit rule (findings 11): write a note (sell a held coin at the next open
@@ -57,6 +57,9 @@ Rules live in CLAUDE.md; results in `research/findings.md`; ideas not yet schedu
 - [ ] Dashboard at phone width: the top menu and pages spill off the screen.
 
 ## Done recently
+- 2026-11-16 Basket paper trading (simulated venue): the portfolio engine and the paper
+  runner share one day step (`kestrel.execution.basket`); a day-by-day replay reproduces
+  the backtest's fills and marks exactly.
 - 2026-11-16 Docs cleaned up: README, TODO, CLAUDE.md, findings, backlog, exploration log.
   Four finished notes closed (paper or validated).
 - 2026-11-16 Overview: one "What to pursue" entry per strategy, with its coins.

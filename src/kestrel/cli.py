@@ -46,6 +46,7 @@ from kestrel.config import Config, ConfigError, load_config
 from kestrel.data import attention, delistings, funding, live, news, sentiment, stablecoins
 from kestrel.data.binance_vision import BinanceVisionClient, Month, last_complete_month
 from kestrel.data.features import attach_features, markets_for
+from kestrel.data.panel import load_panel
 from kestrel.data.quality import check_klines
 from kestrel.data.schema import Interval
 from kestrel.data.store import ParquetStore
@@ -1408,6 +1409,11 @@ def paper_open(
         if venue not in ("sim", "testnet"):
             raise ValueError(f"--venue must be sim or testnet, not {venue!r}")
         key, link = run_target(ResearchStore(research_dir), strategy, research)
+        if spec_for(key).universe:
+            if symbol.upper() != UNIVERSE:
+                raise ValueError(f"{key} trades a basket: open it with --symbol {UNIVERSE}")
+            if venue != "sim":
+                raise ValueError("a basket trades on the simulated venue for now; testnet next")
         now = datetime.now(UTC)
         step = interval.duration
         # The bar that closed most recently: its close is the first decision.
@@ -1439,6 +1445,13 @@ def paper_run(
     """Bring the market up to date, then handle every closed bar the account hasn't:
     mark, decide, and trade at the next open. Refuses to trade on data with problems."""
     account = paper_trading.PaperAccount(data_dir, name)
+    try:
+        if spec_for(account.terms().strategy).universe:
+            _paper_run_basket(account, data_dir, config)
+            return
+    except (ValueError, ConfigError, httpx.HTTPError, ConfirmationLockedError) as e:
+        typer.echo(str(e), err=True)
+        raise typer.Exit(code=1) from None
     try:
         terms = account.terms()
         cfg = load_config(config)
@@ -1507,6 +1520,66 @@ def _reconcile(
     short = safety.reconcile(holdings, venue.balances())
     if short:
         safety.halt(account, f"reconciliation failed: {safety.describe(short)}")
+
+
+def _paper_run_basket(account: paper_trading.PaperAccount, data_dir: Path, config: Path) -> None:
+    """``paper run`` for a basket strategy: bring every coin it can hold (and every market
+    its features read) up to date, then handle each closed bar through the portfolio
+    engine's day step."""
+    terms = account.terms()
+    cfg = load_config(config)
+    store = ParquetStore(data_dir)
+    spec = spec_for(terms.strategy)
+    coins = list(spec.assets)
+    if not coins:
+        raise ValueError(f"{terms.strategy} has no fixed coin set; a paper basket needs one")
+    with httpx.Client(timeout=30) as http:
+        for market in dict.fromkeys([*coins, *markets_for(spec.features)]):
+            up = live.update(store, market, terms.interval, http)
+            if not up.quality.is_clean:
+                raise ValueError(
+                    f"{market} data has problems; not trading:\n{up.quality.summary()}"
+                )
+        first = terms.trade_from - timedelta(days=500)  # history the rule needs (a year+)
+        newest = datetime.now(UTC)
+        panel = load_panel(
+            store,
+            coins,
+            terms.interval,
+            Month(first.year, first.month),
+            Month(newest.year, newest.month),
+        )
+
+        def forming(at: datetime) -> dict[str, Decimal]:
+            opens = {c: live.open_of(c, terms.interval, at, http) for c in coins}
+            return {c: o for c, o in opens.items() if o is not None}
+
+        handled = paper_trading.run_basket(account, panel, cfg, forming, now=datetime.now(UTC))
+    halt_reason = safety.halted(account)
+    if not handled and halt_reason is None:
+        typer.echo(f"{account.dir.name}: nothing new (the next bar hasn't closed)")
+    for h in handled:
+        orders = ", ".join(
+            f"{o.side.value} {o.quantity} {o.symbol} at {o.price:.4f}"
+            if isinstance(o, paper_trading.Fill)
+            else f"REJECTED {o.symbol}: {o.reason}"
+            for o in h.orders
+        )
+        decided = (
+            "no decision"
+            if h.target is None
+            else "cash"
+            if not h.target
+            else ", ".join(f"{s} {float(w or 0):.0%}" for s, w in sorted(h.target.items()))
+        )
+        typer.echo(
+            f"{h.bar:%Y-%m-%d}: equity {h.equity:.2f}, {decided}"
+            + (f": {orders}" if orders else "")
+            + (" (MISSED: the run was late)" if h.missed else "")
+        )
+    if halt_reason is not None:
+        typer.echo(f"HALTED: {halt_reason}", err=True)
+        raise typer.Exit(code=1)
 
 
 @paper_app.command("track")
@@ -1659,7 +1732,12 @@ def paper_status(name: str, data_dir: DataDir = Path("data")) -> None:
     reason = safety.halted(account)
     if reason:
         typer.echo(f"  HALTED: {reason}")
-    typer.echo(f"  holding {state.position} {terms.symbol}, cash {state.cash:.2f}; {fills} fills; "
+    held = (
+        ", ".join(f"{q} {s}" for s, q in state.positions.items()) or "nothing"
+        if spec_for(terms.strategy).universe
+        else f"{state.position} {terms.symbol}"
+    )
+    typer.echo(f"  holding {held}, cash {state.cash:.2f}; {fills} fills; "
                f"{len(marks)} days handled")  # fmt: skip
 
 

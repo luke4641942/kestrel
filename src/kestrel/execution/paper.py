@@ -21,8 +21,8 @@ from __future__ import annotations
 
 import json
 from collections.abc import Callable
-from dataclasses import dataclass
-from datetime import UTC, datetime
+from dataclasses import dataclass, field
+from datetime import UTC, datetime, timedelta
 from decimal import Decimal
 from pathlib import Path
 from typing import Any, Literal, Protocol
@@ -33,12 +33,15 @@ from kestrel.backtest.costs import CostModel, Fill, Rejection, Side
 
 __all__ = ["Fill", "Handled", "Ledger", "PaperAccount", "Rejection", "State", "Terms", "run"]
 from kestrel.backtest.engine import half_spreads
+from kestrel.backtest.portfolio import validated_decisions
+from kestrel.backtest.spread import with_half_spread
 from kestrel.config import Config
 from kestrel.data.schema import KLINE_SCHEMA, Interval
+from kestrel.execution.basket import Bar, Book, close_day, open_day
 from kestrel.execution.rebalance import rebalance
-from kestrel.execution.safety import RiskGuard, check_mark, halt, halted, stale
+from kestrel.execution.safety import RiskGuard, behind, check_mark, halt, halted, stale
 from kestrel.execution.venue import SimVenue
-from kestrel.strategy import Strategy, make_strategy
+from kestrel.strategy import Strategy, make_portfolio_strategy, make_strategy
 
 
 def _json(value: Any) -> Any:
@@ -93,6 +96,11 @@ class State:
     last_bar: datetime | None
     """The last closed bar handled (marked, decided, traded at the next open)."""
     last_target: Decimal | None
+    positions: dict[str, Decimal] = field(default_factory=dict)
+    """A basket account's coins (a single-coin account's is in ``position``)."""
+    book: dict[str, Any] = field(default_factory=dict)
+    """A basket account's carry-over for kestrel.execution.basket (last bars, stranded
+    coins, the previous target), as written to the ledger."""
 
 
 def accounts(root: Path | str) -> list[str]:
@@ -150,6 +158,15 @@ class PaperAccount:
         last = next((e for e in reversed(self.ledger.events()) if e["type"] == "state"), None)
         if last is None:
             return State(terms.initial_cash, Decimal(0), None, None)
+        if "positions" in last:  # a basket account
+            return State(
+                Decimal(last["cash"]),
+                Decimal(0),
+                datetime.fromisoformat(last["bar"]),
+                None,
+                {k: Decimal(v) for k, v in last["positions"].items()},
+                last["book"],
+            )
         return State(
             Decimal(last["cash"]),
             Decimal(last["position"]),
@@ -354,3 +371,192 @@ def run(
             halt(account, guard.tripped)
             break
     return handled
+
+
+DELISTED_AFTER = timedelta(days=7)
+"""A basket coin whose newest bar is older than this is treated as delisted, not stale."""
+
+NextOpens = Callable[[datetime], dict[str, Decimal]]
+"""Each coin's open of the bar starting at a time, for the coins trading; empty if the bar
+hasn't started."""
+
+
+@dataclass(frozen=True)
+class BasketHandled:
+    bar: datetime
+    equity: Decimal
+    target: dict[str, Decimal | None] | None
+    """The decision at the bar's close; None on a day with no decision."""
+    orders: list[Fill | Rejection]
+    missed: bool = False
+
+
+def _book_out(book: Book) -> dict[str, Any]:
+    return {
+        "last_bar": {s: t.isoformat() for s, t in book.last_bar.items()},
+        "stranded": sorted(book.stranded),
+        "previous": {s: None if w is None else str(w) for s, w in book.previous.items()},
+    }
+
+
+def _book_in(raw: dict[str, Any]) -> Book:
+    return Book(
+        {s: datetime.fromisoformat(t) for s, t in raw.get("last_bar", {}).items()},
+        set(raw.get("stranded", [])),
+        {s: None if w is None else Decimal(w) for s, w in raw.get("previous", {}).items()},
+    )
+
+
+def run_basket(
+    account: PaperAccount,
+    panel: pl.DataFrame,
+    config: Config,
+    next_opens: NextOpens = lambda _: {},
+    venue: PaperVenue | None = None,
+    now: datetime | None = None,
+) -> list[BasketHandled]:
+    """``run`` for a basket strategy (several coins): every closed bar in ``panel`` the
+    account hasn't handled, through the portfolio engine's own day step
+    (kestrel.execution.basket), so a day-by-day replay reproduces the portfolio backtest.
+
+    Per bar: mark at its close, take the strategy's decision at that close (if it made
+    one), then sell coins with no bar the next day and trade the decision at the next
+    open. The next open is the stored bar's when replaying, or each coin's forming bar
+    from ``next_opens`` when running today. Safety is as in ``run``."""
+    reason = halted(account)
+    if reason is not None:
+        raise ValueError(
+            f"{account.dir.name} is halted ({reason}); check it, then "
+            "kestrel paper resume NAME --reason ..."
+        )
+    terms = account.terms()
+    strategy = make_portfolio_strategy(terms.strategy, terms.params)
+    decisions = validated_decisions(strategy, panel)
+    targets: dict[datetime, dict[str, Decimal | None]] = {}
+    limits: dict[datetime, dict[str, Decimal]] = {}
+    for t, sym, w, limit in decisions.iter_rows():
+        chosen = targets.setdefault(t, {})
+        if sym is not None:
+            chosen[sym] = None if w is None else Decimal(str(w))
+            if limit is not None:
+                limits.setdefault(t, {})[sym] = Decimal(str(limit))
+    priced = with_half_spread(
+        panel,
+        config.universe.volume_window_days,
+        [(float(v), float(bps) / 1e4) for v, bps in config.universe.spread_tiers],
+        ["symbol", "history"],
+    )
+    bars: dict[tuple[str, datetime], Bar] = {
+        (sym, t): (Decimal(str(o)), Decimal(str(c)), Decimal(str(v)), Decimal(str(h)))
+        for sym, t, o, c, v, h in priced.select(
+            "symbol", "open_time", "open", "close", "quote_volume", "half_spread"
+        ).iter_rows()
+    }
+    lows = (
+        {
+            (sym, t): Decimal(str(lo))
+            for sym, t, lo in panel.select("symbol", "open_time", "low").iter_rows()
+        }
+        if limits
+        else {}
+    )
+    dates: list[datetime] = panel["open_time"].unique().sort().to_list()
+    stored_days = set(dates)
+    state = account.state()
+    book = _book_in(state.book)
+    pending = [
+        t for t in dates
+        if t >= terms.trade_from and (state.last_bar is None or t > state.last_bar)
+    ]  # fmt: skip
+    live = bool(getattr(venue, "live", False))
+    latest = pending[-1] if pending else None
+    if now is not None:
+        # Each coin must be fresh (its quality was audited when it was brought up to
+        # date). A coin whose bars stopped over a week ago has been delisted: the day step
+        # sells it at its last close, as the backtest does, so it doesn't stop the run.
+        newest = panel.group_by("symbol").agg(pl.col("open_time").max()).sort("symbol")
+        for sym, last in newest.iter_rows():
+            problem = behind(last, terms.interval, now)
+            if problem and now - last <= DELISTED_AFTER:
+                raise ValueError(f"not trading on stale data: {sym}: {problem}")
+    guard = RiskGuard(
+        venue or SimVenue(config, terms.initial_cash, rules=config.rules_for), config.risk
+    )
+    guard.restore(state.cash, state.positions)
+    band = config.backtest.no_trade_band
+    duration = terms.interval.duration
+    handled: list[BasketHandled] = []
+    for t in pending:
+        after = t + duration
+        if after not in stored_days:
+            opens = next_opens(after)
+            if not opens:
+                break  # the next bar hasn't opened: pick up from here next run
+            for sym, price in opens.items():
+                bars[(sym, after)] = (price, price, Decimal(0), Decimal(0))
+        equity = close_day(guard, book, t, bars)
+        breach = check_mark(account, equity, config.risk)
+        mark = {"type": "mark", "bar": t, "equity": equity}
+        if breach:
+            account.ledger.append(mark)
+            halt(account, breach)
+            break
+        target = targets.get(t)
+        decision = {
+            "type": "decision",
+            "bar": t,
+            "targets": None
+            if target is None
+            else {k: None if w is None else str(w) for k, w in target.items()},
+        }
+        if live and t != latest:
+            account.ledger.append(mark)
+            account.ledger.append({**decision, "missed": True})
+            account.ledger.append(_state_event(t, guard, book))
+            handled.append(BasketHandled(t, equity, target, [], missed=True))
+            continue
+        step = open_day(guard, book, after, t, bars, target, band, duration, limits.get(t), lows)
+        account.ledger.append(mark)
+        account.ledger.append(decision)
+        for at, order in step.orders:
+            account.ledger.append(_order_event(at, order))
+        account.ledger.append(_state_event(t, guard, book))
+        handled.append(BasketHandled(t, equity, target, [o for _, o in step.orders]))
+        if guard.tripped:
+            halt(account, guard.tripped)
+            break
+    return handled
+
+
+def _order_event(at: datetime, order: Fill | Rejection) -> dict[str, Any]:
+    if isinstance(order, Fill):
+        return {
+            "type": "fill",
+            "at": at,
+            "symbol": order.symbol,
+            "side": order.side.value,
+            "quantity": order.quantity,
+            "reference_price": order.reference_price,
+            "price": order.price,
+            "fee": order.fee,
+            "spread_cost": order.spread_cost,
+            "impact_cost": order.impact_cost,
+        }
+    return {
+        "type": "rejection",
+        "at": at,
+        "symbol": order.symbol,
+        "side": order.side.value,
+        "quantity": order.requested_quantity,
+        "reason": order.reason,
+    }
+
+
+def _state_event(t: datetime, venue: RiskGuard, book: Book) -> dict[str, Any]:
+    return {
+        "type": "state",
+        "bar": t,
+        "cash": venue.cash(),
+        "positions": dict(sorted(venue.holdings().items())),
+        "book": _book_out(book),
+    }

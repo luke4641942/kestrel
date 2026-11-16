@@ -113,6 +113,10 @@ class RiskGuard:
             return Rejection(symbol, side, quantity, f"risk limit: {self.tripped}")
         return self._venue.submit_market(symbol, side, quantity)
 
+    def holdings(self) -> dict[str, Decimal]:
+        """Every coin held (a basket account's venues offer it)."""
+        return self._venue.holdings()  # type: ignore[attr-defined, no-any-return]
+
     def cash(self) -> Decimal:
         return self._venue.cash()
 
@@ -129,15 +133,23 @@ class RiskGuard:
 # ---------- data ----------
 
 
+def behind(last: datetime, interval: Interval, now: datetime) -> str | None:
+    """Why a market whose newest bar opened at ``last`` is behind ``now``, or None."""
+    step = interval.duration.total_seconds()
+    expected = datetime.fromtimestamp((now.timestamp() // step - 1) * step, UTC)
+    if last < expected:
+        return f"the latest bar is {last:%Y-%m-%d %H:%M} UTC; {expected:%Y-%m-%d %H:%M} has closed"
+    return None
+
+
 def stale(bars: pl.DataFrame, interval: Interval, now: datetime) -> str | None:
     """Why the bars aren't fit to decide on now, or None."""
     if bars.is_empty():
         return "no bars stored"
-    step = interval.duration.total_seconds()
-    expected = datetime.fromtimestamp((now.timestamp() // step - 1) * step, UTC)
     last: datetime = bars["open_time"].max()  # type: ignore[assignment]
-    if last < expected:
-        return f"the latest bar is {last:%Y-%m-%d %H:%M} UTC; {expected:%Y-%m-%d %H:%M} has closed"
+    late = behind(last, interval, now)
+    if late:
+        return late
     recent = check_klines(bars.tail(RECENT_BARS), interval)
     if recent.missing_bars:
         return f"{recent.missing_bars} bars missing in the last {RECENT_BARS}"
