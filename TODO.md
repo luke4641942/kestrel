@@ -38,16 +38,11 @@ financing charge on both sides) and a Binance perp (its real funding). A result 
 be pursue or watch is recorded as **needs-shorting** (add the decision value when the first
 one lands: `kestrel.decisions` and the Research tab), never traded until a licensed route
 exists and Luke has checked the Swyftx employee trading policy.
-- [ ] Short leg for the regime strategies: short BTC (or the weakest coins) while the BTC
-      regime is off, where btc-regime-trend and G1 now sit in cash. Outside evidence:
-      time-series momentum works on both sides (Moskowitz, Ooi, Pedersen 2012).
-- [ ] Long/short momentum among large coins: long the strongest, short the weakest, near
-      market-neutral. Outside evidence: crypto momentum factor (Liu, Tsyvinski, Wu 2022).
-      Answers the outside review's independence point; findings 14's long-only pickers lost
-      with the market, which a short side removes.
-- [ ] Cash-and-carry: long spot, short the perp, collect funding (history on hand for 318
-      perps). Needs a real perp; a CFD pays financing instead. Outside evidence: crypto
-      carry (Schmeling, Schrimpf, Todorov 2023).
+- [ ] Five notes drafted for Luke to freeze (2026-11-16), each run once as a study
+      (`kestrel short-study ...`, to build after freezing): `shorting-with-the-btc-regime-rule`
+      (ETH, SOL), `g1-with-a-short-side`, `trend-vol-target-long-and-short` (BTC, ETH, SOL),
+      `long-short-momentum-among-liquid-coins` (market-neutral),
+      `cash-and-carry-on-btc-eth-and-sol-perps` (perps only). About 8 trials in all. Check Eightcap's short swap rate before freezing.
 - [ ] Delisting short: the open note `shorting-the-delisting-window-with-perps` was
       INSUFFICIENT at 6 announcements (10 needed). Re-run once 10 exist, rather than reject.
 - [ ] Short before large token unlocks (sized against daily volume): needs an unlock

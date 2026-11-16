@@ -309,6 +309,12 @@ STUDIES = {
     "study:delisting-short": "kestrel delisting-short-study",
     "study:funding-cross-section": "kestrel cross-study funding",
     "study:taker-flow": "kestrel cross-study taker-flow",
+    # Hypothetical shorting (Luke, 2026-11-16): a pass is recorded as needs-shorting.
+    "study:short-btc-regime-trend": "kestrel short-study btc-regime-trend",
+    "study:short-btc-rotation": "kestrel short-study btc-rotation",
+    "study:short-trend-vol-target": "kestrel short-study trend-vol-target",
+    "study:long-short-momentum": "kestrel short-study long-short-momentum",
+    "study:cash-and-carry": "kestrel short-study cash-and-carry",
 }
 """Raw-effect studies a note can name instead of a strategy: a question measured before any
 trading rule exists. A backtest refuses them; each runs through its own command."""
