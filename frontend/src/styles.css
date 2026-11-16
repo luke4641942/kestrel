@@ -2391,3 +2391,11 @@ p {
   color: var(--text-3);
   text-decoration: line-through;
 }
+
+/* A study's full text report, as the CLI printed it. */
+pre.report {
+  white-space: pre-wrap;
+  overflow-x: auto;
+  margin: 0 0 8px;
+  line-height: 1.5;
+}

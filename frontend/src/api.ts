@@ -317,6 +317,22 @@ export interface CostGateRow {
   target_r: number | null;
 }
 
+/** A hypothetical shorting study (kestrel.studies.shorting), run once from its frozen note
+ * with kestrel short-study. Not an engine run: Kestrel is spot and long-only. */
+export interface ShortStudy {
+  name: string;
+  note: string;
+  measured_at: string;
+  commit: string | null;
+  /** "NEEDS-SHORTING" (passed; untradeable until shorting is possible) or "DROP". */
+  verdict: string;
+  tests: Record<string, boolean>;
+  /** The full report, as the CLI printed it. */
+  report: string;
+  /** Growth of 1 (1.0 at the start). */
+  curves: { label: string; series: EquitySeries }[];
+}
+
 /** A saved cost gate (kestrel.studies.cost_gate). Stops only, no outcomes; run from the CLI. */
 export interface CostGate {
   interval: Interval;
@@ -702,6 +718,7 @@ export const api = {
   paperAccount: (name: string) => request<PaperDetail>(`/paper/${enc(name)}`),
   holdout: () => request<HoldoutRecord[]>("/holdout"),
   costGate: () => request<CostGate[]>("/cost-gate"),
+  shortStudies: () => request<ShortStudy[]>("/short-studies"),
   regimes: () => request<RegimeSummary[]>("/regimes"),
   regime: (symbol: string) => request<RegimeDetail>(`/regimes/${enc(symbol)}`),
   startRegimes: (symbol: string) => request<Job>("/jobs/regimes", { method: "POST", body: JSON.stringify({ symbol }) }),

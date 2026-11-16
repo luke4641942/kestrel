@@ -24,11 +24,13 @@ itself holds quantities and has a no-trade band; neither is modelled here, for e
 from __future__ import annotations
 
 import itertools
+import json
 import math
 from collections.abc import Callable, Sequence
 from dataclasses import dataclass, field
 from datetime import UTC, date, datetime, timedelta
-from typing import Literal
+from pathlib import Path
+from typing import Any, Literal
 
 import numpy as np
 import polars as pl
@@ -781,6 +783,8 @@ class Outcome:
     verdict: str
     detail: dict[str, object]
     results: list[object] = field(default_factory=list)
+    curves: dict[str, tuple[list[date], np.ndarray]] = field(default_factory=dict)
+    """Label -> (each period's end, its return), for the dashboard's chart."""
 
 
 def market_returns(g: Grid, symbol: str, start: datetime = START) -> np.ndarray:
@@ -863,9 +867,54 @@ def run_note(
                 raise ValueError(f"no stored funding for {s}")
             settlements[s] = f.sort("time")
         res = carry_result(g, settlements, fee)
-        weekly_r = carry(g, settlements, fee)[1]
+        weeks, weekly_r, *_ = carry(g, settlements, fee)
         sd = float(np.std(weekly_r, ddof=1))
         annual_sharpe = float(weekly_r.mean()) / sd * math.sqrt(52) if sd > 0 else 0.0
+        stable = np.full(len(weekly_r), (1 + STABLECOIN_YIELD) ** (1 / 52) - 1)
+        ends = [w + timedelta(days=7) for w in weeks]
+        curves = {"Cash-and-carry": (ends, weekly_r), "A 4% stablecoin yield": (ends, stable)}
         return Outcome(name, format_carry(res), [("UNIVERSE", annual_sharpe)],
-                       "NEEDS-SHORTING" if res.passes else "DROP", {}, [res])  # fmt: skip
+                       "NEEDS-SHORTING" if res.passes else "DROP", {}, [res],
+                       curves)  # fmt: skip
     raise ValueError(f"no shorting study {name!r}; one of {', '.join(NOTES)}")
+
+
+def save(outcome: Outcome, slug: str, data_dir: Path | str, commit: str | None) -> Path:
+    """The study's report for the dashboard (``<data>/shorting/<name>.json``). A rerun of
+    the same frozen note replaces it: the rule is fixed, so only the code can change it,
+    and the commit is recorded."""
+    tests: dict[str, bool] = {}
+    for r in outcome.results:
+        for k, v in getattr(r, "tests", {}).items():
+            market = getattr(r, "market", None)
+            tests[f"{market}: {k}" if market and len(outcome.results) > 1 else k] = bool(v)
+    curves = []
+    for label, (ends, r) in outcome.curves.items():
+        # Start at 1 one period before the first end.
+        step = ends[1] - ends[0] if len(ends) > 1 else timedelta(days=1)
+        times = [ends[0] - step, *ends]
+        equity = [1.0, *(float(x) for x in np.cumprod(1 + r))]
+        curves.append({"label": label, "time": [d.isoformat() for d in times], "equity": equity})
+    doc = {
+        "name": outcome.name,
+        "note": slug,
+        "measured_at": datetime.now(UTC).isoformat(),
+        "commit": commit,
+        "verdict": outcome.verdict,
+        "hypothetical": True,
+        "tests": tests,
+        "report": outcome.text,
+        "curves": curves,
+    }
+    target = Path(data_dir) / "shorting" / f"{outcome.name}.json"
+    target.parent.mkdir(parents=True, exist_ok=True)
+    tmp = target.with_suffix(".tmp")
+    tmp.write_text(json.dumps(doc, indent=2))
+    tmp.replace(target)
+    return target
+
+
+def load_all(data_dir: Path | str) -> list[dict[str, Any]]:
+    """Every saved shorting study, passes first, then by name."""
+    found = [json.loads(p.read_text()) for p in (Path(data_dir) / "shorting").glob("*.json")]
+    return sorted(found, key=lambda d: (d["verdict"] != "NEEDS-SHORTING", d["name"]))

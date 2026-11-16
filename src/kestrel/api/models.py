@@ -744,6 +744,28 @@ class CostGateRowOut(BaseModel):
     """The setup's own target in R (median), when it names one: order flow's point of control."""
 
 
+class ShortStudyOut(BaseModel):
+    """A hypothetical shorting study (kestrel.studies.shorting), saved by kestrel
+    short-study. Not an engine run and never tradeable here: Kestrel is spot, long-only."""
+
+    name: str
+    note: str
+    measured_at: datetime
+    commit: str | None
+    verdict: str
+    """NEEDS-SHORTING (passed; untradeable until shorting is possible) or DROP."""
+    tests: dict[str, bool]
+    report: str
+    """The full text report, as the CLI printed it."""
+    curves: list[ShortCurveOut]
+
+
+class ShortCurveOut(BaseModel):
+    label: str
+    series: Series
+    """Growth of 1, in the account's units (1.0 at the start)."""
+
+
 class CostGateOut(BaseModel):
     """A saved cost gate (kestrel.studies.cost_gate): stop widths only, no outcomes. Run
     from the CLI; read-only here."""

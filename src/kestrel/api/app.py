@@ -69,6 +69,8 @@ from kestrel.api.models import (
     ScorecardOut,
     ScorecardTestOut,
     Series,
+    ShortCurveOut,
+    ShortStudyOut,
     Signals,
     SignalsRequest,
     SourceOut,
@@ -114,7 +116,7 @@ from kestrel.strategy import (
     validated_brackets,
     validated_weights,
 )
-from kestrel.studies import cost_gate
+from kestrel.studies import cost_gate, shorting
 from kestrel.validation import rules
 from kestrel.validation.deflated import (
     TrialSet,
@@ -546,6 +548,31 @@ def create_app(
     def list_cost_gate() -> list[CostGateOut]:
         """The saved cost gates, shortest bars first. Read-only: run with kestrel cost-gate."""
         return [CostGateOut.model_validate(d) for d in cost_gate.load_all(data_dir)]
+
+    @api.get("/short-studies")
+    def list_short_studies() -> list[ShortStudyOut]:
+        """The hypothetical shorting studies, passes first. Read-only: each runs once from
+        its frozen note with kestrel short-study."""
+        out = []
+        for d in shorting.load_all(data_dir):
+            curves = [
+                ShortCurveOut(
+                    label=c["label"],
+                    series=_series(
+                        pl.DataFrame(
+                            {
+                                "close_time": [
+                                    datetime.fromisoformat(t).replace(tzinfo=UTC) for t in c["time"]
+                                ],
+                                "equity": c["equity"],
+                            }
+                        )
+                    ),
+                )
+                for c in d["curves"]
+            ]
+            out.append(ShortStudyOut.model_validate({**d, "curves": curves}))
+        return out
 
     @api.get("/holdout")
     def list_holdout() -> list[HoldoutOut]:

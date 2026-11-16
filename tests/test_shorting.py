@@ -189,3 +189,35 @@ def test_measures() -> None:
     assert len(sh.weekly(days, np.full(14, 0.01))) == 2
     assert sh.beta(rising * np.arange(100), 2 * rising * np.arange(100)) == pytest.approx(0.5)
     assert MONDAY.isoweekday() == 1
+
+
+def test_a_saved_study_is_served_to_the_dashboard(tmp_path) -> None:  # type: ignore[no-untyped-def]
+    from fastapi.testclient import TestClient
+
+    from kestrel.api.app import create_app
+    from tests.test_api_paper import REPO_CONFIG
+
+    ends = [date(2020, 1, 13) + timedelta(days=7 * k) for k in range(3)]
+    passed = sh.CarryResult(
+        weeks=3, first=ends[0], last=ends[-1], mean_weekly=0.001, p=1.0, annual=0.06,
+        years={2020: 0.003}, max_drawdown=0.0, trades=1, held_share={}, funding_by_year={},
+        worst_week=0.001, margin_calls=0, annual_at_baseline=0.05,
+        tests={"beats a 4% stablecoin yield": True},
+    )  # fmt: skip
+    outcome = sh.Outcome(
+        "cash-and-carry", "report text", [("UNIVERSE", 1.0)], "NEEDS-SHORTING", {}, [passed],
+        {"Cash-and-carry": (ends, np.array([0.01, 0.0, 0.02]))},
+    )  # fmt: skip
+    path = sh.save(outcome, "cash-and-carry-note", tmp_path, "abc123")
+    assert path.name == "cash-and-carry.json"
+    client = TestClient(create_app(tmp_path, static_dir=None, config_path=REPO_CONFIG))
+    (study,) = client.get("/api/short-studies").json()
+    assert (study["verdict"], study["note"], study["commit"]) == (
+        "NEEDS-SHORTING", "cash-and-carry-note", "abc123",
+    )  # fmt: skip
+    assert study["tests"] == {"beats a 4% stablecoin yield": True}
+    curve = study["curves"][0]
+    assert curve["label"] == "Cash-and-carry"
+    assert curve["series"]["equity"] == pytest.approx([1.0, 1.01, 1.01, 1.0302])
+    assert len(curve["series"]["time"]) == 4  # a start point one week before the first end
+    assert curve["series"]["drawdown"][-1] == 0

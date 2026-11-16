@@ -625,8 +625,17 @@ def short_study(
     elif isinstance(first, shorting.NeutralResult):
         text = shorting.format_neutral(first)
     store.mark_backtested(s.slug, note.version)
+    outcome.text = text
+    from kestrel.provenance import code_version
+
+    version = code_version()
+    commit = (
+        None if version.commit is None else version.commit + ("-dirty" if version.dirty else "")
+    )
+    saved = shorting.save(outcome, slug, data_dir, commit)
     typer.echo(text)
     typer.echo(f"\nLogged {len(outcome.looks)} trial(s); the main pool now has {trials.count}.")
+    typer.echo(f"Saved for the dashboard: {saved}")
 
 
 @app.command("cross-study")
