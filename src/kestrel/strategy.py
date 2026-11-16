@@ -28,10 +28,14 @@ from kestrel.strategies.bollinger_pullback import BollingerPullback
 from kestrel.strategies.brake import TrendVolTargetBrake, WeeklyMomentumBrake
 from kestrel.strategies.btc_regime import BtcRegimeTrend
 from kestrel.strategies.btc_rotation import (
+    CONFIRM_4,
+    CONFIRM_8,
     LARGE_4,
     LARGE_8,
     BtcRegimeRotation,
     BtcRegimeRotation4,
+    BtcRegimeRotationConfirm4,
+    BtcRegimeRotationConfirm8,
 )
 from kestrel.strategies.choch_fvg import ChochFvg
 from kestrel.strategies.crash_rebound import CrashRebound
@@ -957,6 +961,40 @@ STRATEGIES: dict[str, StrategySpec] = {
             ),
             universe=True,
             assets=LARGE_4,
+        ),
+        StrategySpec(
+            "btc-rotation-8c",
+            "research",
+            "G1's rule on its confirmation basket (BTC and 7 large confirmation-half coins). "
+            "Runs only through a frozen confirmation note's holdout test.",
+            BtcRegimeRotationConfirm8,
+            (
+                Param("top_n", 3, 1, 8, "Coins held"),
+                Param("lookback_days", 90, 30, 365, "Days of return ranked"),
+                Param("btc_days", 50, 20, 200, "BTC's moving average, days"),
+                Param("margin_pct", 3, 0, 10, "How far above its average BTC must close, %"),
+                Param("vol_days", 30, 10, 90, "Days of returns in each coin's volatility"),
+                Param("target_vol_pct", 50, 10, 100, "Annualised volatility target per slot, %"),
+            ),
+            universe=True,
+            assets=CONFIRM_8,
+        ),
+        StrategySpec(
+            "btc-rotation-4c",
+            "research",
+            "G2's rule on its confirmation basket (BTC and 3 large confirmation-half coins). "
+            "Runs only through a frozen confirmation note's holdout test.",
+            BtcRegimeRotationConfirm4,
+            (
+                Param("top_n", 1, 1, 4, "Coins held"),
+                Param("lookback_days", 90, 30, 365, "Days of return ranked"),
+                Param("btc_days", 50, 20, 200, "BTC's moving average, days"),
+                Param("margin_pct", 3, 0, 10, "How far above its average BTC must close, %"),
+                Param("vol_days", 30, 10, 90, "Days of returns in each coin's volatility"),
+                Param("target_vol_pct", 50, 10, 100, "Annualised volatility target per slot, %"),
+            ),
+            universe=True,
+            assets=CONFIRM_4,
         ),
         StrategySpec(
             "btc-gold-rotation",

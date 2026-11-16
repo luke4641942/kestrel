@@ -116,3 +116,22 @@ class BtcRegimeRotation4(BtcRegimeRotation):
         super().__init__(
             symbol, top_n, lookback_days, btc_days, margin_pct, vol_days, target_vol_pct
         )
+
+
+# Confirmation baskets (exploration round 2, 2026-11-16): BTC plus the largest coins of the
+# locked confirmation half, ranked by median daily quote volume over 2025-05 to 2025-10
+# among those with a year of history by 2025-11-01 (volume only, no returns read).
+CONFIRM_8 = (
+    "BTCUSDT", "XRPUSDT", "SUIUSDT", "TRXUSDT", "ADAUSDT", "AVAXUSDT", "UNIUSDT", "ARBUSDT",
+)  # fmt: skip
+CONFIRM_4 = ("BTCUSDT", "XRPUSDT", "SUIUSDT", "TRXUSDT")
+
+
+class BtcRegimeRotationConfirm8(BtcRegimeRotation):
+    coins = CONFIRM_8
+    label = "8 confirmation-half large coins"
+
+
+class BtcRegimeRotationConfirm4(BtcRegimeRotation4):
+    coins = CONFIRM_4
+    label = "BTC and 3 confirmation-half large coins"

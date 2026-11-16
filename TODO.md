@@ -14,11 +14,12 @@ Rules live in CLAUDE.md; results in `research/findings.md`; ideas not yet schedu
   sleeps; the Raspberry Pi item fixes that.
 
 ## Waiting on Luke
-- [ ] Rotation graduates (exploration round 2): G1 `btc-rotation-8` (top 3 of 8 large
-      coins) and G2 `btc-rotation-4` (top 1 of BTC/ETH/SOL/BNB), weekly, BTC 3% above its
-      50-day average, volatility-sized. Built and tested; real engine 2018-25: Sharpe 1.55
-      and 1.51 vs BTC 0.74. Luke to choose the confirmation: holdout year on other large
-      coins now, plus forward paper; or forward paper only. Then the notes.
+- [ ] Rotation graduates (exploration round 2): G1 `btc-rotation-8` and G2 `btc-rotation-4`
+      (real engine 2018-25: Sharpe 1.55 and 1.51 vs BTC 0.74). Confirmation (Luke): the
+      holdout year on unseen large coins, then forward paper. Waiting on Luke: freeze
+      `confirmation-btc-regime-rotation-top-3-of-8` and `...-top-1-of-4`; then one
+      `kestrel holdout-test` each. Forward paper for a basket needs the paper runner to
+      trade portfolio strategies (it trades one coin now): build it if either passes.
 - [ ] Raspberry Pi: which model and RAM, is it running anything, SD card or USB SSD?
       Then the Pi item below.
 - [ ] Delisting exit rule (findings 11): write a note (sell a held coin at the next open

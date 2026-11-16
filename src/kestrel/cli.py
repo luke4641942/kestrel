@@ -993,6 +993,10 @@ def holdout_test_cmd(
         if log.used(link[0]):
             raise ValueError(f"{link[0]} has already used the holdout; it is used once")
         cfg = load_config(config)
+        if link[0].startswith(CONFIRMATION_PREFIX):
+            # The exploration experiment's confirmation: only such a note may read the
+            # locked confirmation half (kestrel.exploration).
+            cfg = cfg.unlock_confirmation()
         first, scored, last = Month.parse(warmup_start), Month.parse(start), Month.parse(end)
         after = last.next()
         begin = datetime(scored.year, scored.month, 1, tzinfo=UTC)
@@ -1022,7 +1026,7 @@ def holdout_test_cmd(
                 key, symbol.upper(), bars, interval, cfg, money, params, start=begin, end=until
             )
         log.record(link[0], link[1], result, datetime(first.year, first.month, 1, tzinfo=UTC))
-    except (ConfigError, ValueError) as e:
+    except (ConfigError, ValueError, ConfirmationLockedError) as e:
         typer.echo(str(e), err=True)
         raise typer.Exit(code=1) from None
     store.mark_backtested(*link)

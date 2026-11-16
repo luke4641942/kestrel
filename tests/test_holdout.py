@@ -220,3 +220,33 @@ def test_a_coin_basket_is_scored_against_btc_held(tmp_path: Path) -> None:
     saved = json.loads((tmp_path / "holdout" / f"{s.slug}.json").read_text())
     assert saved["params"]["lookback_days"] == 30
     assert saved["symbol"] == "UNIVERSE"
+
+
+def test_only_a_confirmation_note_can_hold_out_test_the_confirmation_half(tmp_path: Path) -> None:
+    import shutil
+    from datetime import date
+
+    from kestrel.exploration import Split, write_split
+
+    shutil.copy(REPO_CONFIG, tmp_path / "kestrel.toml")
+    write_split(
+        tmp_path / "research" / "exploration" / "split.toml",
+        Split(date(2026, 11, 16), 1, frozenset({"OTHERUSDT"}), frozenset({"LOCKEDUSDT"})),
+    )
+    ParquetStore(tmp_path).write("LOCKEDUSDT", D1, daily())
+
+    def run_on_locked(slug: str):  # type: ignore[no-untyped-def]
+        args = [
+            "holdout-test", "LOCKEDUSDT", "--strategy", "ma-trend", "--research", slug,
+            "--warmup-start", "2025-05", "--start", "2025-11", "--end", "2026-10",
+            "--data-dir", str(tmp_path), "--research-dir", str(tmp_path / "r"),
+            "--config", str(tmp_path / "kestrel.toml"),
+        ]  # fmt: skip
+        return CliRunner().invoke(app, args)
+
+    plain = run_on_locked(note(tmp_path / "r", name="Holdout: plain"))
+    assert plain.exit_code == 1
+    assert "confirmation half" in plain.output
+    confirming = run_on_locked(note(tmp_path / "r", name="Confirmation: on the locked half"))
+    assert confirming.exit_code == 0, confirming.output
+    assert "HOLDOUT TEST" in confirming.output
