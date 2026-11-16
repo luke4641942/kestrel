@@ -17,7 +17,7 @@ Status as of 2026-11-16.
 | News tone (GDELT) | Code built; the news history to download, then a note | Yes |
 | Funding momentum | Findings 14 found crowded (high-funding) coins did better than uncrowded ones, the opposite of the idea tested. A new note with that result disclosed; as money the crowded fifth still lost 53% alone, so only as a picker inside a regime rule | Signal yes |
 | Forward market-structure data | Binance's live liquidation and order-book streams recorded from now on, untouched by construction; needs an always-on machine (the Pi) | Data first |
-| Token unlocks | A clean history of unlock schedules (none free found) | Yes, as an exit rule |
+| Token unlocks | A clean history of unlock schedules (none free found). Measure an unlock against the coin's normal daily volume, not only its circulating supply: the market's capacity to absorb it is the mechanism (outside review, 2026-11-16) | Yes, as an exit rule |
 | BTC's regime turning volatile before ETH's | Only 11 such moments on daily regimes 2021-25: too few. Revisit with hourly regimes for more events | Yes |
 | HMM regime filter as a strategy | A note that passes the entry bar; a filter on trend-vol-target already failed (findings 8) | Yes, as a filter |
 
@@ -27,6 +27,7 @@ Status as of 2026-11-16.
 |---|---|
 | Funding carry, perp/spot basis, delisting shorts | Need shorting; Binance perps aren't offered to Australian retail (P5 parked). The delisting short was also mostly not shortable on Binance (findings 11) |
 | Options volatility premium | Needs selling options |
+| Perp positioning: funding extremes, open-interest divergence (outside review, 2026-11-16) | As trades they need perps. As a long-only spot signal, funding was already tested as a picker and lost (findings 14). Open-interest history isn't stored; Binance serves only about the last month, so it would be recorded forward like liquidations |
 | Liquidation, order-book and lead-lag trading at minute horizons | Costs at 330 USDT rule out minute horizons (the cost gate and three failed 1-5 minute strategies) |
 
 ## Rules every test follows

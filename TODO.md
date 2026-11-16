@@ -25,6 +25,9 @@ Rules live in CLAUDE.md; results in `research/findings.md`; ideas not yet schedu
       small coins, so it belongs with the altcoin portfolio below.
 - [ ] `shorting-the-delisting-window-with-perps` (INSUFFICIENT) is the one open study note:
       reject it, or leave it open for when shorting is possible.
+- [ ] Proposal (outside review, 2026-11-16): add "independence" to the research process,
+      information only (never a pass test): correlation with the pursued strategies, in BTC
+      drawdowns too, and its return after removing BTC exposure. A rule change, so Luke's call.
 
 ## Next
 - [ ] Move paper trading to the Raspberry Pi (always on). Python environment, a systemd
@@ -38,6 +41,14 @@ Rules live in CLAUDE.md; results in `research/findings.md`; ideas not yet schedu
       coins (a picker inside the regime rule; findings 14 showed pickers alone lose with
       the market), the delisting exit rule, a note, the scorecard, and an unspent holdout
       (any coin but BTC, ETH and SOL).
+- [ ] Strategy overlap report (outside review, 2026-11-16): for the pursued strategies,
+      daily-return correlation (all days, and on BTC's drawdown days), share of each one's
+      return explained by BTC (beta), how each does when BTC is flat or falling. Descriptive,
+      no trials; pre-holdout backtests now, paper ledgers as they grow. Expect trend-vol-target
+      and btc-regime-trend to be largely one bet; G1 partly.
+- [ ] Disclose G1's survivorship: its 8 coins are today's large coins, so its 2018-25
+      backtest picks winners in hindsight (its holdout year used a basket fixed by volume
+      before 2025-11, so that test is clean). One line in findings and the paper note.
 - [ ] Strategies page: re-fetch a note when the browser tab regains focus (notes change
       from the CLI and the page shows a stale copy).
 
@@ -53,6 +64,9 @@ Rules live in CLAUDE.md; results in `research/findings.md`; ideas not yet schedu
 - [ ] News-tone study (`kestrel signal-study news-tone`): needs `kestrel ingest-news
       BTCUSDT ETHUSDT` first (about 40 minutes; GDELT rate-limits), then a note to freeze.
 - [ ] Exclude tokenized stocks (AAPLBUSDT...) from the universe before any holdout run.
+- [ ] Why G1 works (exploration mode, not trials, not evidence): the BTC filter alone, the
+      ranking alone, and risk-adjusted ranking (90-day return / volatility). Round 2 already
+      suggested the filter does most of the work. Nothing found here can change G1's rule.
 - [ ] Expectancy by conviction bucket (P2 leftover), once a strategy varies its sizing.
 - [ ] Dashboard at phone width: the top menu and pages spill off the screen.
 
