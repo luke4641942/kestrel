@@ -1,0 +1,28 @@
+{
+  "slug": "does-a-week-of-buyer-led-flow-pick-next-week-s",
+  "name": "Does a week of buyer-led flow pick next week's winners",
+  "created_at": "2026-11-16T00:01:22.984041+00:00",
+  "status": "rejected",
+  "history": [
+    {
+      "status": "idea",
+      "at": "2026-11-16T00:01:22.984041+00:00",
+      "reason": "Created"
+    },
+    {
+      "status": "specified",
+      "at": "2026-11-16T00:07:24.761450+00:00",
+      "reason": "v1 frozen"
+    },
+    {
+      "status": "backtested",
+      "at": "2026-11-16T00:07:38.872593+00:00",
+      "reason": "first run on v1"
+    },
+    {
+      "status": "rejected",
+      "at": "2026-11-16T00:29:15.394790+00:00",
+      "reason": "KILL, rejected with Luke's say-so (2026-11-16). 234 Sunday closes 2020-09 to 2025-10: slope +0.17% a week per SD with past week and size controlled, P(> 0) 86% (90% needed); the top fifth beat the average coin by 0.52% a week (P 96%, above the 0.31% hurdle), but the rule needed both. As money the top fifth lost 38% after costs (drawdown -92%) while the average liquid altcoin lost 57% and BTC made 102%: a coin picker only, worth considering inside a rule that decides when to hold altcoins."
+    }
+  ]
+}
