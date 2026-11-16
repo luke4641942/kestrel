@@ -6,17 +6,13 @@ Decisions and rules live in CLAUDE.md; results in `research/findings.md`.
 ## Waiting on Luke
 - [ ] Paper trading is live on the testnet (reloaded from ~/kestrel 2026-11-15): tvt-btc,
       tvt-eth, tvt-sol, hourly at 10 past. First runs OK: BTC bought 33%, ETH and SOL 0%.
+      Added 2026-11-16: brt-eth and brt-sol (btc-regime-trend, note
+      paper-trading-btc-regime-trend-on-eth-and-sol), first decision the 2026-11-15 bar:
+      both in cash (BTC 18% below its 50-day average; ETH -24%, SOL -30% over 30 days).
       Reviews every 3 months (next around 2027-02-15); failure-only check at 182 days
       (around 2027-05-15); verdict at 395 days (around 2027-12-14).
 
 ## Next
-- [ ] Two cross-sectional studies run 2026-11-16: funding KILL (wrong sign), taker flow
-      KILL (near miss; -38% as money). Findings item 14. Waiting on Luke: reject both notes?
-- [ ] btc-regime-trend on ETH and SOL: PURSUE (2026-11-16, Claude's call delegated by
-      Luke): passes every scorecard test but luck on both. Paper runner ready (2026-11-16:
-      refreshes BTC for btc_close, refuses missing inputs, replay matches the backtest).
-      Next: a paper-trading note for Luke to freeze, then testnet accounts beside
-      trend-vol-target on ETH and SOL.
 - [ ] Delistings study: run 2026-11-15, verdict EXIT RULE (coins fell 39.8% on average from
       the day after the announcement to removal; no rebound; findings item 11). Luke's call:
       write an exit-rule note (sell a held coin at the next open after its delisting is
@@ -55,6 +51,7 @@ Decisions and rules live in CLAUDE.md; results in `research/findings.md`.
 - [ ] HMM regime filter (backlog S2) as a strategy: needs a note that passes the entry bar.
 
 ## Done recently
+- 2026-11-16 Paper accounts brt-eth and brt-sol opened on the testnet (btc-regime-trend), loaded in launchd, first runs OK. Funding and taker-flow studies rejected (Luke).
 - 2026-11-16 Research tab: every decision by family, the luck bar over time (`/api/validation/history`), the findings. Next: talk through the exploration/confirmation rule (Luke).
 - 2026-11-16 Trend-vol-target on gold, EUR, GBP: fails on all three; dropped (Luke). Tabs reordered (Luke).
 - 2026-11-16 YouTube leftovers tested and dropped (Luke): order flow (ETH, SOL 5m), CHoCH + FVG (SOL 5m NY), Set and Forget (BTC, ETH 1H) all fail test 1. Engine: resting limit orders; spread-band fix for sub-daily bars.
