@@ -38,10 +38,9 @@ financing charge on both sides) and a Binance perp (its real funding). A result 
 be pursue or watch is recorded as **needs-shorting** (add the decision value when the first
 one lands: `kestrel.decisions` and the Research tab), never traded until a licensed route
 exists and Luke has checked the Swyftx employee trading policy.
-- [ ] Five shorting studies run (2026-11-16, findings 17). Luke: reject the four that failed
-      (btc-regime-trend mirror, G1 short side, symmetric trend-vol-target, long/short
-      momentum)? Cash-and-carry passed: close its note as validated and record it as
-      needs-shorting (add that decision value), and check the perp minimum order at 330 USDT.
+- [ ] Cash-and-carry passed (findings 17; on the Backtests page under "Hypothetical
+      shorting studies"). Luke: close its note as validated and record it as needs-shorting
+      (add that decision value)? Check the perp minimum order at 330 USDT.
 - [ ] Delisting short: the open note `shorting-the-delisting-window-with-perps` was
       INSUFFICIENT at 6 announcements (10 needed). Re-run once 10 exist, rather than reject.
 - [ ] Short before large token unlocks (sized against daily volume): needs an unlock
@@ -73,6 +72,8 @@ exists and Luke has checked the Swyftx employee trading policy.
 - [ ] Dashboard at phone width: the top menu and pages spill off the screen.
 
 ## Done recently
+- 2026-11-16 Five hypothetical shorting studies (findings 17): trend shorts and long/short
+  momentum failed (rejected, Luke); cash-and-carry passed.
 - 2026-11-16 rot-g1 opened (G1 pursued, G2 dropped; Luke); its paper note closed as paper.
 - 2026-11-16 Basket paper trading on the Binance testnet: a multi-coin venue, reconciliation
   summed over every testnet account, a basket kill switch, `paper track` and the Trading
