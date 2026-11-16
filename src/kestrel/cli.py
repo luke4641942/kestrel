@@ -543,6 +543,92 @@ def overlap_report(
         typer.echo(f"  mix without {n:<12} {s:.2f}")
 
 
+@app.command("short-study")
+def short_study(
+    name: Annotated[
+        str,
+        typer.Argument(
+            help="btc-regime-trend, btc-rotation, trend-vol-target, long-short-momentum or "
+            "cash-and-carry."
+        ),
+    ],
+    research_dir: ResearchDir = Path("research"),
+    data_dir: DataDir = Path("data"),
+    config: Annotated[
+        Path, typer.Option("--config", envvar="KESTREL_CONFIG", help="Config file.")
+    ] = Path("kestrel.toml"),
+) -> None:
+    """A hypothetical shorting study (TODO.md, "Shorting research"), run once from its
+    frozen note, before the holdout. Each market is logged as a trial; a pass is
+    needs-shorting, never traded."""
+    from kestrel.data.panel import load_panel
+    from kestrel.studies import shorting
+    from kestrel.studies.cross_section import perp_funding
+    from kestrel.validation.deflated import deflated_sharpe, trial_set
+    from kestrel.validation.log import Look, Study, ValidationLog
+
+    if name not in shorting.NOTES:
+        typer.echo(f"no shorting study {name!r}; one of {', '.join(shorting.NOTES)}", err=True)
+        raise typer.Exit(code=1)
+    slug, implementation = shorting.NOTES[name]
+    store = ResearchStore(research_dir)
+    try:
+        s, note = store.require_testable(slug)
+        if note.implementation != implementation:
+            raise ValueError(f"{slug} names {note.implementation}, not {implementation}")
+        cfg = load_config(config)
+        holdout = cfg.backtest.holdout_start
+        last = holdout - timedelta(days=1)
+        bars = ParquetStore(data_dir)
+
+        def panel_for(coins: list[str]) -> pl.DataFrame:
+            panel: pl.DataFrame = load_panel(
+                bars, coins, Interval.D1, Month(2017, 8), Month(last.year, last.month)
+            )
+            return panel.filter(pl.col("open_time") < holdout)
+
+        def funding_for(coin: str) -> pl.DataFrame | None:
+            f = perp_funding(str(data_dir), coin)
+            return None if f is None else f.filter(pl.col("time") < holdout)
+
+        tiers = [(float(v), float(b) / 1e4) for v, b in cfg.universe.spread_tiers]
+        exploration = sorted(cfg.split.exploration) if cfg.split else None
+        outcome = shorting.run_note(
+            name, panel_for, funding_for, tiers, float(cfg.costs.taker_fee_bps) / 1e4,
+            exploration,
+        )  # fmt: skip
+    except (ConfigError, ValueError) as e:
+        typer.echo(str(e), err=True)
+        raise typer.Exit(code=1) from None
+    log = ValidationLog(data_dir)
+    first = outcome.results[0]
+    span = (str(getattr(first, "first", "")), str(getattr(first, "last", "")))
+    for market, sharpe in outcome.looks:
+        log.save(
+            Study(
+                kind="short-study", strategy=implementation, symbol=market, interval="1d",
+                start=span[0], end=span[1], looks=[Look({}, sharpe)], verdict=outcome.verdict,
+                detail={"note": slug, "hypothetical": True},
+            )
+        )  # fmt: skip
+    trials = trial_set(RunStore(data_dir).summaries(), log.studies())
+    for r in outcome.results:
+        if isinstance(r, shorting.LegResult):
+            r.deflated = deflated_sharpe(r.sharpe, r.days, r.skew, r.kurtosis, trials)
+        elif isinstance(r, shorting.NeutralResult):
+            r.deflated = deflated_sharpe(r.sharpe, r.days, None, None, trials)
+    text = outcome.text
+    if any(isinstance(r, shorting.LegResult) for r in outcome.results):
+        legs = [r for r in outcome.results if isinstance(r, shorting.LegResult)]
+        need = 1 if name == "btc-rotation" else 2
+        text = shorting.format_leg(text.splitlines()[0], legs, need)
+    elif isinstance(first, shorting.NeutralResult):
+        text = shorting.format_neutral(first)
+    store.mark_backtested(s.slug, note.version)
+    typer.echo(text)
+    typer.echo(f"\nLogged {len(outcome.looks)} trial(s); the main pool now has {trials.count}.")
+
+
 @app.command("cross-study")
 def cross_study(
     signal: Annotated[str, typer.Argument(help="funding or taker-flow.")],
