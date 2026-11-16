@@ -23,6 +23,9 @@ Status as of 2026-11-16.
 
 ## Out of reach for this account
 
+Shorting ideas are studied hypothetically (TODO.md, "Shorting research"); a result that
+would be pursued is recorded as needs-shorting, not traded.
+
 | Idea | Why |
 |---|---|
 | Funding carry, perp/spot basis, delisting shorts | Need shorting; Binance perps aren't offered to Australian retail (P5 parked). The delisting short was also mostly not shortable on Binance (findings 11) |

@@ -23,8 +23,6 @@ Rules live in CLAUDE.md; results in `research/findings.md`; ideas not yet schedu
 - [ ] Delisting exit rule (findings 11): write a note (sell a held coin at the next open
       after its delisting is announced), or park it. Only matters for a strategy that holds
       small coins, so it belongs with the altcoin portfolio below.
-- [ ] `shorting-the-delisting-window-with-perps` (INSUFFICIENT) is the one open study note:
-      reject it, or leave it open for when shorting is possible.
 - [ ] Proposal (outside review, 2026-11-16): add "independence" to the research process,
       information only (never a pass test): correlation with the pursued strategies, in BTC
       drawdowns too, and its return after removing BTC exposure. A rule change, so Luke's call.
@@ -51,6 +49,31 @@ Rules live in CLAUDE.md; results in `research/findings.md`; ideas not yet schedu
       before 2025-11, so that test is clean). One line in findings and the paper note.
 - [ ] Strategies page: re-fetch a note when the browser tab regains focus (notes change
       from the CLI and the page shows a stale copy).
+
+## Shorting research (hypothetical; Luke, 2026-11-16)
+Nothing here can be traded yet: retail shorting in Australia is CFDs at 2:1 (Eightcap,
+Swyftx Leverage), and real perps are wholesale-only (Coinbase AU). Each is a frozen note,
+its runs count as trials, costed both ways: an Eightcap-style CFD (spread plus a nightly
+financing charge on both sides) and a Binance perp (its real funding). A result that would
+be pursue or watch is recorded as **needs-shorting** (add the decision value when the first
+one lands: `kestrel.decisions` and the Research tab), never traded until a licensed route
+exists and Luke has checked the Swyftx employee trading policy.
+- [ ] Short leg for the regime strategies: short BTC (or the weakest coins) while the BTC
+      regime is off, where btc-regime-trend and G1 now sit in cash. Outside evidence:
+      time-series momentum works on both sides (Moskowitz, Ooi, Pedersen 2012).
+- [ ] Long/short momentum among large coins: long the strongest, short the weakest, near
+      market-neutral. Outside evidence: crypto momentum factor (Liu, Tsyvinski, Wu 2022).
+      Answers the outside review's independence point; findings 14's long-only pickers lost
+      with the market, which a short side removes.
+- [ ] Cash-and-carry: long spot, short the perp, collect funding (history on hand for 318
+      perps). Needs a real perp; a CFD pays financing instead. Outside evidence: crypto
+      carry (Schmeling, Schrimpf, Todorov 2023).
+- [ ] Delisting short: the open note `shorting-the-delisting-window-with-perps` was
+      INSUFFICIENT at 6 announcements (10 needed). Re-run once 10 exist, rather than reject.
+- [ ] Short before large token unlocks (sized against daily volume): needs an unlock
+      history first (backlog).
+- [ ] Before each: a cheap check that the account size works (CFD minimums, margin at 2:1
+      on about 330 USDT).
 
 ## Later
 - [ ] Record Binance's live liquidation and order-book streams on the Pi: forward data,

@@ -225,6 +225,10 @@ Agreed with Luke; don't re-litigate without a reason.
   drawdown is a floor, not a forecast. Capacity is out of scope.
 
 ## Parked
+- **Hypothetical shorting studies** (Luke, 2026-11-16) are allowed: frozen notes, counted
+  trials, costed as a 2:1 CFD (spread plus financing) and as a Binance perp (funding). A
+  result that would be pursue or watch is recorded as `needs-shorting`: never traded until
+  a licensed retail route exists. List in TODO.md.
 - **P5 perps.** Binance doesn't offer futures to Australian retail (licence cancelled April
   2023; Federal Court penalty reported March 2026); ASIC caps retail crypto CFD leverage at
   2:1. Revisit only if a spot strategy passes and shorting would clearly help. Never route
