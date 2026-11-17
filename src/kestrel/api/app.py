@@ -52,6 +52,7 @@ from kestrel.api.models import (
     PaperEventOut,
     PaperFillOut,
     PaperSummaryOut,
+    PaperTotalOut,
     PaperTrackingOut,
     ParamOut,
     QualityOut,
@@ -628,25 +629,57 @@ def create_app(
         """Every paper account. Accounts are opened and run from the CLI only."""
         return [_paper_summary(paper.PaperAccount(data_dir, n)) for n in paper.accounts(data_dir)]
 
+    def _tracked(account: paper.PaperAccount) -> tracking.Tracking:
+        """An account against its replay on the simulated venue (the model)."""
+        terms = account.terms()
+        spec = spec_for(terms.strategy)
+        if spec.universe:
+            panel = paper.basket_panel(store, terms, list(spec.assets), datetime.now(UTC))
+            return tracking.track_basket(account, panel, load_config(config_path))
+        bars = attach_features(
+            store.read(terms.symbol, terms.interval),
+            spec.features,
+            terms.symbol,
+            terms.interval,
+            data_dir,
+        )
+        return tracking.track(account, bars, load_config(config_path))
+
+    @api.get("/paper-total")
+    def paper_total() -> PaperTotalOut:
+        """Every paper account added up, against the model's accounts added up."""
+        names = paper.accounts(data_dir)
+        parts = []
+        for n in names:
+            account = paper.PaperAccount(data_dir, n)
+            terms = account.terms()
+            parts.append((terms.initial_cash, _tracked(account), terms.interval.duration))
+        total = tracking.combine(parts)
+
+        def series(values: list[Decimal]) -> Series:
+            frame = pl.DataFrame(
+                {"close_time": total.times, "equity": [float(v) for v in values]},
+                schema={"close_time": pl.Datetime("us", "UTC"), "equity": pl.Float64},
+            )
+            return _series(frame) if frame.height else Series(time=[], equity=[], drawdown=[])
+
+        return PaperTotalOut(
+            accounts=len(names),
+            initial_cash=float(total.initial),
+            equity=float(total.equity[-1]) if total.equity else None,
+            expected_equity=float(total.expected[-1]) if total.expected else None,
+            profit=None if total.profit is None else float(total.profit),
+            equity_series=series(total.equity),
+            expected=series(total.expected),
+        )
+
     @api.get("/paper/{name}")
     def get_paper(name: str) -> PaperDetailOut:
         if name not in paper.accounts(data_dir):
             raise HTTPException(status.HTTP_404_NOT_FOUND, "no such paper account")
         account = paper.PaperAccount(data_dir, name)
         terms = account.terms()
-        spec = spec_for(terms.strategy)
-        if spec.universe:
-            panel = paper.basket_panel(store, terms, list(spec.assets), datetime.now(UTC))
-            tracked = tracking.track_basket(account, panel, load_config(config_path))
-        else:
-            bars = attach_features(
-                store.read(terms.symbol, terms.interval),
-                spec.features,
-                terms.symbol,
-                terms.interval,
-                data_dir,
-            )
-            tracked = tracking.track(account, bars, load_config(config_path))
+        tracked = _tracked(account)
         step = terms.interval.duration
 
         def series(times: list[datetime], values: list[float]) -> Series:

@@ -4,7 +4,8 @@ import { EquityChart } from "../components/EquityChart";
 import { Empty, PageHeader, Panel, Section, Stat, Status } from "../components/ui";
 import { date, dateTime } from "../format";
 import { useResource } from "../hooks";
-import { holdingView, isBasket, targetsText, trackingVerdict, venueLabel } from "../paperView";
+import { holdingView, isBasket, targetsText, totalView, trackingVerdict, venueLabel } from "../paperView";
+import { money } from "../summary";
 
 const usd = (x: number | null) => (x === null ? "n/a" : x.toLocaleString("en-AU", { minimumFractionDigits: 2, maximumFractionDigits: 2 }));
 const pct = (x: number) => `${(x * 100).toFixed(0)}%`;
@@ -46,6 +47,7 @@ export function Trading() {
         </Panel>
       ) : (
         <>
+          <TotalView />
           <Section title="Accounts">
             <AccountsTable list={list} current={current?.name} onSelect={setChosen} />
           </Section>
@@ -53,6 +55,61 @@ export function Trading() {
         </>
       )}
     </>
+  );
+}
+
+const signedPct = (x: number, digits = 2) => `${x >= 0 ? "+" : "−"}${Math.abs(x * 100).toFixed(digits)}%`;
+
+/** Every account added up: the whole paper book's equity and net profit, against the
+ * model's accounts added up. */
+function TotalView() {
+  const total = useResource(api.paperTotal, [], 60_000);
+  const t = total.data;
+  if (!t || t.accounts === 0) return null;
+  const v = totalView(t);
+  return (
+    <Section
+      title="All accounts"
+      description={`Every paper account added up: ${t.accounts} accounts, ${usd(t.initial_cash)} USDT of starting cash. An account counts its starting cash until its first mark.`}
+    >
+      <div className="run-stack">
+        <Panel>
+          <div className="stats">
+            <Stat
+              label="Net profit"
+              value={v ? `${money(v.profit)} USDT` : "n/a"}
+              note={v ? `${signedPct(v.share)} on ${usd(t.initial_cash)} USDT` : "No marks yet"}
+            />
+            <Stat label="Equity" value={`${usd(t.equity)} USDT`} note={`Model: ${usd(t.expected_equity)} USDT`} />
+            <Stat
+              label="Against the model"
+              value={v?.model === null || v?.model === undefined ? "n/a" : signedPct(v.model)}
+              note="Fills, missed days and fees, added up"
+            />
+          </div>
+        </Panel>
+        {t.equity_series.time.length > 1 ? (
+          <Panel pad>
+            <div className="chart-top">
+              <span className="small secondary">All accounts' equity in USDT (log scale), drawdown underneath</span>
+              <span className="cost-key">
+                <span>
+                  <i className="swatch" style={{ background: "var(--text)" }} />
+                  Paper accounts
+                </span>
+                <span>
+                  <i className="swatch swatch-dashed" />
+                  Model (backtest replay)
+                </span>
+              </span>
+            </div>
+            <EquityChart equity={t.equity_series} benchmark={t.expected} />
+          </Panel>
+        ) : (
+          <p className="small tertiary">The chart starts once the accounts have two marks.</p>
+        )}
+      </div>
+    </Section>
   );
 }
 

@@ -389,6 +389,20 @@ export interface PaperSummary {
   halted: string | null;
 }
 
+/** Every paper account added up, against the model's accounts added up. */
+export interface PaperTotal {
+  accounts: number;
+  /** Every account's starting cash, added up (USDT). */
+  initial_cash: number;
+  /** At the latest mark; null before any. */
+  equity: number | null;
+  expected_equity: number | null;
+  /** Equity less starting cash. */
+  profit: number | null;
+  equity_series: EquitySeries;
+  expected: EquitySeries;
+}
+
 export interface PaperDetail extends PaperSummary {
   equity_series: EquitySeries;
   /** The same account replayed on the simulated venue: the backtest model. */
@@ -715,6 +729,7 @@ export const api = {
   validationHistory: () => request<LuckPoint[]>("/validation/history"),
   decisions: () => request<Decision[]>("/decisions"),
   paper: () => request<PaperSummary[]>("/paper"),
+  paperTotal: () => request<PaperTotal>("/paper-total"),
   paperAccount: (name: string) => request<PaperDetail>(`/paper/${enc(name)}`),
   holdout: () => request<HoldoutRecord[]>("/holdout"),
   costGate: () => request<CostGate[]>("/cost-gate"),

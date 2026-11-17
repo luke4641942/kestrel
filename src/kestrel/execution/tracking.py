@@ -17,7 +17,7 @@ from __future__ import annotations
 
 import tempfile
 from dataclasses import dataclass, replace
-from datetime import datetime
+from datetime import datetime, timedelta
 from decimal import Decimal
 from typing import Any
 
@@ -213,3 +213,39 @@ def format_tracking(name: str, t: Tracking) -> str:
         f"{bps(t.mean_cost(expected=True))} modelled",
     ]
     return "\n".join(lines)
+
+
+@dataclass(frozen=True)
+class Combined:
+    """Every paper account added up: the whole paper book against its model."""
+
+    times: list[datetime]
+    """Each bar close any account was marked at."""
+    equity: list[Decimal]
+    expected: list[Decimal]
+    initial: Decimal
+    """Every account's starting cash, added up."""
+
+    @property
+    def profit(self) -> Decimal | None:
+        return self.equity[-1] - self.initial if self.equity else None
+
+
+def combine(accounts: list[tuple[Decimal, Tracking, timedelta]]) -> Combined:
+    """Add accounts up at every bar close any of them was marked at. An account counts its
+    starting cash before its first mark and its latest mark after its last (a halted
+    account holds what it held). ``accounts``: (starting cash, its tracking, bar length)."""
+    timelines = [
+        (cash, {d.bar + step: (d.equity, d.expected) for d in t.days}) for cash, t, step in accounts
+    ]
+    times = sorted({at for _, marks in timelines for at in marks})
+    equity: list[Decimal] = []
+    expected: list[Decimal] = []
+    last = [(cash, cash) for cash, _ in timelines]
+    for at in times:
+        for k, (_, marks) in enumerate(timelines):
+            if at in marks:
+                last[k] = marks[at]
+        equity.append(sum((e for e, _ in last), Decimal(0)))
+        expected.append(sum((x for _, x in last), Decimal(0)))
+    return Combined(times, equity, expected, sum((c for c, _ in timelines), Decimal(0)))

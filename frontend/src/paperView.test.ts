@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { PaperDetail } from "./api";
-import { holdingView, isBasket, targetsText, trackingVerdict, venueLabel } from "./paperView";
+import { holdingView, isBasket, targetsText, totalView, trackingVerdict, venueLabel } from "./paperView";
 
 export function paperDetail(over: Partial<PaperDetail> = {}, tracking: Partial<PaperDetail["tracking"]> = {}): PaperDetail {
   return {
@@ -54,5 +54,19 @@ describe("baskets", () => {
   it("puts a basket decision in a line, largest first", () => {
     expect(targetsText({ SOLUSDT: 0.15, DOGEUSDT: 0.17, BTCUSDT: null })).toBe("DOGE 17%, SOL 15%, BTC kept");
     expect(targetsText({})).toBe("Cash");
+  });
+});
+
+describe("totalView", () => {
+  const total = { accounts: 2, initial_cash: 660, equity: 693, expected_equity: 700, profit: 33,
+    equity_series: { time: [], equity: [], drawdown: [] }, expected: { time: [], equity: [], drawdown: [] } };
+  it("gives net profit, its share of the starting cash, and the gap to the model", () => {
+    const v = totalView(total)!;
+    expect(v.profit).toBe(33);
+    expect(v.share).toBeCloseTo(0.05);
+    expect(v.model).toBeCloseTo(-0.01);
+  });
+  it("is empty before any mark", () => {
+    expect(totalView({ ...total, equity: null, profit: null })).toBeNull();
   });
 });

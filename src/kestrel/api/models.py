@@ -873,6 +873,22 @@ class PaperTrackingOut(BaseModel):
     expected_bps: float | None
 
 
+class PaperTotalOut(BaseModel):
+    """Every paper account added up (kestrel.execution.tracking.combine)."""
+
+    accounts: int
+    initial_cash: float
+    """Every account's starting cash, added up (USDT)."""
+    equity: float | None
+    """At the latest mark; None before any."""
+    expected_equity: float | None
+    """The model's (the accounts replayed on the simulated venue), added up."""
+    profit: float | None
+    """Equity less starting cash."""
+    equity_series: Series
+    expected: Series
+
+
 class PaperDetailOut(PaperSummaryOut):
     equity_series: Series
     """The account's marks."""

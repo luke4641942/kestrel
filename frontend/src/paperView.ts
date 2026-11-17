@@ -1,6 +1,6 @@
 // Plain logic behind the Trading page: how a paper account is tracking its model, in one
 // line. Kept out of components so it can be tested directly.
-import type { PaperDetail, PaperSummary } from "./api";
+import type { PaperDetail, PaperSummary, PaperTotal } from "./api";
 import type { Tone } from "./components/ui";
 
 /** The verdict that matters first: do decisions match the backtest's code, and how far
@@ -55,4 +55,15 @@ export function targetsText(targets: Record<string, number | null>): string {
     .sort(([, a], [, b]) => (b ?? 0) - (a ?? 0))
     .map(([s, w]) => (w === null ? `${coin(s)} kept` : `${coin(s)} ${(w * 100).toFixed(0)}%`));
   return parts.length ? parts.join(", ") : "Cash";
+}
+
+/** The whole paper book in numbers: net profit in USDT and as a share of the starting
+ * cash, and how far it is from the model. Null before any account has been marked. */
+export function totalView(t: PaperTotal): { profit: number; share: number; model: number | null } | null {
+  if (t.equity === null || t.profit === null || t.initial_cash <= 0) return null;
+  return {
+    profit: t.profit,
+    share: t.profit / t.initial_cash,
+    model: t.expected_equity === null ? null : t.equity / t.expected_equity - 1,
+  };
 }

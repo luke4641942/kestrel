@@ -94,3 +94,51 @@ def test_a_basket_account_shows_its_coins_targets_and_tracks_the_model(tmp_path:
     assert d["positions"] == {
         k: pytest.approx(float(v)) for k, v in account.state().positions.items()
     }
+
+
+def test_every_account_added_up(tmp_path: Path) -> None:
+    from datetime import timedelta
+
+    from kestrel.execution.tracking import DayTrack, Tracking, combine
+
+    day = timedelta(days=1)
+
+    def tracked(start: int, values: list[int]) -> Tracking:
+        zero = Decimal(0)
+        days = [
+            DayTrack(T0 + (start + i) * day, Decimal(v), Decimal(v - 1), zero, zero, False)
+            for i, v in enumerate(values)
+        ]
+        return Tracking(days, [])
+
+    # A opens first; B a day later; A then stops (halted): it keeps its last equity.
+    total = combine(
+        [(Decimal(100), tracked(0, [101, 103]), day), (Decimal(50), tracked(1, [52, 55]), day)]
+    )
+    assert total.times == [T0 + day, T0 + 2 * day, T0 + 3 * day]  # marked at each close
+    assert total.equity == [
+        Decimal(151),
+        Decimal(155),
+        Decimal(158),
+    ]  # B counts its cash before its first mark
+    assert total.expected == [Decimal(150), Decimal(153), Decimal(156)]
+    assert (total.initial, total.profit) == (Decimal(150), Decimal(8))
+    assert combine([]).profit is None
+
+    frame = walk(120)
+    ParquetStore(tmp_path).write("BTCUSDT", Interval.D1, frame)
+    client = TestClient(create_app(tmp_path, static_dir=None, config_path=REPO_CONFIG))
+    empty = client.get("/api/paper-total").json()
+    assert (empty["accounts"], empty["equity"], empty["equity_series"]["time"]) == (0, None, [])
+    for name in ("a", "b"):
+        terms = Terms(name, "ma-trend", "BTCUSDT", Interval.D1, {"fast": 5, "slow": 20},
+                      Decimal(330), T0)  # fmt: skip
+        run(PaperAccount.open(tmp_path, terms), frame, load_config(REPO_CONFIG))
+    one = client.get("/api/paper/a").json()
+    both = client.get("/api/paper-total").json()
+    assert (both["accounts"], both["initial_cash"]) == (2, 660)
+    assert both["equity_series"]["equity"] == pytest.approx(
+        [2 * e for e in one["equity_series"]["equity"]]
+    )
+    assert both["profit"] == pytest.approx(both["equity"] - 660)
+    assert both["expected"]["equity"] == pytest.approx(both["equity_series"]["equity"])  # sim

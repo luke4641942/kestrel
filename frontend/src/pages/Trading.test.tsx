@@ -17,6 +17,11 @@ const summary = (name: string, halted: string | null = null) => {
 };
 
 beforeEach(() => {
+  api.paperTotal = vi.fn().mockResolvedValue({
+    accounts: 2, initial_cash: 660, equity: 693, expected_equity: 700, profit: 33,
+    equity_series: { time: [1, 2], equity: [660, 693], drawdown: [0, 0] },
+    expected: { time: [1, 2], equity: [660, 700], drawdown: [0, 0] },
+  });
   api.paper = vi.fn().mockResolvedValue([summary("btc"), summary("eth", "killed: drill")]);
   api.paperAccount = vi.fn().mockImplementation((name: string) =>
     Promise.resolve(
@@ -40,11 +45,20 @@ describe("Trading", () => {
     expect(await screen.findByText(/Decisions match the model on all 2 days/)).toBeInTheDocument();
     const rows = screen.getAllByRole("row").slice(1, 3);
     expect(within(rows[1]!).getByText("Halted")).toBeInTheDocument();
-    expect(screen.getByTestId("equity-chart")).toBeInTheDocument();
+    expect(screen.getAllByTestId("equity-chart")).toHaveLength(2);  // all accounts, then this one
     expect(screen.getByText("-155.7 bps")).toBeInTheDocument();
     expect(screen.getByText("Missed: the run was late")).toBeInTheDocument();
     expect(screen.getByText(/Testnet fills come from Binance's test order book/)).toBeInTheDocument();
     expect(screen.getByText(/kestrel kill btc --reason/)).toBeInTheDocument();
+  });
+
+  it("adds every account up, with net profit and a chart against the model", async () => {
+    render(<Trading />);
+    expect(await screen.findByText("All accounts")).toBeInTheDocument();
+    expect(screen.getByText("+33.00 USDT")).toBeInTheDocument();
+    expect(screen.getByText("+5.00% on 660.00 USDT")).toBeInTheDocument();
+    expect(screen.getByText("−1.00%")).toBeInTheDocument();
+    expect(screen.getByText("Paper accounts")).toBeInTheDocument();
   });
 
   it("shows why a halted account is halted, and how to resume it", async () => {
