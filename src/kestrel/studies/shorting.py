@@ -770,6 +770,7 @@ NOTES = {
         "study:long-short-momentum",
     ),
     "cash-and-carry": ("cash-and-carry-on-btc-eth-and-sol-perps", "study:cash-and-carry"),
+    "perp-listing": ("shorting-new-perp-listings-hedged-with-btc", "study:short-perp-listing"),
 }
 """Each study: the frozen note that pre-registers it and the implementation it names."""
 
@@ -803,6 +804,7 @@ def run_note(
     tiers: Sequence[tuple[float, float]],
     fee: float,
     exploration: list[str] | None = None,
+    holdout: datetime | None = None,
 ) -> Outcome:
     """Run study ``name`` (a key of NOTES). ``panel_for(coins)`` loads daily bars before
     the holdout (kestrel.data.panel.load_panel's shape); ``funding_for(coin)`` a coin's perp
@@ -876,6 +878,23 @@ def run_note(
         return Outcome(name, format_carry(res), [("UNIVERSE", annual_sharpe)],
                        "NEEDS-SHORTING" if res.passes else "DROP", {}, [res],
                        curves)  # fmt: skip
+    if name == "perp-listing":
+        from kestrel.studies.events import perp_listings
+
+        if exploration is None or holdout is None:
+            raise ValueError("the perp-listing short needs the exploration split and the holdout")
+        coins = sorted(set(exploration) | {btc, "ETHUSDT", "SOLUSDT"})
+        funding = {s: funding_for(s) for s in coins}
+        g = grid(panel_for(coins), funding, tiers)
+        first = {
+            s: (None if f is None or f.height == 0 else f["time"].min()) for s, f in funding.items()
+        }
+        found = [(e.coin, e.day) for e in perp_listings(g, first, holdout)]  # type: ignore[arg-type]
+        short, sim = listing_short_result(g, found, fee, market_returns(g, btc))
+        curves = {"Short new perps, long BTC": (sim.days, sim.total)}
+        return Outcome(name, format_listing_short(short), [("UNIVERSE", short.sharpe)],
+                       "NEEDS-SHORTING" if short.passes else "DROP", {}, [short],
+                       curves)  # fmt: skip
     raise ValueError(f"no shorting study {name!r}; one of {', '.join(NOTES)}")
 
 
@@ -918,3 +937,146 @@ def load_all(data_dir: Path | str) -> list[dict[str, Any]]:
     """Every saved shorting study, passes first, then by name."""
     found = [json.loads(p.read_text()) for p in (Path(data_dir) / "shorting").glob("*.json")]
     return sorted(found, key=lambda d: (d["verdict"] != "NEEDS-SHORTING", d["name"]))
+
+
+# ---------- shorting new perp listings, hedged with BTC (note 6) ----------
+
+SLOTS = 3
+LEG = 2 / 9
+"""Each leg of a slot, as a share of equity: 2/9 in BTC plus 1/9 of perp margin is 1/3."""
+HOLD_DAYS = 30
+
+
+@dataclass
+class ListingShortResult:
+    days: int
+    first: date
+    last: date
+    trades: int
+    skipped: int
+    """Events that found every slot full."""
+    per_trade: list[float]
+    """Each trade's net return on its slot's third of equity."""
+    mean_trade: float
+    p: float
+    beta: float
+    years: dict[int, float]
+    max_drawdown: float
+    break_even: float | None
+    sharpe: float
+    ret: float
+    close_outs: int
+    funding: float
+    """Funding over the whole run, as a return on equity (+ earned by the shorts)."""
+    unhedged_ret: float
+    unhedged_mean_trade: float
+    skew: float
+    kurtosis: float
+    deflated: float | None = None
+    tests: dict[str, bool] = field(default_factory=dict)
+
+    @property
+    def passes(self) -> bool:
+        return all(self.tests.values())
+
+
+def listing_slots(g: Grid, events: list[tuple[str, date]]) -> tuple[list[tuple[int, int]], int]:
+    """(coin column, day-0 index) of each trade taken, first come first served (ties by
+    coin), at most SLOTS open at once; and how many events were skipped for a full book."""
+    index = {d: i for i, d in enumerate(g.days)}
+    col = {s: j for j, s in enumerate(g.symbols)}
+    taken: list[tuple[int, int]] = []
+    skipped = 0
+    for coin, day in sorted(events, key=lambda e: (e[1], e[0])):
+        i = index[day]
+        open_now = sum(1 for _, k in taken if k < i < k + HOLD_DAYS)
+        same_day = sum(1 for _, k in taken if k == i)
+        if open_now + same_day >= SLOTS:
+            skipped += 1
+            continue
+        taken.append((col[coin], i))
+    return taken, skipped
+
+
+def listing_weights(
+    g: Grid, trades: list[tuple[int, int]], btc: int, hedge: bool = True
+) -> np.ndarray:
+    """Decided at day 0's close and held from day 1's open to day 31's: the coin short and
+    (with ``hedge``) BTC long, each LEG of equity."""
+    w = np.zeros_like(g.open)
+    for j, i in trades:
+        w[i : i + HOLD_DAYS, j] -= LEG
+        if hedge:
+            w[i : i + HOLD_DAYS, btc] += LEG
+    return w
+
+
+def listing_short_result(
+    g: Grid, events: list[tuple[str, date]], fee: float, btc_returns: np.ndarray
+) -> tuple[ListingShortResult, Sim]:
+    btc = g.symbols.index("BTCUSDT")
+    trades, skipped = listing_slots(g, events)
+    s = simulate(g, listing_weights(g, trades, btc), fee, "perp")
+    naked = simulate(g, listing_weights(g, trades, btc, hedge=False), fee, "perp")
+    per_trade: list[float] = []
+    per_naked: list[float] = []
+    for t in trades:
+        one = simulate(g, listing_weights(g, [t], btc), fee, "perp")
+        per_trade.append(float(one.total.sum()) * 3)  # on the slot's third of equity
+        bare = simulate(g, listing_weights(g, [t], btc, hedge=False), fee, "perp")
+        per_naked.append(float(bare.total.sum()) * 3)
+    r = s.total
+    years = np.array([d.year for d in s.days])
+    gross = float(s.long_gross.sum() + s.short_gross.sum())
+    costs = float(s.long_costs.sum() + s.short_costs.sum())
+    w = listing_weights(g, trades, btc)
+    pos = np.zeros_like(w)
+    pos[1:] = w[:-1]
+    keep = np.array([d >= START.date() for d in g.days])
+    keep[-1] = False
+    funding_earned = float((-np.minimum(pos, 0) * g.funding)[keep].sum())
+    centred = r - r.mean()
+    sd = r.std()
+    arr = np.array(per_trade)
+    res = ListingShortResult(
+        days=len(r), first=s.days[0], last=s.days[-1], trades=len(trades), skipped=skipped,
+        per_trade=per_trade, mean_trade=float(arr.mean()) if len(arr) else 0.0,
+        p=p_positive(arr, block=1) if len(arr) > 1 else 0.0,
+        beta=beta(r, btc_returns),
+        years={int(y): growth(r[years == y]) for y in YEARS if (years == y).any()},
+        max_drawdown=max_drawdown(r), break_even=gross / costs if costs > 0 and gross > 0 else None,
+        sharpe=sharpe(r), ret=growth(r), close_outs=s.close_outs, funding=funding_earned,
+        unhedged_ret=growth(naked.total),
+        unhedged_mean_trade=float(np.mean(per_naked)) if per_naked else 0.0,
+        skew=float((centred**3).mean() / sd**3) if sd > 0 else 0.0,
+        kurtosis=float((centred**4).mean() / sd**4) if sd > 0 else 3.0,
+    )  # fmt: skip
+    res.tests = {
+        "mean trade > 0 (P >= 95%)": res.mean_trade > 0 and res.p >= 0.95,
+        "near market-neutral (|beta| <= 0.3)": abs(res.beta) <= 0.3,
+        "positive in 4 of 6 years": sum(v > 0 for v in res.years.values()) >= 4,
+        "drawdown within 50%": res.max_drawdown >= -0.5,
+        "break-even cost >= 2x": (res.break_even or 0) >= 2,
+        "at least 30 trades": res.trades >= 30,
+    }
+    return res, s
+
+
+def format_listing_short(r: ListingShortResult) -> str:
+    lines = [
+        "Shorting new perp listings, hedged with BTC "
+        "(note shorting-new-perp-listings-hedged-with-btc)",
+        "",
+        f"{r.first} to {r.last}: {r.trades} trades, {r.skipped} events skipped (book full)",
+        f"  Return {r.ret:+.0%}, Sharpe {r.sharpe:.2f}, drawdown {r.max_drawdown:.0%}; "
+        f"{r.close_outs} close-outs; funding {r.funding:+.1%} of equity",
+        f"  Mean trade {r.mean_trade:+.1%} on its slot (P > 0 {r.p:.0%}); BTC beta {r.beta:.2f}; "
+        "break-even " + ("n/a" if r.break_even is None else f"{r.break_even:.1f}x costs"),
+        "  By year: " + ", ".join(f"{y} {v:+.0%}" for y, v in r.years.items()),
+        f"  Unhedged (the short alone): return {r.unhedged_ret:+.0%}, mean trade "
+        f"{r.unhedged_mean_trade:+.1%}",
+        f"  Deflated Sharpe {'n/a' if r.deflated is None else f'{r.deflated:.0%}'}",
+    ]
+    lines += [f"    {mark(ok)}  {name}" for name, ok in r.tests.items()]
+    lines.append(f"\nVerdict: {'NEEDS-SHORTING' if r.passes else 'DROP'}")
+    return "\n".join(lines)

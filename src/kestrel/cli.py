@@ -598,8 +598,8 @@ def short_study(
     name: Annotated[
         str,
         typer.Argument(
-            help="btc-regime-trend, btc-rotation, trend-vol-target, long-short-momentum or "
-            "cash-and-carry."
+            help="btc-regime-trend, btc-rotation, trend-vol-target, long-short-momentum, "
+            "cash-and-carry or perp-listing."
         ),
     ],
     research_dir: ResearchDir = Path("research"),
@@ -645,7 +645,7 @@ def short_study(
         exploration = sorted(cfg.split.exploration) if cfg.split else None
         outcome = shorting.run_note(
             name, panel_for, funding_for, tiers, float(cfg.costs.taker_fee_bps) / 1e4,
-            exploration,
+            exploration, holdout,
         )  # fmt: skip
     except (ConfigError, ValueError) as e:
         typer.echo(str(e), err=True)
@@ -667,6 +667,8 @@ def short_study(
             r.deflated = deflated_sharpe(r.sharpe, r.days, r.skew, r.kurtosis, trials)
         elif isinstance(r, shorting.NeutralResult):
             r.deflated = deflated_sharpe(r.sharpe, r.days, None, None, trials)
+        elif isinstance(r, shorting.ListingShortResult):
+            r.deflated = deflated_sharpe(r.sharpe, r.days, r.skew, r.kurtosis, trials)
     text = outcome.text
     if any(isinstance(r, shorting.LegResult) for r in outcome.results):
         legs = [r for r in outcome.results if isinstance(r, shorting.LegResult)]
@@ -674,6 +676,8 @@ def short_study(
         text = shorting.format_leg(text.splitlines()[0], legs, need)
     elif isinstance(first, shorting.NeutralResult):
         text = shorting.format_neutral(first)
+    elif isinstance(first, shorting.ListingShortResult):
+        text = shorting.format_listing_short(first)
     store.mark_backtested(s.slug, note.version)
     outcome.text = text
     from kestrel.provenance import code_version

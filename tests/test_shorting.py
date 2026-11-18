@@ -221,3 +221,34 @@ def test_a_saved_study_is_served_to_the_dashboard(tmp_path) -> None:  # type: ig
     assert curve["series"]["equity"] == pytest.approx([1.0, 1.01, 1.01, 1.0302])
     assert len(curve["series"]["time"]) == 4  # a start point one week before the first end
     assert curve["series"]["drawdown"][-1] == 0
+
+
+def test_perp_listing_shorts_take_at_most_three_slots_and_hedge_with_btc() -> None:
+    n = 120
+    days = [date(2020, 1, 1) + timedelta(days=i) for i in range(n)]
+    opens = np.full((n, 5), 100.0)
+    g = sh.Grid(
+        days, ["AUSDT", "BTCUSDT", "CUSDT", "DUSDT", "EUSDT"], opens, opens.copy(),
+        opens.copy(), np.full((n, 5), 1e-4), np.zeros((n, 5)), np.full((n, 5), 1e9),
+        np.tile(np.arange(1, n + 1, dtype=float)[:, None], (1, 5)), np.ones((n, 5), dtype=bool),
+    )  # fmt: skip
+    events = [("AUSDT", days[10]), ("CUSDT", days[12]), ("DUSDT", days[12]),
+              ("EUSDT", days[20]), ("EUSDT", days[45])]  # fmt: skip
+    trades, skipped = sh.listing_slots(g, events)
+    assert skipped == 1  # E on day 20 finds A, C and D still open
+    assert [(g.symbols[j], i) for j, i in trades] == [
+        ("AUSDT", 10), ("CUSDT", 12), ("DUSDT", 12), ("EUSDT", 45),
+    ]  # fmt: skip
+    w = sh.listing_weights(g, trades[:1], btc=1)
+    assert w[10, 0] == pytest.approx(-2 / 9)
+    assert w[39, 0] == pytest.approx(-2 / 9)  # decided at day 0 to day 29's closes
+    assert w[40, 0] == 0  # so held from day 1's open to day 31's
+    assert w[10, 1] == pytest.approx(2 / 9)
+    # A falls 10% over its 30 days, BTC is flat: the trade earns about 10% x 2/9 of equity,
+    # i.e. 6.7% on its slot's third, less costs.
+    g.open[11:42, 0] = np.linspace(100, 90, 31)
+    g.open[42:, 0] = 90
+    res, _ = sh.listing_short_result(g, [("AUSDT", days[10])], 0.0, np.zeros(n - 1))
+    assert res.trades == 1
+    assert res.per_trade[0] == pytest.approx(0.0667, abs=0.003)
+    assert res.unhedged_mean_trade == pytest.approx(res.per_trade[0], abs=0.002)  # BTC flat
