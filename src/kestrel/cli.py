@@ -543,6 +543,56 @@ def overlap_report(
         typer.echo(f"  mix without {n:<12} {s:.2f}")
 
 
+@app.command("event-study")
+def event_study(
+    event: Annotated[str, typer.Argument(help="perp-listing.")],
+    research_dir: ResearchDir = Path("research"),
+    data_dir: DataDir = Path("data"),
+    config: Annotated[
+        Path, typer.Option("--config", envvar="KESTREL_CONFIG", help="Config file.")
+    ] = Path("kestrel.toml"),
+) -> None:
+    """An event study (kestrel.studies.events), run once from its frozen note: what coins
+    do after an event, against the other coins at the same time, before the holdout.
+    Exploration-half coins plus BTC, ETH and SOL; never the locked confirmation half."""
+    from kestrel.data.panel import load_panel
+    from kestrel.studies import events
+    from kestrel.studies.cross_section import perp_funding
+
+    notes = {"perp-listing": ("does-a-perp-listing-mark-a-top", "study:perp-listing")}
+    if event not in notes:
+        typer.echo(f"no event study {event!r}; one of {', '.join(notes)}", err=True)
+        raise typer.Exit(code=1)
+    slug, implementation = notes[event]
+    store = ResearchStore(research_dir)
+    try:
+        s, note = store.require_testable(slug)
+        if note.implementation != implementation:
+            raise ValueError(f"{slug} names {note.implementation}, not {implementation}")
+        cfg = load_config(config)
+        if cfg.split is None:
+            raise ValueError("no exploration split; the study's universe is its exploration half")
+        holdout = cfg.backtest.holdout_start
+        last = holdout - timedelta(days=1)
+        coins = sorted(cfg.split.exploration | {"BTCUSDT", "ETHUSDT", "SOLUSDT"})
+        panel: pl.DataFrame = load_panel(
+            ParquetStore(data_dir), coins, Interval.D1, Month(2017, 8), Month(last.year, last.month)
+        )
+        panel = panel.filter(pl.col("open_time") < holdout)
+        first: dict[str, datetime | None] = {}
+        for c in coins:
+            f = perp_funding(str(data_dir), c)
+            first[c] = None if f is None or f.height == 0 else f["time"].min()  # type: ignore[assignment]
+        tiers = [(float(v), float(b) / 1e4) for v, b in cfg.universe.spread_tiers]
+        result, found = events.run_perp_listing(panel, first, holdout, tiers)
+    except (ConfigError, ValueError) as e:
+        typer.echo(str(e), err=True)
+        raise typer.Exit(code=1) from None
+    store.mark_backtested(s.slug, note.version)
+    typer.echo(events.format_result(f"Perp listings (note {slug})", result))
+    typer.echo(f"\n{len(found)} events found (the note counted 102 before any return was read).")
+
+
 @app.command("short-study")
 def short_study(
     name: Annotated[
