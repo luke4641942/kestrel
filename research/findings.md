@@ -282,6 +282,13 @@ from 2026-11-16) is the test that's left.
     portfolio: don't buy a coin, or hold it, through its first month of perps. Who pays,
     as the note argued: the perp lets pessimists in after a run (Hale et al. 2018 on
     Bitcoin's CME launch). The first run was void (findings, Mistakes).
+    As a trade it fails (note shorting-new-perp-listings-hedged-with-btc, hypothetical,
+    2026-11-18): shorting each new perp for 30 days against an equal BTC long, 3 at a time,
+    made +11% in six years (Sharpe 0.25), mean trade +2.3% on its slot (P 80%, 95% needed),
+    positive in 3 of 6 years, drawdown -56%. Three things ate the edge: 15 squeezes closed
+    shorts out at +50% in a day, new perps' negative funding cost 18% of equity (crowded
+    shorts pay), and 29 of 102 events found the book full. Unhedged, the short lost 68%.
+    DROP: the effect is real as a reason not to hold a coin, not as a short.
 
 ## The holdout year (2025-11 to 2026-10)
 
@@ -382,6 +389,7 @@ edge, and the holdout can't be used again for either strategy.
 | Long/short momentum, top 3 vs bottom 3 by 90 days, weekly (hypothetical) | Liquid exploration-half coins + BTC/ETH/SOL with a perp, 2020-01 to 2025-10 | +39%, Sharpe 0.44, mean week +0.13% (P 84%, 95% needed), beta -0.05, positive in 3 of 6 years; long leg +119%, short leg -50%. DROP | Rejected (Luke) |
 | Cash-and-carry: spot long, perp short while 7-day funding is positive (hypothetical) | BTC, ETH, SOL 2020-01 to 2025-10 | +6.6% a year on equity, P 100%, 5 of 6 years positive, drawdown -6.6% (basis not modelled), 53 trades, 14 margin calls: NEEDS-SHORTING (passes every test; needs a real perp) | Awaiting Luke |
 | Study: a coin's first perp listing | 102 exploration-half coins (+ BTC/ETH/SOL), perps first listed 2020-01 to 2025-09 | 30 days after vs the other coins: -15.2% (P(< 0) 100%, 75% below zero), below all 200 placebo draws (median -1.3%); +100% in the 30 days before. Median-coin benchmark -5.5%, BTC -7.9%: EXIT RULE | Validated (Luke); a rule for the altcoin portfolio |
+| Short new perp listings for 30 days, hedged with BTC (hypothetical) | Same 102 events, 3 slots, 2020-01 to 2025-10 | +11%, Sharpe 0.25, mean trade +2.3% (P 80%), 3 of 6 years positive, drawdown -56%; 15 squeeze close-outs, funding -18% of equity, 29 events skipped; unhedged -68%. DROP | Awaiting Luke |
 
 Each strategy was judged by its own note's pass test, written before it ran. From
 2026-11-14 every strategy is judged on one scorecard instead.
