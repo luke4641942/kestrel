@@ -310,6 +310,7 @@ STUDIES = {
     "study:funding-cross-section": "kestrel cross-study funding",
     "study:taker-flow": "kestrel cross-study taker-flow",
     "study:perp-listing": "kestrel event-study perp-listing",
+    "study:token-unlocks": "kestrel event-study token-unlocks",
     # Hypothetical shorting (Luke, 2026-11-16): a pass is recorded as needs-shorting.
     "study:short-btc-regime-trend": "kestrel short-study btc-regime-trend",
     "study:short-btc-rotation": "kestrel short-study btc-rotation",

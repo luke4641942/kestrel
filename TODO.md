@@ -31,13 +31,11 @@ Rules live in CLAUDE.md; results in `research/findings.md`; ideas not yet schedu
       from the CLI and the page shows a stale copy).
 
 ## Event studies (outside AI review, 2026-11-18)
-- [ ] Perp listings (findings 18): EXIT RULE, validated (Luke); a rule for the altcoin
-      portfolio beside the delisting one. Its hedged-short backtest failed (squeezes and
-      negative funding): Luke to reject `shorting-new-perp-listings-hedged-with-btc`?
-- [ ] Token unlocks: unblocked. DefiLlama's API is paid, but its public dataset files
-      (defillama-datasets.llama.fi/emissions/<protocol>) give 376 protocols' dated cliff
-      unlocks and a CoinGecko id to match Binance coins. Caveat for the note: schedules as
-      documented today, possibly revised since. Next: a note.
+- [x] Perp listings (findings 18): EXIT RULE, validated (Luke); the hedged short failed
+      and is rejected (Luke). A rule for the altcoin portfolio beside the delisting one.
+- [ ] Token unlocks: note `do-coins-fall-into-large-token-unlocks` drafted for Luke to
+      freeze (exit rule if coins lag the others by 3%+ in the 30 days before a 2%+ unlock).
+      After the freeze: ingest DefiLlama's files and the CoinGecko ticker map, count events.
 - [ ] Monitoring-tag drift: blocked on data. Binance's announcement feed holds 1 tag
       announcement in ~2,700 scanned (2026-11-18); the history would need another source.
 
