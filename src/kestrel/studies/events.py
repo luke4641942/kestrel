@@ -39,12 +39,15 @@ class Event:
 
 def window_return(g: Grid, j: int, i: int, start: int, end: int) -> float | None:
     """Coin ``j``'s return from the open of day i+start to the open of day i+end, or None
-    if either open is missing (or outside the data)."""
+    if either open is missing (or outside the data) or the window crosses a break in the
+    coin's history (a relisting or a token swap: nothing is computed across a gap)."""
     a, b = i + start, i + end
     if a < 0 or b >= len(g.days):
         return None
     lo, hi = g.open[a, j], g.open[b, j]
     if not (np.isfinite(lo) and np.isfinite(hi)) or lo <= 0:
+        return None
+    if g.age[b, j] - g.age[a, j] != b - a:
         return None
     return float(hi / lo - 1)
 
@@ -57,7 +60,8 @@ def abnormal(g: Grid, j: int, i: int, start: int, end: int) -> float | None:
     if own is None:
         return None
     lo, hi = g.open[a], g.open[b]
-    ok = np.isfinite(lo) & np.isfinite(hi) & (lo > 0)
+    unbroken = (g.age[b] - g.age[a]) == (b - a)
+    ok = np.isfinite(lo) & np.isfinite(hi) & (lo > 0) & unbroken
     ok[j] = False
     if not ok.any():
         return None

@@ -48,6 +48,17 @@ def test_abnormal_is_the_coin_less_the_other_coins() -> None:
     assert ev.window_return(g, 0, 45, 1, 31) is None  # past the data
 
 
+def test_nothing_is_measured_across_a_break_in_a_coins_history() -> None:
+    g = coins(3, 60)
+    g.open[:] = 100.0
+    g.open[20:, 1] = 10_000.0  # coin 1 is swapped 100:1 after a one-day gap
+    g.open[19, 1] = np.nan
+    g.age[20:, 1] = np.arange(1, 41)  # a new history starts
+    assert ev.window_return(g, 1, 0, 1, 31) is None
+    assert ev.abnormal(g, 0, 0, 1, 31) == pytest.approx(0.0)  # the swap isn't in the others
+    assert ev.window_return(g, 1, 20, 1, 31) == pytest.approx(0.0)  # inside one history: fine
+
+
 def test_a_planted_fall_is_found_and_the_placebo_sets_it_apart() -> None:
     g = coins(30, 1400, noise=0.002)  # quiet coins, so the planted fall is measured precisely
     events = []
