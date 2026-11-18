@@ -268,6 +268,21 @@ from 2026-11-16) is the test that's left.
     is about 73 USDT, which may be under a perp's minimum order (unchecked); and it needs a
     real perp, wholesale-only in Australia today. 8 trials (846 in all; luck bar 2.30).
 
+18. **A coin's first perp listing marks a local top (a study, 2026-11-18, `kestrel
+    event-study perp-listing`).** 102 coins of the exploration half (plus BTC, ETH, SOL)
+    whose Binance USDT-M perp first settled funding from 2020-01 on, with 60+ days of spot
+    before it. In the 30 days before the listing they rose +100% on average against the
+    other coins; in the 30 days after (from day 1's open) they lagged the other coins by
+    -15.2% on average (P(< 0) 100%; 75% of events below zero), every year from -2.7% (2022,
+    6 events) to -23.4% (2021), and worse than all 200 placebo draws of the same coins on
+    random days (placebo median -1.3%): EXIT RULE by the note. Robustness, deciding
+    nothing: against the median other coin -5.5% (median event -9.8%, 68% below zero),
+    against BTC -7.9% (median -17.5%); the coin's own return averaged +1.5% (median -8.3%),
+    so the rule is about relative weakness, not a guaranteed fall. For an altcoin
+    portfolio: don't buy a coin, or hold it, through its first month of perps. Who pays,
+    as the note argued: the perp lets pessimists in after a run (Hale et al. 2018 on
+    Bitcoin's CME launch). The first run was void (findings, Mistakes).
+
 ## The holdout year (2025-11 to 2026-10)
 
 Reserved on 2026-10-31, before any research, and read once on 2026-11-14 for the two watched
@@ -366,11 +381,20 @@ edge, and the holdout can't be used again for either strategy.
 | Trend-vol-target long and short, (up - down votes) / 3 (hypothetical) | BTC, ETH, SOL 1d 2020-01 to 2025-10 | Sharpe 0.82, 0.84, 0.97 vs 1.23, 1.28, 1.45 long-only; short legs -46%, -35%, -38%. DROP | Rejected (Luke) |
 | Long/short momentum, top 3 vs bottom 3 by 90 days, weekly (hypothetical) | Liquid exploration-half coins + BTC/ETH/SOL with a perp, 2020-01 to 2025-10 | +39%, Sharpe 0.44, mean week +0.13% (P 84%, 95% needed), beta -0.05, positive in 3 of 6 years; long leg +119%, short leg -50%. DROP | Rejected (Luke) |
 | Cash-and-carry: spot long, perp short while 7-day funding is positive (hypothetical) | BTC, ETH, SOL 2020-01 to 2025-10 | +6.6% a year on equity, P 100%, 5 of 6 years positive, drawdown -6.6% (basis not modelled), 53 trades, 14 margin calls: NEEDS-SHORTING (passes every test; needs a real perp) | Awaiting Luke |
+| Study: a coin's first perp listing | 102 exploration-half coins (+ BTC/ETH/SOL), perps first listed 2020-01 to 2025-09 | 30 days after vs the other coins: -15.2% (P(< 0) 100%, 75% below zero), below all 200 placebo draws (median -1.3%); +100% in the 30 days before. Median-coin benchmark -5.5%, BTC -7.9%: EXIT RULE | Awaiting Luke |
 
 Each strategy was judged by its own note's pass test, written before it ran. From
 2026-11-14 every strategy is judged on one scorecard instead.
 
 ## Mistakes in the process, and what changed
+
+- **A study read across a token swap** (2026-11-18). The event-study grid joined a coin's
+  separate histories into one column, so the perp-listing study's first run measured
+  DREP's 100:1 token swap (2021-04, after a one-day gap) as a +38,667% month in the
+  benchmark, and reported -25.4% instead of -15.2%. Found by checking why 2021 read -78.6%.
+  Fixed (no window crosses a break in a coin's history; tested), the run voided and rerun.
+  Checked: the five shorting studies need a year of unbroken history and findings 14 never
+  made DREP eligible, so neither was affected.
 
 - **Duplicate bars in Binance's archive (found 2026-11-15).** The daily files for AXSUSDT
   2026-02 (the 10th) and UMAUSDT 2026-07 (the 15th) each held one day twice, identical in

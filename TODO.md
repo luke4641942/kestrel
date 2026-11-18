@@ -31,10 +31,9 @@ Rules live in CLAUDE.md; results in `research/findings.md`; ideas not yet schedu
       from the CLI and the page shows a stale copy).
 
 ## Event studies (outside AI review, 2026-11-18)
-- [ ] `does-a-perp-listing-mark-a-top`: drafted for Luke to freeze. 102 perp listings on
-      the exploration half (2020-25); exit rule if coins lag the others by 3%+ over the
-      30 days after. Build a generic event-study module (`kestrel event-study`) after the
-      freeze; the delisting study's shape.
+- [ ] Perp listings (findings 18): EXIT RULE, coins lag the others by 15% in the 30 days
+      after their first perp. Luke: close the note as validated? It belongs with the
+      delisting exit rule in the altcoin portfolio's note.
 - [ ] Token unlocks: unblocked. DefiLlama's API is paid, but its public dataset files
       (defillama-datasets.llama.fi/emissions/<protocol>) give 376 protocols' dated cliff
       unlocks and a CoinGecko id to match Binance coins. Caveat for the note: schedules as
