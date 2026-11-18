@@ -30,6 +30,18 @@ Rules live in CLAUDE.md; results in `research/findings.md`; ideas not yet schedu
 - [ ] Strategies page: re-fetch a note when the browser tab regains focus (notes change
       from the CLI and the page shows a stale copy).
 
+## Event studies (outside AI review, 2026-11-18)
+- [ ] `does-a-perp-listing-mark-a-top`: drafted for Luke to freeze. 102 perp listings on
+      the exploration half (2020-25); exit rule if coins lag the others by 3%+ over the
+      30 days after. Build a generic event-study module (`kestrel event-study`) after the
+      freeze; the delisting study's shape.
+- [ ] Token unlocks: unblocked. DefiLlama's API is paid, but its public dataset files
+      (defillama-datasets.llama.fi/emissions/<protocol>) give 376 protocols' dated cliff
+      unlocks and a CoinGecko id to match Binance coins. Caveat for the note: schedules as
+      documented today, possibly revised since. Next: a note.
+- [ ] Monitoring-tag drift: blocked on data. Binance's announcement feed holds 1 tag
+      announcement in ~2,700 scanned (2026-11-18); the history would need another source.
+
 ## Shorting research (hypothetical; Luke, 2026-11-16)
 Nothing here can be traded yet: retail shorting in Australia is CFDs at 2:1 (Eightcap,
 Swyftx Leverage), and real perps are wholesale-only (Coinbase AU). Each is a frozen note,
