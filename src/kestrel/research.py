@@ -316,6 +316,7 @@ STUDIES = {
     "study:short-trend-vol-target": "kestrel short-study trend-vol-target",
     "study:long-short-momentum": "kestrel short-study long-short-momentum",
     "study:cash-and-carry": "kestrel short-study cash-and-carry",
+    "study:short-perp-listing": "kestrel short-study perp-listing",
 }
 """Raw-effect studies a note can name instead of a strategy: a question measured before any
 trading rule exists. A backtest refuses them; each runs through its own command."""

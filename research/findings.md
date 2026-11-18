@@ -381,7 +381,7 @@ edge, and the holdout can't be used again for either strategy.
 | Trend-vol-target long and short, (up - down votes) / 3 (hypothetical) | BTC, ETH, SOL 1d 2020-01 to 2025-10 | Sharpe 0.82, 0.84, 0.97 vs 1.23, 1.28, 1.45 long-only; short legs -46%, -35%, -38%. DROP | Rejected (Luke) |
 | Long/short momentum, top 3 vs bottom 3 by 90 days, weekly (hypothetical) | Liquid exploration-half coins + BTC/ETH/SOL with a perp, 2020-01 to 2025-10 | +39%, Sharpe 0.44, mean week +0.13% (P 84%, 95% needed), beta -0.05, positive in 3 of 6 years; long leg +119%, short leg -50%. DROP | Rejected (Luke) |
 | Cash-and-carry: spot long, perp short while 7-day funding is positive (hypothetical) | BTC, ETH, SOL 2020-01 to 2025-10 | +6.6% a year on equity, P 100%, 5 of 6 years positive, drawdown -6.6% (basis not modelled), 53 trades, 14 margin calls: NEEDS-SHORTING (passes every test; needs a real perp) | Awaiting Luke |
-| Study: a coin's first perp listing | 102 exploration-half coins (+ BTC/ETH/SOL), perps first listed 2020-01 to 2025-09 | 30 days after vs the other coins: -15.2% (P(< 0) 100%, 75% below zero), below all 200 placebo draws (median -1.3%); +100% in the 30 days before. Median-coin benchmark -5.5%, BTC -7.9%: EXIT RULE | Awaiting Luke |
+| Study: a coin's first perp listing | 102 exploration-half coins (+ BTC/ETH/SOL), perps first listed 2020-01 to 2025-09 | 30 days after vs the other coins: -15.2% (P(< 0) 100%, 75% below zero), below all 200 placebo draws (median -1.3%); +100% in the 30 days before. Median-coin benchmark -5.5%, BTC -7.9%: EXIT RULE | Validated (Luke); a rule for the altcoin portfolio |
 
 Each strategy was judged by its own note's pass test, written before it ran. From
 2026-11-14 every strategy is judged on one scorecard instead.
