@@ -11,8 +11,8 @@ vi.mock("../api", async (importOriginal) => {
 vi.mock("../components/EquityChart", () => ({ EquityChart: () => <div data-testid="equity-chart" /> }));
 
 const summary = (name: string, halted: string | null = null) => {
-  const { equity_series, expected, fills, decisions, events, tracking, ...rest } = paperDetail({ name, halted });
-  void equity_series, expected, fills, decisions, events, tracking;
+  const { equity_series, expected, fills, trades, decisions, events, tracking, ...rest } = paperDetail({ name, halted });
+  void equity_series, expected, fills, trades, decisions, events, tracking;
   return rest;
 };
 
@@ -28,6 +28,7 @@ beforeEach(() => {
       paperDetail({
         name,
         halted: name === "eth" ? "killed: drill" : null,
+        trades: [{ symbol: "BTCUSDT", opened: "2026-11-15T00:00:00Z", closed: "2026-11-18T00:00:00Z", bought: 112.08, sold: 111.1, value: null, profit: -0.98, fees: 0, fills: 2 }],
         fills: [{ at: "2026-11-14T00:00:00Z", symbol: "BTCUSDT", side: "buy", quantity: 0.0016, reference_price: 68314, price: 67250, fee: 0, cost_bps: -155.7, expected_bps: 11.3 }],
         decisions: [
           { bar: "2026-11-14T00:00:00Z", target: 0.33, current: 0.33, missed: false, band_skip: true },
@@ -47,6 +48,9 @@ describe("Trading", () => {
     expect(within(rows[1]!).getByText("Halted")).toBeInTheDocument();
     expect(screen.getAllByTestId("equity-chart")).toHaveLength(2);  // all accounts, then this one
     expect(screen.getByText("-155.7 bps")).toBeInTheDocument();
+    expect(screen.getByText("Trades", { selector: "h3" })).toBeInTheDocument();
+    expect(screen.getByText("−0.98")).toBeInTheDocument();  // the trade's profit
+    expect(screen.getByText("1 closed (0 won, 1 lost)")).toBeInTheDocument();
     expect(screen.getByText("Missed: the run was late")).toBeInTheDocument();
     expect(screen.getByText(/Testnet fills come from Binance's test order book/)).toBeInTheDocument();
     expect(screen.getByText(/kestrel kill btc --reason/)).toBeInTheDocument();
@@ -76,8 +80,8 @@ describe("Trading", () => {
       fills: [{ at: "2026-11-16T00:00:00Z", symbol: "SOLUSDT", side: "buy", quantity: 0.5, reference_price: 140, price: 140.1, fee: 0.05, cost_bps: 7.9, expected_bps: 8.2 }],
       decisions: [{ bar: "2026-11-15T00:00:00Z", target: 0.17, current: null, missed: false, band_skip: false, targets: { SOLUSDT: 0.17 } }],
     });
-    const { equity_series, expected, fills, decisions, events, tracking, ...rest } = basket;
-    void equity_series, expected, fills, decisions, events, tracking;
+    const { equity_series, expected, fills, trades, decisions, events, tracking, ...rest } = basket;
+    void equity_series, expected, fills, trades, decisions, events, tracking;
     api.paper = vi.fn().mockResolvedValue([rest]);
     api.paperAccount = vi.fn().mockResolvedValue(basket);
     render(<Trading />);

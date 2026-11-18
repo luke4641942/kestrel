@@ -249,3 +249,85 @@ def combine(accounts: list[tuple[Decimal, Tracking, timedelta]]) -> Combined:
         equity.append(sum((e for e, _ in last), Decimal(0)))
         expected.append(sum((x for _, x in last), Decimal(0)))
     return Combined(times, equity, expected, sum((c for c, _ in timelines), Decimal(0)))
+
+
+# ---------- trades ----------
+
+
+@dataclass
+class RoundTrip:
+    """One trade: a coin from flat to flat (resizes in between belong to the same trade)."""
+
+    symbol: str
+    opened: str
+    closed: str | None
+    """When the sale that emptied the position filled; None while it is still held."""
+    bought: Decimal
+    """Spent on buys, fees included (USDT)."""
+    sold: Decimal
+    """Received from sells, fees taken off (USDT)."""
+    fees: Decimal
+    fills: int
+    held: Decimal = Decimal(0)
+    """Coins still held (an open trade)."""
+    last: str = ""
+    """Its latest fill."""
+
+    def profit(self, price: Decimal | None = None) -> Decimal | None:
+        """Closed: sold less bought. Open: the same plus what is held at ``price`` (None
+        without a price)."""
+        if self.closed is not None:
+            return self.sold - self.bought
+        if price is None:
+            return None
+        return self.sold + self.held * price - self.bought
+
+
+def round_trips(events: list[dict[str, Any]], symbol: str) -> list[RoundTrip]:
+    """Every trade in a paper ledger, oldest first. ``symbol`` is a single-coin account's
+    coin (its fills don't name it). A trade closes at the first state that holds none of
+    its coin; a kill's sale counts as a sell."""
+    open_: dict[str, RoundTrip] = {}
+    done: list[RoundTrip] = []
+
+    def flow(sym: str, at: str, side: str, qty: Decimal, price: Decimal, fee: Decimal) -> None:
+        trip = open_.get(sym)
+        if trip is None:
+            if side != "buy":
+                return  # a sale with nothing open (shouldn't happen): not a trade
+            trip = open_[sym] = RoundTrip(sym, at, None, Decimal(0), Decimal(0), Decimal(0), 0)
+        if side == "buy":
+            trip.bought += qty * price + fee
+        else:
+            trip.sold += qty * price - fee
+        trip.fees += fee
+        trip.fills += 1
+        trip.last = at
+
+    for e in events:
+        if e["type"] == "fill":
+            flow(
+                e.get("symbol", symbol), e["at"], e["side"], Decimal(e["quantity"]),
+                Decimal(e["price"]), Decimal(e["fee"]),
+            )  # fmt: skip
+        elif e["type"] == "kill":
+            sales = e.get("sales") or ([{**e, "symbol": symbol}] if "side" in e else [])
+            for x in sales:
+                if "quantity" in x:
+                    flow(x["symbol"], e["at"], "sell", Decimal(x["quantity"]),
+                         Decimal(x["fill_price"]), Decimal(0))  # fmt: skip
+        elif e["type"] == "state":
+            held = (
+                {k: Decimal(v) for k, v in e["positions"].items()}
+                if "positions" in e
+                else {symbol: Decimal(e["position"])}
+            )
+            for sym in list(open_):
+                q = held.get(sym, Decimal(0))
+                if q <= 0:
+                    trip = open_.pop(sym)
+                    trip.closed = trip.last  # when the closing sale filled
+                    done.append(trip)
+                else:
+                    open_[sym].held = q
+    return sorted(done + list(open_.values()), key=lambda t: t.opened)

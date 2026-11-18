@@ -387,6 +387,26 @@ export interface PaperSummary {
   positions: Record<string, number>;
   /** Why it is halted, or null. */
   halted: string | null;
+  /** Trades (a coin from flat back to flat), open ones included. */
+  trade_count: number;
+}
+
+/** One trade: a coin from flat back to flat; resizes in between belong to it. */
+export interface PaperTrade {
+  symbol: string;
+  opened: string;
+  /** Null while still held. */
+  closed: string | null;
+  /** Spent on buys, fees included (USDT). */
+  bought: number;
+  /** Received from sells, fees taken off (USDT). */
+  sold: number;
+  /** An open trade's coins at the latest close (USDT). */
+  value: number | null;
+  /** Closed: sold less bought. Open: unrealised, at the latest close. */
+  profit: number | null;
+  fees: number;
+  fills: number;
 }
 
 /** Every paper account added up, against the model's accounts added up. */
@@ -418,6 +438,8 @@ export interface PaperDetail extends PaperSummary {
     cost_bps: number;
     expected_bps: number | null;
   }[];
+  /** Oldest first. */
+  trades: PaperTrade[];
   /** Newest first. */
   decisions: {
     bar: string;

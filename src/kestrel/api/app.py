@@ -54,6 +54,7 @@ from kestrel.api.models import (
     PaperSummaryOut,
     PaperTotalOut,
     PaperTrackingOut,
+    PaperTradeOut,
     ParamOut,
     QualityOut,
     Quote,
@@ -603,6 +604,25 @@ def create_app(
             position=float(state.position),
             positions={k: float(v) for k, v in state.positions.items() if v > 0},
             halted=safety.halted(account),
+            trade_count=len(tracking.round_trips(account.ledger.events(), terms.symbol)),
+        )
+
+    def _trade_out(t: tracking.RoundTrip, interval: Interval) -> PaperTradeOut:
+        price = None
+        if t.closed is None:
+            stored = store.read(t.symbol, interval)
+            price = Decimal(str(stored["close"][-1])) if stored.height else None
+        profit = t.profit(price)
+        return PaperTradeOut(
+            symbol=t.symbol,
+            opened=datetime.fromisoformat(t.opened),
+            closed=None if t.closed is None else datetime.fromisoformat(t.closed),
+            bought=float(t.bought),
+            sold=float(t.sold),
+            value=None if price is None else float(t.held * price),
+            profit=None if profit is None else float(profit),
+            fees=float(t.fees),
+            fills=t.fills,
         )
 
     def _decision_out(e: dict[str, Any]) -> PaperDecisionOut:
@@ -707,6 +727,9 @@ def create_app(
                 for f, e in zip(
                     tracked.fills, [e for e in events if e["type"] == "fill"], strict=True
                 )
+            ],
+            trades=[
+                _trade_out(t, terms.interval) for t in tracking.round_trips(events, terms.symbol)
             ],
             decisions=[
                 _decision_out(e)

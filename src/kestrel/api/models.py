@@ -829,6 +829,8 @@ class PaperSummaryOut(BaseModel):
     positions: dict[str, float]
     """A basket account's coins by symbol (empty for a single-coin account)."""
     halted: str | None
+    trade_count: int = 0
+    """Trades (a coin from flat to flat), open ones included."""
     """Why it is halted, or None."""
 
 
@@ -842,6 +844,25 @@ class PaperFillOut(BaseModel):
     fee: float
     cost_bps: float
     expected_bps: float | None
+
+
+class PaperTradeOut(BaseModel):
+    """One trade: a coin from flat back to flat (kestrel.execution.tracking.round_trips)."""
+
+    symbol: str
+    opened: datetime
+    closed: datetime | None
+    """None while still held."""
+    bought: float
+    """Spent on buys, fees included (USDT)."""
+    sold: float
+    """Received from sells, fees taken off (USDT)."""
+    value: float | None
+    """An open trade's coins at the latest stored close (USDT)."""
+    profit: float | None
+    """Closed: sold less bought. Open: sold plus value less bought (unrealised)."""
+    fees: float
+    fills: int
 
 
 class PaperDecisionOut(BaseModel):
@@ -895,6 +916,8 @@ class PaperDetailOut(PaperSummaryOut):
     expected: Series
     """The same account replayed on the simulated venue: the backtest model."""
     fills: list[PaperFillOut]
+    trades: list[PaperTradeOut]
+    """Oldest first."""
     decisions: list[PaperDecisionOut]
     """Newest first."""
     events: list[PaperEventOut]

@@ -1,15 +1,25 @@
 import { describe, expect, it } from "vitest";
 import type { PaperDetail } from "./api";
-import { holdingView, isBasket, targetsText, totalView, trackingVerdict, venueLabel } from "./paperView";
+import {
+  accountProfit,
+  holdingView,
+  isBasket,
+  targetsText,
+  totalView,
+  tradeReturn,
+  tradesSummary,
+  trackingVerdict,
+  venueLabel,
+} from "./paperView";
 
 export function paperDetail(over: Partial<PaperDetail> = {}, tracking: Partial<PaperDetail["tracking"]> = {}): PaperDetail {
   return {
     name: "btc", strategy: "trend-vol-target", symbol: "BTCUSDT", interval: "1d", venue: "testnet",
     research: "holdout-trend-vol-target-btc", initial_cash: 330, trade_from: "2026-11-13T00:00:00Z",
-    last_bar: "2026-11-14T00:00:00Z", equity: 331.5, cash: 222.4, position: 0.0016, positions: {}, halted: null,
+    last_bar: "2026-11-14T00:00:00Z", equity: 331.5, cash: 222.4, position: 0.0016, positions: {}, halted: null, trade_count: 0,
     equity_series: { time: [1, 2], equity: [330, 331.5], drawdown: [0, 0] },
     expected: { time: [1, 2], equity: [330, 332], drawdown: [0, 0] },
-    fills: [], decisions: [], events: [],
+    fills: [], trades: [], decisions: [], events: [],
     tracking: { days: 2, decision_mismatches: 0, missed: 0, difference: -0.0015, cost_bps: 12.4, expected_bps: 11.3, ...tracking },
     ...over,
   };
@@ -68,5 +78,24 @@ describe("totalView", () => {
   });
   it("is empty before any mark", () => {
     expect(totalView({ ...total, equity: null, profit: null })).toBeNull();
+  });
+});
+
+describe("profit and trades", () => {
+  const trade = (profit: number | null, closed: string | null = "2026-11-18T00:00:00Z") => ({
+    symbol: "BTCUSDT", opened: "2026-11-15T00:00:00Z", closed, bought: 100, sold: 100 + (profit ?? 0),
+    value: closed ? null : 101, profit, fees: 0, fills: 2,
+  });
+  it("gives profit since the account opened", () => {
+    expect(accountProfit(paperDetail({ equity: 333, initial_cash: 330 }))).toEqual({ profit: 3, share: 3 / 330 });
+    expect(accountProfit(paperDetail({ equity: null }))).toBeNull();
+  });
+  it("counts trades, wins and losses, and what the closed ones made", () => {
+    const s = tradesSummary([trade(5), trade(-2), trade(1, null)]);
+    expect(s.text).toBe("2 closed (1 won, 1 lost), 1 open");
+    expect(s.realised).toBe(3);
+    expect(tradesSummary([]).text).toBe("No trades yet");
+    expect(tradeReturn(trade(5))).toBeCloseTo(0.05);
+    expect(tradeReturn(trade(null, null))).toBeNull();
   });
 });

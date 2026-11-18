@@ -2399,3 +2399,14 @@ pre.report {
   margin: 0 0 8px;
   line-height: 1.5;
 }
+
+/* A heading and a one-line explanation above a table inside a panel. */
+.table-title {
+  margin: 0;
+  padding: 14px 16px 2px;
+  font-size: 14px;
+}
+.table-note {
+  margin: 0;
+  padding: 0 16px 10px;
+}

@@ -1,6 +1,6 @@
 // Plain logic behind the Trading page: how a paper account is tracking its model, in one
 // line. Kept out of components so it can be tested directly.
-import type { PaperDetail, PaperSummary, PaperTotal } from "./api";
+import type { PaperDetail, PaperSummary, PaperTotal, PaperTrade } from "./api";
 import type { Tone } from "./components/ui";
 
 /** The verdict that matters first: do decisions match the backtest's code, and how far
@@ -67,3 +67,27 @@ export function totalView(t: PaperTotal): { profit: number; share: number; model
     model: t.expected_equity === null ? null : t.equity / t.expected_equity - 1,
   };
 }
+
+/** An account's profit since it opened: equity less its starting cash. Null before its
+ * first mark. */
+export function accountProfit(a: PaperSummary): { profit: number; share: number } | null {
+  if (a.equity === null) return null;
+  const profit = a.equity - a.initial_cash;
+  return { profit, share: profit / a.initial_cash };
+}
+
+/** Its trades in a line: how many closed, won and lost, how many open, and what the closed
+ * ones made. */
+export function tradesSummary(trades: PaperTrade[]): { text: string; realised: number } {
+  const closed = trades.filter((t) => t.closed !== null);
+  const realised = closed.reduce((sum, t) => sum + (t.profit ?? 0), 0);
+  const won = closed.filter((t) => (t.profit ?? 0) > 0).length;
+  const open = trades.length - closed.length;
+  if (trades.length === 0) return { text: "No trades yet", realised: 0 };
+  const parts = [`${closed.length} closed (${won} won, ${closed.length - won} lost)`];
+  if (open) parts.push(`${open} open`);
+  return { text: parts.join(", "), realised };
+}
+
+/** A trade's profit as a share of what it spent. */
+export const tradeReturn = (t: PaperTrade) => (t.profit === null || t.bought <= 0 ? null : t.profit / t.bought);

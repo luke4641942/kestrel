@@ -4,7 +4,17 @@ import { EquityChart } from "../components/EquityChart";
 import { Empty, PageHeader, Panel, Section, Stat, Status } from "../components/ui";
 import { date, dateTime } from "../format";
 import { useResource } from "../hooks";
-import { holdingView, isBasket, targetsText, totalView, trackingVerdict, venueLabel } from "../paperView";
+import {
+  accountProfit,
+  holdingView,
+  isBasket,
+  targetsText,
+  totalView,
+  tradeReturn,
+  tradesSummary,
+  trackingVerdict,
+  venueLabel,
+} from "../paperView";
 import { money } from "../summary";
 
 const usd = (x: number | null) => (x === null ? "n/a" : x.toLocaleString("en-AU", { minimumFractionDigits: 2, maximumFractionDigits: 2 }));
@@ -132,6 +142,8 @@ function AccountsTable({
               <th>Market</th>
               <th>Venue</th>
               <th className="num">Equity (USDT)</th>
+              <th className="num">Profit</th>
+              <th className="num">Trades</th>
               <th>Last bar</th>
               <th>Status</th>
             </tr>
@@ -153,6 +165,8 @@ function AccountsTable({
                 </td>
                 <td className="nw">{venueLabel(a.venue)}</td>
                 <td className="num">{usd(a.equity)}</td>
+                <td className="num">{accountProfit(a) ? money(accountProfit(a)!.profit) : "n/a"}</td>
+                <td className="num">{a.trade_count}</td>
                 <td className="nw secondary">{a.last_bar ? date(a.last_bar) : "not yet"}</td>
                 <td className="nw">
                   {a.halted ? <Status tone="bad">Halted</Status> : <Status tone="ok">Running</Status>}
@@ -182,6 +196,10 @@ function AccountView({ name }: { name: string }) {
   const verdict = trackingVerdict(d);
   const t = d.tracking;
   const holding = holdingView(d);
+  const p = accountProfit(d);
+  const trades = tradesSummary(d.trades);
+  const model = d.expected.equity.at(-1) ?? null;
+  const bps = (x: number | null) => (x === null ? "n/a" : `${x.toFixed(1)} bps`);
   return (
     <Section
       title={`${d.name} · ${d.strategy}`}
@@ -197,13 +215,17 @@ function AccountView({ name }: { name: string }) {
             <p className="secondary">{verdict.text}</p>
           </div>
           <div className="stats">
-            <Stat label="Equity" value={`${usd(d.equity)}`} note={`Model: ${usd(d.expected.equity.at(-1) ?? null)}`} />
-            <Stat label="Holding" value={holding.value} note={holding.note} />
-            <Stat label="Days handled" value={t.days} note={t.missed ? `${t.missed} missed` : "None missed"} />
             <Stat
-              label="Cost per fill"
-              value={t.cost_bps === null ? "n/a" : `${t.cost_bps.toFixed(1)} bps`}
-              note={t.expected_bps === null ? "No fills yet" : `${t.expected_bps.toFixed(1)} bps modelled`}
+              label="Profit since it opened"
+              value={p ? `${money(p.profit)} USDT` : "n/a"}
+              note={p ? `${signedPct(p.share)}; equity ${usd(d.equity)}, model ${usd(model)}` : "No marks yet"}
+            />
+            <Stat label="Trades" value={d.trades.length} note={trades.text} />
+            <Stat label="Holding now" value={holding.value} note={holding.note} />
+            <Stat
+              label="Days handled"
+              value={t.days}
+              note={`${t.missed ? `${t.missed} missed` : "None missed"}; fills cost ${bps(t.cost_bps)} vs ${bps(t.expected_bps)} modelled`}
             />
           </div>
         </Panel>
@@ -225,6 +247,7 @@ function AccountView({ name }: { name: string }) {
             <EquityChart equity={d.equity_series} benchmark={d.expected} />
           </Panel>
         )}
+        <TradesTable account={d} />
         <FillsTable account={d} />
         <DecisionsTable account={d} />
         <SafetyPanel account={d} />
@@ -248,9 +271,64 @@ function HaltBanner({ account: d }: { account: PaperDetail }) {
   );
 }
 
+function TradesTable({ account: d }: { account: PaperDetail }) {
+  return (
+    <Panel>
+      <h3 className="table-title">Trades</h3>
+      <p className="small tertiary table-note">
+        A trade runs from buying a coin to holding none of it again; resizes in between belong to it. Profit is after fees.
+      </p>
+      {d.trades.length === 0 ? (
+        <Empty title="No trades yet" />
+      ) : (
+        <div className="table-wrap">
+          <table className="table">
+            <thead>
+              <tr>
+                <th>Coin</th>
+                <th>Opened</th>
+                <th>Closed</th>
+                <th className="num">Bought for</th>
+                <th className="num">Sold for</th>
+                <th className="num">Profit (USDT)</th>
+                <th className="num">Return</th>
+                <th className="num">Fills</th>
+              </tr>
+            </thead>
+            <tbody>
+              {[...d.trades].reverse().map((x) => {
+                const r = tradeReturn(x);
+                return (
+                  <tr key={`${x.symbol}-${x.opened}`}>
+                    <td className="nw">{x.symbol.replace(/USDT$/, "")}</td>
+                    <td className="nw">{date(x.opened)}</td>
+                    <td className="nw">{x.closed ? date(x.closed) : <Status tone="neutral">Open</Status>}</td>
+                    <td className="num">{usd(x.bought)}</td>
+                    <td className="num">
+                      {x.closed ? usd(x.sold) : x.value === null ? "n/a" : `${usd(x.sold + x.value)} now`}
+                    </td>
+                    <td className="num">{x.profit === null ? "n/a" : money(x.profit)}</td>
+                    <td className="num">{r === null ? "n/a" : signedPct(r)}</td>
+                    <td className="num secondary">{x.fills}</td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
+      )}
+    </Panel>
+  );
+}
+
 function FillsTable({ account: d }: { account: PaperDetail }) {
   return (
     <Panel>
+      <h3 className="table-title">Fills</h3>
+      <p className="small tertiary table-note">
+        Every order. Cost is what the fill paid against the bar's open plus fees, in basis points (100 bps = 1%); the
+        model column is the backtest's estimate for the same order.
+      </p>
       {d.fills.length === 0 ? (
         <Empty title="No fills yet" />
       ) : (
@@ -295,6 +373,10 @@ function DecisionsTable({ account: d }: { account: PaperDetail }) {
   if (d.decisions.length === 0) return null;
   return (
     <Panel>
+      <h3 className="table-title">Decisions</h3>
+      <p className="small tertiary table-note">
+        What the strategy wanted at each daily close, as a share of the account, and what it held before.
+      </p>
       <div className="table-wrap">
         <table className="table">
           <thead>
