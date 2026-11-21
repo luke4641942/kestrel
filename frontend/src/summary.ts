@@ -304,6 +304,7 @@ export function studyTitle(s: Pick<Study, "kind" | "strategy">): string {
 export const DECISION: Record<Decision["decision"], { tone: Tone; label: string }> = {
   pursue: { tone: "ok", label: "Pursue" },
   watch: { tone: "info", label: "Watch" },
+  "needs-shorting": { tone: "warn", label: "Needs shorting" },
   drop: { tone: "neutral", label: "Drop" },
 };
 
@@ -461,7 +462,12 @@ export function mostPromising(runs: RunSummary[], n = PROMISING): RunSummary[] {
  * Both are kept as evidence and folded away, so the pages show what is still live. */
 export const isSettled = (status: ResearchStatus) => status === "rejected" || status === "validated";
 
-const DECISION_RANK: Record<Decision["decision"], number> = { pursue: 0, watch: 1, drop: 2 };
+const DECISION_RANK: Record<Decision["decision"], number> = {
+  pursue: 0,
+  watch: 1,
+  "needs-shorting": 2,
+  drop: 3,
+};
 
 /** One strategy's decisions across the markets it was tested on. */
 export interface StrategyDecisions {

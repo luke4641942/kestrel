@@ -18,16 +18,8 @@ Rules live in CLAUDE.md; results in `research/findings.md`; ideas not yet schedu
 - [ ] Delisting exit rule (findings 11): write a note (sell a held coin at the next open
       after its delisting is announced), or park it. Only matters for a strategy that holds
       small coins, so it belongs with the altcoin portfolio below.
-- [ ] Proposal (outside review, 2026-11-16): add "independence" to the research process,
-      information only (never a pass test): correlation with the pursued strategies, in BTC
-      drawdowns too, and its return after removing BTC exposure. A rule change, so Luke's call.
 
 ## Next
-- [ ] Altcoin portfolio (findings 20): beats the large-basket control narrowly but loses
-      to BTC at the same exposure (Sharpe 0.53 vs 1.10); walk-forward 3 of 9. No holdout
-      by its note. Luke: drop or watch? (Claude recommends drop.)
-- [ ] Token unlocks (findings 19): KILL, no drift beyond what these coins do anyway.
-      Luke: reject `do-coins-fall-into-large-token-unlocks`?
 - [ ] Monitoring-tag drift: blocked on data. Binance's announcement feed holds 1 tag
       announcement in ~2,700 scanned (2026-11-18); the history would need another source.
 
@@ -39,9 +31,6 @@ financing charge on both sides) and a Binance perp (its real funding). A result 
 be pursue or watch is recorded as **needs-shorting** (add the decision value when the first
 one lands: `kestrel.decisions` and the Research tab), never traded until a licensed route
 exists and Luke has checked the Swyftx employee trading policy.
-- [ ] Cash-and-carry passed (findings 17; on the Backtests page under "Hypothetical
-      shorting studies"). Luke: close its note as validated and record it as needs-shorting
-      (add that decision value)? Check the perp minimum order at 330 USDT.
 - [ ] Delisting short: the open note `shorting-the-delisting-window-with-perps` was
       INSUFFICIENT at 6 announcements (10 needed). Re-run once 10 exist, rather than reject.
 - [ ] Short before large token unlocks (sized against daily volume): needs an unlock
@@ -69,6 +58,9 @@ exists and Luke has checked the Swyftx employee trading policy.
 - [ ] Expectancy by conviction bucket (P2 leftover), once a strategy varies its sizing.
 
 ## Done recently
+- 2026-11-21 Decisions (Luke): altcoin portfolio dropped; token-unlock note rejected;
+  cash-and-carry validated and recorded as needs-shorting (a new decision value, shown on
+  the Overview and Research tab); independence reported as information on new strategies.
 - 2026-11-21 Dashboard at phone width (checked at 390px: no sideways scroll; the menu wraps,
   stat tiles go two a row). Strategies page re-fetches when the tab regains focus. The Binance venue
   accepts fees paid in BNB (valued at BNB's price); testnet fills charge none.

@@ -120,11 +120,16 @@ Never pipe check output through `tail` or similar inside an `&&` chain: it hides
   9. Bracket strategies only: net expectancy per trade beats 95% of random-entry paths
      with the same stops, targets and sizing (`kestrel random-entry`,
      `kestrel.validation.control`; added 2026-11-15). n/a for weight strategies.
+- **Independence (information only; Luke, 2026-11-21).** A new strategy's result also
+  reports how much it overlaps the pursued strategies (`kestrel overlap`: correlation, in
+  BTC's falls too, and BTC beta). It never decides a pass; it says whether a pass would be a
+  second edge or more of the same bet (findings 16).
 - **Risk-managed holding** is a separate category for a strategy that hasn't passed but
   Luke may run because it smooths the ride. It is labelled "not a proven edge" and never
   counts as a pass.
 - **Decisions** (`research/decisions.toml`, one per strategy and market): `pursue` means
-  carry on to paper trading, not "passed"; `watch`; `drop` (final). Pursued (2026-11-16):
+  carry on to paper trading, not "passed"; `watch`; `needs-shorting` (a hypothetical shorting study that passed: never traded until a
+  licensed retail route exists); `drop` (final). Pursued (2026-11-16):
   trend-vol-target on BTC, ETH and SOL (each beat exposure-matched holding, failed luck and
   walk-forward, and passed its holdout), and btc-regime-trend on ETH and SOL (passed its
   confirmation on unsearched coins and every scorecard test but luck), and btc-rotation-8

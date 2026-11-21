@@ -493,3 +493,21 @@ decision = "drop"
 decided = 2026-11-16
 reason = "Dropped (Luke, 2026-11-16). Failed its holdout confirmation on BTC, XRP, SUI and TRX: -22.6% against -5.7% for BTC held at its 22% exposure. Equal to G1 on its own searched coins (Sharpe 1.51), but one coin at a time was too concentrated on fresh data."
 evidence = ["confirmation-btc-regime-rotation-top-1-of-4"]
+
+[[decision]]
+strategy = "altcoin-rotation"
+name = "Altcoin portfolio on the BTC regime, with exit rules"
+market = "Exploration-half altcoins 1d"
+decision = "drop"
+decided = 2026-11-21
+reason = "Dropped (Luke, 2026-11-21, on Claude's recommendation). G1's weekly rule on a point-in-time universe of exploration-half altcoins (20M USDT a day, a year of history), top 3 by 90-day return while BTC is 3% above its 50-day average, with the delisting and new-perp exit rules. 2019-01 to 2025-10: +101%, Sharpe 0.53, drawdown -33%, 17% exposure. It beat the large-basket control (Sharpe 0.44, drawdown -85%) and all six neighbours did too, but BTC held at the same exposure did better (+113%, Sharpe 1.10); walk-forward 3 of 9 windows, 2-year starts 32%, luck 0%. Picking altcoins under the BTC regime adds turnover and altcoin risk for less than a small BTC position (findings 20)."
+evidence = ["altcoin-portfolio-on-the-btc-regime-with-exit"]
+
+[[decision]]
+strategy = "study:cash-and-carry"
+name = "Cash-and-carry on BTC, ETH and SOL perps (hypothetical)"
+market = "BTC, ETH, SOL spot against their USDT-M perps"
+decision = "needs-shorting"
+decided = 2026-11-21
+reason = "Needs shorting (Luke, 2026-11-21): passed every pre-registered test (findings 17): +6.6% a year on equity 2020-01 to 2025-10, positive in 5 of 6 years, drawdown -6.6% (the spot-perp basis isn't modelled, so that is a floor), 53 trades, 14 margin calls; about 63 USDT more than a 4% stablecoin yield on 330 USDT over six years. It needs a real perp (wholesale-only in Australia; a CFD pays financing, not funding), so it is never traded until a licensed retail route exists and the Swyftx employee trading policy is checked. High carry tends to come before crashes (Schmeling, Schrimpf and Todorov 2023)."
+evidence = ["cash-and-carry-on-btc-eth-and-sol-perps"]

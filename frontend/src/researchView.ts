@@ -96,7 +96,13 @@ export const FAMILIES: Family[] = [
     key: "exploration",
     name: "Exploration graduates",
     what: "Rules found by searching half the altcoins, then run once on the unsearched half.",
-    strategies: ["btc-regime-trend", "crash-rebound", "btc-rotation-8", "btc-rotation-4"],
+    strategies: ["btc-regime-trend", "crash-rebound", "btc-rotation-8", "btc-rotation-4", "altcoin-rotation"],
+  },
+  {
+    key: "shorting",
+    name: "Hypothetical shorting",
+    what: "Measured outside the engine, which can't short; a pass is needs-shorting, never traded.",
+    strategies: ["study:cash-and-carry"],
   },
 ];
 
@@ -111,6 +117,7 @@ export interface FamilyRow {
   decisions: Decision[];
   pursue: number;
   watch: number;
+  needsShorting: number;
   drop: number;
 }
 
@@ -120,16 +127,24 @@ export function byFamily(decisions: Decision[]): FamilyRow[] {
   const rows = [...FAMILIES, OTHER].map((family) => {
     const own = decisions.filter((d) => familyOf(d.strategy).key === family.key);
     const count = (k: Decision["decision"]) => own.filter((d) => d.decision === k).length;
-    return { family, decisions: own, pursue: count("pursue"), watch: count("watch"), drop: count("drop") };
+    return {
+      family,
+      decisions: own,
+      pursue: count("pursue"),
+      watch: count("watch"),
+      needsShorting: count("needs-shorting"),
+      drop: count("drop"),
+    };
   });
   return rows.filter((r) => r.decisions.length > 0);
 }
 
 /** "1 pursue · 2 watch · 5 drop", leaving out zeros. */
-export function tally(row: { pursue: number; watch: number; drop: number }): string {
+export function tally(row: { pursue: number; watch: number; needsShorting?: number; drop: number }): string {
   const parts: string[] = [];
   if (row.pursue) parts.push(`${row.pursue} pursue`);
   if (row.watch) parts.push(`${row.watch} watch`);
+  if (row.needsShorting) parts.push(`${row.needsShorting} needs shorting`);
   if (row.drop) parts.push(`${row.drop} drop`);
   return parts.join(" · ");
 }

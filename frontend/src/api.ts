@@ -215,7 +215,8 @@ export interface Decision {
   strategy: string;
   name: string;
   market: string;
-  decision: "pursue" | "watch" | "drop";
+  /** needs-shorting: a hypothetical shorting study that passed; never traded. */
+  decision: "pursue" | "watch" | "needs-shorting" | "drop";
   decided: string;
   reason: string;
   evidence: string[];

@@ -1,0 +1,28 @@
+{
+  "slug": "cash-and-carry-on-btc-eth-and-sol-perps",
+  "name": "Cash-and-carry on BTC, ETH and SOL perps",
+  "created_at": "2026-11-16T09:30:50.332958+00:00",
+  "status": "validated",
+  "history": [
+    {
+      "status": "idea",
+      "at": "2026-11-16T09:30:50.332958+00:00",
+      "reason": "Created"
+    },
+    {
+      "status": "specified",
+      "at": "2026-11-16T09:34:43.524285+00:00",
+      "reason": "v1 frozen"
+    },
+    {
+      "status": "backtested",
+      "at": "2026-11-16T09:41:42.046094+00:00",
+      "reason": "first run on v1"
+    },
+    {
+      "status": "validated",
+      "at": "2026-11-21T03:47:11.367391+00:00",
+      "reason": "Passed every pre-registered test (findings 17); recorded as needs-shorting in decisions.toml, never traded (Luke, 2026-11-21)."
+    }
+  ]
+}

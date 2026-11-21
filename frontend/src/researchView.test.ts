@@ -96,3 +96,10 @@ describe("confirmation runs", () => {
     expect(run!.perCoin[2]!.gap).toBeNull();
   });
 });
+
+describe("needs shorting", () => {
+  it("is counted and named apart from the other decisions", () => {
+    expect(tally({ pursue: 1, watch: 0, needsShorting: 1, drop: 2 })).toBe("1 pursue · 1 needs shorting · 2 drop");
+    expect(familyOf("study:cash-and-carry").key).toBe("shorting");
+  });
+});

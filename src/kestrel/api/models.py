@@ -647,7 +647,7 @@ class DecisionOut(BaseModel):
     name: str
     market: str
     decision: str
-    """pursue, watch or drop."""
+    """pursue, watch, needs-shorting or drop."""
     decided: date
     reason: str
     evidence: list[str]

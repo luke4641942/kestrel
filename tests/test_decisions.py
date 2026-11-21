@@ -39,7 +39,7 @@ def test_the_repos_decisions_load_and_point_at_real_evidence() -> None:
     decisions = load_decisions(REPO / "research" / "decisions.toml")
     # Pursue first, then watch, then drop (there may be no pursue at all).
     assert [d.decision for d in decisions] == sorted(
-        (d.decision for d in decisions), key=["pursue", "watch", "drop"].index
+        (d.decision for d in decisions), key=["pursue", "watch", "needs-shorting", "drop"].index
     )
     # Research notes are committed by hand, so a fresh checkout (CI) may not have them all;
     # check every evidence slug that has a note folder to check against.
@@ -67,6 +67,15 @@ def test_decisions_are_ordered_pursue_watch_drop(tmp_path: Path) -> None:
     assert found[0].evidence == []
 
 
+def test_a_shorting_study_that_passed_is_needs_shorting(tmp_path: Path) -> None:
+    text = entry("study:cash-and-carry", "needs-shorting") + entry()
+    found = load_decisions(write(tmp_path, text))
+    assert [(d.strategy, d.decision) for d in found] == [
+        ("trend-vol-target", "pursue"),
+        ("study:cash-and-carry", "needs-shorting"),
+    ]
+
+
 @pytest.mark.parametrize(
     ("text", "message"),
     [
@@ -76,8 +85,9 @@ def test_decisions_are_ordered_pursue_watch_drop(tmp_path: Path) -> None:
         ("decision = [1]\n", "must be a table"),
         ('[[decision]]\nstrategy = "trend-vol-target"\n', "missing"),
         (entry().replace("reason =", 'colour = "red"\nreason ='), "unknown key"),
-        (entry("magic"), "no strategy 'magic'"),
-        (entry(decision="maybe"), "pursue, watch, drop"),
+        (entry("magic"), "no strategy or study 'magic'"),
+        (entry(decision="maybe"), "pursue, watch, needs-shorting, drop"),
+        (entry(decision="needs-shorting"), "for a hypothetical shorting study"),
         (entry(reason="  "), "reason must be written out"),
         (entry().replace("decided = 2026-11-12", 'decided = "soon"'), "decided must be a date"),
         (
@@ -103,4 +113,4 @@ def test_the_endpoint(tmp_path: Path) -> None:
     (research / "decisions.toml").write_text(entry(decision="maybe"))
     broken = client.get("/api/decisions")
     assert broken.status_code == 503
-    assert "pursue, watch, drop" in broken.text
+    assert "pursue, watch, needs-shorting, drop" in broken.text

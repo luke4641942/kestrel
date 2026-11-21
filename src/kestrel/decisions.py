@@ -18,11 +18,13 @@ from datetime import date
 from pathlib import Path
 from typing import Any, Literal, cast
 
+from kestrel.research import STUDIES
 from kestrel.strategy import STRATEGIES
 
-Choice = Literal["pursue", "watch", "drop"]
-CHOICES: tuple[Choice, ...] = ("pursue", "watch", "drop")
-"""In the order they are shown."""
+Choice = Literal["pursue", "watch", "needs-shorting", "drop"]
+CHOICES: tuple[Choice, ...] = ("pursue", "watch", "needs-shorting", "drop")
+"""In the order they are shown. needs-shorting: a hypothetical shorting study that passed,
+never traded until a licensed retail route to shorting exists (CLAUDE.md, Parked)."""
 
 
 class DecisionError(ValueError):
@@ -32,7 +34,7 @@ class DecisionError(ValueError):
 @dataclass(frozen=True)
 class Decision:
     strategy: str
-    """Key in kestrel.strategy.STRATEGIES."""
+    """Key in kestrel.strategy.STRATEGIES, or a study's (kestrel.research.STUDIES)."""
     name: str
     market: str
     decision: Choice
@@ -80,8 +82,10 @@ def _parse(entry: Any, n: int) -> Decision:
         raise DecisionError(f"{where}: missing {', '.join(sorted(missing))}")
     if unknown:
         raise DecisionError(f"{where}: unknown key(s) {', '.join(sorted(unknown))}")
-    if entry["strategy"] not in STRATEGIES:
-        raise DecisionError(f"{where}: no strategy {entry['strategy']!r}")
+    if entry["strategy"] not in STRATEGIES and entry["strategy"] not in STUDIES:
+        raise DecisionError(f"{where}: no strategy or study {entry['strategy']!r}")
+    if entry["decision"] == "needs-shorting" and entry["strategy"] not in STUDIES:
+        raise DecisionError(f"{where}: needs-shorting is for a hypothetical shorting study")
     if entry["decision"] not in CHOICES:
         raise DecisionError(f"{where}: decision must be one of {', '.join(CHOICES)}")
     for key in ("name", "market", "reason"):

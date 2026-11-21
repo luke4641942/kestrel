@@ -1,0 +1,28 @@
+{
+  "slug": "altcoin-portfolio-on-the-btc-regime-with-exit",
+  "name": "Altcoin portfolio on the BTC regime, with exit rules",
+  "created_at": "2026-11-21T03:30:54.958605+00:00",
+  "status": "rejected",
+  "history": [
+    {
+      "status": "idea",
+      "at": "2026-11-21T03:30:54.958605+00:00",
+      "reason": "Created"
+    },
+    {
+      "status": "specified",
+      "at": "2026-11-21T03:36:18.725261+00:00",
+      "reason": "v1 frozen"
+    },
+    {
+      "status": "backtested",
+      "at": "2026-11-21T03:37:25.130320+00:00",
+      "reason": "first run on v1"
+    },
+    {
+      "status": "rejected",
+      "at": "2026-11-21T03:47:11.364441+00:00",
+      "reason": "Failed its scorecard (findings 20, 2026-11-21): beat the large-basket control (Sharpe 0.53 vs 0.44) but lost to BTC at the same exposure (1.10); walk-forward 3 of 9, 2-year starts 32%, luck 0%. Rejected and dropped (Luke)."
+    }
+  ]
+}
