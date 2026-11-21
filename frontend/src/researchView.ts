@@ -69,6 +69,7 @@ export const FAMILIES: Family[] = [
       "level-retest",
       "trendline-bounce",
       "trendline-breakout",
+      "tori-trendline",
       "wedge-breakout",
       "pattern-macd",
       "set-and-forget",
