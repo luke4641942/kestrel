@@ -15,9 +15,6 @@ Rules live in CLAUDE.md; results in `research/findings.md`; ideas not yet schedu
   sleeps (a missed day is recorded, never traded late).
 
 ## Waiting on Luke
-- [ ] GitHub Actions won't start (2026-11-21): "recent account payments have failed or your
-      spending limit needs to be increased" (GitHub Settings > Billing and plans). CI hasn't
-      run since; the local check (scripts/check.sh) passes.
 - [ ] Delisting exit rule (findings 11): write a note (sell a held coin at the next open
       after its delisting is announced), or park it. Only matters for a strategy that holds
       small coins, so it belongs with the altcoin portfolio below.
@@ -64,7 +61,7 @@ exists and Luke has checked the Swyftx employee trading policy.
   to be a microcontroller, so the candidate is the TrueNAS server (SCALE: a container; its
   own user, keys in a file only Kestrel reads, no open ports, nightly ledger backups, one-step
   cutover, never two machines on one account). Needs first: a dependency lock file with
-  hashes. Recording Binance's liquidation and order-book streams waits on this too.
+  hashes (done 2026-11-21). Recording Binance's liquidation and order-book streams waits on this too.
 
 ## Later
 - [ ] BNB fees on the venue: kestrel.toml models 7.5 bps (BNB discount), but the Binance
@@ -83,6 +80,8 @@ exists and Luke has checked the Swyftx employee trading policy.
 - [ ] Dashboard at phone width: the top menu and pages spill off the screen.
 
 ## Done recently
+- 2026-11-21 CI trimmed for the free Actions minutes (one Python, docs-only pushes skipped,
+  superseded runs cancelled); dependencies locked with hashes (`requirements-dev.lock`).
 - 2026-11-16 Five hypothetical shorting studies (findings 17): trend shorts and long/short
   momentum failed (rejected, Luke); cash-and-carry passed.
 - 2026-11-16 rot-g1 opened (G1 pursued, G2 dropped; Luke); its paper note closed as paper.

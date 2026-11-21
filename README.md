@@ -47,10 +47,13 @@ bias, unrealistic fills, ignored costs, and research code that is rewritten
 ## Quick start
 
 Requires Python 3.11+ and Node 18+.
+Python packages are pinned with hashes in `requirements-dev.lock` (CI installs the same);
+to upgrade, `pip-compile --extra dev --generate-hashes --strip-extras --output-file
+requirements-dev.lock pyproject.toml`, then run `scripts/check.sh`.
 
 ```bash
 python -m venv .venv && source .venv/bin/activate
-pip install -e ".[dev]"
+pip install --require-hashes -r requirements-dev.lock && pip install --no-deps -e .
 (cd frontend && npm install && npm run build)   # builds the dashboard into the package
 
 # Dashboard at http://127.0.0.1:8000, API docs at /api/docs

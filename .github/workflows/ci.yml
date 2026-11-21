@@ -1,24 +1,39 @@
 name: CI
 
+# Kept small for the free Actions minutes (2,000 a month on a private repo): one Python
+# (3.11, the version the Mac and the paper jobs run), no run for docs-only pushes, and a
+# newer push cancels a run still going. scripts/check.sh runs the same checks locally.
 on:
   push:
     branches: [main]
+    paths-ignore:
+      - "**.md"
+      - "research/**"
+      - "docs/**"
   pull_request:
+    paths-ignore:
+      - "**.md"
+      - "research/**"
+      - "docs/**"
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
   check:
     runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        python-version: ["3.11", "3.12", "3.13"]
     steps:
       - uses: actions/checkout@v7
       - uses: actions/setup-python@v7
         with:
-          python-version: ${{ matrix.python-version }}
+          python-version: "3.11"
           cache: pip
-      - name: Install
-        run: pip install -e ".[dev]"
+          cache-dependency-path: requirements-dev.lock
+      - name: Install (exact versions, hash-checked)
+        run: |
+          pip install --require-hashes -r requirements-dev.lock
+          pip install --no-deps -e .
       - name: Lint
         run: ruff check . && ruff format --check .
       - name: Type-check
