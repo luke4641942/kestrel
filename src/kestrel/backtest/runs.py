@@ -177,6 +177,10 @@ def strategy_panel(
         if coinwise:
             raise ValueError(f"a coin panel can only carry market-wide features, not {coinwise}")
         panel = attach_features(panel, spec.features, UNIVERSE, interval, store.root)
+    if spec.coin_events:
+        from kestrel.data import coin_events
+
+        panel = coin_events.attach_stored(panel, store.root)
     return panel
 
 
@@ -187,6 +191,14 @@ def _execute_universe(request: RunRequest, store: ParquetStore, config: Config) 
     if request.engine != "event":
         raise ValueError("cross-sectional strategies run on the event engine only")
     panel = strategy_panel(store, request.strategy, request.interval, request.start, request.end)
+    if (
+        config.split is not None
+        and not config.confirmation_unlocked
+        and not spec_for(request.strategy).assets
+    ):
+        # The coin universe includes the locked confirmation half: a run over the whole
+        # market sees only the coins it may (the engine refuses the rest).
+        panel = panel.filter(~pl.col("symbol").is_in(sorted(config.split.confirmation)))
     result = run_portfolio(
         strategy,
         panel,

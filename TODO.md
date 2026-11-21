@@ -23,10 +23,9 @@ Rules live in CLAUDE.md; results in `research/findings.md`; ideas not yet schedu
       drawdowns too, and its return after removing BTC exposure. A rule change, so Luke's call.
 
 ## Next
-- [ ] Altcoin portfolio: note `altcoin-portfolio-on-the-btc-regime-with-exit` drafted
-      (G1's weekly rule on a point-in-time liquid universe, with the delisting and
-      perp-listing exit rules). Next: Luke reviews; build the strategy (and exclude
-      tokenized stocks first); Luke freezes; scorecard; maybe a holdout test.
+- [ ] Altcoin portfolio: built (`altcoin-rotation`, coin events from
+      `kestrel.data.coin_events`), note `altcoin-portfolio-on-the-btc-regime-with-exit`
+      updated to match (exploration half only). Luke freezes; then the scorecard run.
 - [ ] Token unlocks (findings 19): KILL, no drift beyond what these coins do anyway.
       Luke: reject `do-coins-fall-into-large-token-unlocks`?
 - [ ] Monitoring-tag drift: blocked on data. Binance's announcement feed holds 1 tag

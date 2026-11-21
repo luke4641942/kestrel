@@ -21,6 +21,7 @@ from typing import Literal, Protocol, cast, runtime_checkable
 
 import polars as pl
 
+from kestrel.strategies.altcoin_rotation import AltcoinRegimeRotation
 from kestrel.strategies.anchor import HighAnchor
 from kestrel.strategies.basket import LargeCoinBasket
 from kestrel.strategies.basket_breakout import BasketBreakout
@@ -231,6 +232,9 @@ class StrategySpec:
     assets: tuple[str, ...] = ()
     """For a universe strategy over named assets only (e.g. BTC and gold): its panel is just
     these symbols, each ingested on its own, instead of the coin universe."""
+    coin_events: bool = False
+    """A universe strategy that reads coin events (delisting announced, days since its first
+    perp; kestrel.data.coin_events) on its panel."""
 
 
 STRATEGIES: dict[str, StrategySpec] = {
@@ -943,6 +947,30 @@ STRATEGIES: dict[str, StrategySpec] = {
             ),
             universe=True,
             assets=LARGE_8,
+        ),
+        StrategySpec(
+            "altcoin-rotation",
+            "research",
+            "Each Sunday, while BTC closes margin_pct% above its btc_days average, hold the top "
+            "top_n altcoins by lookback_days return among the liquid ones then (min_volume_m "
+            "million USDT a day, min_history days) that are above their close coin_days earlier, "
+            "each sized to target_vol_pct volatility; sells a coin whose delisting is announced "
+            "or whose first perp is under perp_exit_days old. Runs only through its frozen note.",
+            AltcoinRegimeRotation,
+            (
+                Param("top_n", 3, 1, 8, "Coins held"),
+                Param("lookback_days", 90, 30, 365, "Days of return ranked"),
+                Param("btc_days", 50, 20, 200, "BTC's moving average, days"),
+                Param("margin_pct", 3, 0, 10, "How far above its average BTC must close, %"),
+                Param("coin_days", 30, 5, 120, "The coin's own trend, days"),
+                Param("vol_days", 30, 10, 90, "Days of returns in each coin's volatility"),
+                Param("target_vol_pct", 50, 10, 100, "Annualised volatility target per slot, %"),
+                Param("min_volume_m", 20, 1, 500, "Median daily volume, million USDT"),
+                Param("min_history", 365, 90, 1000, "Days of unbroken history"),
+                Param("perp_exit_days", 30, 0, 90, "Avoid a coin this many days after its perp"),
+            ),
+            universe=True,
+            coin_events=True,
         ),
         StrategySpec(
             "btc-rotation-4",
