@@ -146,3 +146,29 @@ def test_unlock_events_merge_need_history_and_stop_before_the_holdout() -> None:
     assert r.events == 2
     splits = ev.unlock_splits(g, found)
     assert splits.insiders[0] + splits.others[0] == 2
+
+
+def test_a_study_is_saved_with_its_path_and_served(tmp_path) -> None:  # type: ignore[no-untyped-def]
+    from fastapi.testclient import TestClient
+
+    from kestrel.api.app import create_app
+    from tests.test_api_paper import REPO_CONFIG
+
+    g = coins(30, 1400, noise=0.002)
+    found = []
+    for k in range(60):
+        j, i = k % 30, 200 + 15 * k
+        plant(g, j, i, 0.10)
+        found.append(ev.Event(g.symbols[j], g.days[i]))
+    path = ev.event_path(g, found)
+    assert path[0] == (-30, 0.0)
+    assert [k for k, _ in path] == list(range(-30, 31))
+    assert path[-1][1] == pytest.approx(-0.10, abs=0.02)  # the planted fall, by day 30
+    r = ev.study(g, found, verdict=ev.perp_verdict, placebo_days=20)
+    target = ev.save("perp-listing", "note-slug", r, "the report", path, tmp_path, "abc")
+    assert target.name == "perp-listing.json"
+    client = TestClient(create_app(tmp_path, static_dir=None, config_path=REPO_CONFIG))
+    (study,) = client.get("/api/event-studies").json()
+    assert (study["verdict"], study["note"], study["events"]) == ("EXIT RULE", "note-slug", 60)
+    assert all(study["tests"].values())
+    assert len(study["path"]) == 61

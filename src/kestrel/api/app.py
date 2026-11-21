@@ -36,6 +36,7 @@ from kestrel.api.models import (
     Dataset,
     DecisionOut,
     EditNote,
+    EventStudyOut,
     FillOut,
     GradeOut,
     Health,
@@ -119,6 +120,7 @@ from kestrel.strategy import (
     validated_weights,
 )
 from kestrel.studies import cost_gate, shorting
+from kestrel.studies import events as event_studies
 from kestrel.validation import rules
 from kestrel.validation.deflated import (
     TrialSet,
@@ -550,6 +552,12 @@ def create_app(
     def list_cost_gate() -> list[CostGateOut]:
         """The saved cost gates, shortest bars first. Read-only: run with kestrel cost-gate."""
         return [CostGateOut.model_validate(d) for d in cost_gate.load_all(data_dir)]
+
+    @api.get("/event-studies")
+    def list_event_studies() -> list[EventStudyOut]:
+        """Saved event studies, newest first. Read-only: each runs once from its frozen note
+        with kestrel event-study."""
+        return [EventStudyOut.model_validate(d) for d in event_studies.load_all(data_dir)]
 
     @api.get("/short-studies")
     def list_short_studies() -> list[ShortStudyOut]:

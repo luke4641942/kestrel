@@ -744,6 +744,37 @@ class CostGateRowOut(BaseModel):
     """The setup's own target in R (median), when it names one: order flow's point of control."""
 
 
+class EventPointOut(BaseModel):
+    day: int
+    """Days from the event (day 0)."""
+    abnormal: float | None
+    """Mean abnormal return from day -30's open to this day's open (against the other
+    coins)."""
+
+
+class EventStudyOut(BaseModel):
+    """An event study (kestrel.studies.events), saved by kestrel event-study: what coins
+    did around an event, against the other coins at the same time. Not a strategy run."""
+
+    name: str
+    note: str
+    measured_at: datetime
+    commit: str | None
+    verdict: str
+    """EXIT RULE, KILL or INSUFFICIENT."""
+    events: int
+    event_days: int
+    mean: float
+    """The note's primary window, mean over event days."""
+    p_below: float
+    share_negative: float
+    placebo_median: float | None
+    placebo_share_at_or_below: float
+    tests: dict[str, bool]
+    path: list[EventPointOut]
+    report: str
+
+
 class ShortStudyOut(BaseModel):
     """A hypothetical shorting study (kestrel.studies.shorting), saved by kestrel
     short-study. Not an engine run and never tradeable here: Kestrel is spot, long-only."""

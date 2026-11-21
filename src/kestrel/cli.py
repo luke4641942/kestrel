@@ -543,6 +543,14 @@ def overlap_report(
         typer.echo(f"  mix without {n:<12} {s:.2f}")
 
 
+def _commit() -> str | None:
+    """This code's git commit, marked -dirty with uncommitted changes."""
+    from kestrel.provenance import code_version
+
+    v = code_version()
+    return v.commit and v.commit + ("-dirty" if v.dirty else "")
+
+
 @app.command("event-study")
 def event_study(
     event: Annotated[str, typer.Argument(help="perp-listing or token-unlocks.")],
@@ -591,24 +599,30 @@ def event_study(
             mapped = {p: c for p, c in mapping.items() if c in coins}
             target = Path(data_dir) / "unlocks" / "mapping.json"
             target.write_text(json.dumps({"mapped": mapping, "dropped": dropped}, indent=2))
-            result, splits, unlocked = events.run_token_unlocks(
+            result, splits, unlocked, path = events.run_token_unlocks(
                 panel, schedules, mapped, holdout, tiers
             )
             store.mark_backtested(s.slug, note.version)
-            typer.echo(events.format_unlocks(result, splits, len({u.coin for u in unlocked})))
+            report = events.format_unlocks(result, splits, len({u.coin for u in unlocked}))
+            typer.echo(report)
+            saved = events.save(event, slug, result, report, path, data_dir, _commit())
+            typer.echo(f"Saved for the dashboard: {saved}")
             typer.echo(f"\nMapping written to {target} ({len(mapping)} protocols mapped).")
             return
         first: dict[str, datetime | None] = {}
         for c in coins:
             f = perp_funding(str(data_dir), c)
             first[c] = None if f is None or f.height == 0 else f["time"].min()  # type: ignore[assignment]
-        result, found = events.run_perp_listing(panel, first, holdout, tiers)
+        result, found, path = events.run_perp_listing(panel, first, holdout, tiers)
     except (ConfigError, ValueError) as e:
         typer.echo(str(e), err=True)
         raise typer.Exit(code=1) from None
     store.mark_backtested(s.slug, note.version)
-    typer.echo(events.format_result(f"Perp listings (note {slug})", result))
+    report = events.format_result(f"Perp listings (note {slug})", result)
+    typer.echo(report)
     typer.echo(f"\n{len(found)} events found (the note counted 102 before any return was read).")
+    saved = events.save(event, slug, result, report, path, data_dir, _commit())
+    typer.echo(f"Saved for the dashboard: {saved}")
 
 
 @app.command("short-study")

@@ -317,6 +317,29 @@ export interface CostGateRow {
   target_r: number | null;
 }
 
+/** An event study (kestrel.studies.events), run once from its frozen note with kestrel
+ * event-study: what coins did around an event, against the other coins. */
+export interface EventStudy {
+  name: string;
+  note: string;
+  measured_at: string;
+  commit: string | null;
+  /** "EXIT RULE", "KILL" or "INSUFFICIENT". */
+  verdict: string;
+  events: number;
+  event_days: number;
+  /** The note's primary window, mean over event days. */
+  mean: number;
+  p_below: number;
+  share_negative: number;
+  placebo_median: number | null;
+  placebo_share_at_or_below: number;
+  tests: Record<string, boolean>;
+  /** Mean abnormal return from day -30's open to each day's open. */
+  path: { day: number; abnormal: number | null }[];
+  report: string;
+}
+
 /** A hypothetical shorting study (kestrel.studies.shorting), run once from its frozen note
  * with kestrel short-study. Not an engine run: Kestrel is spot and long-only. */
 export interface ShortStudy {
@@ -756,6 +779,7 @@ export const api = {
   holdout: () => request<HoldoutRecord[]>("/holdout"),
   costGate: () => request<CostGate[]>("/cost-gate"),
   shortStudies: () => request<ShortStudy[]>("/short-studies"),
+  eventStudies: () => request<EventStudy[]>("/event-studies"),
   regimes: () => request<RegimeSummary[]>("/regimes"),
   regime: (symbol: string) => request<RegimeDetail>(`/regimes/${enc(symbol)}`),
   startRegimes: (symbol: string) => request<Job>("/jobs/regimes", { method: "POST", body: JSON.stringify({ symbol }) }),

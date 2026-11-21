@@ -2410,3 +2410,33 @@ pre.report {
   margin: 0;
   padding: 0 16px 10px;
 }
+
+/* An event study's average path: the line in the text colour, recessive grid and axes. */
+.event-path {
+  width: 100%;
+  height: auto;
+  display: block;
+}
+.event-line {
+  fill: none;
+  stroke: var(--text);
+  stroke-width: 2;
+  stroke-linejoin: round;
+}
+.event-grid {
+  stroke: var(--line);
+  stroke-width: 1;
+}
+.event-zero {
+  stroke: var(--line-strong);
+  stroke-width: 1;
+}
+.event-day0 {
+  stroke: var(--text-3);
+  stroke-width: 1;
+  stroke-dasharray: 4 4;
+}
+.event-tick {
+  fill: var(--text-3);
+  font-size: 11px;
+}

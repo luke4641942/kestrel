@@ -18,9 +18,12 @@ does-a-perp-listing-mark-a-top). Prices come from kestrel.studies.shorting's dai
 
 from __future__ import annotations
 
+import json
 from collections.abc import Callable, Sequence
 from dataclasses import dataclass, field
 from datetime import UTC, date, datetime, timedelta
+from pathlib import Path
+from typing import Any
 
 import numpy as np
 import polars as pl
@@ -227,7 +230,7 @@ def run_perp_listing(
     first_funding: dict[str, datetime | None],
     holdout: datetime,
     tiers: Sequence[tuple[float, float]],
-) -> tuple[EventResult, list[Event]]:
+) -> tuple[EventResult, list[Event], list[tuple[int, float]]]:
     g = grid(panel, {}, tiers)
     events = perp_listings(g, first_funding, holdout)
     last = (holdout - timedelta(days=1)).date()
@@ -235,7 +238,7 @@ def run_perp_listing(
         g, events, PRIMARY, OTHERS, last_day=last if last in g.days else None,
         verdict=perp_verdict,
     )  # fmt: skip
-    return result, events
+    return result, events, event_path(g, events)
 
 
 def format_result(title: str, r: EventResult, primary: str = "day 1 to 31") -> str:
@@ -373,7 +376,7 @@ def run_token_unlocks(
     mapping: dict[str, str],
     holdout: datetime,
     tiers: Sequence[tuple[float, float]],
-) -> tuple[EventResult, UnlockSplits, list[Unlock]]:
+) -> tuple[EventResult, UnlockSplits, list[Unlock], list[tuple[int, float]]]:
     g = grid(panel, {}, tiers)
     found, every = unlock_events(g, schedules, mapping, holdout)
     last = (holdout - timedelta(days=1)).date()
@@ -381,7 +384,8 @@ def run_token_unlocks(
         g, [Event(u.coin, u.day) for u in found], UNLOCK_PRIMARY, UNLOCK_OTHERS,
         last_day=last if last in g.days else None, verdict=perp_verdict, avoid=every,
     )  # fmt: skip
-    return result, unlock_splits(g, found), found
+    path = event_path(g, [Event(u.coin, u.day) for u in found])
+    return result, unlock_splits(g, found), found, path
 
 
 def format_unlocks(r: EventResult, splits: UnlockSplits, coins: int) -> str:
@@ -397,3 +401,79 @@ def format_unlocks(r: EventResult, splits: UnlockSplits, coins: int) -> str:
     ]
     head, _, verdict = text.rpartition("\n\nVerdict:")
     return head + "\n".join(split) + "\n\nVerdict:" + verdict
+
+
+# ---------- saved for the dashboard ----------
+
+PATH_DAYS = 30
+
+
+def event_path(g: Grid, events: Sequence[Event], days: int = PATH_DAYS) -> list[tuple[int, float]]:
+    """The average path around the events: for each day k from -days to +days, the mean
+    (over event days) of the abnormal return from day -days's open to day k's open. Shows
+    the run-up and what follows in one line; deciding nothing."""
+    index = {d: i for i, d in enumerate(g.days)}
+    col = {s: j for j, s in enumerate(g.symbols)}
+    out: list[tuple[int, float]] = [(-days, 0.0)]
+    for k in range(-days + 1, days + 1):
+        rows = [
+            (e.day, x)
+            for e in events
+            if (x := abnormal(g, col[e.coin], index[e.day], -days, k)) is not None
+        ]
+        vals = by_day(rows)
+        out.append((k, float(vals.mean()) if len(vals) else float("nan")))
+    return out
+
+
+def exit_rule_tests(r: EventResult) -> dict[str, bool]:
+    """The exit-rule notes' tests, one by one (perp listings, token unlocks)."""
+    return {
+        "at least 50 event days": r.event_days >= 50,
+        "mean at most -3%": r.mean <= -0.03,
+        "P(< 0) at least 90%": r.p_below >= 0.90,
+        "below at least 90% of the placebo means": r.placebo_share_at_or_below <= 0.10,
+    }
+
+
+def save(
+    name: str,
+    slug: str,
+    result: EventResult,
+    report: str,
+    path: list[tuple[int, float]],
+    data_dir: Path | str,
+    commit: str | None,
+) -> Path:
+    """The study's result for the dashboard (``<data>/events/<name>.json``). A rerun of the
+    same frozen note replaces it (the rule is fixed; only the code can change it, and the
+    commit is recorded)."""
+    doc = {
+        "name": name,
+        "note": slug,
+        "measured_at": datetime.now(UTC).isoformat(),
+        "commit": commit,
+        "verdict": result.verdict,
+        "events": result.events,
+        "event_days": result.event_days,
+        "mean": result.mean,
+        "p_below": result.p_below,
+        "share_negative": result.share_negative,
+        "placebo_median": float(np.median(result.placebo_means)) if result.placebo_means else None,
+        "placebo_share_at_or_below": result.placebo_share_at_or_below,
+        "tests": exit_rule_tests(result),
+        "path": [{"day": k, "abnormal": None if not np.isfinite(v) else v} for k, v in path],
+        "report": report,
+    }
+    target = Path(data_dir) / "events" / f"{name}.json"
+    target.parent.mkdir(parents=True, exist_ok=True)
+    tmp = target.with_suffix(".tmp")
+    tmp.write_text(json.dumps(doc, indent=2))
+    tmp.replace(target)
+    return target
+
+
+def load_all(data_dir: Path | str) -> list[dict[str, Any]]:
+    """Every saved event study, newest first."""
+    found = [json.loads(p.read_text()) for p in (Path(data_dir) / "events").glob("*.json")]
+    return sorted(found, key=lambda d: d["measured_at"], reverse=True)

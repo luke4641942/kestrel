@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState, type FormEvent, type ReactNode } 
 import { api, type Dataset, type Job, type Metrics, type RunDetail, type RunSummary, type Scorecard } from "../api";
 import { EquityChart } from "../components/EquityChart";
 import { ParamInputs, defaultParams } from "../components/ParamInputs";
+import { EventStudies } from "../components/EventStudies";
 import { ShortStudies } from "../components/ShortStudies";
 import { Empty, PageHeader, Panel, Section, Stat, Status, Tabs } from "../components/ui";
 import { ago, dateTime, lastResearchMonth, num } from "../format";
@@ -108,6 +109,8 @@ export function Backtests({ jobs, onJobStarted }: { jobs: Job[]; onJobStarted: (
       </Section>
 
       <ShortStudies />
+
+      <EventStudies />
 
       <Section title="Runs" description="Every saved run, including runs started from the CLI. Click a heading to sort; select a run to see it below.">
         <Panel>

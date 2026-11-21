@@ -15,6 +15,7 @@ vi.mock("../api", async (importOriginal) => {
 beforeEach(() => {
   api.backtests = vi.fn().mockResolvedValue([]);
   api.shortStudies = vi.fn().mockResolvedValue([]);
+  api.eventStudies = vi.fn().mockResolvedValue([]);
   api.datasets = vi.fn().mockResolvedValue([
     {
       venue: "binance",
