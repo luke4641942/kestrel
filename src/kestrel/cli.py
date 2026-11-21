@@ -545,7 +545,7 @@ def overlap_report(
 
 @app.command("event-study")
 def event_study(
-    event: Annotated[str, typer.Argument(help="perp-listing.")],
+    event: Annotated[str, typer.Argument(help="perp-listing or token-unlocks.")],
     research_dir: ResearchDir = Path("research"),
     data_dir: DataDir = Path("data"),
     config: Annotated[
@@ -559,7 +559,10 @@ def event_study(
     from kestrel.studies import events
     from kestrel.studies.cross_section import perp_funding
 
-    notes = {"perp-listing": ("does-a-perp-listing-mark-a-top", "study:perp-listing")}
+    notes = {
+        "perp-listing": ("does-a-perp-listing-mark-a-top", "study:perp-listing"),
+        "token-unlocks": ("do-coins-fall-into-large-token-unlocks", "study:token-unlocks"),
+    }
     if event not in notes:
         typer.echo(f"no event study {event!r}; one of {', '.join(notes)}", err=True)
         raise typer.Exit(code=1)
@@ -579,11 +582,26 @@ def event_study(
             ParquetStore(data_dir), coins, Interval.D1, Month(2017, 8), Month(last.year, last.month)
         )
         panel = panel.filter(pl.col("open_time") < holdout)
+        tiers = [(float(v), float(b) / 1e4) for v, b in cfg.universe.spread_tiers]
+        if event == "token-unlocks":
+            from kestrel.data import unlocks
+
+            schedules, gecko = unlocks.load(data_dir)
+            mapping, dropped = unlocks.ticker_map(schedules, gecko)
+            mapped = {p: c for p, c in mapping.items() if c in coins}
+            target = Path(data_dir) / "unlocks" / "mapping.json"
+            target.write_text(json.dumps({"mapped": mapping, "dropped": dropped}, indent=2))
+            result, splits, unlocked = events.run_token_unlocks(
+                panel, schedules, mapped, holdout, tiers
+            )
+            store.mark_backtested(s.slug, note.version)
+            typer.echo(events.format_unlocks(result, splits, len({u.coin for u in unlocked})))
+            typer.echo(f"\nMapping written to {target} ({len(mapping)} protocols mapped).")
+            return
         first: dict[str, datetime | None] = {}
         for c in coins:
             f = perp_funding(str(data_dir), c)
             first[c] = None if f is None or f.height == 0 else f["time"].min()  # type: ignore[assignment]
-        tiers = [(float(v), float(b) / 1e4) for v, b in cfg.universe.spread_tiers]
         result, found = events.run_perp_listing(panel, first, holdout, tiers)
     except (ConfigError, ValueError) as e:
         typer.echo(str(e), err=True)
@@ -995,6 +1013,31 @@ def ingest_delistings(data_dir: DataDir = Path("data")) -> None:
         f"{last:%Y-%m-%d}" + (f"; {amended} removal dates amended" if amended else "")
     )
     for problem in problems:
+        typer.echo(f"  problem: {problem}")
+
+
+@app.command("ingest-unlocks")
+def ingest_unlocks(data_dir: DataDir = Path("data")) -> None:
+    """Token unlock schedules from DefiLlama's public dataset files, and CoinGecko's coin
+    list (ids to tickers). Schedules only, no prices. Files that can't be read are
+    reported, never guessed. Takes a few minutes (one file per protocol)."""
+    from kestrel.data import unlocks
+
+    def progress(k: int, n: int) -> None:
+        if k % 50 == 0 or k == n:
+            typer.echo(f"  {k}/{n} protocols")
+
+    try:
+        with httpx.Client(timeout=60, follow_redirects=True) as http:
+            schedules, coins, problems = unlocks.ingest(http, data_dir, progress=progress)
+    except httpx.HTTPError as e:
+        typer.echo(f"unlocks: {e}", err=True)
+        raise typer.Exit(code=1) from None
+    typer.echo(
+        f"{schedules['protocol'].n_unique()} protocols with a schedule, "
+        f"{coins.height} CoinGecko coins; {len(problems)} problems"
+    )
+    for problem in problems[:20]:
         typer.echo(f"  problem: {problem}")
 
 

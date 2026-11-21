@@ -114,9 +114,12 @@ def study(
     seed: int = 0,
     last_day: date | None = None,
     verdict: Callable[[EventResult], str] | None = None,
+    avoid: dict[str, list[date]] | None = None,
 ) -> EventResult:
     """Measure ``events`` on ``g``. ``last_day``: no window may end after it (the day
-    before the holdout). ``verdict`` sets the note's verdict from the result."""
+    before the holdout). ``verdict`` sets the note's verdict from the result. ``avoid``:
+    per coin, more days placebo draws must stay ``placebo_gap`` days from (its own event
+    day always is)."""
     index = {d: i for i, d in enumerate(g.days)}
     col = {s: j for j, s in enumerate(g.symbols)}
     rows: list[tuple[date, float]] = []
@@ -136,9 +139,11 @@ def study(
     draws: list[list[float]] = []
     for e in events:
         j, i0 = col[e.coin], index[e.day]
+        far = [i0] + [index[d] for d in (avoid or {}).get(e.coin, []) if d in index]
         candidates = [
             i for i in range(len(g.days))
-            if abs(i - i0) >= placebo_gap and i + end <= limit and g.age[i, j] > 0
+            if all(abs(i - k) >= placebo_gap for k in far) and i + end <= limit
+            and g.age[i, j] > 0
         ]  # fmt: skip
         picks: list[float] = []
         if candidates:
@@ -233,12 +238,12 @@ def run_perp_listing(
     return result, events
 
 
-def format_result(title: str, r: EventResult) -> str:
+def format_result(title: str, r: EventResult, primary: str = "day 1 to 31") -> str:
     lines = [
         title,
         "",
         f"{r.events} events on {r.event_days} listing days ({r.dropped} not measurable)",
-        f"  30-day abnormal return (day 1 to 31, vs the other coins): mean {r.mean:+.2%}; "
+        f"  30-day abnormal return ({primary}, vs the other coins): mean {r.mean:+.2%}; "
         f"P(< 0) {r.p_below:.0%}; {r.share_negative:.0%} of events below zero",
         f"  Placebo (same coins, random days): {r.placebo_share_at_or_below:.0%} of "
         f"{len(r.placebo_means)} placebo means at or below it"
@@ -252,3 +257,143 @@ def format_result(title: str, r: EventResult) -> str:
     )
     lines.append(f"\nVerdict: {r.verdict}")
     return "\n".join(lines)
+
+
+# ---------- token unlocks (note do-coins-fall-into-large-token-unlocks) ----------
+
+UNLOCK_SHARE = 0.02
+"""An event: tokens unlocked that day are at least 2% of the cumulative unlocked supply."""
+MERGE_DAYS = 30
+UNLOCK_PRIMARY = (-30, 0)
+UNLOCK_OTHERS = {"after (day 0 to 14)": (0, 14), "last two weeks (day -14 to 0)": (-14, 0)}
+
+
+@dataclass(frozen=True)
+class Unlock:
+    coin: str
+    day: date
+    tokens: float
+    insider_tokens: float
+
+
+def unlock_days(schedule: pl.DataFrame, share: float = UNLOCK_SHARE) -> list[Unlock]:
+    """A protocol's large unlock days (``coin`` left empty): tokens unlocked that day at
+    least ``share`` of the cumulative unlocked supply the day before (which must be
+    above zero: a token's first day is its launch, not an unlock)."""
+    s = schedule.sort("day").with_columns(
+        prev=pl.col("unlocked").shift(1), prev_insiders=pl.col("insiders").shift(1)
+    )
+    big = s.filter(
+        (pl.col("prev") > 0) & ((pl.col("unlocked") - pl.col("prev")) >= share * pl.col("prev"))
+    )
+    return [
+        Unlock("", d, u - p, i - pi)
+        for d, u, p, i, pi in big.select(
+            "day", "unlocked", "prev", "insiders", "prev_insiders"
+        ).iter_rows()
+    ]
+
+
+def unlock_events(
+    g: Grid,
+    schedules: pl.DataFrame,
+    mapping: dict[str, str],
+    holdout: datetime,
+    first: date = date(2020, 1, 1),
+) -> tuple[list[Unlock], dict[str, list[date]]]:
+    """The note's events: each mapped coin of ``g``'s universe, its large unlock days from
+    ``first`` to before the holdout, merged within 30 days (the first kept), with 60 days
+    of unbroken spot history before day -30. Also every large unlock day per coin (before
+    merging), which placebo draws stay away from."""
+    index = {d: i for i, d in enumerate(g.days)}
+    events: list[Unlock] = []
+    every: dict[str, list[date]] = {}
+    for protocol, coin in sorted(mapping.items()):
+        if coin not in g.symbols:
+            continue
+        j = g.symbols.index(coin)
+        days = unlock_days(schedules.filter(pl.col("protocol") == protocol))
+        every[coin] = [u.day for u in days]
+        last: date | None = None
+        for u in days:
+            if u.day < first or u.day >= holdout.date():
+                continue
+            if last is not None and (u.day - last).days <= MERGE_DAYS:
+                continue
+            last = u.day
+            i = index.get(u.day)
+            if i is None or i + UNLOCK_PRIMARY[0] < 0:
+                continue
+            if g.age[i + UNLOCK_PRIMARY[0], j] < MIN_SPOT_DAYS + 1:
+                continue
+            events.append(Unlock(coin, u.day, u.tokens, u.insider_tokens))
+    return events, every
+
+
+@dataclass
+class UnlockSplits:
+    insiders: tuple[int, float]
+    """(events, mean primary abnormal return) where insiders got at least half."""
+    others: tuple[int, float]
+    big_for_volume: tuple[int, float]
+    """Unlocks worth more of the coin's daily volume than the median event's."""
+    small_for_volume: tuple[int, float]
+
+
+def unlock_splits(g: Grid, events: list[Unlock]) -> UnlockSplits:
+    index = {d: i for i, d in enumerate(g.days)}
+    col = {s: j for j, s in enumerate(g.symbols)}
+    rows = []
+    for u in events:
+        i, j = index[u.day], col[u.coin]
+        x = abnormal(g, j, i, *UNLOCK_PRIMARY)
+        if x is None:
+            continue
+        price, volume = g.close[i - 1, j], g.volume[i - 1, j]
+        ratio = u.tokens * price / volume if np.isfinite(volume) and volume > 0 else np.nan
+        rows.append((u.day, x, u.insider_tokens >= 0.5 * u.tokens, ratio))
+
+    def mean(sel: list[tuple[date, float]]) -> tuple[int, float]:
+        vals = by_day(sel)
+        return len(sel), float(vals.mean()) if len(vals) else float("nan")
+
+    ratios = [r for *_, r in rows if np.isfinite(r)]
+    median = float(np.median(ratios)) if ratios else np.nan
+    return UnlockSplits(
+        insiders=mean([(d, x) for d, x, ins, _ in rows if ins]),
+        others=mean([(d, x) for d, x, ins, _ in rows if not ins]),
+        big_for_volume=mean([(d, x) for d, x, _, r in rows if np.isfinite(r) and r > median]),
+        small_for_volume=mean([(d, x) for d, x, _, r in rows if np.isfinite(r) and r <= median]),
+    )
+
+
+def run_token_unlocks(
+    panel: pl.DataFrame,
+    schedules: pl.DataFrame,
+    mapping: dict[str, str],
+    holdout: datetime,
+    tiers: Sequence[tuple[float, float]],
+) -> tuple[EventResult, UnlockSplits, list[Unlock]]:
+    g = grid(panel, {}, tiers)
+    found, every = unlock_events(g, schedules, mapping, holdout)
+    last = (holdout - timedelta(days=1)).date()
+    result = study(
+        g, [Event(u.coin, u.day) for u in found], UNLOCK_PRIMARY, UNLOCK_OTHERS,
+        last_day=last if last in g.days else None, verdict=perp_verdict, avoid=every,
+    )  # fmt: skip
+    return result, unlock_splits(g, found), found
+
+
+def format_unlocks(r: EventResult, splits: UnlockSplits, coins: int) -> str:
+    title = "Token unlocks (note do-coins-fall-into-large-token-unlocks)"
+    text = format_result(title, r, primary="day -30 to 0")
+    split = [
+        "",
+        f"  {coins} coins. Insider unlocks (team, investors): {splits.insiders[0]} at "
+        f"{splits.insiders[1]:+.2%}; the rest: {splits.others[0]} at {splits.others[1]:+.2%}",
+        f"  Large for the coin's daily volume: {splits.big_for_volume[0]} at "
+        f"{splits.big_for_volume[1]:+.2%}; small: {splits.small_for_volume[0]} at "
+        f"{splits.small_for_volume[1]:+.2%}",
+    ]
+    head, _, verdict = text.rpartition("\n\nVerdict:")
+    return head + "\n".join(split) + "\n\nVerdict:" + verdict

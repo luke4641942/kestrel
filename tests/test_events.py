@@ -6,6 +6,7 @@ from __future__ import annotations
 from datetime import UTC, date, datetime, timedelta
 
 import numpy as np
+import polars as pl
 import pytest
 
 from kestrel.studies import events as ev
@@ -105,3 +106,43 @@ def test_perp_listings_need_spot_history_and_a_window_before_the_holdout() -> No
     holdout = at(399)
     found = ev.perp_listings(g, first, holdout)
     assert found == [ev.Event("C00USDT", g.days[100])]
+
+
+def schedule(points: list[tuple[int, float, float]]) -> pl.DataFrame:
+    return pl.DataFrame(
+        {
+            "protocol": ["p"] * len(points),
+            "gecko_id": ["g"] * len(points),
+            "day": [START + timedelta(days=d) for d, _, _ in points],
+            "unlocked": [float(u) for _, u, _ in points],
+            "insiders": [float(i) for _, _, i in points],
+        }
+    )
+
+
+def test_a_large_unlock_is_two_percent_of_the_supply_already_unlocked() -> None:
+    s = schedule([(0, 0, 0), (1, 100, 0), (2, 101, 0), (3, 103.1, 3.02), (4, 104, 3.02)])
+    days = ev.unlock_days(s)
+    # Day 1 is the launch (nothing before it); day 2 is 1%; day 3 is 2%; day 4 under 1%.
+    assert [u.day for u in days] == [START + timedelta(days=3)]
+    assert days[0].tokens == pytest.approx(2.1)
+    assert days[0].insider_tokens == pytest.approx(3.02)
+
+
+def test_unlock_events_merge_need_history_and_stop_before_the_holdout() -> None:
+    g = coins(3, 400)
+    points = [(0, 100, 0)]
+    supply = 100.0
+    for d in (50, 150, 170, 250, 395):  # 50 lacks history; 170 merges into 150; 395 too late
+        supply *= 1.1
+        points.append((d, supply, 0.0))
+    s = schedule(points)
+    holdout = datetime.combine(g.days[390], datetime.min.time(), UTC)
+    found, every = ev.unlock_events(g, s, {"p": "C01USDT"}, holdout)
+    assert [u.day for u in found] == [g.days[150], g.days[250]]
+    assert len(every["C01USDT"]) == 5  # the placebo keeps away from all of them
+    r = ev.study(g, [ev.Event(u.coin, u.day) for u in found], ev.UNLOCK_PRIMARY,
+                 placebo_days=20, avoid=every)  # fmt: skip
+    assert r.events == 2
+    splits = ev.unlock_splits(g, found)
+    assert splits.insiders[0] + splits.others[0] == 2
