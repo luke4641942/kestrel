@@ -290,6 +290,19 @@ from 2026-11-16) is the test that's left.
     shorts pay), and 29 of 102 events found the book full. Unhedged, the short lost 68%.
     DROP: the effect is real as a reason not to hold a coin, not as a short.
 
+19. **Large token unlocks don't show a drift we can use (a study, 2026-11-21, `kestrel
+    event-study token-unlocks`).** DefiLlama's public unlock schedules (375 protocols),
+    mapped to Binance coins by a strict ticker rule (any ticker shared by two CoinGecko
+    ids dropped), left 122 unlocks of at least 2% of the unlocked supply on 12
+    exploration-half coins, 2020-25. In the 30 days before the unlock they did +0.4%
+    against the other coins (P(< 0) 47%; 63% of events below zero): KILL. The same coins on
+    random days did worse (placebo median -4.5%): these coins lag in general, and the
+    unlocks add nothing. Deciding nothing: -3.1% in the last two weeks; insider unlocks
+    (team, investors) -7.1% but only 7 events; unlocks large for the coin's daily volume
+    -2.1% against +2.6% for small ones. The published "90% of unlocks fall" (Keyrock) is
+    mostly about coins that fall anyway. Caveats: 12 coins (the ticker rule was strict);
+    schedules as documented today.
+
 ## The holdout year (2025-11 to 2026-10)
 
 Reserved on 2026-10-31, before any research, and read once on 2026-11-14 for the two watched
@@ -390,6 +403,7 @@ edge, and the holdout can't be used again for either strategy.
 | Cash-and-carry: spot long, perp short while 7-day funding is positive (hypothetical) | BTC, ETH, SOL 2020-01 to 2025-10 | +6.6% a year on equity, P 100%, 5 of 6 years positive, drawdown -6.6% (basis not modelled), 53 trades, 14 margin calls: NEEDS-SHORTING (passes every test; needs a real perp) | Awaiting Luke |
 | Study: a coin's first perp listing | 102 exploration-half coins (+ BTC/ETH/SOL), perps first listed 2020-01 to 2025-09 | 30 days after vs the other coins: -15.2% (P(< 0) 100%, 75% below zero), below all 200 placebo draws (median -1.3%); +100% in the 30 days before. Median-coin benchmark -5.5%, BTC -7.9%: EXIT RULE | Validated (Luke); a rule for the altcoin portfolio |
 | Short new perp listings for 30 days, hedged with BTC (hypothetical) | Same 102 events, 3 slots, 2020-01 to 2025-10 | +11%, Sharpe 0.25, mean trade +2.3% (P 80%), 3 of 6 years positive, drawdown -56%; 15 squeeze close-outs, funding -18% of equity, 29 events skipped; unhedged -68%. DROP | Rejected (Luke) |
+| Study: large token unlocks (2%+ of unlocked supply) | 122 unlocks on 12 exploration-half coins, 2020-25 (DefiLlama schedules) | 30 days before vs the other coins: +0.4% (P(< 0) 47%); the same coins on random days -4.5%: KILL. Insiders -7.1% (7 events), large-for-volume -2.1% vs +2.6% | Awaiting Luke |
 
 Each strategy was judged by its own note's pass test, written before it ran. From
 2026-11-14 every strategy is judged on one scorecard instead.

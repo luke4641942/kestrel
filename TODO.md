@@ -15,6 +15,9 @@ Rules live in CLAUDE.md; results in `research/findings.md`; ideas not yet schedu
   sleeps (a missed day is recorded, never traded late).
 
 ## Waiting on Luke
+- [ ] GitHub Actions won't start (2026-11-21): "recent account payments have failed or your
+      spending limit needs to be increased" (GitHub Settings > Billing and plans). CI hasn't
+      run since; the local check (scripts/check.sh) passes.
 - [ ] Delisting exit rule (findings 11): write a note (sell a held coin at the next open
       after its delisting is announced), or park it. Only matters for a strategy that holds
       small coins, so it belongs with the altcoin portfolio below.
@@ -33,9 +36,8 @@ Rules live in CLAUDE.md; results in `research/findings.md`; ideas not yet schedu
 ## Event studies (outside AI review, 2026-11-18)
 - [x] Perp listings (findings 18): EXIT RULE, validated (Luke); the hedged short failed
       and is rejected (Luke). A rule for the altcoin portfolio beside the delisting one.
-- [ ] Token unlocks: note `do-coins-fall-into-large-token-unlocks` drafted for Luke to
-      freeze (exit rule if coins lag the others by 3%+ in the 30 days before a 2%+ unlock).
-      After the freeze: ingest DefiLlama's files and the CoinGecko ticker map, count events.
+- [ ] Token unlocks (findings 19): KILL, no drift beyond what these coins do anyway.
+      Luke: reject `do-coins-fall-into-large-token-unlocks`?
 - [ ] Monitoring-tag drift: blocked on data. Binance's announcement feed holds 1 tag
       announcement in ~2,700 scanned (2026-11-18); the history would need another source.
 
