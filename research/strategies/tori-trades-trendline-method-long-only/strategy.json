@@ -1,0 +1,28 @@
+{
+  "slug": "tori-trades-trendline-method-long-only",
+  "name": "Tori Trades trendline method, long only",
+  "created_at": "2026-11-21T04:18:31.806566+00:00",
+  "status": "rejected",
+  "history": [
+    {
+      "status": "idea",
+      "at": "2026-11-21T04:18:31.806566+00:00",
+      "reason": "Created"
+    },
+    {
+      "status": "specified",
+      "at": "2026-11-21T04:19:27.069200+00:00",
+      "reason": "v1 frozen"
+    },
+    {
+      "status": "backtested",
+      "at": "2026-11-21T04:19:43.991229+00:00",
+      "reason": "first run on v1"
+    },
+    {
+      "status": "rejected",
+      "at": "2026-11-21T04:25:48.257642+00:00",
+      "reason": "Failed its scorecard (findings 21, 2026-11-21): Sharpe 0.41, 0.57, 0.82 on BTC, ETH, SOL 4h against 1.07, 1.12, 1.24 for the coin held at the same 6-10% exposure; fails test 1 on all three. Rejected and dropped (Luke)."
+    }
+  ]
+}

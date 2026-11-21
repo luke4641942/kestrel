@@ -15,7 +15,7 @@ Rules live in CLAUDE.md; results in `research/findings.md`; ideas not yet schedu
   sleeps (a missed day is recorded, never traded late).
 
 ## Waiting on Luke
-- [ ] Tori Trades trendline method (findings 21): fails test 1 on BTC, ETH and SOL. Drop?
+- Nothing (2026-11-21).
 
 ## Next
 - [ ] Monitoring-tag drift: blocked on data. Binance's announcement feed holds 1 tag
@@ -61,6 +61,8 @@ exists and Luke has checked the Swyftx employee trading policy.
 - [ ] Expectancy by conviction bucket (P2 leftover), once a strategy varies its sizing.
 
 ## Done recently
+- 2026-11-21 Tori Trades trendline method tested (Luke's request): fails test 1 on BTC, ETH,
+  SOL; dropped (Luke).
 - 2026-11-21 Decisions (Luke): altcoin portfolio dropped; token-unlock note rejected;
   cash-and-carry validated and recorded as needs-shorting (a new decision value, shown on
   the Overview and Research tab); independence reported as information on new strategies.

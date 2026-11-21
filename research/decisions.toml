@@ -511,3 +511,12 @@ decision = "needs-shorting"
 decided = 2026-11-21
 reason = "Needs shorting (Luke, 2026-11-21): passed every pre-registered test (findings 17): +6.6% a year on equity 2020-01 to 2025-10, positive in 5 of 6 years, drawdown -6.6% (the spot-perp basis isn't modelled, so that is a floor), 53 trades, 14 margin calls; about 63 USDT more than a 4% stablecoin yield on 330 USDT over six years. It needs a real perp (wholesale-only in Australia; a CFD pays financing, not funding), so it is never traded until a licensed retail route exists and the Swyftx employee trading policy is checked. High carry tends to come before crashes (Schmeling, Schrimpf and Todorov 2023)."
 evidence = ["cash-and-carry-on-btc-eth-and-sol-perps"]
+
+[[decision]]
+strategy = "tori-trendline"
+name = "Tori Trades trendline method, long only"
+market = "BTCUSDT, ETHUSDT, SOLUSDT 4h"
+decision = "drop"
+decided = 2026-11-21
+reason = "Dropped (Luke, 2026-11-21). Tested at Luke's request (a chart pattern, a rejected family, disclosed). Long only, mechanical: buy a close above a falling line through swing highs touched 3+ times; stop at the low the break started from; no target, exit on a close below the new rising line. 2020-25: +26%, +45%, +65% (Sharpe 0.41, 0.57, 0.82) with drawdowns of -18% to -25%, but in the market only 6-10% of the time; the coin held at that same exposure did better every time (Sharpe 1.07, 1.12, 1.24) with less drawdown (about -8% for BTC at 10%). Fails test 1 on all three coins (findings 21)."
+evidence = ["tori-trades-trendline-method-long-only"]
