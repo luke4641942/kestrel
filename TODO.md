@@ -15,9 +15,7 @@ Rules live in CLAUDE.md; results in `research/findings.md`; ideas not yet schedu
   sleeps (a missed day is recorded, never traded late).
 
 ## Waiting on Luke
-- [ ] Delisting exit rule (findings 11): write a note (sell a held coin at the next open
-      after its delisting is announced), or park it. Only matters for a strategy that holds
-      small coins, so it belongs with the altcoin portfolio below.
+
 
 ## Next
 - [ ] Monitoring-tag drift: blocked on data. Binance's announcement feed holds 1 tag
@@ -39,6 +37,11 @@ exists and Luke has checked the Swyftx employee trading policy.
       on about 330 USDT).
 
 ## Parked
+- The two exit rules (Luke, 2026-11-21): sell a coin when its delisting is announced
+  (findings 11); don't hold one through its first month of perps (findings 18). Both built
+  into the dropped altcoin portfolio (`kestrel.data.coin_events`); nothing pursued holds
+  small enough coins to need them. Revive with any strategy that holds small coins. Before
+  real money: a delisting announcement on a held coin halts that paper account for Luke.
 - Always-on machine for paper trading (Luke, 2026-11-16: not for now). The "Pi" turned out
   to be a microcontroller, so the candidate is the TrueNAS server (SCALE: a container; its
   own user, keys in a file only Kestrel reads, no open ports, nightly ledger backups, one-step
