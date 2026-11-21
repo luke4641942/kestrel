@@ -23,10 +23,10 @@ Rules live in CLAUDE.md; results in `research/findings.md`; ideas not yet schedu
       drawdowns too, and its return after removing BTC exposure. A rule change, so Luke's call.
 
 ## Next
-- [ ] An altcoin portfolio built on btc-regime-trend (up to 3 coins at 330 USDT): which
-      coins (a picker inside the regime rule; findings 14 showed pickers alone lose with
-      the market), the delisting exit rule, a note, the scorecard, and an unspent holdout
-      (any coin but BTC, ETH and SOL).
+- [ ] Altcoin portfolio: note `altcoin-portfolio-on-the-btc-regime-with-exit` drafted
+      (G1's weekly rule on a point-in-time liquid universe, with the delisting and
+      perp-listing exit rules). Next: Luke reviews; build the strategy (and exclude
+      tokenized stocks first); Luke freezes; scorecard; maybe a holdout test.
 - [ ] Token unlocks (findings 19): KILL, no drift beyond what these coins do anyway.
       Luke: reject `do-coins-fall-into-large-token-unlocks`?
 - [ ] Monitoring-tag drift: blocked on data. Binance's announcement feed holds 1 tag
