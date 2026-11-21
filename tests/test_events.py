@@ -161,7 +161,7 @@ def test_a_study_is_saved_with_its_path_and_served(tmp_path) -> None:  # type: i
         plant(g, j, i, 0.10)
         found.append(ev.Event(g.symbols[j], g.days[i]))
     path = ev.event_path(g, found)
-    assert path[0] == (-30, 0.0)
+    assert dict(path)[0] == 0.0  # anchored at the event
     assert [k for k, _ in path] == list(range(-30, 31))
     assert path[-1][1] == pytest.approx(-0.10, abs=0.02)  # the planted fall, by day 30
     r = ev.study(g, found, verdict=ev.perp_verdict, placebo_days=20)

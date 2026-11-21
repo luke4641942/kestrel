@@ -409,18 +409,24 @@ PATH_DAYS = 30
 
 
 def event_path(g: Grid, events: Sequence[Event], days: int = PATH_DAYS) -> list[tuple[int, float]]:
-    """The average path around the events: for each day k from -days to +days, the mean
-    (over event days) of the abnormal return from day -days's open to day k's open. Shows
-    the run-up and what follows in one line; deciding nothing."""
+    """The average path around the events, anchored at day 0's open (0): for each day k
+    from -days to +days, the mean (over event days) abnormal return between day k's open
+    and day 0's, signed so that a run-up into the event climbs to 0 (k < 0: minus the
+    abnormal return from k to 0) and what follows is measured from the event (k > 0: the
+    abnormal return from 0 to k). Deciding nothing."""
     index = {d: i for i, d in enumerate(g.days)}
     col = {s: j for j, s in enumerate(g.symbols)}
-    out: list[tuple[int, float]] = [(-days, 0.0)]
-    for k in range(-days + 1, days + 1):
-        rows = [
-            (e.day, x)
-            for e in events
-            if (x := abnormal(g, col[e.coin], index[e.day], -days, k)) is not None
-        ]
+    out: list[tuple[int, float]] = []
+    for k in range(-days, days + 1):
+        if k == 0:
+            out.append((0, 0.0))
+            continue
+        rows = []
+        for e in events:
+            i, j = index[e.day], col[e.coin]
+            x = abnormal(g, j, i, k, 0) if k < 0 else abnormal(g, j, i, 0, k)
+            if x is not None:
+                rows.append((e.day, -x if k < 0 else x))
         vals = by_day(rows)
         out.append((k, float(vals.mean()) if len(vals) else float("nan")))
     return out

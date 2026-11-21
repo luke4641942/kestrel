@@ -335,7 +335,7 @@ export interface EventStudy {
   placebo_median: number | null;
   placebo_share_at_or_below: number;
   tests: Record<string, boolean>;
-  /** Mean abnormal return from day -30's open to each day's open. */
+  /** Mean abnormal return between each day's open and day 0's: 0 at the event. */
   path: { day: number; abnormal: number | null }[];
   report: string;
 }

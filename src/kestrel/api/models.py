@@ -748,8 +748,8 @@ class EventPointOut(BaseModel):
     day: int
     """Days from the event (day 0)."""
     abnormal: float | None
-    """Mean abnormal return from day -30's open to this day's open (against the other
-    coins)."""
+    """Mean abnormal return (against the other coins) between this day's open and day 0's:
+    0 at the event, a run-up climbs to it, what follows is measured from it."""
 
 
 class EventStudyOut(BaseModel):

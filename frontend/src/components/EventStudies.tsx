@@ -115,7 +115,8 @@ function PathChart({ study: s }: { study: EventStudy }) {
     <Panel pad>
       <div className="chart-top">
         <span className="small secondary">
-          Average return against the other coins from 30 days before the event (day 0) to 30 days after
+          Average return against the other coins, measured from the event (day 0 = 0%): the line before day 0 shows
+          the run-up into it, after day 0 what followed
         </span>
       </div>
       <svg viewBox={`-44 -8 ${W + 52} ${H + 30}`} className="event-path" role="img" aria-label="Average path around the event">
