@@ -15,7 +15,7 @@ Rules live in CLAUDE.md; results in `research/findings.md`; ideas not yet schedu
   sleeps (a missed day is recorded, never traded late).
 
 ## Waiting on Luke
-
+- Nothing (2026-11-21).
 
 ## Next
 - [ ] Monitoring-tag drift: blocked on data. Binance's announcement feed holds 1 tag
