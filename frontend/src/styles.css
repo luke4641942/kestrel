@@ -2075,17 +2075,67 @@ p {
   }
 }
 
+/* Phone width: the menu takes its own row and wraps (so the More menu isn't clipped and no
+   tab is hidden off-screen), pages use a 16px gutter, stat tiles go two a row, and long
+   commands break instead of pushing the page sideways. */
 @media (max-width: 720px) {
   .topbar-inner {
-    padding: 0 16px;
-    gap: 16px;
-    overflow-x: auto;
+    flex-wrap: wrap;
+    height: auto;
+    padding: 8px 16px;
+    gap: 4px 16px;
+  }
+  .nav {
+    order: 3;
+    width: 100%;
+    flex-wrap: wrap;
+    height: auto;
+    gap: 0;
+  }
+  .nav a,
+  .nav-more {
+    padding: 8px 8px;
+  }
+  .topbar-end .small {
+    display: none;
   }
   .main {
-    padding: 24px 16px 64px;
+    padding: 20px 16px 64px;
   }
   .nav .later {
     display: none;
+  }
+  .page-header,
+  .section-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
+  }
+  .stats,
+  .data-line {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .stat:nth-child(odd) {
+    border-left: none;
+  }
+  .stat:nth-child(n + 3) {
+    border-top: 1px solid var(--line);
+  }
+  .stat-value {
+    font-size: 22px;
+  }
+  .mono,
+  .verdict p,
+  .table-note {
+    overflow-wrap: anywhere;
+  }
+  .main .decision-list li {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 8px;
+  }
+  .main .decision-list li > .status {
+    justify-self: start;
+    align-self: start;
   }
 }
 

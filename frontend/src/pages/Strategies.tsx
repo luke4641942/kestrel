@@ -34,7 +34,7 @@ function slugFromHash(): string | undefined {
 }
 
 export function Strategies({ jobs, onJobStarted }: { jobs: Job[]; onJobStarted: (job: Job) => void }) {
-  const list = useResource(api.researchList, []);
+  const list = useResource(api.researchList, [], undefined, true);
   const [slug, setSlug] = useState<string | undefined>(slugFromHash);
 
   useEffect(() => {
@@ -177,7 +177,7 @@ function Workspace({
   onJobStarted: (job: Job) => void;
   onChanged: () => void;
 }) {
-  const detail = useResource(() => api.research(slug), [slug]);
+  const detail = useResource(() => api.research(slug), [slug], undefined, true);
   const strategies = useResource(api.strategies, []);
   const [tab, setTab] = useState<"assistant" | "trials">("assistant");
   const [override, setOverride] = useState<ResearchDetail>();

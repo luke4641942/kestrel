@@ -124,6 +124,10 @@ class BinanceClient:
             Decimal(notional["minNotional"]).normalize(),
         )
 
+    def price(self, symbol: str) -> Decimal:
+        """The latest traded price (public, unsigned)."""
+        return Decimal(self._get("/api/v3/ticker/price", {"symbol": symbol})["price"])
+
     def balances(self) -> dict[str, Decimal]:
         """Free balance of every asset the exchange account holds (non-zero only)."""
         account = self._check(self.signed("GET", "/api/v3/account", {}))
@@ -147,6 +151,9 @@ def _message(response: httpx.Response) -> str:
     except ValueError:
         return f"Binance {response.status_code}: {response.text[:200]}"
 
+
+BNB = "BNB"
+"""Binance takes fees in BNB, at a discount, when the account holds some and has opted in."""
 
 ORDER_REFUSALS = {-1013, -2010}
 """Binance codes for an order it won't fill (a filter; insufficient balance): a Rejection,
@@ -280,7 +287,7 @@ class BinanceVenue:
         price = quote / filled
         base = self.base(symbol)
         fee_in_quote = Decimal(0)
-        base_fee = quote_fee = Decimal(0)
+        base_fee = quote_fee = bnb_fee = Decimal(0)
         for f in order.get("fills", []):
             commission = Decimal(f["commission"])
             if f["commissionAsset"] == base:
@@ -289,18 +296,24 @@ class BinanceVenue:
             elif f["commissionAsset"] == self.quote:
                 quote_fee += commission
                 fee_in_quote += commission
-            elif commission > 0:  # BNB or similar: not ours to move, but reported
+            elif f["commissionAsset"] == BNB and commission > 0:
+                # Paid from the exchange account's BNB float (the 25% fee discount): the
+                # allocation is charged its value in the quote at BNB's price now.
+                value = commission * self._client.price(f"{BNB}{self.quote}")
+                bnb_fee += value
+                fee_in_quote += value
+            elif commission > 0:
                 raise BinanceError(
                     f"commission charged in {f['commissionAsset']}; this venue only "
-                    f"accounts for {base} and {self.quote}"
+                    f"accounts for {base}, {self.quote} and {BNB}"
                 )
         held = self.position(symbol)
         if side is Side.BUY:
-            self._cash -= quote + quote_fee
+            self._cash -= quote + quote_fee + bnb_fee
             self._positions[symbol] = held + filled - base_fee
             slippage = (price - reference) * filled
         else:
-            self._cash += quote - quote_fee
+            self._cash += quote - quote_fee - bnb_fee
             self._positions[symbol] = held - filled - base_fee
             slippage = (reference - price) * filled
         return Fill(

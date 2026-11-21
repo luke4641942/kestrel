@@ -7,11 +7,14 @@ export interface Resource<T> {
   reload: () => void;
 }
 
-/** Fetch on mount and whenever deps change; optionally re-poll every `intervalMs`. */
+/** Fetch on mount and whenever deps change; optionally re-poll every `intervalMs`, and
+ * with `refetchOnFocus` fetch again (quietly, keeping what is shown) when the browser tab
+ * comes back into view: notes and runs change from the CLI while the page sits open. */
 export function useResource<T>(
   fetcher: () => Promise<T>,
   deps: unknown[],
   intervalMs?: number,
+  refetchOnFocus = false,
 ): Resource<T> {
   const [data, setData] = useState<T>();
   const [error, setError] = useState<string>();
@@ -31,12 +34,23 @@ export function useResource<T>(
     setLoading(true);
     run();
     const timer = intervalMs ? window.setInterval(run, intervalMs) : undefined;
+    const onVisible = () => {
+      if (document.visibilityState === "visible") run();
+    };
+    if (refetchOnFocus) {
+      document.addEventListener("visibilitychange", onVisible);
+      window.addEventListener("focus", onVisible);
+    }
     return () => {
       alive = false;
       if (timer) window.clearInterval(timer);
+      if (refetchOnFocus) {
+        document.removeEventListener("visibilitychange", onVisible);
+        window.removeEventListener("focus", onVisible);
+      }
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [...deps, tick, intervalMs]);
+  }, [...deps, tick, intervalMs, refetchOnFocus]);
 
   const reload = useCallback(() => setTick((t) => t + 1), []);
   return { data, error, loading, reload };

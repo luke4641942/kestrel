@@ -27,12 +27,6 @@ Rules live in CLAUDE.md; results in `research/findings.md`; ideas not yet schedu
       coins (a picker inside the regime rule; findings 14 showed pickers alone lose with
       the market), the delisting exit rule, a note, the scorecard, and an unspent holdout
       (any coin but BTC, ETH and SOL).
-- [ ] Strategies page: re-fetch a note when the browser tab regains focus (notes change
-      from the CLI and the page shows a stale copy).
-
-## Event studies (outside AI review, 2026-11-18)
-- [x] Perp listings (findings 18): EXIT RULE, validated (Luke); the hedged short failed
-      and is rejected (Luke). A rule for the altcoin portfolio beside the delisting one.
 - [ ] Token unlocks (findings 19): KILL, no drift beyond what these coins do anyway.
       Luke: reject `do-coins-fall-into-large-token-unlocks`?
 - [ ] Monitoring-tag drift: blocked on data. Binance's announcement feed holds 1 tag
@@ -64,9 +58,6 @@ exists and Luke has checked the Swyftx employee trading policy.
   hashes (done 2026-11-21). Recording Binance's liquidation and order-book streams waits on this too.
 
 ## Later
-- [ ] BNB fees on the venue: kestrel.toml models 7.5 bps (BNB discount), but the Binance
-      venue stops on a fee charged in BNB. Value it at BNB's price and keep a small BNB
-      balance. Until then testnet fills pay 10 bps and tracking shows fees above the model.
 - [ ] Keys from the macOS keychain (or the server's key file), not ~/.zshrc: before any live
       (non-testnet) keys exist. Luke adds them himself; Claude never sees the values. Live
       keys: trading only, withdrawals off, restricted to the home IP.
@@ -77,9 +68,11 @@ exists and Luke has checked the Swyftx employee trading policy.
       ranking alone, and risk-adjusted ranking (90-day return / volatility). Round 2 already
       suggested the filter does most of the work. Nothing found here can change G1's rule.
 - [ ] Expectancy by conviction bucket (P2 leftover), once a strategy varies its sizing.
-- [ ] Dashboard at phone width: the top menu and pages spill off the screen.
 
 ## Done recently
+- 2026-11-21 Dashboard at phone width (checked at 390px: no sideways scroll; the menu wraps,
+  stat tiles go two a row). Strategies page re-fetches when the tab regains focus. The Binance venue
+  accepts fees paid in BNB (valued at BNB's price); testnet fills charge none.
 - 2026-11-21 CI trimmed for the free Actions minutes (one Python, docs-only pushes skipped,
   superseded runs cancelled); dependencies locked with hashes (`requirements-dev.lock`).
 - 2026-11-16 Five hypothetical shorting studies (findings 17): trend shorts and long/short

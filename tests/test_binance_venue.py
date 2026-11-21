@@ -44,6 +44,10 @@ class FakeBinance:
         path = request.url.path
         if path == "/api/v3/time":
             return httpx.Response(200, json={"serverTime": SERVER_MS})
+        if path == "/api/v3/ticker/price":
+            return httpx.Response(
+                200, json={"symbol": request.url.params["symbol"], "price": "600"}
+            )
         if path == "/api/v3/exchangeInfo":
             filters = [
                 {"filterType": "LOT_SIZE", "minQty": "0.00001000", "stepSize": "0.00001000"},
@@ -184,8 +188,8 @@ def test_wrong_keys_and_odd_fills_stop_rather_than_guess() -> None:
     )
     with pytest.raises(BinanceError, match="Signature"):
         wrong.balances()
-    fake.commission = ("0.01", "BNB")
-    with pytest.raises(BinanceError, match="commission charged in BNB"):
+    fake.commission = ("0.01", "XYZ")  # an asset it can't value
+    with pytest.raises(BinanceError, match="commission charged in XYZ"):
         venue(fake).submit_market("BTCUSDT", Side.BUY, D(1))
     fake.reply = (
         200,
@@ -322,3 +326,17 @@ def test_a_basket_venue_trades_and_accounts_each_coin_separately() -> None:
     with pytest.raises(ValueError, match="restored from its ledger"):
         BinanceVenue(fake.client(), ["BTCUSDT", "ETHUSDT"], "USDT", CostModel(config().costs),
                      D(1), D(1))  # fmt: skip
+
+
+def test_a_fee_paid_in_bnb_is_valued_at_bnbs_price_and_charged_to_the_allocation() -> None:
+    fake = FakeBinance()
+    fake.commission = ("0.001", "BNB")  # BNB at 600 (the fake's ticker): 0.60 USDT
+    v = venue(fake)
+    fill = v.submit_market("BTCUSDT", Side.BUY, D(1))
+    assert isinstance(fill, Fill)
+    assert fill.fee == D("0.600")
+    assert v.position("BTCUSDT") == D(1)  # no coin taken for the fee
+    assert v.cash() == D(330) - D("100.5") - D("0.600")
+    sold = v.submit_market("BTCUSDT", Side.SELL, D(1))
+    assert isinstance(sold, Fill)
+    assert v.cash() == D(330) - D("1.200")  # bought and sold at 100.5, two BNB fees
