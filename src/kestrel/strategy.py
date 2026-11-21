@@ -61,6 +61,7 @@ from kestrel.strategies.set_and_forget import SetAndForget
 from kestrel.strategies.squeeze import SqueezeBreakout
 from kestrel.strategies.stablecoin_hold import StablecoinHold, StablecoinVolHold
 from kestrel.strategies.structure import StructurePullback
+from kestrel.strategies.tori import ToriTrendline
 from kestrel.strategies.trend import TrendVolTarget, TrendVolTargetStablecoin
 from kestrel.strategies.trend_basket import TrendBasket
 from kestrel.strategies.trend_trio import TrendTrio, TrioHold
@@ -369,6 +370,23 @@ STRATEGIES: dict[str, StrategySpec] = {
                 ),
                 Param("stop_atr_pct", 100, 10, 300, "Stop this % of an ATR below the swing low"),
                 Param("target_r", 3, 1, 8, "Target as a multiple of the risk to the stop"),
+            ),
+        ),
+        StrategySpec(
+            "tori-trendline",
+            "research",
+            "Tori Trades' method, long only: buy a close above a falling line through swing highs "
+            "touched min_touches times; stop at the low the break started from; no target, a "
+            "close below the new rising line through the swing lows since is the exit. A chart "
+            "pattern (a rejected family), tested at Luke's request: runs only through its "
+            "frozen note.",
+            ToriTrendline,
+            (
+                Param("swing_bars", 3, 1, 6, "Bars each side that make a swing point"),
+                Param("min_touches", 3, 2, 6, "Swing highs touching the line"),
+                Param("touch_atr_pct", 50, 10, 150, "How close a touch is, % of an ATR"),
+                Param("breakout_atr_pct", 0, 0, 200, "Close this % of an ATR above the line"),
+                Param("max_line_bars", 180, 30, 600, "Longest line, bars between its two points"),
             ),
         ),
         StrategySpec(
