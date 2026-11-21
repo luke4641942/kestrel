@@ -157,6 +157,15 @@ def universe_panel(
     return panel
 
 
+def visible(panel: pl.DataFrame, config: Config, key: str) -> pl.DataFrame:
+    """A universe panel without the coins of the locked confirmation half: a run over the
+    whole market sees only the coins it may (the engine refuses the rest). A strategy over
+    named assets keeps them (and is refused if one is locked)."""
+    if config.split is None or config.confirmation_unlocked or spec_for(key).assets:
+        return panel
+    return panel.filter(~pl.col("symbol").is_in(sorted(config.split.confirmation)))
+
+
 def strategy_panel(
     store: ParquetStore, key: str, interval: Interval, start: Month, end: Month
 ) -> pl.DataFrame:
@@ -190,15 +199,11 @@ def _execute_universe(request: RunRequest, store: ParquetStore, config: Config) 
         raise ValueError(f"{request.strategy} runs on {UNIVERSE}, not {request.symbol}")
     if request.engine != "event":
         raise ValueError("cross-sectional strategies run on the event engine only")
-    panel = strategy_panel(store, request.strategy, request.interval, request.start, request.end)
-    if (
-        config.split is not None
-        and not config.confirmation_unlocked
-        and not spec_for(request.strategy).assets
-    ):
-        # The coin universe includes the locked confirmation half: a run over the whole
-        # market sees only the coins it may (the engine refuses the rest).
-        panel = panel.filter(~pl.col("symbol").is_in(sorted(config.split.confirmation)))
+    panel = visible(
+        strategy_panel(store, request.strategy, request.interval, request.start, request.end),
+        config,
+        request.strategy,
+    )
     result = run_portfolio(
         strategy,
         panel,
