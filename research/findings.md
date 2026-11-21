@@ -318,6 +318,19 @@ from 2026-11-16) is the test that's left.
     regime adds turnover and alt risk for less than a small BTC position gives. 16 trials
     (863 in all; luck bar 2.28).
 
+21. **Tori Trades' trendline method doesn't beat holding at the same exposure (2026-11-21,
+    note tori-trades-trendline-method-long-only; Luke's request, a rejected family,
+    disclosed).** Long only, mechanical: buy a close above a falling line through swing
+    highs touched 3+ times; stop at the low the break started from; no target, exit on a
+    close below the new rising line. BTC, ETH, SOL 4h, 2020-25: +26%, +45%, +65% (Sharpe
+    0.41, 0.57, 0.82), drawdowns -18% to -25%, 212-247 trades, +0.17R to +0.40R a trade
+    after costs; but in the market only 6-10% of the time, and the coin held at that same
+    exposure did better on Sharpe every time (1.07, 1.12, 1.24). Fails test 1 on all three:
+    drop by the note. Her exit (no target, a trailing line) did better than our earlier
+    trendline tests' fixed 3R targets (those lost money), but not enough to beat simply
+    holding a little of the coin. Grids skipped for a strategy failing test 1 (Luke's
+    standing rule). 3 trials.
+
 ## The holdout year (2025-11 to 2026-10)
 
 Reserved on 2026-10-31, before any research, and read once on 2026-11-14 for the two watched
@@ -420,6 +433,7 @@ edge, and the holdout can't be used again for either strategy.
 | Short new perp listings for 30 days, hedged with BTC (hypothetical) | Same 102 events, 3 slots, 2020-01 to 2025-10 | +11%, Sharpe 0.25, mean trade +2.3% (P 80%), 3 of 6 years positive, drawdown -56%; 15 squeeze close-outs, funding -18% of equity, 29 events skipped; unhedged -68%. DROP | Rejected (Luke) |
 | Study: large token unlocks (2%+ of unlocked supply) | 122 unlocks on 12 exploration-half coins, 2020-25 (DefiLlama schedules) | 30 days before vs the other coins: +0.4% (P(< 0) 47%); the same coins on random days -4.5%: KILL. Insiders -7.1% (7 events), large-for-volume -2.1% vs +2.6% | Rejected (Luke) |
 | Altcoin portfolio: G1's rule on a point-in-time universe, with delisting and new-perp exits | Exploration-half coins 1d, 2019-01 to 2025-10 (2019 cash) | +101%, Sharpe 0.53 vs 0.44 for the large-basket control (pass) but 1.10 for BTC at the same 17% exposure; neighbours 0.46-0.70; walk-forward 3 of 9; 2-year starts 32%; drawdown -33%; luck 0% | Drop (Luke) |
+| Tori Trades trendline method, long only (Luke's request; chart pattern, disclosed) | BTC, ETH, SOL 4h, 2020-25 | +26/+45/+65%, Sharpe 0.41/0.57/0.82 vs 1.07/1.12/1.24 for the coin at the same 6-10% exposure; +0.17R to +0.40R a trade; drawdowns -18% to -25%. Fails test 1 on all three | Awaiting Luke |
 
 Each strategy was judged by its own note's pass test, written before it ran. From
 2026-11-14 every strategy is judged on one scorecard instead.
