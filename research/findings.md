@@ -303,6 +303,21 @@ from 2026-11-16) is the test that's left.
     mostly about coins that fall anyway. Caveats: 12 coins (the ticker rule was strict);
     schedules as documented today.
 
+20. **An altcoin portfolio on the BTC regime, with the exit rules, is worse than holding a
+    little BTC (2026-11-21, note altcoin-portfolio-on-the-btc-regime-with-exit).** G1's
+    weekly rule on a point-in-time universe (exploration-half coins with 20M USDT a day
+    and a year of history, a median of 14 a week), top 3 by 90-day return while BTC is 3%
+    above its 50-day average, selling on a delisting announcement or a new perp.
+    2019-01 to 2025-10 (2019 in cash by construction: a year of history first): +101%,
+    Sharpe 0.53, drawdown -33%, 17% exposure, 433 trades, costs 7.8x covered. The note's
+    edge test, against the large-basket control on the same coins (+39%, Sharpe 0.44,
+    drawdown -85%), passes narrowly, and all six neighbours (top 2/4, 60/120 days, 2%/4%)
+    beat it too (0.46-0.70). But BTC held at the same 17% exposure made +113% (Sharpe
+    1.10); walk-forward beat holding in 3 of 9 windows; 2-year starts 32%; luck 0%. Not
+    every test but luck, so no holdout test by the note. Picking altcoins under the BTC
+    regime adds turnover and alt risk for less than a small BTC position gives. 16 trials
+    (863 in all; luck bar 2.28).
+
 ## The holdout year (2025-11 to 2026-10)
 
 Reserved on 2026-10-31, before any research, and read once on 2026-11-14 for the two watched
@@ -404,6 +419,7 @@ edge, and the holdout can't be used again for either strategy.
 | Study: a coin's first perp listing | 102 exploration-half coins (+ BTC/ETH/SOL), perps first listed 2020-01 to 2025-09 | 30 days after vs the other coins: -15.2% (P(< 0) 100%, 75% below zero), below all 200 placebo draws (median -1.3%); +100% in the 30 days before. Median-coin benchmark -5.5%, BTC -7.9%: EXIT RULE | Validated (Luke); a rule for the altcoin portfolio |
 | Short new perp listings for 30 days, hedged with BTC (hypothetical) | Same 102 events, 3 slots, 2020-01 to 2025-10 | +11%, Sharpe 0.25, mean trade +2.3% (P 80%), 3 of 6 years positive, drawdown -56%; 15 squeeze close-outs, funding -18% of equity, 29 events skipped; unhedged -68%. DROP | Rejected (Luke) |
 | Study: large token unlocks (2%+ of unlocked supply) | 122 unlocks on 12 exploration-half coins, 2020-25 (DefiLlama schedules) | 30 days before vs the other coins: +0.4% (P(< 0) 47%); the same coins on random days -4.5%: KILL. Insiders -7.1% (7 events), large-for-volume -2.1% vs +2.6% | Awaiting Luke |
+| Altcoin portfolio: G1's rule on a point-in-time universe, with delisting and new-perp exits | Exploration-half coins 1d, 2019-01 to 2025-10 (2019 cash) | +101%, Sharpe 0.53 vs 0.44 for the large-basket control (pass) but 1.10 for BTC at the same 17% exposure; neighbours 0.46-0.70; walk-forward 3 of 9; 2-year starts 32%; drawdown -33%; luck 0% | Awaiting Luke |
 
 Each strategy was judged by its own note's pass test, written before it ran. From
 2026-11-14 every strategy is judged on one scorecard instead.

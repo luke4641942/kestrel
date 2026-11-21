@@ -23,9 +23,9 @@ Rules live in CLAUDE.md; results in `research/findings.md`; ideas not yet schedu
       drawdowns too, and its return after removing BTC exposure. A rule change, so Luke's call.
 
 ## Next
-- [ ] Altcoin portfolio: built (`altcoin-rotation`, coin events from
-      `kestrel.data.coin_events`), note `altcoin-portfolio-on-the-btc-regime-with-exit`
-      updated to match (exploration half only). Luke freezes; then the scorecard run.
+- [ ] Altcoin portfolio (findings 20): beats the large-basket control narrowly but loses
+      to BTC at the same exposure (Sharpe 0.53 vs 1.10); walk-forward 3 of 9. No holdout
+      by its note. Luke: drop or watch? (Claude recommends drop.)
 - [ ] Token unlocks (findings 19): KILL, no drift beyond what these coins do anyway.
       Luke: reject `do-coins-fall-into-large-token-unlocks`?
 - [ ] Monitoring-tag drift: blocked on data. Binance's announcement feed holds 1 tag
