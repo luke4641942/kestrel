@@ -1,0 +1,28 @@
+{
+  "slug": "shorting-with-the-btc-regime-rule",
+  "name": "Shorting with the BTC regime rule",
+  "created_at": "2026-11-16T09:30:50.326559+00:00",
+  "status": "rejected",
+  "history": [
+    {
+      "status": "idea",
+      "at": "2026-11-16T09:30:50.326559+00:00",
+      "reason": "Created"
+    },
+    {
+      "status": "specified",
+      "at": "2026-11-16T09:34:56.266812+00:00",
+      "reason": "v1 frozen"
+    },
+    {
+      "status": "backtested",
+      "at": "2026-11-16T09:41:34.763736+00:00",
+      "reason": "first run on v1"
+    },
+    {
+      "status": "rejected",
+      "at": "2026-11-16T09:48:48.501695+00:00",
+      "reason": "Failed its pre-registered test (findings 17, 2026-11-16): Sharpe 1.30 (ETH) and 1.35 (SOL) against 1.47 and 1.64 long-only; short legs +13% (P 72%) and +6% (P 68%); beat long-only in 1 of 6 years each. Rejected (Luke)."
+    }
+  ]
+}

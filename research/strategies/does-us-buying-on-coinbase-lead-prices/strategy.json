@@ -1,0 +1,28 @@
+{
+  "slug": "does-us-buying-on-coinbase-lead-prices",
+  "name": "Does US buying on Coinbase lead prices",
+  "created_at": "2026-11-22T12:40:28.886146+00:00",
+  "status": "rejected",
+  "history": [
+    {
+      "status": "idea",
+      "at": "2026-11-22T12:40:28.886146+00:00",
+      "reason": "Created"
+    },
+    {
+      "status": "specified",
+      "at": "2026-11-22T12:50:12.631003+00:00",
+      "reason": "v1 frozen"
+    },
+    {
+      "status": "backtested",
+      "at": "2026-11-22T12:54:02.872125+00:00",
+      "reason": "first run on v1"
+    },
+    {
+      "status": "rejected",
+      "at": "2026-11-22T13:05:47.401405+00:00",
+      "reason": "Rejected (Luke, 2026-11-22). KILL (findings 22): spread +0.67% a week, P 79% (90% needed); positive only after falling weeks (+1.42%, -0.35% after rises), so the control fails. The unadjusted 2018 side result (P 96%) decided nothing by the note."
+    }
+  ]
+}

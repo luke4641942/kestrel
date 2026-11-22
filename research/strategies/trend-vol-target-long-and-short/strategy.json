@@ -1,0 +1,28 @@
+{
+  "slug": "trend-vol-target-long-and-short",
+  "name": "Trend-vol-target long and short",
+  "created_at": "2026-11-16T09:30:50.330319+00:00",
+  "status": "rejected",
+  "history": [
+    {
+      "status": "idea",
+      "at": "2026-11-16T09:30:50.330319+00:00",
+      "reason": "Created"
+    },
+    {
+      "status": "specified",
+      "at": "2026-11-16T09:34:49.567141+00:00",
+      "reason": "v1 frozen"
+    },
+    {
+      "status": "backtested",
+      "at": "2026-11-16T09:41:36.362885+00:00",
+      "reason": "first run on v1"
+    },
+    {
+      "status": "rejected",
+      "at": "2026-11-16T09:48:48.504200+00:00",
+      "reason": "Failed its pre-registered test (findings 17, 2026-11-16): Sharpe 0.82, 0.84, 0.97 (BTC, ETH, SOL) against 1.23, 1.28, 1.45 long-only; short legs -46%, -35%, -38%. Rejected (Luke)."
+    }
+  ]
+}

@@ -1,0 +1,15 @@
+{
+  "version": 1,
+  "created_at": "2026-11-22T12:09:12.215002+00:00",
+  "sections": {
+    "hypothesis": "Holding ETH while stablecoin supply grows, sized by min(1, 50% / 30-day volatility), beats holding it on a year it has never been run on: 2025-11 to 2026-10, the holdout.",
+    "rationale": "On watch since 2026-11-15 (Luke), with the volatility-sized version named as its best form: Sharpe 0.87 vs 0.68 for ETH held at the same exposure over 2018-01 to 2025-10, but it failed luck (deflated 8%), walk-forward (6 of 11) and drawdown (-51%); the note was rejected and that stands. Luke asked on 2026-11-22 for its one look at unseen data. Honest limits, stated before the run: (1) its rejected note said a holdout would follow only a pass; this one runs anyway, as evidence for the watch decision, never as a pass of the scorecard or a reversal of the rejection. (2) The holdout year is already known to have fallen (BTC -29%, ETH -41% in the earlier holdout tests), and a strategy in cash part of the time looks better in a falling year; the falling-year rule compares returns at the same exposure, which removes most of that, but not the choice to look now. (3) The stablecoin supply for the year sits in the downloaded file but has not been examined or run on. (4) The volatility-sized version is tested, not the plain hold, because the watch decision named it the best version on pre-holdout results; the plain hold is not run on the holdout, so there is one look per coin.",
+    "rules": "Implementation stablecoin-vol-hold on ETHUSDT 1d, exactly as note stablecoin-hold-sized-by-volatility v1: each Sunday close, on for the week if stablecoins_up is 1 (supply known at the close above its value 28 days before); while on, weight min(1, 0.5 / annualised 30-day volatility), rebalanced daily outside the 2% band. 330 USDT, costs from kestrel.toml. Warm-up from 2025-08-01 so the volatility and the weekly flag are running on the first holdout day. Command: kestrel holdout-test ETHUSDT --strategy stablecoin-vol-hold --research <this note> --warmup-start 2025-08 --start 2025-11 --end 2026-10.",
+    "falsification": "Scored on 2025-11-01 to 2026-10-31 only, against ETH held over the same days. Passes only if both hold: (1) the edge: if ETH held has a positive Sharpe over the year, the strategy's Sharpe is at least holding's; if not (a falling year), its return beats ETH held at the strategy's average exposure; (2) its worst drawdown inside the year is no deeper than 50%. Run once; recorded in data/holdout, findings and decisions.toml whatever it is. Reading, fixed now: a pass on both coins supports keeping it on watch and paper-trading it; a fail on both means Claude recommends dropping the stablecoin family (and closing its paper accounts), and Luke decides; a split is reported as a split.",
+    "parameters": "vol_days 30, target_vol_pct 50 (the defaults, as in v1). Nothing else is chosen.",
+    "costs": "About 17 bps a round trip plus daily resizing outside the band. Holdout runs are never trials."
+  },
+  "implementation": "stablecoin-vol-hold",
+  "frozen_at": "2026-11-22T12:09:12.216679+00:00",
+  "change_reason": null
+}

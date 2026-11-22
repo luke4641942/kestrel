@@ -1,0 +1,28 @@
+{
+  "slug": "long-short-momentum-among-liquid-coins",
+  "name": "Long/short momentum among liquid coins",
+  "created_at": "2026-11-16T09:30:50.331712+00:00",
+  "status": "rejected",
+  "history": [
+    {
+      "status": "idea",
+      "at": "2026-11-16T09:30:50.331712+00:00",
+      "reason": "Created"
+    },
+    {
+      "status": "specified",
+      "at": "2026-11-16T09:34:46.436425+00:00",
+      "reason": "v1 frozen"
+    },
+    {
+      "status": "backtested",
+      "at": "2026-11-16T09:41:39.559396+00:00",
+      "reason": "first run on v1"
+    },
+    {
+      "status": "rejected",
+      "at": "2026-11-16T09:48:48.505265+00:00",
+      "reason": "Failed its pre-registered test (findings 17, 2026-11-16): +39% in six years, Sharpe 0.44, mean week +0.13% (P 84%, 95% needed), positive in 3 of 6 years; all from the long leg (+119%, shorts -50%). Rejected (Luke)."
+    }
+  ]
+}

@@ -1,0 +1,28 @@
+{
+  "slug": "g1-with-a-short-side",
+  "name": "G1 with a short side",
+  "created_at": "2026-11-16T09:30:50.328765+00:00",
+  "status": "rejected",
+  "history": [
+    {
+      "status": "idea",
+      "at": "2026-11-16T09:30:50.328765+00:00",
+      "reason": "Created"
+    },
+    {
+      "status": "specified",
+      "at": "2026-11-16T09:34:53.566801+00:00",
+      "reason": "v1 frozen"
+    },
+    {
+      "status": "backtested",
+      "at": "2026-11-16T09:41:35.528662+00:00",
+      "reason": "first run on v1"
+    },
+    {
+      "status": "rejected",
+      "at": "2026-11-16T09:48:48.503240+00:00",
+      "reason": "Failed its pre-registered test (findings 17, 2026-11-16): Sharpe 1.13 against 1.66 long-only; short leg -49%, losing before costs; drawdown -54%. Rejected (Luke)."
+    }
+  ]
+}

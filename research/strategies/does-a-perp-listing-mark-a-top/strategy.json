@@ -1,0 +1,28 @@
+{
+  "slug": "does-a-perp-listing-mark-a-top",
+  "name": "Does a perp listing mark a top?",
+  "created_at": "2026-11-18T12:37:44.623860+00:00",
+  "status": "validated",
+  "history": [
+    {
+      "status": "idea",
+      "at": "2026-11-18T12:37:44.623860+00:00",
+      "reason": "Created"
+    },
+    {
+      "status": "specified",
+      "at": "2026-11-18T12:44:02.283471+00:00",
+      "reason": "v1 frozen"
+    },
+    {
+      "status": "backtested",
+      "at": "2026-11-18T12:49:48.977900+00:00",
+      "reason": "first run on v1"
+    },
+    {
+      "status": "validated",
+      "at": "2026-11-18T13:03:24.661934+00:00",
+      "reason": "EXIT RULE by its pre-registered test (findings 18, 2026-11-18): 102 coins lagged the other coins by -15.2% in the 30 days after their first perp listing (P(< 0) 100%), below all 200 placebo draws; closed as validated (Luke)."
+    }
+  ]
+}
