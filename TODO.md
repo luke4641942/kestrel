@@ -69,6 +69,9 @@ exists and Luke has checked the Swyftx employee trading policy.
 - [ ] Expectancy by conviction bucket (P2 leftover), once a strategy varies its sizing.
 
 ## Done recently
+- 2026-11-22 Regimes compared (findings 23): the preset stays (more states only track volatility
+  more finely); a 4h model warns of daily volatile spells about 40 hours early, 3 times in 4
+  falsely. Non-trend notes rejected (Luke).
 - 2026-11-22 Three non-trend signal studies (findings 22): Coinbase premium, variance
   premium, dollar liquidity. All KILL under their past-week control; rejecting the notes waits
   for Luke. Outside series: `kestrel ingest-external` (Coinbase, Deribit DVOL, FRED).

@@ -1,0 +1,30 @@
+
+BTCUSDT: scored 2021-05 to 2025-10
+  2 states                                 3533.1 nats over 1645 days
+  3 states (the preset)                    3546.8 nats over 1645 days
+  4 states                                 3541.0 nats over 1645 days
+  5 states                                 3550.6 nats over 1645 days
+  3 states, 2-year window                  3522.3 nats over 1645 days
+  3 states, 3-year window                  3542.1 nats over 1645 days
+  Against the preset, per day (nats; +0.01 a day is ~1% likelier):
+    2 states                             -0.0083
+    3 states (the preset)                +0.0000
+    4 states                             -0.0035
+    5 states                             +0.0023
+    3 states, 2-year window              -0.0149
+    3 states, 3-year window              -0.0028
+
+ETHUSDT: scored 2021-05 to 2025-10
+  2 states                                 3033.5 nats over 1645 days
+  3 states (the preset)                    3056.5 nats over 1645 days
+  4 states                                 3042.6 nats over 1645 days
+  5 states                                 3044.4 nats over 1645 days
+  3 states, 2-year window                  3039.7 nats over 1645 days
+  3 states, 3-year window                  3028.5 nats over 1645 days
+  Against the preset, per day (nats; +0.01 a day is ~1% likelier):
+    2 states                             -0.0140
+    3 states (the preset)                +0.0000
+    4 states                             -0.0085
+    5 states                             -0.0074
+    3 states, 2-year window              -0.0102
+    3 states, 3-year window              -0.0170

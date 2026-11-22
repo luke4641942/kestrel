@@ -357,6 +357,24 @@ from 2026-11-16) is the test that's left.
     when USDT itself swung, so there the "premium" is partly fear of USDT. Pursuing it would
     need a new note, disclosed as chosen after a look, judged forward only.
 
+23. **The regime preset is already the right model, and faster regimes warn early but mostly
+    falsely (2026-11-22, research/regimes/; descriptions, not trials).** Variants of the HMM
+    were compared by out-of-sample likelihood, walking forward month by month on BTC and ETH
+    before the holdout, each scored on the same days and the same shared inputs. Scored on
+    return and volatility together, 5 states beat the preset's 3 by 0.26-0.37 nats a day;
+    volume, distance from the 1-year high and (for ETH) BTC's inputs all made it worse; a
+    shorter window helped BTC and hurt ETH. Scored on returns alone, no variant beat the
+    preset by more than 0.002 nats a day and on ETH all were worse: the extra states only
+    track slow-moving 20-day volatility more finely. The preset (3 states, 4 years) stays.
+    Faster models (the same shape on 4h and 1h bars, 20-bar volatility, a 1-year window),
+    2021-01 to 2025-10: the daily model had 11-12 volatile spells of about three weeks. A
+    4h model was volatile 27% of the time in about 115 spells of 3.5 days; it was volatile in
+    the week before 82-100% of daily onsets (about 50% would be chance at that rate),
+    starting a median 40-44 hours earlier, but 72-80% of its spells were never confirmed by a
+    daily close within a week. The 1h model flickers (about 430 spells, 20 hours each;
+    calling 100% of onsets is near chance, about 85%). A real early warning at 4h, three times
+    in four a false one; trading on it would need its own note.
+
 ## The holdout year (2025-11 to 2026-10)
 
 Reserved on 2026-10-31, before any research, and read once on 2026-11-14 for the two watched
@@ -469,9 +487,9 @@ edge, and the holdout can't be used again for either strategy.
 | Study: large token unlocks (2%+ of unlocked supply) | 122 unlocks on 12 exploration-half coins, 2020-25 (DefiLlama schedules) | 30 days before vs the other coins: +0.4% (P(< 0) 47%); the same coins on random days -4.5%: KILL. Insiders -7.1% (7 events), large-for-volume -2.1% vs +2.6% | Rejected (Luke) |
 | Altcoin portfolio: G1's rule on a point-in-time universe, with delisting and new-perp exits | Exploration-half coins 1d, 2019-01 to 2025-10 (2019 cash) | +101%, Sharpe 0.53 vs 0.44 for the large-basket control (pass) but 1.10 for BTC at the same 17% exposure; neighbours 0.46-0.70; walk-forward 3 of 9; 2-year starts 32%; drawdown -33%; luck 0% | Drop (Luke) |
 | Tori Trades trendline method, long only (Luke's request; chart pattern, disclosed) | BTC, ETH, SOL 4h, 2020-25 | +26/+45/+65%, Sharpe 0.41/0.57/0.82 vs 1.07/1.12/1.24 for the coin at the same 6-10% exposure; +0.17R to +0.40R a trade; drawdowns -18% to -25%. Fails test 1 on all three | Drop (Luke) |
-| Study: US buying on Coinbase (USDT-adjusted premium above normal) | BTC, ETH 1d 2021-25 | Spread +0.67% a week, P 79%; +1.42% after falling weeks, -0.35% after rising ones (control fails) | KILL (rejection waits for Luke) |
-| Study: high variance premium (DVOL less realised) | BTC, ETH 1d 2021-25 | Spread +0.73%, P 81%; +1.45% after falls, -0.20% after rises (control fails) | KILL (rejection waits for Luke) |
-| Study: dollar net liquidity growing | BTC, ETH 1d 2018-25 | Spread -0.71%, P 17%; negative after rises and falls | KILL (rejection waits for Luke) |
+| Study: US buying on Coinbase (USDT-adjusted premium above normal) | BTC, ETH 1d 2021-25 | Spread +0.67% a week, P 79%; +1.42% after falling weeks, -0.35% after rising ones (control fails) | KILL; rejected (Luke) |
+| Study: high variance premium (DVOL less realised) | BTC, ETH 1d 2021-25 | Spread +0.73%, P 81%; +1.45% after falls, -0.20% after rises (control fails) | KILL; rejected (Luke) |
+| Study: dollar net liquidity growing | BTC, ETH 1d 2018-25 | Spread -0.71%, P 17%; negative after rises and falls | KILL; rejected (Luke) |
 
 Each strategy was judged by its own note's pass test, written before it ran. From
 2026-11-14 every strategy is judged on one scorecard instead.
