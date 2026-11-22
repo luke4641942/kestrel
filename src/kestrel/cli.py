@@ -60,6 +60,9 @@ from kestrel.data.universe import (
 )
 from kestrel.execution import paper as paper_trading
 from kestrel.execution import safety, tracking
+from kestrel.execution.alerts import Send as AlertSend
+from kestrel.execution.alerts import mac_notifier
+from kestrel.execution.alerts import review as alert_review
 from kestrel.execution.binance import (
     TESTNET_URL,
     BinanceClient,
@@ -1721,17 +1724,54 @@ def paper_run(
     config: Annotated[
         Path, typer.Option("--config", envvar="KESTREL_CONFIG", help="Config file.")
     ] = Path("kestrel.toml"),
+    alerts: Annotated[
+        bool,
+        typer.Option(
+            "--alerts/--no-alerts",
+            help="Afterwards, send a macOS notification for anything new: a halt, a failed "
+            "run, falling behind, a missed day, a trade (kestrel.execution.alerts).",
+        ),
+    ] = False,
 ) -> None:
     """Bring the market up to date, then handle every closed bar the account hasn't:
     mark, decide, and trade at the next open. Refuses to trade on data with problems."""
     account = paper_trading.PaperAccount(data_dir, name)
+    failure: str | None = None
+    try:
+        _paper_run(account, name, data_dir, config)
+    except _RunFailedError as e:
+        failure = str(e)
+        typer.echo(failure, err=True)
+        raise typer.Exit(code=1) from None
+    except (typer.Exit, KeyboardInterrupt):
+        raise
+    except Exception as e:  # a bug, not a known failure: alert, then crash loudly
+        failure = f"crashed: {type(e).__name__}: {e}"
+        raise
+    finally:
+        if alerts:
+            sent = alert_review(account, datetime.now(UTC), _notifier(), failure)
+            for a in sent:
+                typer.echo(f"alert sent: {a.message}")
+
+
+class _RunFailedError(Exception):
+    """A paper run that couldn't finish; the message says why."""
+
+
+def _notifier() -> AlertSend:
+    return mac_notifier()
+
+
+def _paper_run(
+    account: paper_trading.PaperAccount, name: str, data_dir: Path, config: Path
+) -> None:
     try:
         if spec_for(account.terms().strategy).universe:
             _paper_run_basket(account, data_dir, config)
             return
     except (ValueError, ConfigError, httpx.HTTPError, ConfirmationLockedError) as e:
-        typer.echo(str(e), err=True)
-        raise typer.Exit(code=1) from None
+        raise _RunFailedError(str(e)) from None
     try:
         terms = account.terms()
         cfg = load_config(config)
@@ -1756,8 +1796,7 @@ def paper_run(
             )  # fmt: skip
             _reconcile(account, venue, cfg)
     except (ValueError, ConfigError, httpx.HTTPError, BinanceError) as e:
-        typer.echo(str(e), err=True)
-        raise typer.Exit(code=1) from None
+        raise _RunFailedError(str(e)) from None
     halt_reason = safety.halted(account)
     if not handled and halt_reason is None:
         typer.echo(f"{name}: nothing new (the next bar hasn't closed)")
@@ -1940,7 +1979,7 @@ def paper_schedule(
     command = (
         "source ~/.zshrc >/dev/null 2>&1; "  # the testnet keys, never written into the job
         f"exec {shlex.quote(str(kestrel_bin))} paper run {shlex.quote(name)} "
-        f"--data-dir {shlex.quote(str(data))} --config {shlex.quote(str(cfg))}"
+        f"--data-dir {shlex.quote(str(data))} --config {shlex.quote(str(cfg))} --alerts"
     )
     log = account.dir.resolve() / "schedule.log"
     job = {

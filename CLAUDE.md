@@ -72,8 +72,10 @@ Never pipe check output through `tail` or similar inside an `&&` chain: it hides
       plain-English card per indicator switched on (`Preset.reading`)
 - [x] P4 Execution (built 2026-11-14): sim and Binance testnet venues, the paper runner,
       reconciliation, risk limits, kill switch, tracking against the model, a launchd
-      schedule, the Trading page. Left: alerting, a live venue (real money: not before the
-      paper test says so). Plan and progress in TODO.md. The
+      schedule, the Trading page. Left: a live venue (real money: not before the paper test
+      says so). Alerts (`kestrel.execution.alerts`, 2026-11-22): `paper run --alerts` (the
+      launchd jobs pass it) sends a macOS notification for a new halt, failed run, falling
+      behind, missed day or trade; sent keys in each account's `alerts.jsonl`. Plan and progress in TODO.md. The
       backtest and the paper runner share one rebalance step (`kestrel.execution.rebalance`);
       the latest closed bars come from `kestrel.data.live` (`kestrel update`). The paper
       runner (`kestrel.execution.paper`) handles each closed bar like the engine (mark, decide,

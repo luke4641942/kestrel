@@ -59,6 +59,9 @@ exists and Luke has checked the Swyftx employee trading policy.
 - [ ] Expectancy by conviction bucket (P2 leftover), once a strategy varies its sizing.
 
 ## Done recently
+- 2026-11-22 Paper alerts: a macOS notification for a halt, a failed run, falling behind, a
+  missed day or a trade (`kestrel paper run --alerts`; the six launchd jobs rewritten and
+  reloaded). Phone push or email would need an outside service: not added.
 - 2026-11-22 Trading page: "Waiting for" on every account, and each account's entry tests
   (close, level, the move needed by the next close). Tested against the strategies' own
   decisions (`kestrel.strategies.conditions`).
