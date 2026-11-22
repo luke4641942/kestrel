@@ -216,9 +216,9 @@ Agreed with Luke; don't re-litigate without a reason.
   coin's unbroken histories and nothing is computed across a gap. Each coin without its own
   `[instruments]` entry pays a half-spread band set by its 30-day median daily volume
   (`kestrel.backtest.spread`, `[universe] spread_tiers`; on sub-daily bars, the complete
-  days before; Abdi-Ranaldo was tried and dropped as too noisy). Tokenized stocks listed
-  from June 2026 (AAPLBUSDT...) aren't excluded yet; fix from Binance's metadata before
-  any holdout run.
+  days before; Abdi-Ranaldo was tried and dropped as too noisy). Tokenized stocks (AAPLBUSDT...,
+  from June 2026) are excluded by Binance's `bStocks` product tag, read at ingest; delisted
+  BUSDT pairs the live list can't classify are reported, not guessed.
 - **Regimes** (`kestrel.regimes`): Gaussian HMM written here on numpy (no hmmlearn: its
   `predict`/`predict_proba` smooth over the whole sequence). Probabilities are always
   *filtered* (inputs up to t only); refitted monthly on the 4 years before, states sorted

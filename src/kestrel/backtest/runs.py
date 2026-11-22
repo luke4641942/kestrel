@@ -150,7 +150,13 @@ def universe_panel(
             f"no {interval.value} coin universe stored; run "
             f"kestrel ingest-universe --interval {interval.value} first"
         )
-    coins = sorted(json.loads(path.read_text())["coins"])
+    manifest = json.loads(path.read_text())
+    if "tokenized_source" not in manifest:
+        raise ValueError(
+            f"the {interval.value} coin universe predates the tokenized-stock check; re-run "
+            f"kestrel ingest-universe --interval {interval.value} (stored months are skipped)"
+        )
+    coins = sorted(manifest["coins"])
     panel = load_panel(store, coins, interval, start, end)
     if panel.is_empty():
         raise ValueError(f"no universe bars stored for {start}..{end}")

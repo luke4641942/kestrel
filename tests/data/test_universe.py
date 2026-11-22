@@ -16,7 +16,11 @@ from kestrel.data.schema import Interval
 from kestrel.data.store import ParquetStore
 from kestrel.data.universe import (
     KLINES_PREFIX,
+    PRODUCTS_URL,
+    TOKENIZED,
     ArchiveListing,
+    Products,
+    ProductTags,
     ingest_universe,
     manifest_path,
     split_universe,
@@ -45,6 +49,48 @@ def test_coins_exclude_leveraged_tokens_and_stablecoins_but_keep_lookalikes() ->
         "PAXGUSDT": "stablecoin, fiat or gold",
         "USTCUSDT": "stablecoin, fiat or gold",
     }
+
+
+def test_tokenized_stocks_are_excluded_by_their_tag_not_their_name() -> None:
+    symbols = ["AAPLBUSDT", "ARBUSDT", "BNBUSDT", "CKBUSDT", "XAUTUSDT", "QNTUSDT", "QNTBUSDT"]
+    coins, excluded = split_universe(symbols, tokenized={"AAPLBUSDT", "QNTBUSDT"})
+    assert coins == ["ARBUSDT", "BNBUSDT", "CKBUSDT", "QNTUSDT"]  # QNT (Quant) is a coin
+    assert {e.symbol: e.reason for e in excluded} == {
+        "AAPLBUSDT": TOKENIZED,
+        "QNTBUSDT": TOKENIZED,
+        "XAUTUSDT": "stablecoin, fiat or gold",  # tokenized gold
+    }
+
+
+def _products(rows: list[dict[str, object]]) -> ProductTags:
+    def handler(request: httpx.Request) -> httpx.Response:
+        assert str(request.url).startswith(PRODUCTS_URL)
+        return httpx.Response(200, json={"code": "000000", "data": rows})
+
+    return ProductTags(httpx.Client(transport=httpx.MockTransport(handler)))
+
+
+def test_product_tags_read_the_bstocks_tag_and_refuse_a_list_without_it() -> None:
+    products = _products(
+        [
+            {"s": "AAPLBUSDT", "tags": ["bStocks"]},
+            {"s": "ARBUSDT", "tags": ["Layer1_Layer2"]},
+            {"s": "BNBUSDT", "tags": None},
+        ]
+    ).products()
+    assert products.tokenized == {"AAPLBUSDT"}
+    assert products.listed == {"AAPLBUSDT", "ARBUSDT", "BNBUSDT"}
+    # A delisted pair ending in BUSDT can't be classified from today's list: reported.
+    assert products.unclassified(["ARBUSDT", "OLDBUSDT", "LUNAUSDT"]) == ["OLDBUSDT"]
+    with pytest.raises(ValueError, match="bStocks"):
+        _products([{"s": "ARBUSDT", "tags": []}]).products()  # the tag vanished
+    with pytest.raises(ValueError, match="empty"):
+        _products([]).products()
+
+
+PRODUCTS = Products(
+    listed=frozenset({"BTCUSDT", "NEWUSDT", "AAPLBUSDT"}), tokenized=frozenset({"AAPLBUSDT"})
+)
 
 
 # ---------- a fake archive ----------
@@ -109,6 +155,7 @@ def archive(make_archive: ArchiveFactory) -> FakeArchive:
             "BTCUPUSDT": ["2024-01"],
             "USDCUSDT": ["2024-01"],
             "NEWUSDT": ["2024-03"],
+            "AAPLBUSDT": ["2024-03"],  # a tokenized stock
         },
     )
 
@@ -122,7 +169,7 @@ def _clients(archive: FakeArchive) -> tuple[ArchiveListing, BinanceVisionClient]
 
 def test_listing_reads_every_page_and_each_coins_months(archive: FakeArchive) -> None:
     listing, _ = _clients(archive)
-    assert listing.symbols() == sorted(archive.coins)  # five symbols over three pages
+    assert listing.symbols() == sorted(archive.coins)  # six symbols over three pages
     assert [str(m) for m in listing.months("LUNAUSDT", D1)] == ["2024-01", "2024-02"]
 
 
@@ -132,9 +179,9 @@ def test_ingest_stores_delisted_coins_and_writes_a_manifest(
     listing, client = _clients(archive)
     store = ParquetStore(tmp_path)
     seen: list[str] = []
-    results, excluded = ingest_universe(
+    results, excluded, unclassified = ingest_universe(
         listing, client, store, D1, Month.parse("2024-02"), Month.parse("2024-03"),
-        workers=2, on_coin=lambda c, i, n: seen.append(c.symbol),
+        products=PRODUCTS, workers=2, on_coin=lambda c, i, n: seen.append(c.symbol),
     )  # fmt: skip
     assert {r.symbol: (r.archived, r.fetched) for r in results} == {
         "BTCUSDT": (2, 2),
@@ -142,21 +189,24 @@ def test_ingest_stores_delisted_coins_and_writes_a_manifest(
         "NEWUSDT": (1, 1),
     }
     assert sorted(seen) == ["BTCUSDT", "LUNAUSDT", "NEWUSDT"]
-    assert {e.symbol for e in excluded} == {"BTCUPUSDT", "USDCUSDT"}
+    assert {e.symbol for e in excluded} == {"BTCUPUSDT", "USDCUSDT", "AAPLBUSDT"}
+    assert unclassified == []
+    assert store.months("AAPLBUSDT", D1) == []  # never downloaded
     assert store.months("LUNAUSDT", D1) == ["2024-02"]
     manifest = json.loads(manifest_path(store, D1).read_text())
     assert manifest["coins"] == {"BTCUSDT": 2, "LUNAUSDT": 1, "NEWUSDT": 1}
     assert manifest["start"] == "2024-02"
-    assert {e["symbol"] for e in manifest["excluded"]} == {"BTCUPUSDT", "USDCUSDT"}
+    assert {e["symbol"] for e in manifest["excluded"]} == {"BTCUPUSDT", "USDCUSDT", "AAPLBUSDT"}
+    assert manifest["tokenized_source"] == PRODUCTS_URL
 
 
 def test_ingest_skips_months_already_stored(archive: FakeArchive, tmp_path: Path) -> None:
     listing, client = _clients(archive)
     store = ParquetStore(tmp_path)
     args = (listing, client, store, D1, Month.parse("2024-01"), Month.parse("2024-03"))
-    ingest_universe(*args, workers=1)
+    ingest_universe(*args, products=PRODUCTS, workers=1)
     first = len(archive.downloads)
-    results, _ = ingest_universe(*args, workers=1)
+    results, _, _ = ingest_universe(*args, products=PRODUCTS, workers=1)
     assert len(archive.downloads) == first  # nothing downloaded twice
     assert all(r.fetched == 0 for r in results)
 
@@ -169,6 +219,8 @@ def test_the_cli_command(
     # Fresh clients per run: the command closes them when it finishes.
     monkeypatch.setattr(cli, "ArchiveListing", lambda: _clients(archive)[0])
     monkeypatch.setattr(cli, "BinanceVisionClient", lambda: _clients(archive)[1])
+    rows = [{"s": "BTCUSDT", "tags": []}, {"s": "AAPLBUSDT", "tags": ["bStocks"]}]
+    monkeypatch.setattr(cli, "ProductTags", lambda: _products(rows))
     args = [
         "ingest-universe",
         "--start",
@@ -181,7 +233,7 @@ def test_the_cli_command(
     result = CliRunner().invoke(cli.app, args)
     assert result.exit_code == 0, result.output
     assert "3 coins with 1d data" in result.output
-    assert "2 pairs excluded" in result.output
+    assert "3 pairs excluded (1 tokenized stocks)" in result.output
     # Run again: nothing new, so only the final coin's progress line is printed.
     again = CliRunner().invoke(cli.app, args)
     assert again.exit_code == 0, again.output

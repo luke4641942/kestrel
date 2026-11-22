@@ -12,25 +12,25 @@ Not every pair is a coin. Excluded, with the reason recorded:
 - leveraged tokens: a base that is another listed coin plus UP, DOWN, BULL or BEAR
   (BTCUP, ETHBEAR), and Binance's Bitcoin tokens BULL and BEAR. A plain suffix rule would
   also drop real coins such as JUP and SYRUP;
-- stablecoins, fiat currencies and gold: built to hold a fixed price, so there is no
-  momentum to rank.
+- stablecoins, fiat currencies and gold (PAXG, XAUT): built to hold a fixed price, or to
+  track one outside crypto, so there is no crypto momentum to rank;
+- tokenized stocks and ETFs (AAPLBUSDT, MSFTBUSDT, EWYBUSDT...), listed from June 2026: the
+  pairs Binance's product list tags ``bStocks``. No name rule can find them (ARB, BNB, CKB
+  also end in B), so the ingest reads the tags (``ProductTags``). That list holds only
+  pairs listed today: an archived pair ending in BUSDT that it doesn't know (a delisted
+  stock, or a delisted coin) is reported as ``unclassified``, never silently kept or
+  dropped. None of these could reach research runs (all first trade after the 2025-11
+  holdout starts) or the exploration split.
 
 Which coins are *eligible* on a given date (enough history, enough volume) is decided
 point in time by the strategy, from data known then. This module only says what exists.
-
-Known gap: from June 2026 Binance lists tokenized stocks and ETFs quoted in USDT
-(AAPLBUSDT, MSFTBUSDT, EWYBUSDT...). No name rule separates them from real coins whose
-base ends in B (ARB, BNB, CKB), so they are not excluded yet. They cannot affect research
-runs (which end before the 2025-11 holdout) or a holdout run on data through 2026-10
-(they need 180 days of history to be ranked). Exclude them from Binance's symbol metadata
-before the holdout is used.
 """
 
 from __future__ import annotations
 
 import json
 import re
-from collections.abc import Callable
+from collections.abc import Callable, Collection
 from concurrent.futures import ThreadPoolExecutor
 from dataclasses import dataclass
 from datetime import UTC, datetime
@@ -44,6 +44,9 @@ from kestrel.data.schema import Interval
 from kestrel.data.store import ParquetStore
 
 LISTING_URL = "https://s3-ap-northeast-1.amazonaws.com/data.binance.vision"
+PRODUCTS_URL = "https://www.binance.com/bapi/asset/v2/public/asset-service/product/get-products"
+TOKENIZED_TAG = "bStocks"
+TOKENIZED = "tokenized stock or ETF"
 KLINES_PREFIX = "data/spot/monthly/klines/"
 QUOTE = "USDT"
 
@@ -57,7 +60,7 @@ NOT_COINS = frozenset(
         # Fiat currencies.
         "EUR", "AEUR", "EURI", "GBP", "AUD", "TRY", "BRL",
         # Gold.
-        "PAXG",
+        "PAXG", "XAUT",
     }
 )  # fmt: skip
 
@@ -68,8 +71,12 @@ class Exclusion:
     reason: str
 
 
-def split_universe(symbols: list[str]) -> tuple[list[str], list[Exclusion]]:
-    """USDT pairs that are coins, and every other USDT pair with why it was left out."""
+def split_universe(
+    symbols: list[str], tokenized: Collection[str] = ()
+) -> tuple[list[str], list[Exclusion]]:
+    """USDT pairs that are coins, and every other USDT pair with why it was left out.
+    ``tokenized``: the pairs Binance tags as tokenized stocks (``ProductTags``)."""
+    stocks = set(tokenized)
     pairs = sorted({s for s in symbols if s.endswith(QUOTE) and len(s) > len(QUOTE)})
     bases = {s[: -len(QUOTE)] for s in pairs}
     coins: list[str] = []
@@ -82,6 +89,8 @@ def split_universe(symbols: list[str]) -> tuple[list[str], list[Exclusion]]:
             excluded.append(Exclusion(symbol, "leveraged token"))
         elif base in NOT_COINS:
             excluded.append(Exclusion(symbol, "stablecoin, fiat or gold"))
+        elif symbol in stocks:
+            excluded.append(Exclusion(symbol, TOKENIZED))
         else:
             coins.append(symbol)
     return coins, excluded
@@ -132,6 +141,50 @@ class ArchiveListing:
 
 
 @dataclass(frozen=True)
+class Products:
+    """Binance's current product list: every pair listed today, and the tokenized ones."""
+
+    listed: frozenset[str]
+    tokenized: frozenset[str]
+
+    def unclassified(self, symbols: Collection[str]) -> list[str]:
+        """Pairs ending in BUSDT the list doesn't know (delisted): they could be a delisted
+        tokenized stock, so they're reported for a look."""
+        return sorted(s for s in symbols if s.endswith("B" + QUOTE) and s not in self.listed)
+
+
+class ProductTags:
+    """Reads Binance's public product list (each pair's tags). HTTP is injectable."""
+
+    def __init__(self, http: httpx.Client | None = None, timeout: float = 60.0) -> None:
+        self._http = http or httpx.Client(timeout=timeout, follow_redirects=True)
+
+    def products(self) -> Products:
+        response = self._http.get(PRODUCTS_URL, params={"includeEtf": "true"})
+        response.raise_for_status()
+        rows = response.json().get("data") or []
+        if not rows:
+            raise ValueError("Binance's product list came back empty; can't classify pairs")
+        listed = frozenset(str(r["s"]) for r in rows)
+        tokenized = frozenset(str(r["s"]) for r in rows if TOKENIZED_TAG in (r.get("tags") or []))
+        if not tokenized:
+            raise ValueError(
+                f"no pair tagged {TOKENIZED_TAG} in Binance's product list: the tag may have "
+                "changed; tokenized stocks can't be excluded"
+            )
+        return Products(listed, tokenized)
+
+    def close(self) -> None:
+        self._http.close()
+
+    def __enter__(self) -> ProductTags:
+        return self
+
+    def __exit__(self, *exc: object) -> None:
+        self.close()
+
+
+@dataclass(frozen=True)
 class CoinIngest:
     symbol: str
     archived: int
@@ -148,13 +201,17 @@ def ingest_universe(
     start: Month,
     end: Month,
     *,
+    products: Products,
     workers: int = 8,
     on_coin: Callable[[CoinIngest, int, int], None] | None = None,
-) -> tuple[list[CoinIngest], list[Exclusion]]:
+) -> tuple[list[CoinIngest], list[Exclusion], list[str]]:
     """Store every coin's archived months in ``start..end``, skipping months already
     stored, and record what the universe was. Coins are fetched in parallel; each writes
-    only its own directory, so workers never touch the same files."""
-    coins, excluded = split_universe(listing.symbols())
+    only its own directory, so workers never touch the same files. Also returns the
+    archived pairs ``products`` can't classify (``Products.unclassified``)."""
+    symbols = listing.symbols()
+    coins, excluded = split_universe(symbols, products.tokenized)
+    unclassified = products.unclassified(coins)
     lo, hi = str(start), str(end)
 
     def one(symbol: str) -> CoinIngest:
@@ -172,8 +229,8 @@ def ingest_universe(
             results.append(done)
             if on_coin is not None:
                 on_coin(done, i, len(coins))
-    _write_manifest(store, interval, start, end, results, excluded)
-    return results, excluded
+    _write_manifest(store, interval, start, end, results, excluded, unclassified)
+    return results, excluded, unclassified
 
 
 def manifest_path(store: ParquetStore, interval: Interval) -> Path:
@@ -187,6 +244,7 @@ def _write_manifest(
     end: Month,
     results: list[CoinIngest],
     excluded: list[Exclusion],
+    unclassified: list[str],
 ) -> None:
     """What the universe was when it was fetched, so a backtest can say what it ranked."""
     path = manifest_path(store, interval)
@@ -201,6 +259,8 @@ def _write_manifest(
             r.symbol: r.archived for r in sorted(results, key=lambda r: r.symbol) if r.archived
         },
         "excluded": [{"symbol": e.symbol, "reason": e.reason} for e in excluded],
+        "tokenized_source": PRODUCTS_URL,
+        "unclassified": unclassified,
     }
     tmp = path.with_suffix(".tmp")
     tmp.write_text(json.dumps(doc, indent=2))

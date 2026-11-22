@@ -156,7 +156,9 @@ def setup(tmp_path: Path) -> tuple[Path, Path, Path]:
         months_of_daily(symbol, store, 30, volume)
     months_of_daily("NEWUSDT", store, 6, 5e7)
     (data / "universe").mkdir(parents=True)
-    (data / "universe" / "1d.json").write_text(json.dumps({"coins": [*coins, "NEWUSDT"]}))
+    (data / "universe" / "1d.json").write_text(
+        json.dumps({"coins": [*coins, "NEWUSDT"], "tokenized_source": "test"})
+    )
     return tmp_path / "kestrel.toml", data, research
 
 

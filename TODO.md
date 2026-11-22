@@ -31,8 +31,6 @@ one lands: `kestrel.decisions` and the Research tab), never traded until a licen
 exists and Luke has checked the Swyftx employee trading policy.
 - [ ] Delisting short: the open note `shorting-the-delisting-window-with-perps` was
       INSUFFICIENT at 6 announcements (10 needed). Re-run once 10 exist, rather than reject.
-- [ ] Short before large token unlocks (sized against daily volume): needs an unlock
-      history first (backlog).
 - [ ] Before each: a cheap check that the account size works (CFD minimums, margin at 2:1
       on about 330 USDT).
 
@@ -52,15 +50,18 @@ exists and Luke has checked the Swyftx employee trading policy.
 - [ ] Keys from the macOS keychain (or the server's key file), not ~/.zshrc: before any live
       (non-testnet) keys exist. Luke adds them himself; Claude never sees the values. Live
       keys: trading only, withdrawals off, restricted to the home IP.
-- [ ] News-tone study (`kestrel signal-study news-tone`): needs `kestrel ingest-news
-      BTCUSDT ETHUSDT` first (about 40 minutes; GDELT rate-limits), then a note to freeze.
-- [ ] Exclude tokenized stocks (AAPLBUSDT...) from the universe before any holdout run.
-- [ ] Why G1 works (exploration mode, not trials, not evidence): the BTC filter alone, the
+- [ ] News-tone study (`kestrel signal-study news-tone`): blocked on data. `kestrel
+      ingest-news BTCUSDT ETHUSDT` is resumable but GDELT rate-limits hard: by 2026-11-22
+      BTC had 2017-01..2018-08, ETH 2017-01..2017-11. Needs 2017..2025-10, then a note.
+- [ ] Why G1 works (started 2026-11-22; exploration mode, not trials, not evidence): the BTC filter alone, the
       ranking alone, and risk-adjusted ranking (90-day return / volatility). Round 2 already
       suggested the filter does most of the work. Nothing found here can change G1's rule.
 - [ ] Expectancy by conviction bucket (P2 leftover), once a strategy varies its sizing.
 
 ## Done recently
+- 2026-11-22 Tokenized stocks excluded from the coin universe by Binance's `bStocks` tag
+  (104 pairs) and XAUT as gold: 700 coins to 595. None first traded before the holdout, so
+  no research result changes.
 - 2026-11-21 Tori Trades trendline method tested (Luke's request): fails test 1 on BTC, ETH,
   SOL; dropped (Luke).
 - 2026-11-21 Decisions (Luke): altcoin portfolio dropped; token-unlock note rejected;

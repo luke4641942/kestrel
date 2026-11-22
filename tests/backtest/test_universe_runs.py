@@ -51,8 +51,17 @@ def _store_universe(root: Path, coins: int = 8) -> ParquetStore:
         )
     path = manifest_path(store, D1)
     path.parent.mkdir(parents=True)
-    path.write_text(json.dumps({"coins": {n: 12 for n in ["BTCUSDT", *names]}}))
+    coins = {n: 12 for n in ["BTCUSDT", *names]}
+    path.write_text(json.dumps({"coins": coins, "tokenized_source": "test"}))
     return store
+
+
+def test_a_universe_from_before_the_tokenized_stock_check_is_refused(tmp_path: Path) -> None:
+    store = _store_universe(tmp_path)
+    path = manifest_path(store, D1)
+    path.write_text(json.dumps({"coins": json.loads(path.read_text())["coins"]}))
+    with pytest.raises(ValueError, match="re-run kestrel ingest-universe"):
+        execute(_request(), store, load_config(REPO_CONFIG))
 
 
 def _request(**over: Any) -> RunRequest:

@@ -202,7 +202,7 @@ def test_a_coin_basket_is_scored_against_btc_held(tmp_path: Path) -> None:
         store.write(name, D1, daily(seed=seed))
     path = manifest_path(store, D1)
     path.parent.mkdir(parents=True)
-    path.write_text(json.dumps({"coins": dict.fromkeys(coins, 18)}))
+    path.write_text(json.dumps({"coins": dict.fromkeys(coins, 18), "tokenized_source": "test"}))
     research = ResearchStore(tmp_path / "r")
     s = research.create("Holdout: rotation")
     sections = ("hypothesis", "rationale", "rules", "falsification", "parameters", "costs")

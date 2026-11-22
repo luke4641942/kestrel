@@ -50,7 +50,14 @@ from kestrel.data.features import attach_features, markets_for
 from kestrel.data.quality import check_klines
 from kestrel.data.schema import Interval
 from kestrel.data.store import ParquetStore
-from kestrel.data.universe import ArchiveListing, CoinIngest, ingest_universe, manifest_path
+from kestrel.data.universe import (
+    TOKENIZED,
+    ArchiveListing,
+    CoinIngest,
+    ProductTags,
+    ingest_universe,
+    manifest_path,
+)
 from kestrel.execution import paper as paper_trading
 from kestrel.execution import safety, tracking
 from kestrel.execution.binance import (
@@ -185,16 +192,25 @@ def ingest_universe_cmd(
         if coin.fetched or i % 50 == 0 or i == total:
             typer.echo(f"[{i}/{total}] {coin.symbol}: {coin.fetched} new of {coin.archived} months")
 
-    with ArchiveListing() as listing, BinanceVisionClient() as client:
-        results, excluded = ingest_universe(
-            listing, client, store, interval, first, last, workers=workers, on_coin=report
-        )
+    with ArchiveListing() as listing, BinanceVisionClient() as client, ProductTags() as tags:
+        products = tags.products()
+        results, excluded, unclassified = ingest_universe(
+            listing, client, store, interval, first, last,
+            products=products, workers=workers, on_coin=report,
+        )  # fmt: skip
     with_data = [r for r in results if r.archived]
     typer.echo(
         f"{len(with_data)} coins with {interval.value} data in {first}..{last} "
         f"({sum(r.fetched for r in results)} months fetched now); {len(excluded)} pairs "
-        f"excluded. Manifest: {manifest_path(store, interval)}"
+        f"excluded ({sum(e.reason == TOKENIZED for e in excluded)} tokenized stocks). "
+        f"Manifest: {manifest_path(store, interval)}"
     )
+    if unclassified:
+        typer.echo(
+            f"{len(unclassified)} delisted pair(s) ending in BUSDT kept as coins; Binance's "
+            f"product list no longer says whether they were tokenized stocks: "
+            f"{', '.join(unclassified)}"
+        )
 
 
 @app.command("ingest-sentiment")
