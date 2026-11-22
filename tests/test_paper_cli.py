@@ -241,3 +241,69 @@ def test_a_basket_account_opens_runs_and_reports(tmp_path: Path, setup: FakeBina
     status = invoke(tmp_path, "status", "b")
     assert "btc-rotation-4 on UNIVERSE" in status.output
     assert "holding nothing, cash 330.00" in status.output
+
+
+def test_a_stablecoin_account_refreshes_the_supply_it_decides_on(
+    tmp_path: Path, setup: FakeBinance, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    import polars as pl
+
+    from kestrel.data import stablecoins
+    from kestrel.execution.paper import Terms
+
+    def supply(days: int) -> pl.DataFrame:
+        start = (T0 - 40 * DAY).date()
+        return pl.DataFrame(
+            {
+                "date": [start + i * DAY for i in range(days)],
+                "supply": [1.0 + i for i in range(days)],
+            },
+            schema=stablecoins.SCHEMA,
+        )
+
+    stablecoins.save(supply(100), tmp_path)  # stops well before day 101
+    fetched: list[int] = []
+
+    def fetch(_http):  # type: ignore[no-untyped-def]
+        fetched.append(1)
+        return supply(200)
+
+    monkeypatch.setattr(stablecoins, "fetch", fetch)
+    terms = Terms(
+        "s", "stablecoin-vol-hold", "BTCUSDT", Interval.D1, {}, Decimal(330), T0 + 101 * DAY
+    )
+    PaperAccount.open(tmp_path, terms)
+    ran = invoke(tmp_path, "run", "s", "--config", REPO_CONFIG)
+    assert ran.exit_code == 0, ran.output
+    assert fetched == [1]
+    assert (
+        stablecoins.load(tmp_path)["date"].max() >= (T0 + 100 * DAY).date()
+    )  # day 101 needs day 100
+    decision = next(
+        e for e in PaperAccount(tmp_path, "s").ledger.events() if e["type"] == "decision"
+    )
+    assert decision["bar"].startswith("2024-04-11")
+
+
+def test_a_stablecoin_account_refuses_when_the_supply_is_behind(
+    tmp_path: Path, setup: FakeBinance, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    import polars as pl
+
+    from kestrel.data import stablecoins
+    from kestrel.execution.paper import Terms
+
+    start = (T0 - 40 * DAY).date()
+    stale = pl.DataFrame(
+        {"date": [start + i * DAY for i in range(100)], "supply": [1.0] * 100},
+        schema=stablecoins.SCHEMA,
+    )
+    stablecoins.save(stale, tmp_path)
+    monkeypatch.setattr(stablecoins, "fetch", lambda _http: stale)  # DefiLlama hasn't caught up
+    terms = Terms(
+        "s", "stablecoin-vol-hold", "BTCUSDT", Interval.D1, {}, Decimal(330), T0 + 101 * DAY
+    )
+    PaperAccount.open(tmp_path, terms)
+    ran = invoke(tmp_path, "run", "s", "--config", REPO_CONFIG)
+    assert ran.exit_code == 1
+    assert "not trading on missing inputs: stablecoins_up" in ran.output

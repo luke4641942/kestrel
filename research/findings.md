@@ -352,10 +352,19 @@ holding the same coin at the strategy's average exposure.
 | Trend-vol-target, SOL (read 2026-11-15) | +2.6% | -13.8% (28%) | -19% | -67% | Pass |
 | BTC-regime rotation G1, top 3 of BTC + 7 unseen large coins (read 2026-11-16) | +0.0% | -4.7% for BTC (18%) | -11% | -47% | Pass |
 | BTC-regime rotation G2, top 1 of BTC + 3 unseen large coins (read 2026-11-16) | -22.6% | -5.7% for BTC (22%) | -23% | -47% | Fail |
+| Stablecoin hold sized by volatility, BTC (read 2026-11-22; watch, rejected note) | -7.7% | -14.7% (53%) | -20% | -47% | Pass |
+| Stablecoin hold sized by volatility, ETH (read 2026-11-22; watch, rejected note) | -28.2% | -18.1% (46%) | -29% | -60% | Fail |
 
 On Sharpe the verdicts are the same (trend -0.06 vs -0.57 for holding; weekly -0.74 vs -0.57;
 rotation -1.21 vs -0.57 for BTC). Rotation lost more than BTC held in full while only a
 quarter invested: its months in the market were in ETH and SOL, which fell further.
+The stablecoin pair (notes `holdout-stablecoin-vol-hold-btc`, `-eth`, Luke's request) was read
+after its scorecard had failed, as evidence for its watch decision only, with the year already
+known to have fallen; the note fixed a split as a split. It is paper-traded from 2026-11-21
+(scs-btc, scs-eth). DefiLlama's stablecoin history is revised after the fact: a week after
+download, 1,233 of its days differed (median 0.14%, largest 1.7%) and the 4-week growth flag
+flipped on 34 of 3,253 days, so every stablecoin backtest leans on one reconstruction. The
+paper runner appends new days and never rewrites saved ones.
 One falling year is a small sample: the pass is support for paper trading, not proof of an
 edge, and the holdout can't be used again for either strategy.
 

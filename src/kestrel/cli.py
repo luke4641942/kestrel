@@ -1808,6 +1808,17 @@ def _paper_run(
                         f"{market} data has problems; not trading:\n{up.quality.summary()}"
                     )
             bars = store.read(terms.symbol, terms.interval)
+            if stablecoins.FEATURE in features and bars.height:
+                # The supply the latest closed bar may read (known from D + 2 days).
+                last_bar = bars["open_time"].to_list()[-1]  # bars are sorted
+                needed = (last_bar + timedelta(days=1) - stablecoins.KNOWN_AFTER).date()
+                got = stablecoins.refresh(data_dir, http, needed)
+                if got.revised:
+                    typer.echo(
+                        f"stablecoins: DefiLlama revised {got.revised} saved days (largest "
+                        f"{got.largest:.2%}); the saved figures are kept",
+                        err=True,
+                    )
             bars = attach_features(bars, features, terms.symbol, terms.interval, data_dir)
             venue = _paper_venue(terms, cfg, http)
             _reconcile(account, venue, cfg)

@@ -145,3 +145,35 @@ def test_the_volatility_sized_hold() -> None:
     assert validated_weights(StablecoinVolHold(vol_days=10), off).to_list()[-1] == 0.0
     assert STRATEGIES["stablecoin-vol-hold"].features == ("stablecoins_up",)
     assert STRATEGIES["trend-vol-target-stablecoin"].features == ("stablecoins_up",)
+
+
+def test_refresh_appends_new_days_and_never_rewrites_saved_ones(tmp_path: Path) -> None:
+    calls: list[int] = []
+
+    def counting(body: object) -> httpx.Client:
+        def handle(_: httpx.Request) -> httpx.Response:
+            calls.append(1)
+            return httpx.Response(200, json=body)
+
+        return httpx.Client(transport=httpx.MockTransport(handle))
+
+    first = stablecoins.refresh(tmp_path, counting(payload([1.0, 2.0])), START)
+    assert (first.added, first.revised, first.last) == (2, 0, START + timedelta(days=1))
+    # Already covers the day needed: no request at all.
+    same = stablecoins.refresh(tmp_path, counting(payload([9.0])), START + timedelta(days=1))
+    assert (same.added, len(calls)) == (0, 1)
+    # DefiLlama revises day 0 and adds day 2: day 0 keeps what was known, day 2 is added.
+    later = stablecoins.refresh(
+        tmp_path, counting(payload([5.0, 2.0, 3.0])), START + timedelta(days=2)
+    )
+    assert (later.added, later.revised, later.largest) == (1, 1, 4.0)  # 1 -> 5
+    assert stablecoins.load(tmp_path)["supply"].to_list() == [1.0, 2.0, 3.0]
+
+
+def test_refresh_refuses_a_gap(tmp_path: Path) -> None:
+    stablecoins.refresh(tmp_path, client(payload([1.0])), START)
+    gappy = payload([1.0, 2.0, 3.0])
+    del gappy[1]
+    with pytest.raises(stablecoins.StablecoinError, match="missing days"):
+        stablecoins.refresh(tmp_path, client(gappy), START + timedelta(days=2))
+    assert stablecoins.load(tmp_path).height == 1  # nothing saved

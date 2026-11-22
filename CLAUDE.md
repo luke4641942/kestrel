@@ -95,8 +95,9 @@ Never pipe check output through `tail` or similar inside an `&&` chain: it hides
       A run refreshes every market a strategy's features read (`kestrel.data.features
       .markets_for`: BTC for `btc_close`) and refuses to decide a bar with a missing input.
       The dashboard's Trading page is read-only; every action is a CLI command. Running
-      (TODO.md): trend-vol-target on BTC, ETH, SOL, btc-regime-trend on ETH, SOL, and G1
-      (btc-rotation-8, one basket account, rot-g1), each its own testnet account. An
+      (TODO.md): trend-vol-target on BTC, ETH, SOL, btc-regime-trend on ETH, SOL, G1
+      (btc-rotation-8, one basket account, rot-g1), and stablecoin-vol-hold on BTC, ETH (watch,
+      scs-btc and scs-eth), each its own testnet account. An
       always-on machine is parked (TODO.md).
 - [x] Research tooling: the Research tab (decisions by family, the luck bar over time, the
       exploration experiment), the exploration split and confirmation run, cross-sectional

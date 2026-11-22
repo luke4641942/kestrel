@@ -9,6 +9,7 @@ Rules live in CLAUDE.md; results in `research/findings.md`; ideas not yet schedu
   - tvt-btc, tvt-eth, tvt-sol: trend-vol-target, opened 2026-11-15.
   - brt-eth, brt-sol: btc-regime-trend, opened 2026-11-16.
   - rot-g1: btc-rotation-8 (G1, a basket of 8 coins), opened 2026-11-16.
+  - scs-btc, scs-eth: stablecoin-vol-hold (watch, not pursue), opened 2026-11-22.
   Each runs 395 days from its first decision (the 2026-11-14 or 15 bar). Reviews every 3
   months (`kestrel paper track`; first around 2027-02-15), a failure-only check at 182 days
   (around 2027-05-15), verdicts around 2027-12-14. Runs are late or missed while the Mac
@@ -19,6 +20,12 @@ Rules live in CLAUDE.md; results in `research/findings.md`; ideas not yet schedu
   local `scripts/check.sh` is the gate until it's fixed.
 
 ## Next
+- [ ] Decay monitor: a rule fixed in advance per pursued strategy for when paper results say
+      the edge has gone (information; a downgrade waits for Luke).
+- [ ] Exploration round 2: fix the pool (coins listed since round 1's split) and split it now,
+      before anyone looks.
+- [ ] Pick the next idea by independence from the trend bet (news tone first): expected overlap
+      written in the note, measured overlap reported beside its scorecard.
 - [ ] Monitoring-tag drift: blocked on data. Binance's announcement feed holds 1 tag
       announcement in ~2,700 scanned (2026-11-18); the history would need another source.
 
@@ -62,6 +69,10 @@ exists and Luke has checked the Swyftx employee trading policy.
 - [ ] Expectancy by conviction bucket (P2 leftover), once a strategy varies its sizing.
 
 ## Done recently
+- 2026-11-22 Stablecoin hold (watch), Luke's request: its one holdout look, volatility-sized
+  version: BTC passes (-7.7% vs -14.7% held at 53%), ETH fails (-28.2% vs -18.1% at 46%); a
+  split, stays watch. Paper accounts scs-btc and scs-eth opened; the paper runner now refreshes
+  DefiLlama's supply each run (appended, never rewritten: the history is revised after the fact).
 - 2026-11-22 House style (Luke): an institutional frame (navy bar with a gold rule, cream,
   Libre Baskerville titles and figures, square corners) with Source Serif reading text on
   the story pages; light and dark. Fonts bundled, nothing loaded from outside. README

@@ -12,6 +12,7 @@ time; revisions can't be ruled out. Gaps are reported, never filled.
 
 from __future__ import annotations
 
+from dataclasses import dataclass
 from datetime import UTC, date, datetime, timedelta
 from pathlib import Path
 
@@ -72,6 +73,54 @@ def save(frame: pl.DataFrame, data_dir: Path | str) -> Path:
     frame.write_parquet(tmp)
     tmp.replace(target)
     return target
+
+
+@dataclass(frozen=True)
+class Refreshed:
+    added: int
+    """New days appended."""
+    revised: int
+    """Saved days DefiLlama now gives a different figure for (reported; the saved one kept)."""
+    last: date | None
+    largest: float = 0.0
+    """The largest revision, as a fraction of the saved figure."""
+
+
+def refresh(data_dir: Path | str, http: httpx.Client, needed: date) -> Refreshed:
+    """For paper trading: make sure the saved supply reaches ``needed``, fetching only if it
+    doesn't. New days are appended and saved days are never rewritten, so the file is what
+    was known when each decision was made and a replay reads the same figures. A gap in the
+    combined history is an error (reported, never filled)."""
+    try:
+        saved: pl.DataFrame | None = load(data_dir)
+    except StablecoinError:
+        saved = None
+    if saved is not None and saved.height and saved["date"].max() >= needed:  # type: ignore[operator]
+        return Refreshed(0, 0, saved["date"].max())  # type: ignore[arg-type]
+    fresh = fetch(http)
+    if saved is None or saved.is_empty():
+        combined, revised, largest = fresh, 0, 0.0
+    else:
+        last = saved["date"].max()
+        both = saved.join(fresh, on="date", suffix="_now")
+        changed = both.filter(pl.col("supply") != pl.col("supply_now"))
+        revised = changed.height
+        largest = (
+            float(
+                ((changed["supply_now"] / changed["supply"]) - 1).abs().max() or 0.0  # type: ignore[arg-type]
+            )
+            if revised
+            else 0.0
+        )
+        combined = pl.concat([saved, fresh.filter(pl.col("date") > last)])
+    missing = gaps(combined)
+    if missing:
+        raise StablecoinError(
+            f"the stablecoin history has {len(missing)} missing days (first {missing[0]})"
+        )
+    save(combined, data_dir)
+    added = combined.height - (0 if saved is None else saved.height)
+    return Refreshed(added, revised, combined["date"].max(), largest)  # type: ignore[arg-type]
 
 
 def load(data_dir: Path | str) -> pl.DataFrame:
