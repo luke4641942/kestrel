@@ -5,21 +5,28 @@
 
 :root,
 :root[data-theme="light"] {
-  --bg: #ffffff;
-  --surface: #f7f8fa;
-  --surface-2: #eff1f4;
-  --line: #e6e8ec;
-  --line-strong: #d3d7de;
-  --text: #14161a;
-  --text-2: #5e6470;
-  --text-3: #8e94a0;
-  --up: #0e8a5f;
-  --down: #c8372d;
-  --warn: #b7791f;
-  --info: #2f5bd3;
-  --focus: #2f5bd3;
+  /* House style (2026-11-22): an institutional frame (navy, cream, a gold rule, serif
+     figures) with a research journal's serif reading text. */
+  --bg: #f7f5f0;
+  --surface: #efece4;
+  --surface-2: #e7e3d8;
+  --panel: #fffdf8;
+  --line: #e0dbcf;
+  --line-strong: #c9c2b2;
+  --text: #14213d;
+  --text-2: #4a5568;
+  --text-3: #7d8596;
+  --up: #2e6b4e;
+  --down: #a3322d;
+  --warn: #9a7424;
+  --info: #24407a;
+  --focus: #b08d3c;
+  --gold: #b08d3c;
   --on-primary: #ffffff;
-  --shadow: 0 8px 28px rgba(20, 22, 26, 0.12), 0 1px 3px rgba(20, 22, 26, 0.08);
+  --bar: #14213d;
+  --bar-text: #ffffff;
+  --bar-text-2: #c9c4b4;
+  --shadow: 0 8px 28px rgba(20, 33, 61, 0.14), 0 1px 3px rgba(20, 33, 61, 0.08);
   /* Cost components: categorical, validated for colour-vision deficiency in both themes. */
   --cost-fee: #2a78d6;
   --cost-spread: #eb6834;
@@ -37,21 +44,26 @@
 }
 
 :root[data-theme="dark"] {
-  --bg: #16181c;
-  --surface: #1c1f24;
-  --surface-2: #23272d;
-  --line: #2a2e35;
-  --line-strong: #3a3f48;
-  --text: #e8eaed;
-  --text-2: #a2a8b3;
-  --text-3: #727985;
-  --up: #3dbe8b;
-  --down: #ef6b5f;
-  --warn: #e0a445;
-  --info: #7a9cf2;
-  --focus: #7a9cf2;
-  --on-primary: #16181c;
-  --shadow: 0 8px 28px rgba(0, 0, 0, 0.45), 0 1px 3px rgba(0, 0, 0, 0.3);
+  --bg: #0f1726;
+  --surface: #131d30;
+  --surface-2: #1a263c;
+  --panel: #121b2d;
+  --line: #233049;
+  --line-strong: #33435f;
+  --text: #ece6d6;
+  --text-2: #aab2c2;
+  --text-3: #7a849a;
+  --up: #4cc497;
+  --down: #ef7a6d;
+  --warn: #e0b25a;
+  --info: #8fb0f0;
+  --focus: #d4b26a;
+  --gold: #d4b26a;
+  --on-primary: #0f1726;
+  --bar: #0a1120;
+  --bar-text: #ffffff;
+  --bar-text-2: #a9b1c1;
+  --shadow: 0 8px 28px rgba(0, 0, 0, 0.5), 0 1px 3px rgba(0, 0, 0, 0.35);
   --cost-fee: #3987e5;
   --cost-spread: #d95926;
   --cost-impact: #199e70;
@@ -69,8 +81,11 @@
 :root {
   --sans: "IBM Plex Sans", ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
   --mono: "IBM Plex Mono", ui-monospace, "SF Mono", Menlo, monospace;
-  --radius: 6px;
-  --radius-sm: 5px;
+  /* Headings and big figures; reading text (Thesis, findings). */
+  --display: "Libre Baskerville", Baskerville, Georgia, serif;
+  --serif: "Source Serif 4", Charter, Georgia, serif;
+  --radius: 2px;
+  --radius-sm: 2px;
   --maxw: 1280px;
 
   font-family: var(--sans);
@@ -2930,4 +2945,171 @@ pre.report {
   .tour-dim {
     transition: none;
   }
+}
+
+
+/* ---------- house style: an institutional frame, journal reading text ---------- */
+/* Navy top bar with a gold rule; serif page titles, section titles and big figures; cream
+   panels; small-caps labels; serif reading text on the story pages. Colours above. */
+.topbar {
+  background: var(--bar);
+  border-bottom: 3px solid var(--gold);
+}
+
+.wordmark {
+  color: var(--bar-text);
+  font-family: var(--display);
+  font-weight: 400;
+  font-size: 16px;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+}
+
+.wordmark svg {
+  color: var(--gold);
+}
+
+.wordmark svg path {
+  fill: var(--bar);
+}
+
+.topbar .nav a,
+.topbar .nav-more,
+.topbar .corner-link,
+.topbar .secondary,
+.topbar .icon-btn {
+  color: var(--bar-text-2);
+}
+
+.topbar .nav a:hover,
+.topbar .nav-more:hover,
+.topbar .corner-link:hover,
+.topbar .icon-btn:hover {
+  color: var(--bar-text);
+}
+
+.topbar .nav a[aria-current="page"],
+.topbar .nav-more.current,
+.topbar .corner-link[aria-current="page"] {
+  color: var(--bar-text);
+  border-bottom-color: var(--gold);
+}
+
+.page-header {
+  border-bottom: 1px solid var(--line-strong);
+  padding-bottom: 18px;
+}
+
+.page-header h1 {
+  font-family: var(--display);
+  font-weight: 400;
+  font-size: 34px;
+  letter-spacing: -0.01em;
+}
+
+.page-header p {
+  font-family: var(--serif);
+  font-style: italic;
+  font-size: 16px;
+  max-width: 78ch;
+}
+
+.section-header h2 {
+  font-family: var(--display);
+  font-weight: 400;
+  font-size: 19px;
+  letter-spacing: 0;
+}
+
+.panel {
+  background: var(--panel);
+}
+
+.stat-label {
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  font-size: 10.5px;
+}
+
+.stat-value {
+  font-family: var(--display);
+  font-weight: 400;
+  font-size: 28px;
+}
+
+.table th {
+  text-transform: uppercase;
+  letter-spacing: 0.09em;
+  font-size: 10.5px;
+  color: var(--text-2);
+  background: var(--surface);
+}
+
+.scorecard-head h3,
+.verdict h3,
+.strat-title {
+  font-family: var(--display);
+  font-weight: 400;
+}
+
+.scorecard-head h3,
+.verdict h3 {
+  font-size: 20px;
+}
+
+/* Reading text: the Thesis, the pass rule and the findings read like a paper. */
+.prose p,
+.prose li {
+  font-family: var(--serif);
+  font-size: 16.5px;
+  line-height: 1.7;
+}
+
+.prose h2,
+.prose h3 {
+  font-family: var(--display);
+  font-weight: 400;
+  font-size: 21px;
+  margin-top: 34px;
+}
+
+.prose .table td,
+.prose .table th {
+  font-family: var(--sans);
+}
+
+.prose .table td {
+  font-size: 14px;
+}
+
+.rules-lead {
+  font-family: var(--serif);
+  font-size: 19px;
+  line-height: 1.6;
+}
+
+.lessons details > p {
+  font-family: var(--serif);
+  font-size: 15px;
+}
+
+.lesson-title {
+  font-family: var(--serif);
+  font-size: 15.5px;
+  font-weight: 600;
+}
+
+.tour-text h3,
+.tour-chapter {
+  font-family: var(--display);
+}
+
+.tour-text h3 {
+  font-weight: 400;
+  font-size: 18px;
+}
+
+.tour-chapter {
+  color: var(--gold);
+  letter-spacing: 0.12em;
 }

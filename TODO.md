@@ -59,6 +59,10 @@ exists and Luke has checked the Swyftx employee trading policy.
 - [ ] Expectancy by conviction bucket (P2 leftover), once a strategy varies its sizing.
 
 ## Done recently
+- 2026-11-22 House style (Luke): an institutional frame (navy bar with a gold rule, cream,
+  Libre Baskerville titles and figures, square corners) with Source Serif reading text on
+  the story pages; light and dark. Fonts bundled, nothing loaded from outside. The README
+  screenshot still shows the old style.
 - 2026-11-22 Guided tour of the dashboard ("Tour", top right): 12 stops from the question to
   the limits, one of them a strategy failing its scorecard. Our own component; the stops
   are data, tested to point at things that exist. Later, only if wanted: a hosted
