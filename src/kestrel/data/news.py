@@ -41,13 +41,22 @@ class NewsError(ValueError):
     """The published history is malformed or unavailable: reported, never repaired."""
 
 
+class NewsRefusedError(NewsError):
+    """GDELT refused the request (its rate limit): try again later."""
+
+
 Sleep = Callable[[float], None]
 
 
 def fetch_month(
-    query: str, month: date, http: httpx.Client, sleep: Sleep | None = None
+    query: str,
+    month: date,
+    http: httpx.Client,
+    sleep: Sleep | None = None,
+    backoff: tuple[float, ...] = BACKOFF,
 ) -> pl.DataFrame:
-    """Daily tone for ``query`` over the calendar month starting ``month``."""
+    """Daily tone for ``query`` over the calendar month starting ``month``; after a refusal,
+    waits each of ``backoff`` in turn before trying again (none: one try)."""
     sleep = sleep or time.sleep
     after = date(month.year + month.month // 12, month.month % 12 + 1, 1)
     params = {
@@ -57,12 +66,14 @@ def fetch_month(
         "startdatetime": f"{month:%Y%m%d}000000",
         "enddatetime": f"{after - timedelta(days=1):%Y%m%d}235959",
     }
-    for wait in (*BACKOFF, None):
+    for wait in (*backoff, None):
         response = http.get(API, params=params, headers={"User-Agent": USER_AGENT})
         if response.status_code != 429:
             break
         if wait is None:
-            raise NewsError(f"GDELT kept refusing {month:%Y-%m} (rate limit); try again later")
+            raise NewsRefusedError(
+                f"GDELT kept refusing {month:%Y-%m} (rate limit); try again later"
+            )
         sleep(wait)
     response.raise_for_status()
     try:
@@ -74,6 +85,20 @@ def fetch_month(
     points = timeline[0]["data"] if timeline else []
     rows = [(datetime.strptime(p["date"][:8], "%Y%m%d").date(), float(p["value"])) for p in points]
     return pl.DataFrame(rows, schema=SCHEMA, orient="row")
+
+
+def furthest_behind(symbols: list[str], data_dir: Path | str) -> list[str]:
+    """The markets in the order to fetch: least history stored first (none stored counts as
+    the least), so a rate-limited schedule doesn't always starve the same one."""
+
+    def stored_to(symbol: str) -> date:
+        try:
+            last = load(data_dir, symbol)["date"].max()
+        except NewsError:
+            return date.min
+        return last if isinstance(last, date) else date.min
+
+    return sorted(symbols, key=lambda s: (stored_to(s), s.upper()))
 
 
 def path(data_dir: Path | str, symbol: str) -> Path:
@@ -103,6 +128,7 @@ def ingest(
     sleep: Sleep | None = None,
     on_month: Callable[[date], None] = lambda _: None,
     limit: int | None = None,
+    backoff: tuple[float, ...] = BACKOFF,
 ) -> pl.DataFrame:
     """Every month from 2017 to ``end`` not already stored, saved as each arrives; at most
     ``limit`` months per call (a slow schedule stays under GDELT's rate limit)."""
@@ -125,7 +151,7 @@ def ingest(
             if not first_request:
                 sleep(PAUSE)
             first_request = False
-            part = fetch_month(QUERIES[symbol.upper()], month, http, sleep)
+            part = fetch_month(QUERIES[symbol.upper()], month, http, sleep, backoff)
             stored = pl.concat([stored, part]).unique("date").sort("date")
             _save(stored, data_dir, symbol)
             on_month(month)

@@ -152,3 +152,41 @@ def test_the_commands(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     study = CliRunner().invoke(app, args)
     assert study.exit_code == 0, study.output
     assert "Signal study  ·  news-tone  ·  BTCUSDT" in study.output
+
+
+def test_a_gentle_fetch_tries_once_and_says_it_was_refused() -> None:
+    fake = FakeGdelt(refusals=5)
+    with pytest.raises(news.NewsRefusedError):
+        news.fetch_month("bitcoin", date(2018, 2, 1), fake.client(), sleep=no_wait, backoff=())
+    assert fake.refusals == 4  # one request, no retries
+
+
+def test_the_market_furthest_behind_goes_first(tmp_path: Path) -> None:
+    news.ingest("BTCUSDT", FakeGdelt().client(), tmp_path, end=date(2017, 3, 15), sleep=no_wait)
+    news.ingest("ETHUSDT", FakeGdelt().client(), tmp_path, end=date(2017, 1, 15), sleep=no_wait)
+    assert news.furthest_behind(["BTCUSDT", "ETHUSDT"], tmp_path) == ["ETHUSDT", "BTCUSDT"]
+    assert news.furthest_behind(["ETHUSDT", "BTCUSDT"], tmp_path / "none") == ["BTCUSDT", "ETHUSDT"]
+
+
+def test_a_scheduled_run_waits_out_a_refusal_instead_of_failing(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    import kestrel.cli as cli
+
+    news.ingest("BTCUSDT", FakeGdelt().client(), tmp_path, end=date(2017, 2, 15), sleep=no_wait)
+    asked: list[str] = []
+    fake = FakeGdelt(refusals=1)  # the first request of the run is refused
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        asked.append(request.url.params["query"])
+        return fake.handler(request)
+
+    client = httpx.Client(transport=httpx.MockTransport(handler))
+    monkeypatch.setattr(cli.httpx, "Client", lambda **_: client)
+    monkeypatch.setattr(cli.time, "sleep", no_wait)
+    args = ["ingest-news", "BTCUSDT", "ETHUSDT", "--max-months", "1", "--data-dir", str(tmp_path)]
+    got = CliRunner().invoke(app, args)
+    assert got.exit_code == 0, got.output
+    assert asked == ["ethereum", "bitcoin"]  # ETH is further behind: first, and tried once
+    assert "ETHUSDT: GDELT refused (rate limit); the next run tries again" in got.output
+    assert "  2017-03" in got.output  # BTC carried on

@@ -21,6 +21,7 @@ import math
 import plistlib
 import shlex
 import sys
+import time
 from collections.abc import Callable
 from datetime import UTC, datetime, timedelta
 from decimal import Decimal
@@ -987,6 +988,10 @@ def ingest_attention(symbols: list[str], data_dir: DataDir = Path("data")) -> No
         raise typer.Exit(code=1)
 
 
+NEWS_GAP = 60.0
+"""Seconds between markets in a gentle (scheduled) news run."""
+
+
 @app.command("ingest-news")
 def ingest_news(
     symbols: list[str],
@@ -997,16 +1002,33 @@ def ingest_news(
 ) -> None:
     """Daily news tone for each market from GDELT, from 2017. Slow on purpose: GDELT allows
     about one request every few seconds, so a full history takes a while. Each month is
-    saved as it arrives; run it again to continue an interrupted fetch (an hourly schedule
-    with --max-months stays under the rate limit)."""
+    saved as it arrives; run it again to continue an interrupted fetch. With --max-months
+    (an hourly schedule) it is gentle: the market furthest behind goes first, each gets one
+    try per month asked for (no retries), a minute apart, and a refusal or a dropped
+    connection waits for the next run instead of failing it."""
     failed = False
+    gentle = max_months is not None
+    order = news.furthest_behind(symbols, data_dir) if gentle else symbols
     with httpx.Client(timeout=120) as http:
-        for symbol in symbols:
+        for k, symbol in enumerate(order):
+            if gentle and k:
+                time.sleep(NEWS_GAP)
             try:
                 frame = news.ingest(
                     symbol, http, data_dir, limit=max_months,
                     on_month=lambda m: typer.echo(f"  {m:%Y-%m}"),
+                    backoff=() if gentle else news.BACKOFF,
                 )  # fmt: skip
+            except (news.NewsRefusedError, httpx.TransportError) as e:
+                if not gentle:
+                    typer.echo(f"{symbol.upper()}: {e}", err=True)
+                    failed = True
+                    continue
+                reason = (
+                    "refused (rate limit)" if isinstance(e, news.NewsRefusedError) else "dropped"
+                )
+                typer.echo(f"{symbol.upper()}: GDELT {reason}; the next run tries again")
+                continue
             except (ValueError, httpx.HTTPError) as e:
                 typer.echo(f"{symbol.upper()}: {e}", err=True)
                 failed = True

@@ -51,11 +51,14 @@ exists and Luke has checked the Swyftx employee trading policy.
 - [ ] Keys from the macOS keychain (or the server's key file), not ~/.zshrc: before any live
       (non-testnet) keys exist. Luke adds them himself; Claude never sees the values. Live
       keys: trading only, withdrawals off, restricted to the home IP.
-- [ ] News-tone study (`kestrel signal-study news-tone`): downloading. GDELT rate-limits
-      hard, so launchd (`~/Library/LaunchAgents/com.kestrel.news.plist`, log
+- [ ] News-tone study (`kestrel signal-study news-tone`): downloading. GDELT throttles this
+      address, so launchd (`~/Library/LaunchAgents/com.kestrel.news.plist`, log
       `data/news/schedule.log`) runs `kestrel ingest-news BTCUSDT ETHUSDT --max-months 2`
-      hourly at :40 from 2026-11-22 (~2 days). When both reach 2025-10: unload it
-      (`launchctl bootout gui/$(id -u)/com.kestrel.news`), then draft the note.
+      hourly at :40: gently since 2026-11-22 (one try per month, no retries, the coin
+      furthest behind first; a refusal waits for the next hour). By 2026-11-22 BTC had
+      2017-01..2018-11, ETH 2017-01..2018-01. When both reach 2025-10: unload it
+      (`launchctl bootout gui/$(id -u)/com.kestrel.news`), then draft the note. If it
+      stalls for days: GDELT's BigQuery tables (needs a Google Cloud account).
 - [ ] Expectancy by conviction bucket (P2 leftover), once a strategy varies its sizing.
 
 ## Done recently
