@@ -22,6 +22,16 @@ Rules live in CLAUDE.md; results in `research/findings.md`; ideas not yet schedu
 - [ ] Monitoring-tag drift: blocked on data. Binance's announcement feed holds 1 tag
       announcement in ~2,700 scanned (2026-11-18); the history would need another source.
 
+- [ ] In-app guided tour of the dashboard (Luke, 2026-11-22; about one session). Our own
+      small component, no library: the steps are data (page, element, short text), tested.
+      About 8 stops, following how a result is judged: Thesis, Rules (pass and scorecard),
+      Strategies (a frozen note, trials), Backtests (a run against holding at the same
+      exposure, including a strategy that failed), Research (luck bar, explore/confirm),
+      Trading (paper against the model, waiting for), costs, back to Thesis (the limits).
+      Started from a button by the Thesis link; Next/Back/Exit; works at phone width.
+      Later, only if wanted: a hosted read-only snapshot so employers can open it without
+      the Mac.
+
 ## Shorting research (hypothetical; Luke, 2026-11-16)
 Nothing here can be traded yet: retail shorting in Australia is CFDs at 2:1 (Eightcap,
 Swyftx Leverage), and real perps are wholesale-only (Coinbase AU). Each is a frozen note,
