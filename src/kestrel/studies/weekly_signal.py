@@ -43,10 +43,13 @@ momentum under another name (weekly momentum failed out of sample here).
 
 from __future__ import annotations
 
+import json
 import math
 import statistics
 from dataclasses import dataclass
-from datetime import date, datetime, timedelta
+from datetime import UTC, date, datetime, timedelta
+from pathlib import Path
+from typing import Any
 
 import polars as pl
 
@@ -341,3 +344,72 @@ def format_signal_study(r: SignalResult) -> str:
         ),
     ]
     return "\n".join(lines)
+
+
+TITLES = {
+    "attention": "Rising attention (Wikipedia)",
+    "extreme-fear": "Extreme fear",
+    "news-tone": "News tone improving",
+    "stablecoins": "Stablecoin supply growing",
+    "coinbase-premium": "US buying on Coinbase",
+    "variance-premium": "A high variance premium",
+    "net-liquidity": "Dollar net liquidity growing",
+}
+
+
+def _side(s: Side) -> dict[str, Any]:
+    return {
+        "n_on": s.n_up, "n_off": s.n_down, "mean_on": s.mean_up, "mean_off": s.mean_down,
+        "spread": s.spread, "p_positive": s.p_positive,
+    }  # fmt: skip
+
+
+def _doc(r: SignalResult) -> dict[str, Any]:
+    return {
+        "verdict": r.verdict,
+        "markets": r.markets,
+        "hurdle": r.hurdle,
+        "weeks": _side(r.weeks),
+        "past_week_rose": {
+            m: {"on": o.rose_when_on, "off": o.rose_when_off} for m, o in r.overlap.items()
+        },
+        "after_rise": None if r.after_rise is None else _side(r.after_rise),
+        "after_fall": None if r.after_fall is None else _side(r.after_fall),
+        "control_holds": r.control_holds,
+    }
+
+
+def save(
+    result: SignalResult,
+    note: str,
+    report: str,
+    data_dir: Path | str,
+    commit: str | None,
+    beside: SignalResult | None = None,
+) -> Path:
+    """A frozen note's study for the dashboard (``<data>/signals/<signal>.json``). A rerun of
+    the same note replaces it: the study is seeded, so it gives the same numbers unless the
+    code changed, and the commit is recorded. ``beside`` is a result its note reports
+    alongside, deciding nothing."""
+    doc = {
+        "signal": result.signal,
+        "title": TITLES.get(result.signal, result.signal),
+        "note": note,
+        "measured_at": datetime.now(UTC).isoformat(),
+        "commit": commit,
+        **_doc(result),
+        "beside": None if beside is None else _doc(beside),
+        "report": report,
+    }
+    target = Path(data_dir) / "signals" / f"{result.signal}.json"
+    target.parent.mkdir(parents=True, exist_ok=True)
+    tmp = target.with_suffix(".tmp")
+    tmp.write_text(json.dumps(doc, indent=2))
+    tmp.replace(target)
+    return target
+
+
+def load_all(data_dir: Path | str) -> list[dict[str, Any]]:
+    """Every saved signal study, newest first."""
+    found = [json.loads(p.read_text()) for p in (Path(data_dir) / "signals").glob("*.json")]
+    return sorted(found, key=lambda d: d["measured_at"], reverse=True)

@@ -78,6 +78,7 @@ from kestrel.api.models import (
     ShortStudyOut,
     Signals,
     SignalsRequest,
+    SignalStudyOut,
     SourceOut,
     StatusChangeOut,
     StrategyOut,
@@ -124,7 +125,7 @@ from kestrel.strategy import (
     validated_brackets,
     validated_weights,
 )
-from kestrel.studies import cost_gate, shorting
+from kestrel.studies import cost_gate, shorting, weekly_signal
 from kestrel.studies import events as event_studies
 from kestrel.validation import decay, rules
 from kestrel.validation.deflated import (
@@ -571,6 +572,12 @@ def create_app(
         """Saved event studies, newest first. Read-only: each runs once from its frozen note
         with kestrel event-study."""
         return [EventStudyOut.model_validate(d) for d in event_studies.load_all(data_dir)]
+
+    @api.get("/signal-studies")
+    def list_signal_studies() -> list[SignalStudyOut]:
+        """Saved weekly signal studies, newest first. Read-only: each runs from its frozen
+        note with kestrel signal-study."""
+        return [SignalStudyOut.model_validate(d) for d in weekly_signal.load_all(data_dir)]
 
     @api.get("/short-studies")
     def list_short_studies() -> list[ShortStudyOut]:

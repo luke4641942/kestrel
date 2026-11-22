@@ -775,6 +775,44 @@ class EventStudyOut(BaseModel):
     report: str
 
 
+class SignalSideOut(BaseModel):
+    n_on: int
+    n_off: int
+    mean_on: float | None
+    """Mean log return of the weeks after the signal was on."""
+    mean_off: float | None
+    spread: float | None
+    p_positive: float | None
+
+
+class SignalPartOut(BaseModel):
+    verdict: str
+    """PROCEED or KILL."""
+    markets: list[str]
+    hurdle: float
+    """One round trip of costs, as a log return."""
+    weeks: SignalSideOut
+    past_week_rose: dict[str, dict[str, float | None]]
+    after_rise: SignalSideOut | None
+    """The pre-registered control (newer studies only): the spread after a rising week."""
+    after_fall: SignalSideOut | None
+    control_holds: bool | None
+
+
+class SignalStudyOut(SignalPartOut):
+    """A weekly signal study (kestrel.studies.weekly_signal), saved by kestrel signal-study
+    run through its frozen note: do the weeks after a signal beat the rest? Not a strategy."""
+
+    signal: str
+    title: str
+    note: str
+    measured_at: datetime
+    commit: str | None
+    beside: SignalPartOut | None
+    """A result its note reports alongside, deciding nothing."""
+    report: str
+
+
 class ShortStudyOut(BaseModel):
     """A hypothetical shorting study (kestrel.studies.shorting), saved by kestrel
     short-study. Not an engine run and never tradeable here: Kestrel is spot, long-only."""

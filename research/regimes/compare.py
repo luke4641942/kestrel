@@ -12,7 +12,8 @@ log 20-day volatility): extra inputs only count through what they teach the filt
 (``predictive_log_likelihood``). A difference of a few nats over ~1,200 days is noise; the
 per-day gain is printed so it reads as a size.
 
-Run: .venv/bin/python research/regimes/compare.py   (about 15 minutes)
+Run: .venv/bin/python research/regimes/compare.py   (about an hour)
+     .venv/bin/python research/regimes/compare.py --returns-only   (returns scored alone)
 """
 
 from __future__ import annotations
@@ -32,6 +33,9 @@ from kestrel.data.store import ParquetStore
 
 HOLDOUT = datetime(2025, 11, 1, tzinfo=UTC)
 BASE = [0, 1]  # return, log_volatility: the columns every variant is scored on
+RETURNS_ONLY = "--returns-only" in sys.argv
+"""Score only the return column: does a variant predict returns' spread better, not just
+tomorrow's (very persistent) 20-day volatility? The extra-input variants are left out."""
 
 
 def extras_volume(bars: pl.DataFrame) -> pl.Series:
@@ -103,7 +107,9 @@ def score(
             continue
         model = rg.fit(x[train], v.states, restarts=10, seed=0)
         span = x[train[0] : test[-1] + 1]
-        total += rg.predictive_log_likelihood(model, span, len(train), BASE)
+        total += rg.predictive_log_likelihood(
+            model, span, len(train), [0] if RETURNS_ONLY else BASE
+        )
         days += len(test)
     return total, days
 
@@ -125,6 +131,8 @@ def main() -> None:
         ]
         if symbol != "BTCUSDT":
             variants.append(Variant("3 states + BTC's inputs", extras=extras_btc(btc)))
+        if RETURNS_ONLY:
+            variants = [v for v in variants if v.extras is None]
         frames = {v.name: frame(bars, v) for v in variants}
         start = max(first_month(frames[v.name][0], v.train_days) for v in variants)
         scored = months(start, HOLDOUT - timedelta(days=1))

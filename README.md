@@ -104,7 +104,7 @@ live progress, logs and cancellation.
 | Trading | Each paper account: equity, positions, what it's waiting for, decisions, fills, safety state, tracking against the model, the decay check against its own backtest |
 | Research | Every decision grouped by strategy family, the luck bar over time, the exploration experiment coin by coin, the findings |
 | Strategies | Research notes, frozen before testing, with versions, the code they run, signals, their trial log and a research assistant that never sees results |
-| Backtests | Saved runs with the scorecard, equity and drawdown, costs, start-date and bootstrap analysis, fills and provenance |
+| Backtests | Saved runs with the scorecard, equity and drawdown, costs, start-date and bootstrap analysis, fills and provenance; the shorting, event and signal studies |
 | Charts | Any market and bar size, a fixed menu of textbook indicators, each with a plain-English reading |
 | More | What a trade costs (the live cost model and the minute-chart cost gate), Rules, Regimes (HMM states), Data |
 

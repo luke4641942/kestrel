@@ -341,6 +341,43 @@ export interface EventStudy {
   report: string;
 }
 
+export interface SignalSide {
+  n_on: number;
+  n_off: number;
+  /** Mean log return of the weeks after the signal was on. */
+  mean_on: number | null;
+  mean_off: number | null;
+  spread: number | null;
+  p_positive: number | null;
+}
+
+export interface SignalPart {
+  /** "PROCEED" or "KILL". */
+  verdict: string;
+  markets: string[];
+  /** One round trip of costs, as a log return. */
+  hurdle: number;
+  weeks: SignalSide;
+  past_week_rose: Record<string, { on: number | null; off: number | null }>;
+  /** The pre-registered control (newer studies only): the spread after a rising week. */
+  after_rise: SignalSide | null;
+  after_fall: SignalSide | null;
+  control_holds: boolean | null;
+}
+
+/** A weekly signal study (kestrel.studies.weekly_signal), run from its frozen note with
+ * kestrel signal-study: do the weeks after a signal beat the rest? Not a strategy. */
+export interface SignalStudy extends SignalPart {
+  signal: string;
+  title: string;
+  note: string;
+  measured_at: string;
+  commit: string | null;
+  /** A result its note reports alongside, deciding nothing. */
+  beside: SignalPart | null;
+  report: string;
+}
+
 /** A hypothetical shorting study (kestrel.studies.shorting), run once from its frozen note
  * with kestrel short-study. Not an engine run: Kestrel is spot and long-only. */
 export interface ShortStudy {
@@ -819,6 +856,7 @@ export const api = {
   costGate: () => request<CostGate[]>("/cost-gate"),
   shortStudies: () => request<ShortStudy[]>("/short-studies"),
   eventStudies: () => request<EventStudy[]>("/event-studies"),
+  signalStudies: () => request<SignalStudy[]>("/signal-studies"),
   regimes: () => request<RegimeSummary[]>("/regimes"),
   regime: (symbol: string) => request<RegimeDetail>(`/regimes/${enc(symbol)}`),
   startRegimes: (symbol: string) => request<Job>("/jobs/regimes", { method: "POST", body: JSON.stringify({ symbol }) }),

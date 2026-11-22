@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 from datetime import UTC, date, datetime, timedelta
+from pathlib import Path
 
 import httpx
 import polars as pl
@@ -174,3 +175,29 @@ def test_dvol_pages_backwards_and_fred_skips_empty_days() -> None:
     assert external.gaps(w, timedelta(weeks=1)) == [date(2024, 1, 10)]
     with pytest.raises(external.ExternalError, match="unexpected header"):
         external.fetch_fred("WTREGEN", fred)
+
+
+def test_a_saved_study_is_served_to_the_dashboard(tmp_path: Path) -> None:
+    from fastapi.testclient import TestClient
+
+    from kestrel.api.app import create_app
+
+    closes = [100.0 * (1.01 if (i // 7) % 2 else 0.995) ** (i % 7) for i in range(7 * 40)]
+    b = bars(closes, step=DAY, start=datetime(2024, 1, 1, tzinfo=UTC))
+    flags: list[bool | None] = [i % 14 < 7 for i in range(b.height)]
+    result = ws.run_signal_study(
+        "variance-premium", {"BTCUSDT": (b, flags)}, hurdle=0.002, resamples=100
+    )
+    ws.save(result, "a-note", "the report", tmp_path, "abc123", beside=result)
+    (saved,) = ws.load_all(tmp_path)
+    assert (saved["signal"], saved["title"], saved["note"]) == (
+        "variance-premium",
+        "A high variance premium",
+        "a-note",
+    )
+    assert saved["after_rise"] is not None
+    assert saved["beside"]["verdict"] == result.verdict
+    (served,) = TestClient(create_app(tmp_path)).get("/api/signal-studies").json()
+    assert served["weeks"]["n_on"] == result.weeks.n_up
+    assert served["control_holds"] == result.control_holds
+    assert served["report"] == "the report"

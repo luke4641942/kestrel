@@ -142,6 +142,7 @@ from kestrel.studies.weekly_signal import (
     stablecoin_flags,
     variance_premium,
 )
+from kestrel.studies.weekly_signal import save as save_signal_study
 from kestrel.validation import decay
 from kestrel.validation.confirmation import confirm, format_confirmation
 from kestrel.validation.control import PATHS, format_control, run_control
@@ -1193,12 +1194,14 @@ def signal_study(
     except (ConfigError, ValueError) as e:
         typer.echo(str(e), err=True)
         raise typer.Exit(code=1) from None
+    report = format_signal_study(result)
+    if beside is not None:
+        report += "\n\nBeside it, deciding nothing: from 2018-01, USDT taken as a dollar\n\n"
+        report += format_signal_study(beside)
     if research is not None:
         store.mark_backtested(s.slug, note.version)
-    typer.echo(format_signal_study(result))
-    if beside is not None:
-        typer.echo("\nBeside it, deciding nothing: from 2018-01, USDT taken as a dollar\n")
-        typer.echo(format_signal_study(beside))
+        save_signal_study(result, s.slug, report, data_dir, _commit(), beside)
+    typer.echo(report)
 
 
 def _coin(symbol: str) -> str:

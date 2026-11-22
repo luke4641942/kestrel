@@ -4,6 +4,7 @@ import { EquityChart } from "../components/EquityChart";
 import { ParamInputs, defaultParams } from "../components/ParamInputs";
 import { EventStudies } from "../components/EventStudies";
 import { ShortStudies } from "../components/ShortStudies";
+import { SignalStudies } from "../components/SignalStudies";
 import { Empty, PageHeader, Panel, Section, Stat, Status, Tabs } from "../components/ui";
 import { ago, dateTime, lastResearchMonth, num } from "../format";
 import { useResource } from "../hooks";
@@ -111,6 +112,8 @@ export function Backtests({ jobs, onJobStarted }: { jobs: Job[]; onJobStarted: (
       <ShortStudies />
 
       <EventStudies />
+
+      <SignalStudies />
 
       <Section title="Runs" description="Every saved run, including runs started from the CLI. Click a heading to sort; select a run to see it below.">
         <Panel>
