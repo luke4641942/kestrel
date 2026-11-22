@@ -59,6 +59,8 @@ exists and Luke has checked the Swyftx employee trading policy.
 - [ ] Expectancy by conviction bucket (P2 leftover), once a strategy varies its sizing.
 
 ## Done recently
+- 2026-11-22 A one-page research summary for employers (`docs/research-summary.md`), linked
+  from the README; README status and findings intro brought up to date.
 - 2026-11-22 Paper alerts: a macOS notification for a halt, a failed run, falling behind, a
   missed day or a trade (`kestrel paper run --alerts`; the six launchd jobs rewritten and
   reloaded). Phone push or email would need an outside service: not added.

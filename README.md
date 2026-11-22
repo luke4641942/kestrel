@@ -4,14 +4,16 @@ A research-to-production platform for systematic crypto trading, built so that a
 strategy behaves the same way in research, backtest, paper trading and live
 trading, and so that a result can't look better than it is.
 
-> **Status (2026-11-16):** Data, backtester, validation, paper trading and the dashboard
-> are built and tested. 74 pre-registered research notes and 805 counted trials later,
-> two strategies are being paper-traded on Binance's Spot Testnet: trend following with
-> volatility targeting (BTC, ETH, SOL) and a BTC-regime trend rule found by an
-> explore-then-confirm experiment (ETH, SOL). Neither is a proven edge: both fail the
-> luck test once every trial is counted, so the forward record decides.
-> See [research/findings.md](research/findings.md). No strategy trades real money yet,
-> by design.
+> **Status (2026-11-22):** Data, backtester, validation, paper trading and the dashboard
+> are built and tested. 88 pre-registered research notes and 866 counted trials later,
+> three strategies are being paper-traded on Binance's Spot Testnet: trend following with
+> volatility targeting (BTC, ETH, SOL), a BTC-regime trend rule found by an
+> explore-then-confirm experiment (ETH, SOL), and a BTC-regime rotation among large coins.
+> None is a proven edge: all fail the luck test once every trial is counted, so the
+> forward record decides. **Start with the one-page
+> [research summary](docs/research-summary.md)**; every number is in
+> [research/findings.md](research/findings.md). No strategy trades real money yet, by
+> design.
 
 ## Why this exists
 

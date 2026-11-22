@@ -1,9 +1,10 @@
 # Findings
 
-Kestrel has tested 74 pre-registered research notes on Binance spot data (805 counted
-trials by 2026-11-16, plus an uncounted exploration search). Nothing has passed the full
-scorecard: every survivor fails the luck test once every trial is counted. Two strategies
-are being paper-traded as the forward test:
+Kestrel has tested 88 pre-registered research notes on Binance spot data (866 counted
+trials by 2026-11-21, plus an uncounted exploration search). Nothing has passed the full
+scorecard: every survivor fails the luck test once every trial is counted. Three strategies
+are being paper-traded as the forward test (a one-page summary:
+[docs/research-summary.md](../docs/research-summary.md)):
 
 - **Trend following with volatility targeting** on BTC, ETH and SOL. It beat holding each
   coin at the same exposure over 2020-25 and passed the one-off holdout year on all three,
@@ -12,6 +13,9 @@ are being paper-traded as the forward test:
   is rising, sized by volatility). It was found by searching one half of the altcoins and
   confirmed once on the other, unsearched half. On ETH and SOL it passes every scorecard
   test but luck. Both coins' holdout years were already spent.
+- **G1, a BTC-regime rotation** among 8 large coins (findings 15). It passed a holdout year
+  on coins it had never seen, but fails luck and walk-forward on its own, survivorship-
+  biased coin list.
 
 This document explains how the tests were run, what they found, where the process went
 wrong, and what the results can't tell us.
@@ -54,7 +58,7 @@ hypothesis, rules and pass test, written down before the strategy saw market dat
   cash half the time halves drawdowns for free, so only beating the second is skill.
 
 Two engines (event-driven and vectorised) are tested against each other and agree to
-within 0.13% of final equity. 967 backend and 160 dashboard tests run on every change.
+within 0.13% of final equity. 1,048 backend and 207 dashboard tests run on every change (2026-11-22).
 
 ## The closest call: trend following with volatility targeting
 
