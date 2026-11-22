@@ -94,6 +94,13 @@ export const TOUR: TourStep[] = [
     title: "What it can't tell you",
     body: "Costs are modelled until paper fills measure them; 2020-25 is mostly one crypto cycle; the holdout is spent for the major coins. It may be that nothing here is an edge, and that's an acceptable result.",
   },
+  {
+    chapter: "Where to start",
+    route: "overview",
+    target: "pursue",
+    title: "Back where you started",
+    body: "What to pursue lists each strategy being paper-traded and the coins it trades; each links to its note. That's the whole loop: a frozen note, a scorecard, a holdout year, then trading forward. The tour is under Tour, top right.",
+  },
 ];
 
 /** The run the tour opens: trend-vol-target on BTC under its own note (daily, 2020-01 to

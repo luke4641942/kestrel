@@ -34,7 +34,8 @@ describe("the tour's stops", () => {
     const summary = readFileSync(join(SRC, "../../docs/research-summary.md"), "utf8");
     const headings = summary.split("\n").filter((l) => l.startsWith("#")).map((l) => slug(l.replace(/^#+\s*/, "")));
     for (const s of TOUR) {
-      const inCode = code.includes(`tour="${s.target}"`) || code.includes(`data-tour="${s.target}"`);
+      const named = new RegExp(`tour=(\\{[^}\\n]*)?"${s.target}"`); // tour="x", data-tour="x" or data-tour={... "x" ...}
+      const inCode = named.test(code);
       expect(inCode || headings.includes(s.target), s.target).toBe(true);
     }
   });

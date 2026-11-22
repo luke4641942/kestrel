@@ -315,7 +315,7 @@ function DecisionsBoard() {
         </Empty>
       ) : (
         <ul className="decision-list">
-          {(showDropped ? [...live, ...closed] : live).map((g) => {
+          {(showDropped ? [...live, ...closed] : live).map((g, i) => {
             const shown = g.live.length ? g.live : g.dropped;
             const others = g.live.length ? g.dropped : [];
             const isOpen = openDropped === g.strategy;
@@ -323,15 +323,18 @@ function DecisionsBoard() {
               <li key={g.strategy} className={`decision-${g.decision}`}>
                 <Status tone={DECISION[g.decision].tone}>{DECISION[g.decision].label}</Status>
                 <div>
-                  <div className="decision-name">
-                    {g.name} <span className="mono small tertiary">{g.strategy}</span>
-                  </div>
-                  <div className="decision-markets">
+                  {/* The tour points at the first entry's name and coins (tour.ts). */}
+                  <div data-tour={i === 0 ? "pursue" : undefined}>
+                    <div className="decision-name">
+                      {g.name} <span className="mono small tertiary">{g.strategy}</span>
+                    </div>
+                    <div className="decision-markets">
                     {[...g.live, ...g.dropped].map((d) => (
                       <span key={d.market} className={`market-chip market-${d.decision}`}>
                         {shortMarket(d.market)} · {DECISION[d.decision].label}
                       </span>
                     ))}
+                    </div>
                   </div>
                   {shown.map((d) => (
                     <p key={d.market} className="decision-reason">

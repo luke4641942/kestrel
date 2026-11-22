@@ -59,7 +59,7 @@ exists and Luke has checked the Swyftx employee trading policy.
 - [ ] Expectancy by conviction bucket (P2 leftover), once a strategy varies its sizing.
 
 ## Done recently
-- 2026-11-22 Guided tour of the dashboard ("Tour", top right): 11 stops from the question to
+- 2026-11-22 Guided tour of the dashboard ("Tour", top right): 12 stops from the question to
   the limits, one of them a strategy failing its scorecard. Our own component; the stops
   are data, tested to point at things that exist. Later, only if wanted: a hosted
   read-only snapshot so employers can open it without the Mac.

@@ -95,7 +95,7 @@ live progress, logs and cancellation.
 
 | Page | What it shows |
 |---|---|
-| Tour (top right) | An 11-stop guided tour of how a result is judged, from the question to a strategy failing its tests honestly to the limits |
+| Tour (top right) | A 12-stop guided tour of how a result is judged, from the question to a strategy failing its tests honestly to the limits, ending back on the Overview |
 | Thesis (top right) | The one-page research summary ([docs/research-summary.md](docs/research-summary.md)) |
 | Overview | What to pursue (one entry per strategy, with the coins it trades), holdout tests, the research pipeline, recent studies |
 | Trading | Each paper account: equity, positions, what it's waiting for, decisions, fills, safety state, tracking against the model |

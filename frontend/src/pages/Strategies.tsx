@@ -217,7 +217,7 @@ function Workspace({
 
   return (
     <>
-      <section className="strat-main" aria-label={d.name} data-tour="note">
+      <section className="strat-main" aria-label={d.name}>
         <div className="strat-head">
           <div>
             <h2 className="strat-title">{d.name}</h2>
@@ -298,7 +298,7 @@ function Workspace({
 
 function NoteHeader({ note, isLatest }: { note: Note; isLatest: boolean }) {
   return (
-    <div className="note-head">
+    <div className="note-head" data-tour="note">
       <h3>
         Research note v{note.version}
         {!isLatest && <span className="tertiary"> (superseded)</span>}

@@ -129,48 +129,65 @@ export function Tour({ steps, onClose }: { steps: TourStep[]; onClose: () => voi
     card.current?.focus({ preventScroll: true });
   }, []);
 
+  // While touring, the page gets room under it the height of the card, so a section near
+  // the bottom of a page can still be scrolled clear of the card.
+  useEffect(() => {
+    const root = document.documentElement;
+    const size = () => root.style.setProperty("--tour-card", `${card.current?.offsetHeight ?? 0}px`);
+    size();
+    root.classList.add("touring");
+    window.addEventListener("resize", size);
+    return () => {
+      window.removeEventListener("resize", size);
+      root.classList.remove("touring");
+      root.style.removeProperty("--tour-card");
+    };
+  }, []);
+
   return (
     <div className="tour">
       <div ref={ring} className={`tour-ring${lit && !missing ? " lit" : ""}`} aria-hidden />
       <div className={`tour-dim${missing || !lit ? " on" : ""}`} aria-hidden />
       <div ref={card} className="tour-card" role="dialog" aria-labelledby="tour-title" aria-describedby="tour-body" tabIndex={-1}>
-        <div className="tour-top">
-          <span className="tour-chapter">
-            {step.chapter} <span className="tour-of">· {index + 1} of {steps.length}</span>
-          </span>
-          <button type="button" className="tour-close" onClick={onClose} aria-label="Exit the tour" title="Exit (Esc)">
-            <svg width="14" height="14" viewBox="0 0 14 14" aria-hidden>
-              <path d="M3 3l8 8M11 3l-8 8" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" />
-            </svg>
-          </button>
+        <div className="tour-progress" role="group" aria-label="Tour steps">
+          {steps.map((s, i) => (
+            <button
+              key={s.title}
+              type="button"
+              className={`tour-seg${i < index ? " done" : ""}${i === index ? " now" : ""}`}
+              aria-label={`Step ${i + 1}: ${s.title}`}
+              aria-current={i === index ? "step" : undefined}
+              onClick={() => go(i)}
+            />
+          ))}
         </div>
-        <div className="tour-text" key={index} aria-live="polite">
-          <h3 id="tour-title">{step.title}</h3>
-          <p id="tour-body">{step.body}</p>
-        </div>
-        <div className="tour-bottom">
-          <div className="tour-progress" role="group" aria-label="Tour steps">
-            {steps.map((s, i) => (
-              <button
-                key={s.title}
-                type="button"
-                className={`tour-seg${i < index ? " done" : ""}${i === index ? " now" : ""}`}
-                aria-label={`Step ${i + 1}: ${s.title}`}
-                aria-current={i === index ? "step" : undefined}
-                onClick={() => go(i)}
-              />
-            ))}
+        <div className="tour-main">
+          <div className="tour-text" key={index} aria-live="polite">
+            <div className="tour-chapter">
+              {step.chapter} <span className="tour-of">· {index + 1} of {steps.length}</span>
+            </div>
+            <h3 id="tour-title">{step.title}</h3>
+            <p id="tour-body">{step.body}</p>
           </div>
-          <span className="tour-keys" aria-hidden>
-            <kbd>←</kbd>
-            <kbd>→</kbd>
-          </span>
-          <button type="button" className="btn tour-back" onClick={back} disabled={index === 0}>
-            Back
-          </button>
-          <button type="button" className="btn btn-primary tour-next" onClick={next}>
-            {last ? "Finish" : "Next"}
-          </button>
+          <div className="tour-side">
+            <button type="button" className="tour-close" onClick={onClose} aria-label="Exit the tour" title="Exit (Esc)">
+              <svg width="14" height="14" viewBox="0 0 14 14" aria-hidden>
+                <path d="M3 3l8 8M11 3l-8 8" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" />
+              </svg>
+            </button>
+            <div className="tour-buttons">
+              <span className="tour-keys" aria-hidden>
+                <kbd>←</kbd>
+                <kbd>→</kbd>
+              </span>
+              <button type="button" className="btn tour-back" onClick={back} disabled={index === 0}>
+                Back
+              </button>
+              <button type="button" className="btn btn-primary tour-next" onClick={next}>
+                {last ? "Finish" : "Next"}
+              </button>
+            </div>
+          </div>
         </div>
       </div>
     </div>

@@ -2698,21 +2698,22 @@ pre.report {
   }
 }
 
-/* The card is docked and never moves: Next is always in the same place. */
+/* The card is docked and never moves: Next is always in the same place. On a wide screen
+   it is a short bar (text left, buttons right) so it leaves most of the screen to the page. */
 .tour-card {
   position: fixed;
   z-index: 91;
   left: 50%;
-  bottom: 24px;
+  bottom: 20px;
   transform: translateX(-50%);
-  width: min(600px, calc(100vw - 32px));
+  width: min(900px, calc(100vw - 32px));
   background: var(--bg);
   border: 1px solid var(--line);
   border-radius: 14px;
   box-shadow:
     0 24px 60px rgba(10, 12, 16, 0.28),
     0 2px 8px rgba(10, 12, 16, 0.12);
-  padding: 18px 20px 16px;
+  overflow: hidden;
   outline: none;
   animation: tour-card-in 0.3s cubic-bezier(0.2, 0.8, 0.2, 1);
 }
@@ -2724,10 +2725,62 @@ pre.report {
   }
 }
 
-.tour-top {
+/* Progress runs along the card's top edge; each segment jumps to its stop. */
+.tour-progress {
   display: flex;
-  align-items: center;
-  justify-content: space-between;
+  gap: 3px;
+  padding: 0 14px;
+}
+
+.tour-seg {
+  flex: 1;
+  height: 12px;
+  padding: 0 0 8px;
+  border: 0;
+  background: none;
+  cursor: pointer;
+}
+
+.tour-seg::before {
+  content: "";
+  display: block;
+  height: 3px;
+  border-radius: 0 0 2px 2px;
+  background: var(--line);
+  transition: background 0.2s;
+}
+
+.tour-seg.done::before {
+  background: color-mix(in srgb, var(--info) 45%, var(--line-strong));
+}
+
+.tour-seg.now::before {
+  background: var(--info);
+}
+
+.tour-seg:hover::before {
+  background: var(--text-3);
+}
+
+.tour-main {
+  display: flex;
+  gap: 24px;
+  padding: 4px 18px 16px 22px;
+}
+
+/* Room for three lines, so the bar doesn't change height between stops. */
+.tour-text {
+  flex: 1;
+  min-width: 0;
+  min-height: 104px;
+  animation: tour-text-in 0.22s ease-out;
+}
+
+@keyframes tour-text-in {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
 }
 
 .tour-chapter {
@@ -2744,12 +2797,33 @@ pre.report {
   letter-spacing: 0.02em;
 }
 
+.tour-text h3 {
+  margin: 4px 0 4px;
+  font-size: 16px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+}
+
+.tour-text p {
+  color: var(--text-2);
+  line-height: 1.55;
+  font-size: 13.5px;
+}
+
+.tour-side {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  justify-content: space-between;
+  flex: none;
+}
+
 .tour-close {
   display: grid;
   place-items: center;
   width: 28px;
   height: 28px;
-  margin: -6px -8px -6px 0;
+  margin-right: -6px;
   border: 0;
   border-radius: 8px;
   background: none;
@@ -2762,83 +2836,16 @@ pre.report {
   color: var(--text);
 }
 
-/* Fixed height for the text, so the buttons below don't jump as the text changes. */
-.tour-text {
-  min-height: 118px;
-  animation: tour-text-in 0.22s ease-out;
-}
-
-@keyframes tour-text-in {
-  from {
-    opacity: 0;
-    transform: translateY(4px);
-  }
-}
-
-.tour-text h3 {
-  margin: 8px 0 6px;
-  font-size: 17px;
-  font-weight: 600;
-  letter-spacing: -0.01em;
-}
-
-.tour-text p {
-  color: var(--text-2);
-  line-height: 1.6;
-  font-size: 14px;
-}
-
-.tour-bottom {
+.tour-buttons {
   display: flex;
   align-items: center;
   gap: 8px;
-  margin-top: 14px;
-  padding-top: 14px;
-  border-top: 1px solid var(--line);
-}
-
-.tour-progress {
-  display: flex;
-  gap: 4px;
-  flex: 1;
-  min-width: 0;
-}
-
-.tour-seg {
-  flex: 1;
-  max-width: 28px;
-  height: 14px;
-  padding: 5px 0;
-  border: 0;
-  background: none;
-  cursor: pointer;
-}
-
-.tour-seg::before {
-  content: "";
-  display: block;
-  height: 4px;
-  border-radius: 2px;
-  background: var(--line-strong);
-  transition: background 0.2s;
-}
-
-.tour-seg.done::before {
-  background: color-mix(in srgb, var(--info) 45%, var(--line-strong));
-}
-
-.tour-seg.now::before {
-  background: var(--info);
-}
-
-.tour-seg:hover::before {
-  background: var(--text-3);
 }
 
 .tour-keys {
   display: flex;
   gap: 3px;
-  margin-right: 6px;
+  margin-right: 4px;
 }
 
 .tour-keys kbd {
@@ -2855,11 +2862,15 @@ pre.report {
 .tour-back,
 .tour-next {
   min-width: 76px;
-  justify-content: center;
 }
 
 .tour-back:disabled {
   visibility: hidden; /* keeps its place, so Next never moves */
+}
+
+/* While touring, room under the page the height of the card. */
+.touring .main {
+  padding-bottom: calc(var(--tour-card, 0px) + 48px);
 }
 
 .btn-ghost {
@@ -2873,19 +2884,38 @@ pre.report {
     bottom: 0;
     width: 100vw;
     border-radius: 14px 14px 0 0;
-    padding: 16px 16px calc(14px + env(safe-area-inset-bottom));
+  }
+
+  .tour-main {
+    flex-direction: column;
+    gap: 10px;
+    padding: 4px 16px calc(12px + env(safe-area-inset-bottom));
+    position: relative;
   }
 
   .tour-text {
     min-height: 150px;
+    padding-right: 24px;
+  }
+
+  .tour-side {
+    flex-direction: row;
+    align-items: center;
+  }
+
+  .tour-close {
+    position: absolute;
+    top: 0;
+    right: 10px;
+  }
+
+  .tour-buttons {
+    width: 100%;
+    justify-content: flex-end;
   }
 
   .tour-keys {
     display: none;
-  }
-
-  .tour-progress {
-    gap: 3px;
   }
 }
 
