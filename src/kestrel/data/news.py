@@ -102,8 +102,10 @@ def ingest(
     end: date | None = None,
     sleep: Sleep | None = None,
     on_month: Callable[[date], None] = lambda _: None,
+    limit: int | None = None,
 ) -> pl.DataFrame:
-    """Every month from 2017 to ``end`` not already stored, saved as each arrives."""
+    """Every month from 2017 to ``end`` not already stored, saved as each arrives; at most
+    ``limit`` months per call (a slow schedule stays under GDELT's rate limit)."""
     # Looked up at call time, not bound as a default, so a test can replace time.sleep.
     sleep = sleep or time.sleep
     if symbol.upper() not in QUERIES:
@@ -116,8 +118,10 @@ def ingest(
     have = {(d.year, d.month) for d in stored["date"].to_list()}
     month = FIRST
     first_request = True
-    while month <= end:
+    fetched = 0
+    while month <= end and (limit is None or fetched < limit):
         if (month.year, month.month) not in have:
+            fetched += 1
             if not first_request:
                 sleep(PAUSE)
             first_request = False

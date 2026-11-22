@@ -1,6 +1,6 @@
 // Plain logic behind the Trading page: how a paper account is tracking its model, in one
 // line. Kept out of components so it can be tested directly.
-import type { PaperDetail, PaperSummary, PaperTotal, PaperTrade } from "./api";
+import type { Condition, PaperDetail, PaperSummary, PaperTotal, PaperTrade, Waiting } from "./api";
 import type { Tone } from "./components/ui";
 
 /** The verdict that matters first: do decisions match the backtest's code, and how far
@@ -91,3 +91,40 @@ export function tradesSummary(trades: PaperTrade[]): { text: string; realised: n
 
 /** A trade's profit as a share of what it spent. */
 export const tradeReturn = (t: PaperTrade) => (t.profit === null || t.bought <= 0 ? null : t.profit / t.bought);
+
+const pct1 = (x: number) => `${x > 0 ? "+" : ""}${(x * 100).toFixed(1)}%`;
+
+/** One test in words: what it needs by the next close, or how far it can fall and still hold. */
+export function conditionText(c: Condition): string {
+  if (c.met) return c.move < 0 ? `holds unless ${coin(c.subject)} falls ${(-c.move * 100).toFixed(1)}%` : "holds";
+  return `needs ${coin(c.subject)} ${pct1(c.move)} by the next close`;
+}
+
+/** The accounts table's one-line answer to "why is it (not) in the market?". */
+export function waitingSummary(w: Waiting | null): string {
+  if (!w || w.conditions.length === 0) return "n/a";
+  const met = w.conditions.filter((c) => c.met).length;
+  const total = w.conditions.length;
+  const unmet = w.conditions.filter((c) => !c.met);
+  if (w.rule === "any") {
+    if (unmet.length === 0) return `All ${total} tests hold: fully in`;
+    const nearest = unmet.reduce((a, b) => (Math.abs(b.move) < Math.abs(a.move) ? b : a));
+    const head = met ? `${met} of ${total} hold` : "Cash";
+    return `${head}; next: ${coin(nearest.subject)} ${pct1(nearest.move)}`;
+  }
+  if (unmet.length === 0) return w.decides === "every close" ? "All tests hold: in" : `Tests hold; decides on ${w.decides}`;
+  return `Cash until ${unmet.map((c) => `${coin(c.subject)} ${pct1(c.move)}`).join(" and ")}`;
+}
+
+/** How the tests combine, for the account view. */
+export function ruleText(w: Waiting): string {
+  const when = w.decides === "every close" ? "Decides at every daily close" : `Decides at ${w.decides} only`;
+  const how =
+    w.rule === "any"
+      ? `each test that holds buys ${w.conditions.length > 1 ? `1/${w.conditions.length}` : "all"} of the position (sized to volatility)`
+      : w.conditions.length > 1
+        ? "in the market only when every test holds"
+        : "in the market only when the test holds";
+  const picks = w.would_hold.length ? ` If it bought now: ${w.would_hold.map(coin).join(", ")}.` : "";
+  return `${when}; ${how}. Moves are what each close would need by the next close.${picks}`;
+}

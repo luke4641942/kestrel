@@ -19,10 +19,12 @@ of 8 large coins; G2 the top 1 of BTC, ETH, SOL and BNB.
 from __future__ import annotations
 
 import math
+from datetime import datetime
 
 import polars as pl
 
 from kestrel.strategies.basket import BY, DECISIONS, no_decisions, require_daily
+from kestrel.strategies.conditions import Waiting, above_average
 
 BTC = "BTCUSDT"
 LARGE_8 = (
@@ -97,6 +99,41 @@ class BtcRegimeRotation:
         )
         out = pl.concat([chosen, idle]).select([pl.col(c).cast(t) for c, t in DECISIONS.items()])
         return out.sort("open_time", "symbol", nulls_last=True)
+
+    def waiting(self, panel: pl.DataFrame) -> Waiting | None:
+        """Its BTC test at the latest close (kestrel.strategies.conditions), decided on
+        Sundays, and the coins it would hold if the test were met now."""
+        btc = panel.filter(pl.col("symbol") == BTC).sort("open_time")
+        test = above_average(
+            f"BTC above its {self.btc_days}-day average + {self.margin:.0%}", BTC,
+            btc["close"].to_list(), self.btc_days, self.margin,
+        )  # fmt: skip
+        if test is None:
+            return None
+        last = btc["open_time"][-1]
+        # The ranking as it would be at the latest close, whatever the day of the week.
+        return Waiting(last, "all", [test], "Sunday closes", self._ranked(panel, last))
+
+    def _ranked(self, panel: pl.DataFrame, at: datetime) -> list[str]:
+        close = pl.col("close")
+        scored = (
+            panel.filter(pl.col("symbol").is_in(self.coins))
+            .sort("open_time")
+            .with_columns(
+                _r=(close / close.shift(self.lookback)).over(BY) - 1,
+                _age=pl.int_range(1, pl.len() + 1).over(BY),
+                _vol=close.log().diff().rolling_std(self.vol_days, min_samples=self.vol_days)
+                .over(BY),
+            )
+            .filter(
+                (pl.col("open_time") == at)
+                & pl.col("_r").is_not_null()
+                & (pl.col("_age") >= MIN_HISTORY)
+                & (pl.col("_vol") > 0)
+            )
+        )  # fmt: skip
+        top = scored.sort(["_r", "symbol"], descending=[True, False]).head(self.top_n)
+        return top["symbol"].to_list()
 
 
 class BtcRegimeRotation4(BtcRegimeRotation):

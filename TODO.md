@@ -51,12 +51,17 @@ exists and Luke has checked the Swyftx employee trading policy.
 - [ ] Keys from the macOS keychain (or the server's key file), not ~/.zshrc: before any live
       (non-testnet) keys exist. Luke adds them himself; Claude never sees the values. Live
       keys: trading only, withdrawals off, restricted to the home IP.
-- [ ] News-tone study (`kestrel signal-study news-tone`): blocked on data. `kestrel
-      ingest-news BTCUSDT ETHUSDT` is resumable but GDELT rate-limits hard: by 2026-11-22
-      BTC had 2017-01..2018-08, ETH 2017-01..2017-11. Needs 2017..2025-10, then a note.
+- [ ] News-tone study (`kestrel signal-study news-tone`): downloading. GDELT rate-limits
+      hard, so launchd (`~/Library/LaunchAgents/com.kestrel.news.plist`, log
+      `data/news/schedule.log`) runs `kestrel ingest-news BTCUSDT ETHUSDT --max-months 2`
+      hourly at :40 from 2026-11-22 (~2 days). When both reach 2025-10: unload it
+      (`launchctl bootout gui/$(id -u)/com.kestrel.news`), then draft the note.
 - [ ] Expectancy by conviction bucket (P2 leftover), once a strategy varies its sizing.
 
 ## Done recently
+- 2026-11-22 Trading page: "Waiting for" on every account, and each account's entry tests
+  (close, level, the move needed by the next close). Tested against the strategies' own
+  decisions (`kestrel.strategies.conditions`).
 - 2026-11-22 Why G1 works (exploration, `research/exploration/why_g1.py`, log): the BTC
   filter is the edge in 2018-21; in 2022-25 no version beats BTC held (G1 0.66 vs 0.69),
   the ranking only beats random picks. Risk-adjusted ranking doesn't help.

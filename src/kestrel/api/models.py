@@ -841,6 +841,29 @@ class HoldoutOut(BaseModel):
     passes: bool
 
 
+class ConditionOut(BaseModel):
+    """One entry test at the latest close (kestrel.strategies.conditions.Condition)."""
+
+    label: str
+    subject: str
+    value: float
+    level: float
+    met: bool
+    move: float
+    """Change in the subject's close by the next close that flips the test (fraction)."""
+
+
+class WaitingOut(BaseModel):
+    """What the strategy is waiting for (kestrel.strategies.conditions.Waiting)."""
+
+    bar: datetime
+    rule: str
+    """"all": in the market when every test holds; "any": a share for each that holds."""
+    decides: str
+    would_hold: list[str]
+    conditions: list[ConditionOut]
+
+
 class PaperSummaryOut(BaseModel):
     """A paper account at a glance (kestrel.execution.paper). Read-only."""
 
@@ -860,9 +883,11 @@ class PaperSummaryOut(BaseModel):
     positions: dict[str, float]
     """A basket account's coins by symbol (empty for a single-coin account)."""
     halted: str | None
+    """Why it is halted, or None."""
     trade_count: int = 0
     """Trades (a coin from flat to flat), open ones included."""
-    """Why it is halted, or None."""
+    waiting: WaitingOut | None = None
+    """Its entry tests at the latest stored close, for strategies that describe them."""
 
 
 class PaperFillOut(BaseModel):

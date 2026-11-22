@@ -413,6 +413,31 @@ export interface PaperSummary {
   halted: string | null;
   /** Trades (a coin from flat back to flat), open ones included. */
   trade_count: number;
+  /** Its entry tests at the latest stored close; null if the strategy doesn't describe them. */
+  waiting: Waiting | null;
+}
+
+/** One entry test at the latest close (kestrel.strategies.conditions). */
+export interface Condition {
+  label: string;
+  /** Whose close it tests. */
+  subject: string;
+  value: number;
+  level: number;
+  met: boolean;
+  /** Change in the subject's close by the next close that flips the test (fraction). */
+  move: number;
+}
+
+export interface Waiting {
+  bar: string;
+  /** "all": in the market when every test holds; "any": a share for each that holds. */
+  rule: "all" | "any";
+  /** "every close" or "Sunday closes". */
+  decides: string;
+  /** A rotation's picks if its tests held now. */
+  would_hold: string[];
+  conditions: Condition[];
 }
 
 /** One trade: a coin from flat back to flat; resizes in between belong to it. */

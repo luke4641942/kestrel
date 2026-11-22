@@ -1,8 +1,11 @@
 import { describe, expect, it } from "vitest";
-import type { PaperDetail } from "./api";
+import type { PaperDetail, Waiting } from "./api";
 import {
   accountProfit,
+  conditionText,
   holdingView,
+  ruleText,
+  waitingSummary,
   isBasket,
   targetsText,
   totalView,
@@ -16,7 +19,7 @@ export function paperDetail(over: Partial<PaperDetail> = {}, tracking: Partial<P
   return {
     name: "btc", strategy: "trend-vol-target", symbol: "BTCUSDT", interval: "1d", venue: "testnet",
     research: "holdout-trend-vol-target-btc", initial_cash: 330, trade_from: "2026-11-13T00:00:00Z",
-    last_bar: "2026-11-14T00:00:00Z", equity: 331.5, cash: 222.4, position: 0.0016, positions: {}, halted: null, trade_count: 0,
+    last_bar: "2026-11-14T00:00:00Z", equity: 331.5, cash: 222.4, position: 0.0016, positions: {}, halted: null, trade_count: 0, waiting: null,
     equity_series: { time: [1, 2], equity: [330, 331.5], drawdown: [0, 0] },
     expected: { time: [1, 2], equity: [330, 332], drawdown: [0, 0] },
     fills: [], trades: [], decisions: [], events: [],
@@ -97,5 +100,47 @@ describe("profit and trades", () => {
     expect(tradesSummary([]).text).toBe("No trades yet");
     expect(tradeReturn(trade(5))).toBeCloseTo(0.05);
     expect(tradeReturn(trade(null, null))).toBeNull();
+  });
+});
+
+describe("what an account is waiting for", () => {
+  const test = (subject: string, met: boolean, move: number, label = "x") => ({
+    label, subject, value: 100, level: 110, met, move,
+  });
+  const waiting = (over: Partial<Waiting>): Waiting => ({
+    bar: "2026-11-21T00:00:00Z", rule: "all", decides: "every close", would_hold: [], conditions: [], ...over,
+  });
+
+  it("says what each test needs by the next close, or how far it can fall", () => {
+    expect(conditionText(test("BTCUSDT", false, 0.069))).toBe("needs BTC +6.9% by the next close");
+    expect(conditionText(test("ETHUSDT", true, -0.04))).toBe("holds unless ETH falls 4.0%");
+  });
+
+  it("names every missing move when all tests must hold", () => {
+    const w = waiting({ conditions: [test("BTCUSDT", false, 0.28), test("ETHUSDT", false, 0.416)] });
+    expect(waitingSummary(w)).toBe("Cash until BTC +28.0% and ETH +41.6%");
+    expect(waitingSummary(waiting({ conditions: [test("BTCUSDT", true, -0.1)] }))).toBe("All tests hold: in");
+    expect(waitingSummary(waiting({ decides: "Sunday closes", conditions: [test("BTCUSDT", true, -0.1)] }))).toBe(
+      "Tests hold; decides on Sunday closes",
+    );
+  });
+
+  it("names the nearest trend when any one buys a share", () => {
+    const w = waiting({
+      rule: "any",
+      conditions: [test("BTCUSDT", false, 0.276), test("BTCUSDT", false, 0.402), test("BTCUSDT", false, 0.069)],
+    });
+    expect(waitingSummary(w)).toBe("Cash; next: BTC +6.9%");
+    const some = waiting({ rule: "any", conditions: [test("BTCUSDT", true, -0.05), test("BTCUSDT", false, 0.1)] });
+    expect(waitingSummary(some)).toBe("1 of 2 hold; next: BTC +10.0%");
+    expect(waitingSummary(null)).toBe("n/a");
+  });
+
+  it("explains the rule and a rotation's picks", () => {
+    const g1 = waiting({ decides: "Sunday closes", would_hold: ["BNBUSDT", "BTCUSDT"], conditions: [test("BTCUSDT", false, 0.3)] });
+    expect(ruleText(g1)).toContain("Decides at Sunday closes only");
+    expect(ruleText(g1)).toContain("If it bought now: BNB, BTC.");
+    const tvt = waiting({ rule: "any", conditions: [test("BTCUSDT", false, 0.1), test("BTCUSDT", false, 0.1), test("BTCUSDT", false, 0.1)] });
+    expect(ruleText(tvt)).toContain("each test that holds buys 1/3 of the position");
   });
 });

@@ -28,6 +28,7 @@ from kestrel.api.models import (
     Bars,
     ChatMessage,
     ChatRequest,
+    ConditionOut,
     CostConfigOut,
     CostCurve,
     CostGateOut,
@@ -82,6 +83,7 @@ from kestrel.api.models import (
     StudyOut,
     TradeOut,
     ValidationOut,
+    WaitingOut,
 )
 from kestrel.assistant import AssistantError, ResearchAssistant, chat_record, credentials_hint
 from kestrel.backtest.analysis import start_dates
@@ -112,6 +114,7 @@ from kestrel.strategy import (
     STRATEGIES,
     BracketStrategy,
     StrategySpec,
+    make_portfolio_strategy,
     make_strategy,
     resolve_params,
     spec_for,
@@ -613,6 +616,7 @@ def create_app(
             positions={k: float(v) for k, v in state.positions.items() if v > 0},
             halted=safety.halted(account),
             trade_count=len(tracking.round_trips(account.ledger.events(), terms.symbol)),
+            waiting=_waiting(terms),
         )
 
     def _trade_out(t: tracking.RoundTrip, interval: Interval) -> PaperTradeOut:
@@ -657,21 +661,56 @@ def create_app(
         """Every paper account. Accounts are opened and run from the CLI only."""
         return [_paper_summary(paper.PaperAccount(data_dir, n)) for n in paper.accounts(data_dir)]
 
-    def _tracked(account: paper.PaperAccount) -> tracking.Tracking:
-        """An account against its replay on the simulated venue (the model)."""
-        terms = account.terms()
+    def _market(terms: paper.Terms) -> pl.DataFrame:
+        """What the account's strategy reads: a basket's coin panel, or one market's bars
+        with its features."""
         spec = spec_for(terms.strategy)
         if spec.universe:
-            panel = paper.basket_panel(store, terms, list(spec.assets), datetime.now(UTC))
-            return tracking.track_basket(account, panel, load_config(config_path))
-        bars = attach_features(
+            return paper.basket_panel(store, terms, list(spec.assets), datetime.now(UTC))
+        return attach_features(
             store.read(terms.symbol, terms.interval),
             spec.features,
             terms.symbol,
             terms.interval,
             data_dir,
         )
-        return tracking.track(account, bars, load_config(config_path))
+
+    def _tracked(account: paper.PaperAccount) -> tracking.Tracking:
+        """An account against its replay on the simulated venue (the model)."""
+        terms = account.terms()
+        market = _market(terms)
+        if spec_for(terms.strategy).universe:
+            return tracking.track_basket(account, market, load_config(config_path))
+        return tracking.track(account, market, load_config(config_path))
+
+    def _waiting(terms: paper.Terms) -> WaitingOut | None:
+        """The strategy's entry tests at the latest stored close, if it describes them."""
+        if spec_for(terms.strategy).universe:
+            strategy: object = make_portfolio_strategy(terms.strategy, terms.params)
+        else:
+            strategy = make_strategy(terms.strategy, terms.symbol, terms.params)
+        describe = getattr(strategy, "waiting", None)
+        if describe is None:
+            return None
+        try:
+            found = describe(_market(terms))
+        except ValueError:  # missing data: the page shows nothing rather than failing
+            return None
+        if found is None:
+            return None
+        return WaitingOut(
+            bar=found.bar,
+            rule=found.rule,
+            decides=found.decides,
+            would_hold=found.would_hold,
+            conditions=[
+                ConditionOut(
+                    label=c.label, subject=c.subject, value=c.value, level=c.level,
+                    met=c.met, move=c.move,
+                )
+                for c in found.conditions
+            ],
+        )  # fmt: skip
 
     @api.get("/paper-total")
     def paper_total() -> PaperTotalOut:

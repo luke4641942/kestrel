@@ -34,6 +34,7 @@ def test_accounts_are_listed_and_shown_with_their_tracking(tmp_path: Path) -> No
     (summary,) = client.get("/api/paper").json()
     assert (summary["name"], summary["venue"], summary["halted"]) == ("btc", "sim", None)
     assert summary["equity"] is not None
+    assert summary["waiting"] is None  # ma-trend doesn't describe its tests
 
     d = client.get("/api/paper/btc").json()
     n = frame.height - 1
@@ -51,6 +52,25 @@ def test_accounts_are_listed_and_shown_with_their_tracking(tmp_path: Path) -> No
     assert d["halted"] == "testing"
     assert d["events"][-1] == {"type": "halt", "at": d["events"][-1]["at"], "reason": "testing"}
     assert client.get("/api/paper/nobody").status_code == 404
+
+
+def test_an_account_says_what_its_strategy_is_waiting_for(tmp_path: Path) -> None:
+    frame = walk(200)
+    ParquetStore(tmp_path).write("BTCUSDT", Interval.D1, frame)
+    client = TestClient(create_app(tmp_path, static_dir=None, config_path=REPO_CONFIG))
+    terms = Terms("tvt", "trend-vol-target", "BTCUSDT", Interval.D1, {}, Decimal(330), T0)
+    PaperAccount.open(tmp_path, terms)
+    (summary,) = client.get("/api/paper").json()
+    w = summary["waiting"]
+    assert w["rule"] == "any"
+    assert w["decides"] == "every close"
+    assert [c["label"] for c in w["conditions"]] == [
+        "BTC up over 20 days", "BTC up over 60 days", "BTC up over 120 days",
+    ]  # fmt: skip
+    closes = frame["close"].to_list()
+    assert w["conditions"][0]["value"] == pytest.approx(closes[-1])
+    assert w["conditions"][0]["level"] == pytest.approx(closes[-21])
+    assert w["conditions"][0]["met"] == (closes[-1] > closes[-21])
 
 
 def test_an_account_with_nothing_handled_yet(tmp_path: Path) -> None:

@@ -23,6 +23,7 @@ from datetime import timedelta
 import polars as pl
 
 from kestrel.data.stablecoins import FEATURE
+from kestrel.strategies.conditions import Waiting, above_past
 
 DAYS_PER_YEAR = 365
 
@@ -54,6 +55,23 @@ class TrendVolTarget:
         """How many of the three trends are up at each close (0 until the longest
         lookback and the volatility window have filled)."""
         return self._decide(bars)["votes"]
+
+    def waiting(self, bars: pl.DataFrame) -> Waiting | None:
+        """Its three trend votes at the latest close (kestrel.strategies.conditions): each one
+        up holds a third of the volatility-sized position. Daily bars only."""
+        if type(self) is not TrendVolTarget or bars.height < 2:
+            return None  # variants with extra votes don't describe them
+        step = bars["open_time"].diff().median()
+        if step != timedelta(days=1):
+            return None
+        coin = self.symbol.removesuffix("USDT")
+        closes = bars["close"].to_list()
+        tests = [
+            above_past(f"{coin} up over {d} days", self.symbol, closes, d) for d in self.lookbacks
+        ]
+        if any(t is None for t in tests):
+            return None
+        return Waiting(bars["open_time"][-1], "any", [t for t in tests if t is not None])
 
     def _extra_votes(self, bars: pl.DataFrame) -> list[pl.Expr]:
         """Votes beyond the three trends; none here (see TrendVolTargetStablecoin)."""

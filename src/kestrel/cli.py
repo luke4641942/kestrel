@@ -985,17 +985,25 @@ def ingest_attention(symbols: list[str], data_dir: DataDir = Path("data")) -> No
 
 
 @app.command("ingest-news")
-def ingest_news(symbols: list[str], data_dir: DataDir = Path("data")) -> None:
+def ingest_news(
+    symbols: list[str],
+    max_months: Annotated[
+        int | None, typer.Option(min=1, help="At most this many months per market per run.")
+    ] = None,
+    data_dir: DataDir = Path("data"),
+) -> None:
     """Daily news tone for each market from GDELT, from 2017. Slow on purpose: GDELT allows
     about one request every few seconds, so a full history takes a while. Each month is
-    saved as it arrives; run it again to continue an interrupted fetch."""
+    saved as it arrives; run it again to continue an interrupted fetch (an hourly schedule
+    with --max-months stays under the rate limit)."""
     failed = False
     with httpx.Client(timeout=120) as http:
         for symbol in symbols:
             try:
                 frame = news.ingest(
-                    symbol, http, data_dir, on_month=lambda m: typer.echo(f"  {m:%Y-%m}")
-                )
+                    symbol, http, data_dir, limit=max_months,
+                    on_month=lambda m: typer.echo(f"  {m:%Y-%m}"),
+                )  # fmt: skip
             except (ValueError, httpx.HTTPError) as e:
                 typer.echo(f"{symbol.upper()}: {e}", err=True)
                 failed = True

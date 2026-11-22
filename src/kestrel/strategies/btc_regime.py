@@ -19,6 +19,7 @@ import math
 import polars as pl
 
 from kestrel.data.features import BTC_CLOSE
+from kestrel.strategies.conditions import Waiting, above_average, above_past
 
 DAYS_PER_YEAR = 365
 
@@ -53,3 +54,23 @@ class BtcRegimeTrend:
         )
         weight = pl.when(on.fill_null(False)).then(size).otherwise(0.0).fill_null(0.0).fill_nan(0.0)
         return bars.select(weight.clip(0.0, 1.0).alias("weight"))["weight"]
+
+    def waiting(self, bars: pl.DataFrame) -> Waiting | None:
+        """Its two tests at the latest close (kestrel.strategies.conditions); in the market
+        when both hold."""
+        if bars.is_empty() or bars[BTC_CLOSE].null_count():
+            return None
+        coin = self.symbol.removesuffix("USDT")
+        tests = [
+            above_average(
+                f"BTC above its {self.btc_days}-day average", "BTCUSDT",
+                bars[BTC_CLOSE].to_list(), self.btc_days,
+            ),
+            above_past(
+                f"{coin} up over {self.coin_days} days", self.symbol,
+                bars["close"].to_list(), self.coin_days,
+            ),
+        ]  # fmt: skip
+        if any(t is None for t in tests):
+            return None
+        return Waiting(bars["open_time"][-1], "all", [t for t in tests if t is not None])

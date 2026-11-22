@@ -92,6 +92,15 @@ def test_ingest_saves_as_it_goes_and_resumes(tmp_path: Path) -> None:
         news.load(tmp_path, "ETHUSDT")
 
 
+def test_a_limited_run_fetches_a_few_months_and_the_next_carries_on(tmp_path: Path) -> None:
+    first, second = FakeGdelt(), FakeGdelt()
+    end = date(2017, 5, 15)
+    news.ingest("BTCUSDT", first.client(), tmp_path, end=end, sleep=no_wait, limit=2)
+    assert first.months == ["2017-01", "2017-02"]
+    news.ingest("BTCUSDT", second.client(), tmp_path, end=end, sleep=no_wait, limit=2)
+    assert second.months == ["2017-03", "2017-04"]
+
+
 def test_news_tone_uses_only_complete_days() -> None:
     bars = daily([0.0] * 20)
     start = date(2023, 11, 20)

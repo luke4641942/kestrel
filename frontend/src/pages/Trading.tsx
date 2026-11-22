@@ -1,12 +1,15 @@
 import { useState } from "react";
-import { api, type PaperDetail, type PaperSummary } from "../api";
+import { api, type PaperDetail, type PaperSummary, type Waiting } from "../api";
 import { EquityChart } from "../components/EquityChart";
 import { Empty, PageHeader, Panel, Section, Stat, Status } from "../components/ui";
 import { date, dateTime } from "../format";
 import { useResource } from "../hooks";
 import {
   accountProfit,
+  conditionText,
   holdingView,
+  ruleText,
+  waitingSummary,
   isBasket,
   targetsText,
   totalView,
@@ -144,6 +147,7 @@ function AccountsTable({
               <th className="num">Equity (USDT)</th>
               <th className="num">Profit</th>
               <th className="num">Trades</th>
+              <th>Waiting for</th>
               <th>Last bar</th>
               <th>Status</th>
             </tr>
@@ -167,6 +171,7 @@ function AccountsTable({
                 <td className="num">{usd(a.equity)}</td>
                 <td className="num">{accountProfit(a) ? money(accountProfit(a)!.profit) : "n/a"}</td>
                 <td className="num">{a.trade_count}</td>
+                <td className="small secondary">{waitingSummary(a.waiting)}</td>
                 <td className="nw secondary">{a.last_bar ? date(a.last_bar) : "not yet"}</td>
                 <td className="nw">
                   {a.halted ? <Status tone="bad">Halted</Status> : <Status tone="ok">Running</Status>}
@@ -229,6 +234,7 @@ function AccountView({ name }: { name: string }) {
             />
           </div>
         </Panel>
+        {d.waiting && <WaitingPanel waiting={d.waiting} />}
         {d.equity_series.time.length > 1 && (
           <Panel pad>
             <div className="chart-top">
@@ -259,6 +265,42 @@ function AccountView({ name }: { name: string }) {
         )}
       </div>
     </Section>
+  );
+}
+
+function WaitingPanel({ waiting: w }: { waiting: Waiting }) {
+  const price = (x: number) => x.toLocaleString("en-AU", { maximumSignificantDigits: 6 });
+  return (
+    <Panel>
+      <h3 className="table-title">What it's waiting for</h3>
+      <p className="table-note small secondary">
+        {ruleText(w)} As of the {date(w.bar)} close.
+      </p>
+      <div className="table-wrap">
+        <table className="table">
+          <thead>
+            <tr>
+              <th>Test</th>
+              <th className="num">Close</th>
+              <th className="num">Must beat</th>
+              <th>Now</th>
+              <th>Next close</th>
+            </tr>
+          </thead>
+          <tbody>
+            {w.conditions.map((c) => (
+              <tr key={c.label}>
+                <td>{c.label}</td>
+                <td className="num">{price(c.value)}</td>
+                <td className="num">{price(c.level)}</td>
+                <td className="nw">{c.met ? <Status tone="ok">Holds</Status> : <Status tone="warn">Not yet</Status>}</td>
+                <td className="small secondary">{conditionText(c)}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </Panel>
   );
 }
 
