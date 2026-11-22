@@ -1,41 +1,29 @@
-import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { api } from "../api";
-import { type Box, pickRun, placeCard, stepHash, type TourStep } from "../tour";
+import { pickRun, stepHash, type TourStep, wantedTop } from "../tour";
 
 const WAIT_MS = 4000;
+const PAD = 8;
 
 /** Finds a stop's element: by data-tour name, else by id. */
 function findTarget(name: string): HTMLElement | null {
   return document.querySelector<HTMLElement>(`[data-tour="${CSS.escape(name)}"]`) ?? document.getElementById(name);
 }
 
-/** Brings a stop's element into view under the top bar (whose height differs on a phone).
- * A tall element, or any on a phone (where the card covers the bottom), is read from its
- * top; a short one sits in the middle of the space left. */
-function scrollToStop(el: HTMLElement, smooth = true) {
-  const still = window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
-  const r = el.getBoundingClientRect();
-  window.scrollTo({ top: window.scrollY + r.top - wantedTop(el), behavior: smooth && !still ? "smooth" : "auto" });
-}
+const reducedMotion = () => window.matchMedia?.("(prefers-reduced-motion: reduce)").matches ?? false;
 
-/** Where a stop's element should sit from the top of the screen (see scrollToStop). */
-function wantedTop(el: HTMLElement): number {
-  const header = document.querySelector(".topbar")?.getBoundingClientRect().height ?? 0;
-  const room = window.innerHeight - header;
-  const h = el.getBoundingClientRect().height;
-  const fromTop = h > room * 0.6 || document.documentElement.clientWidth < 600;
-  return fromTop ? header + 12 : header + (room - h) / 2;
-}
-
-/** The guided tour: for each stop it opens the page, waits for the element to appear,
- * scrolls to it, rings it, and shows a card with the stop's text. Esc leaves; the arrow
- * keys move. If an element never appears (no saved run, say), the card shows anyway. */
+/** The guided tour. The card is docked at the bottom and never moves, so Next is always in
+ * the same place; the ring does the pointing. For each stop it opens the page, waits for the
+ * element, scrolls it into the space above the card, then fades the ring in where it
+ * landed. The ring then follows the element every frame (written straight to the DOM, not
+ * through React state), so it never trails the page. Esc leaves; the arrow keys move. */
 export function Tour({ steps, onClose }: { steps: TourStep[]; onClose: () => void }) {
   const [index, setIndex] = useState(0);
   const [run, setRun] = useState<string | null | undefined>(undefined);
-  const [box, setBox] = useState<Box | null>(null);
-  const [cardSize, setCardSize] = useState({ width: 360, height: 200 });
+  const [lit, setLit] = useState(false); // the ring is on its element and settled
+  const [missing, setMissing] = useState(false); // the element never appeared
   const card = useRef<HTMLDivElement>(null);
+  const ring = useRef<HTMLDivElement>(null);
   const element = useRef<HTMLElement | null>(null);
   const step = steps[index]!;
   const last = index === steps.length - 1;
@@ -49,24 +37,32 @@ export function Tour({ steps, onClose }: { steps: TourStep[]; onClose: () => voi
       .catch(() => setRun(null));
   }, [steps]);
 
-  const measure = useCallback(() => {
-    const el = element.current;
-    if (!el || !el.isConnected) return setBox(null);
-    const r = el.getBoundingClientRect();
-    setBox({ top: r.top, left: r.left, width: r.width, height: r.height });
+  const target = useCallback((el: HTMLElement) => {
+    const header = document.querySelector(".topbar")?.getBoundingClientRect().height ?? 0;
+    const cardHeight = card.current?.getBoundingClientRect().height ?? 0;
+    return wantedTop(el.getBoundingClientRect().height, window.innerHeight, header, cardHeight);
   }, []);
 
-  // Open the stop's page, then wait for its element.
+  const scrollTo = useCallback(
+    (el: HTMLElement, smooth: boolean) => {
+      const top = window.scrollY + el.getBoundingClientRect().top - target(el);
+      window.scrollTo({ top, behavior: smooth && !reducedMotion() ? "smooth" : "auto" });
+    },
+    [target],
+  );
+
+  // Open the stop's page, wait for its element, scroll to it, then light the ring.
   useEffect(() => {
     if (step.route === "run" && run === undefined) return; // still choosing the run
     element.current = null;
-    setBox(null);
+    setLit(false);
+    setMissing(false);
     const hash = stepHash(step, run ?? null);
     if (window.location.hash.replace(/^#/, "") !== hash) window.location.hash = hash;
     const started = Date.now();
     let found = 0;
-    // Find the element; then keep the ring on it, and for the first two seconds scroll
-    // again if data arriving late moved it (layout shifts fire no scroll event).
+    let settle: number | undefined;
+    const done = () => setLit(true);
     const timer = window.setInterval(() => {
       const now = Date.now();
       if (!found) {
@@ -74,38 +70,50 @@ export function Tour({ steps, onClose }: { steps: TourStep[]; onClose: () => voi
         if (el) {
           found = now;
           element.current = el;
-          scrollToStop(el);
+          scrollTo(el, true);
+          window.addEventListener("scrollend", done, { once: true });
+          settle = window.setTimeout(done, reducedMotion() ? 0 : 650); // no scrollend, or no scroll needed
         } else if (now - started > WAIT_MS) {
           window.clearInterval(timer);
+          setMissing(true);
         }
         return;
       }
+      // For the first few seconds, scroll again if data arriving late moved the element.
       const el = element.current;
-      if (el && now - found > 600 && now - found < 2500) {
-        const atEnd = window.innerHeight + window.scrollY >= document.documentElement.scrollHeight - 2;
-        if (Math.abs(el.getBoundingClientRect().top - wantedTop(el)) > 40 && !atEnd) scrollToStop(el, false);
-      }
-      measure();
+      if (!el || now - found > 3000) return window.clearInterval(timer);
+      if (now - found < 700) return;
+      const atEnd = window.innerHeight + window.scrollY >= document.documentElement.scrollHeight - 2;
+      if (Math.abs(el.getBoundingClientRect().top - target(el)) > 40 && !atEnd) scrollTo(el, false);
     }, 150);
-    return () => window.clearInterval(timer);
-  }, [step, run, measure]);
-
-  useEffect(() => {
-    window.addEventListener("scroll", measure, true);
-    window.addEventListener("resize", measure);
     return () => {
-      window.removeEventListener("scroll", measure, true);
-      window.removeEventListener("resize", measure);
+      window.clearInterval(timer);
+      window.clearTimeout(settle);
+      window.removeEventListener("scrollend", done);
     };
-  }, [measure]);
+  }, [step, run, scrollTo, target]);
 
-  useLayoutEffect(() => {
-    const el = card.current;
-    if (el) setCardSize({ width: el.offsetWidth, height: el.offsetHeight });
-  }, [index, box]);
+  // The ring follows its element every frame, written straight to the DOM.
+  useEffect(() => {
+    let frame = 0;
+    const follow = () => {
+      const el = element.current;
+      const r = ring.current;
+      if (el && r && el.isConnected) {
+        const b = el.getBoundingClientRect();
+        r.style.transform = `translate(${b.left - PAD}px, ${b.top - PAD}px)`;
+        r.style.width = `${b.width + 2 * PAD}px`;
+        r.style.height = `${b.height + 2 * PAD}px`;
+      }
+      frame = window.requestAnimationFrame(follow);
+    };
+    frame = window.requestAnimationFrame(follow);
+    return () => window.cancelAnimationFrame(frame);
+  }, []);
 
-  const next = useCallback(() => (last ? onClose() : setIndex((i) => i + 1)), [last, onClose]);
-  const back = useCallback(() => setIndex((i) => Math.max(0, i - 1)), []);
+  const go = useCallback((i: number) => setIndex(Math.max(0, Math.min(steps.length - 1, i))), [steps.length]);
+  const next = useCallback(() => (last ? onClose() : go(index + 1)), [last, onClose, go, index]);
+  const back = useCallback(() => go(index - 1), [go, index]);
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -118,47 +126,49 @@ export function Tour({ steps, onClose }: { steps: TourStep[]; onClose: () => voi
   }, [next, back, onClose]);
 
   useEffect(() => {
-    card.current?.focus();
-  }, [index]);
-
-  const viewport = { width: document.documentElement.clientWidth, height: window.innerHeight };
-  const place = placeCard(box, cardSize, viewport);
-  const pad = 6;
+    card.current?.focus({ preventScroll: true });
+  }, []);
 
   return (
-    <div className="tour" aria-live="polite">
-      {box ? (
-        <div
-          className="tour-ring"
-          style={{ top: box.top - pad, left: box.left - pad, width: box.width + 2 * pad, height: box.height + 2 * pad }}
-        />
-      ) : (
-        <div className="tour-dim" />
-      )}
-      <div
-        ref={card}
-        className={`tour-card${place.sheet ? " tour-sheet" : ""}`}
-        style={place.sheet ? undefined : { top: place.top, left: place.left }}
-        role="dialog"
-        aria-labelledby="tour-title"
-        tabIndex={-1}
-      >
-        <div className="tour-count small tertiary">
-          {index + 1} of {steps.length}
-        </div>
-        <h3 id="tour-title">{step.title}</h3>
-        <p className="secondary">{step.body}</p>
-        <div className="tour-actions">
-          <button type="button" className="btn btn-ghost" onClick={onClose}>
-            Exit
+    <div className="tour">
+      <div ref={ring} className={`tour-ring${lit && !missing ? " lit" : ""}`} aria-hidden />
+      <div className={`tour-dim${missing || !lit ? " on" : ""}`} aria-hidden />
+      <div ref={card} className="tour-card" role="dialog" aria-labelledby="tour-title" aria-describedby="tour-body" tabIndex={-1}>
+        <div className="tour-top">
+          <span className="tour-chapter">
+            {step.chapter} <span className="tour-of">· {index + 1} of {steps.length}</span>
+          </span>
+          <button type="button" className="tour-close" onClick={onClose} aria-label="Exit the tour" title="Exit (Esc)">
+            <svg width="14" height="14" viewBox="0 0 14 14" aria-hidden>
+              <path d="M3 3l8 8M11 3l-8 8" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" />
+            </svg>
           </button>
-          <span className="tour-spacer" />
-          {index > 0 && (
-            <button type="button" className="btn" onClick={back}>
-              Back
-            </button>
-          )}
-          <button type="button" className="btn btn-primary" onClick={next}>
+        </div>
+        <div className="tour-text" key={index} aria-live="polite">
+          <h3 id="tour-title">{step.title}</h3>
+          <p id="tour-body">{step.body}</p>
+        </div>
+        <div className="tour-bottom">
+          <div className="tour-progress" role="group" aria-label="Tour steps">
+            {steps.map((s, i) => (
+              <button
+                key={s.title}
+                type="button"
+                className={`tour-seg${i < index ? " done" : ""}${i === index ? " now" : ""}`}
+                aria-label={`Step ${i + 1}: ${s.title}`}
+                aria-current={i === index ? "step" : undefined}
+                onClick={() => go(i)}
+              />
+            ))}
+          </div>
+          <span className="tour-keys" aria-hidden>
+            <kbd>←</kbd>
+            <kbd>→</kbd>
+          </span>
+          <button type="button" className="btn tour-back" onClick={back} disabled={index === 0}>
+            Back
+          </button>
+          <button type="button" className="btn btn-primary tour-next" onClick={next}>
             {last ? "Finish" : "Next"}
           </button>
         </div>

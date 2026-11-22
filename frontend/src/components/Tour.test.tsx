@@ -9,8 +9,8 @@ vi.mock("../api", async (importOriginal) => {
 });
 
 const STEPS: TourStep[] = [
-  { route: "rules", target: "pass", title: "First stop", body: "About passing." },
-  { route: "research", target: "missing", title: "Second stop", body: "Nothing to ring here." },
+  { chapter: "Judging", route: "rules", target: "pass", title: "First stop", body: "About passing." },
+  { chapter: "Evidence", route: "research", target: "missing", title: "Second stop", body: "Nothing to ring here." },
 ];
 
 beforeEach(() => {
@@ -27,16 +27,26 @@ describe("Tour", () => {
     const close = vi.fn();
     render(<Tour steps={STEPS} onClose={close} />);
     expect(screen.getByRole("dialog")).toHaveTextContent("First stop");
-    expect(screen.getByText("1 of 2")).toBeInTheDocument();
+    expect(screen.getByText(/1 of 2/)).toBeInTheDocument();
+    expect(screen.getByText(/Judging/)).toBeInTheDocument();
     expect(window.location.hash).toBe("#/rules");
-    expect(screen.queryByRole("button", { name: "Back" })).toBeNull();
+    expect(screen.getByRole("button", { name: "Back" })).toBeDisabled(); // keeps its place
     fireEvent.click(screen.getByRole("button", { name: "Next" }));
     expect(screen.getByRole("dialog")).toHaveTextContent("Second stop"); // shown even with nothing to ring
     expect(window.location.hash).toBe("#/research");
     fireEvent.click(screen.getByRole("button", { name: "Back" }));
     expect(screen.getByRole("dialog")).toHaveTextContent("First stop");
-    fireEvent.click(screen.getByRole("button", { name: "Next" }));
+    fireEvent.click(screen.getByRole("button", { name: "Step 2: Second stop" })); // the progress bar jumps
+    expect(screen.getByRole("dialog")).toHaveTextContent("Second stop");
+    expect(screen.getByRole("button", { name: "Step 2: Second stop" })).toHaveAttribute("aria-current", "step");
     fireEvent.click(screen.getByRole("button", { name: "Finish" }));
+    expect(close).toHaveBeenCalledOnce();
+  });
+
+  it("leaves with the close button", () => {
+    const close = vi.fn();
+    render(<Tour steps={STEPS} onClose={close} />);
+    fireEvent.click(screen.getByRole("button", { name: "Exit the tour" }));
     expect(close).toHaveBeenCalledOnce();
   });
 

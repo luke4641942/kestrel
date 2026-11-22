@@ -4,7 +4,7 @@ import { describe, expect, it } from "vitest";
 import type { RunSummary } from "./api";
 import { NAV } from "./App";
 import { slug } from "./markdown";
-import { pickRun, placeCard, stepHash, TOUR } from "./tour";
+import { pickRun, stepHash, TOUR, wantedTop } from "./tour";
 
 const SRC = __dirname;
 const sources = (dir: string): string[] =>
@@ -15,6 +15,13 @@ const sources = (dir: string): string[] =>
   });
 
 describe("the tour's stops", () => {
+  it("each has a chapter, and the chapters come in order", () => {
+    const chapters = TOUR.map((s) => s.chapter);
+    expect(chapters.every(Boolean)).toBe(true);
+    const runs = chapters.filter((c, i) => c !== chapters[i - 1]);
+    expect(new Set(runs).size).toBe(runs.length); // a chapter is never split
+  });
+
   it("each opens a real page", () => {
     const routes = new Set(NAV.map((n) => n.route));
     for (const s of TOUR) {
@@ -63,23 +70,14 @@ describe("pickRun", () => {
   });
 });
 
-describe("placeCard", () => {
-  const card = { width: 360, height: 200 };
-  const screen = { width: 1300, height: 900 };
-
-  it("sits beside a narrow element, covering nothing", () => {
-    expect(placeCard({ top: 400, left: 60, width: 700, height: 36 }, card, screen)).toEqual({ top: 400, left: 772, sheet: false });
-    expect(placeCard({ top: 800, left: 60, width: 700, height: 36 }, card, screen).top).toBe(900 - 200 - 12); // kept on screen
+describe("wantedTop", () => {
+  // A 900px screen, a 60px top bar and a 240px card leave 900 - 60 - 240 - 32 = 568px.
+  it("centres an element in the space between the top bar and the card", () => {
+    expect(wantedTop(168, 900, 60, 240)).toBe(60 + 16 + 200);
   });
 
-  it("goes below a wide element, else above, inside the screen", () => {
-    expect(placeCard({ top: 100, left: 40, width: 1200, height: 200 }, card, screen)).toEqual({ top: 312, left: 40, sheet: false });
-    expect(placeCard({ top: 600, left: 40, width: 1200, height: 250 }, card, screen)).toEqual({ top: 388, left: 40, sheet: false });
-    expect(placeCard({ top: 100, left: 1000, width: 280, height: 40 }, card, screen).left).toBe(1300 - 360 - 12);
-  });
-
-  it("becomes a bottom sheet on a phone, or when there's nothing to point at", () => {
-    expect(placeCard({ top: 100, left: 0, width: 300, height: 50 }, card, { width: 390, height: 800 }).sheet).toBe(true);
-    expect(placeCard(null, card, screen).sheet).toBe(true);
+  it("reads a tall element from its top", () => {
+    expect(wantedTop(700, 900, 60, 240)).toBe(76);
+    expect(wantedTop(520, 900, 60, 240)).toBe(76); // over 90% of the space
   });
 });

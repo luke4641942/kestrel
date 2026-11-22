@@ -2624,6 +2624,14 @@ pre.report {
 }
 
 /* ---------- the guided tour ---------- */
+:root {
+  --tour-veil: rgba(10, 12, 16, 0.42);
+}
+
+:root[data-theme="dark"] {
+  --tour-veil: rgba(0, 0, 0, 0.62);
+}
+
 .corner-btn {
   background: none;
   border: 0;
@@ -2632,67 +2640,226 @@ pre.report {
   font-family: inherit;
 }
 
-.tour-ring,
+/* The page dims while it scrolls to a stop; then the ring's cut-out takes over, so the
+   screen never flashes bright between stops. */
 .tour-dim {
   position: fixed;
+  inset: 0;
   z-index: 90;
   pointer-events: none;
+  background: var(--tour-veil);
+  opacity: 0;
+  transition: opacity 0.25s ease;
+}
+
+.tour-dim.on {
+  opacity: 1;
 }
 
 .tour-ring {
-  border-radius: 10px;
+  position: fixed;
+  top: 0;
+  left: 0;
+  z-index: 90;
+  pointer-events: none;
+  border-radius: 12px;
   box-shadow:
     0 0 0 2px var(--info),
-    0 0 0 9999px rgba(10, 12, 16, 0.45);
-  transition:
-    top 0.2s,
-    left 0.2s,
-    width 0.2s,
-    height 0.2s;
+    0 0 0 6px color-mix(in srgb, var(--info) 22%, transparent),
+    0 0 0 9999px var(--tour-veil);
+  opacity: 0;
+  transition: opacity 0.25s ease;
+  will-change: transform;
 }
 
-.tour-dim {
-  inset: 0;
-  background: rgba(10, 12, 16, 0.45);
+.tour-ring.lit {
+  opacity: 1;
+  animation: tour-pulse 0.9s ease-out 0.15s 1;
 }
 
+@keyframes tour-pulse {
+  0% {
+    box-shadow:
+      0 0 0 2px var(--info),
+      0 0 0 6px color-mix(in srgb, var(--info) 22%, transparent),
+      0 0 0 9999px var(--tour-veil);
+  }
+  45% {
+    box-shadow:
+      0 0 0 2px var(--info),
+      0 0 0 14px color-mix(in srgb, var(--info) 10%, transparent),
+      0 0 0 9999px var(--tour-veil);
+  }
+  100% {
+    box-shadow:
+      0 0 0 2px var(--info),
+      0 0 0 6px color-mix(in srgb, var(--info) 22%, transparent),
+      0 0 0 9999px var(--tour-veil);
+  }
+}
+
+/* The card is docked and never moves: Next is always in the same place. */
 .tour-card {
   position: fixed;
   z-index: 91;
-  width: min(380px, calc(100vw - 24px));
+  left: 50%;
+  bottom: 24px;
+  transform: translateX(-50%);
+  width: min(600px, calc(100vw - 32px));
   background: var(--bg);
-  border: 1px solid var(--line-strong);
-  border-radius: 10px;
-  box-shadow: var(--shadow);
-  padding: 16px 18px 14px;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  box-shadow:
+    0 24px 60px rgba(10, 12, 16, 0.28),
+    0 2px 8px rgba(10, 12, 16, 0.12);
+  padding: 18px 20px 16px;
   outline: none;
+  animation: tour-card-in 0.3s cubic-bezier(0.2, 0.8, 0.2, 1);
 }
 
-.tour-card h3 {
-  margin: 4px 0 6px;
-  font-size: 15px;
+@keyframes tour-card-in {
+  from {
+    opacity: 0;
+    transform: translate(-50%, 12px);
+  }
 }
 
-.tour-card p {
-  line-height: 1.55;
-}
-
-.tour-sheet {
-  left: 12px;
-  right: 12px;
-  bottom: 12px;
-  width: auto;
-}
-
-.tour-actions {
+.tour-top {
   display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.tour-chapter {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--info);
+}
+
+.tour-of {
+  color: var(--text-3);
+  font-weight: 500;
+  letter-spacing: 0.02em;
+}
+
+.tour-close {
+  display: grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  margin: -6px -8px -6px 0;
+  border: 0;
+  border-radius: 8px;
+  background: none;
+  color: var(--text-3);
+  cursor: pointer;
+}
+
+.tour-close:hover {
+  background: var(--surface-2);
+  color: var(--text);
+}
+
+/* Fixed height for the text, so the buttons below don't jump as the text changes. */
+.tour-text {
+  min-height: 118px;
+  animation: tour-text-in 0.22s ease-out;
+}
+
+@keyframes tour-text-in {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+}
+
+.tour-text h3 {
+  margin: 8px 0 6px;
+  font-size: 17px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+}
+
+.tour-text p {
+  color: var(--text-2);
+  line-height: 1.6;
+  font-size: 14px;
+}
+
+.tour-bottom {
+  display: flex;
+  align-items: center;
   gap: 8px;
   margin-top: 14px;
-  align-items: center;
+  padding-top: 14px;
+  border-top: 1px solid var(--line);
 }
 
-.tour-spacer {
+.tour-progress {
+  display: flex;
+  gap: 4px;
   flex: 1;
+  min-width: 0;
+}
+
+.tour-seg {
+  flex: 1;
+  max-width: 28px;
+  height: 14px;
+  padding: 5px 0;
+  border: 0;
+  background: none;
+  cursor: pointer;
+}
+
+.tour-seg::before {
+  content: "";
+  display: block;
+  height: 4px;
+  border-radius: 2px;
+  background: var(--line-strong);
+  transition: background 0.2s;
+}
+
+.tour-seg.done::before {
+  background: color-mix(in srgb, var(--info) 45%, var(--line-strong));
+}
+
+.tour-seg.now::before {
+  background: var(--info);
+}
+
+.tour-seg:hover::before {
+  background: var(--text-3);
+}
+
+.tour-keys {
+  display: flex;
+  gap: 3px;
+  margin-right: 6px;
+}
+
+.tour-keys kbd {
+  font-family: inherit;
+  font-size: 11px;
+  color: var(--text-3);
+  border: 1px solid var(--line);
+  border-bottom-width: 2px;
+  border-radius: 4px;
+  padding: 0 5px;
+  line-height: 16px;
+}
+
+.tour-back,
+.tour-next {
+  min-width: 76px;
+  justify-content: center;
+}
+
+.tour-back:disabled {
+  visibility: hidden; /* keeps its place, so Next never moves */
 }
 
 .btn-ghost {
@@ -2701,8 +2868,36 @@ pre.report {
   color: var(--text-2);
 }
 
+@media (max-width: 600px) {
+  .tour-card {
+    bottom: 0;
+    width: 100vw;
+    border-radius: 14px 14px 0 0;
+    padding: 16px 16px calc(14px + env(safe-area-inset-bottom));
+  }
+
+  .tour-text {
+    min-height: 150px;
+  }
+
+  .tour-keys {
+    display: none;
+  }
+
+  .tour-progress {
+    gap: 3px;
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
-  .tour-ring {
+  .tour-ring.lit,
+  .tour-card,
+  .tour-text {
+    animation: none;
+  }
+
+  .tour-ring,
+  .tour-dim {
     transition: none;
   }
 }
