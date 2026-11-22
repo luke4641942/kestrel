@@ -81,6 +81,7 @@ from kestrel.api.models import (
     StatusChangeOut,
     StrategyOut,
     StudyOut,
+    SummaryOut,
     TradeOut,
     ValidationOut,
     WaitingOut,
@@ -312,6 +313,14 @@ def create_app(
         except DecisionError as e:
             raise HTTPException(status.HTTP_503_SERVICE_UNAVAILABLE, str(e)) from None
         return [DecisionOut.model_validate(asdict(d)) for d in found]
+
+    @api.get("/summary")
+    def get_summary() -> SummaryOut:
+        """The one-page research summary (docs/research-summary.md), as Markdown."""
+        path = Path(research_dir).parent / "docs" / "research-summary.md"
+        if not path.exists():
+            raise HTTPException(status.HTTP_404_NOT_FOUND, "no research summary written yet")
+        return SummaryOut(markdown=path.read_text())
 
     @api.get("/rules")
     def get_rules() -> RulesOut:

@@ -810,6 +810,7 @@ export const api = {
   regime: (symbol: string) => request<RegimeDetail>(`/regimes/${enc(symbol)}`),
   startRegimes: (symbol: string) => request<Job>("/jobs/regimes", { method: "POST", body: JSON.stringify({ symbol }) }),
   rules: () => request<Rules>("/rules"),
+  summary: () => request<{ markdown: string }>("/summary"),
   backtest: (id: string) => request<RunDetail>(`/backtests/${enc(id)}`),
   costs: () => request<CostConfig>("/costs"),
   source: (key: string) => request<StrategySource>(`/strategies/${enc(key)}/source`),

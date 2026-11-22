@@ -18,7 +18,10 @@ const RULES: RulesData = {
   risk_managed: "Kept because it smooths the ride; not an edge.",
   entry_bar: ["Who pays you and why."],
   account: "At most 3 coins at once.",
-  lessons: [{ title: "Trend limits losses.", text: "But holding less does too." }],
+  lessons: [
+    { title: "Trend limits losses.", text: "But holding less does too." },
+    { title: "Perp listings mark a top (a study, 2026-11-18).", text: "Coins lagged by `15%`." },
+  ],
 };
 
 beforeEach(() => {
@@ -38,6 +41,16 @@ describe("Rules", () => {
     expect(screen.getByText("Who pays you and why.")).toBeInTheDocument();
     expect(screen.getByText("At most 3 coins at once.")).toBeInTheDocument();
     expect(screen.getByText("Trend limits losses.")).toBeInTheDocument();
+  });
+
+  it("shows each finding as a title with its aside, the detail folded away", async () => {
+    render(<Rules />);
+    expect(await screen.findByText("Perp listings mark a top.")).toBeInTheDocument();
+    expect(screen.getByText("a study, 2026-11-18")).toBeInTheDocument();
+    const details = [...document.querySelectorAll(".lessons details")];
+    expect(details).toHaveLength(2);
+    expect(details.every((d) => !d.hasAttribute("open"))).toBe(true);
+    expect(screen.getByText("15%").tagName).toBe("CODE");
   });
 
   it("says so when the rules can't be read", async () => {

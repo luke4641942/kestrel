@@ -2,6 +2,8 @@ import { api } from "../api";
 import { Empty, PageHeader, Panel, Section } from "../components/ui";
 import { date } from "../format";
 import { useResource } from "../hooks";
+import { InlineText } from "../markdown";
+import { splitTitle } from "../rulesView";
 import { luckBar } from "../summary";
 
 // Everything here comes from the API (kestrel.validation.rules and research/findings.md),
@@ -78,19 +80,35 @@ export function Rules() {
 
       <Section
         title="What the research has found"
-        description="From research/findings.md. Every strategy's decision and reason is on the Overview."
+        description="From research/findings.md; click a finding for the detail. Every strategy's decision and reason is on the Overview."
       >
         <Panel>
           {r.lessons.length === 0 ? (
             <Empty title="No findings written up yet" />
           ) : (
             <ol className="lessons">
-              {r.lessons.map((l) => (
-                <li key={l.title}>
-                  <div className="lesson-title">{l.title}</div>
-                  <p className="small secondary">{l.text}</p>
-                </li>
-              ))}
+              {r.lessons.map((l) => {
+                const { claim, aside } = splitTitle(l.title);
+                return (
+                  <li key={l.title}>
+                    <details>
+                      <summary>
+                        <span className="lesson-title">
+                          <InlineText text={claim} />
+                        </span>
+                        {aside && (
+                          <span className="lesson-aside small tertiary">
+                            <InlineText text={aside} />
+                          </span>
+                        )}
+                      </summary>
+                      <p className="small secondary">
+                        <InlineText text={l.text} />
+                      </p>
+                    </details>
+                  </li>
+                );
+              })}
             </ol>
           )}
         </Panel>

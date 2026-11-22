@@ -2490,3 +2490,135 @@ pre.report {
   fill: var(--text-3);
   font-size: 11px;
 }
+
+/* ---------- findings on the Rules page: a title each, the detail on click ---------- */
+.lessons details > summary {
+  list-style: none;
+  cursor: pointer;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 2px 10px;
+  padding-right: 22px;
+  position: relative;
+}
+
+.lessons details > summary::-webkit-details-marker {
+  display: none;
+}
+
+.lessons details > summary::after {
+  content: "";
+  position: absolute;
+  right: 2px;
+  top: 8px;
+  width: 6px;
+  height: 6px;
+  border-right: 1.5px solid var(--text-3);
+  border-bottom: 1.5px solid var(--text-3);
+  transform: rotate(45deg);
+  transition: transform 0.15s;
+}
+
+.lessons details[open] > summary::after {
+  transform: rotate(225deg);
+  top: 11px;
+}
+
+.lessons details > summary:hover .lesson-title {
+  text-decoration: underline;
+  text-decoration-color: var(--line-strong);
+  text-underline-offset: 3px;
+}
+
+.lessons details > p {
+  max-width: 96ch;
+  margin-top: 8px;
+  line-height: 1.6;
+}
+
+.lesson-aside code,
+.lessons details code {
+  font-size: 0.95em;
+}
+
+/* ---------- the header's Thesis link ---------- */
+.corner-link {
+  color: var(--text-2);
+  text-decoration: none;
+  font-weight: 500;
+  font-size: 13px;
+}
+
+.corner-link:hover,
+.corner-link[aria-current="page"] {
+  color: var(--text);
+}
+
+.corner-link[aria-current="page"] {
+  text-decoration: underline;
+  text-underline-offset: 4px;
+}
+
+/* ---------- a rendered document (the Thesis page) ---------- */
+.prose {
+  line-height: 1.65;
+}
+
+.prose h2,
+.prose h3,
+.prose h4,
+.prose p,
+.prose ul {
+  max-width: 82ch;
+}
+
+.prose h2 {
+  font-size: 16px;
+  font-weight: 600;
+  margin: 28px 0 10px;
+}
+
+.prose h2:first-child {
+  margin-top: 0;
+}
+
+.prose h3,
+.prose h4 {
+  font-size: 14px;
+  font-weight: 600;
+  margin: 20px 0 8px;
+}
+
+.prose p {
+  margin: 0 0 12px;
+  color: var(--text);
+}
+
+.prose ul {
+  margin: 0 0 14px;
+  padding-left: 20px;
+}
+
+.prose li {
+  margin: 4px 0;
+}
+
+.prose code {
+  overflow-wrap: anywhere;
+  font-family: "IBM Plex Mono", ui-monospace, monospace;
+  font-size: 0.9em;
+  background: var(--surface-2);
+  padding: 1px 4px;
+  border-radius: 4px;
+}
+
+.prose .table-wrap {
+  margin: 4px 0 18px;
+}
+
+.prose .table td {
+  vertical-align: top;
+  white-space: normal;
+  min-width: 120px;
+}

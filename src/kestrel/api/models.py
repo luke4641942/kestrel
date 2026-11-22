@@ -864,6 +864,12 @@ class WaitingOut(BaseModel):
     conditions: list[ConditionOut]
 
 
+class SummaryOut(BaseModel):
+    """docs/research-summary.md, the one-page research summary, as Markdown."""
+
+    markdown: str
+
+
 class PaperSummaryOut(BaseModel):
     """A paper account at a glance (kestrel.execution.paper). Read-only."""
 

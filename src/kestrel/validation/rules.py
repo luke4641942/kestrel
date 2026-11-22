@@ -116,22 +116,28 @@ class Lesson:
 
 
 _HEADING = "## What the evidence says"
-_ITEM = re.compile(r"^\d+\.\s+\*\*(.+?)\*\*\s*(.*)$")
+_START = re.compile(r"^\d+\.\s")
+_ITEM = re.compile(r"^\d+\.\s+\*\*(.+?)\*\*\s*(.*)$", re.DOTALL)
 
 
 def lessons(findings: str) -> list[Lesson]:
     """The numbered lessons under 'What the evidence says' in research/findings.md, each a
-    bold title and its text. Raises if the section is missing, so a renamed heading fails
-    loudly instead of showing an empty page."""
+    bold title and its text; a title or text may wrap over several lines. Raises if the
+    section is missing or a lesson has no bold title, so a format change fails loudly
+    instead of showing an empty or garbled page."""
     if _HEADING not in findings:
         raise ValueError(f"findings has no '{_HEADING}' section")
     section = findings.split(_HEADING, 1)[1].split("\n## ", 1)[0]
-    out: list[Lesson] = []
+    items: list[str] = []
     for line in section.splitlines():
-        item = _ITEM.match(line.strip())
-        if item:
-            out.append(Lesson(item[1], item[2]))
-        elif out and line.startswith("   ") and line.strip():
-            last = out[-1]
-            out[-1] = Lesson(last.title, f"{last.text} {line.strip()}".strip())
+        if _START.match(line):
+            items.append(line.strip())
+        elif items and line.startswith("   ") and line.strip():
+            items[-1] += " " + line.strip()
+    out: list[Lesson] = []
+    for item in items:
+        found = _ITEM.match(item)
+        if found is None:
+            raise ValueError(f"a finding has no bold title: {item[:80]}")
+        out.append(Lesson(found[1], found[2].strip()))
     return out

@@ -11,15 +11,16 @@ import { Overview } from "./pages/Overview";
 import { Regimes } from "./pages/Regimes";
 import { Research } from "./pages/Research";
 import { Rules } from "./pages/Rules";
+import { Thesis } from "./pages/Thesis";
 import { Strategies } from "./pages/Strategies";
 import { Backtests } from "./pages/Backtests";
 import { Trading } from "./pages/Trading";
 import { useTheme } from "./theme";
 
-export type Route = "overview" | "strategies" | "research" | "data" | "costs" | "rules" | "regimes" | "charts" | "backtests" | "trading";
+export type Route = "overview" | "strategies" | "research" | "data" | "costs" | "rules" | "regimes" | "charts" | "backtests" | "trading" | "thesis";
 
 // Main tabs are about strategies and trading; reference and data pages live under More.
-const NAV: { route: Route; label: string; later?: string; more?: boolean }[] = [
+const NAV: { route: Route; label: string; later?: string; more?: boolean; corner?: boolean }[] = [
   { route: "overview", label: "Overview" },
   { route: "trading", label: "Trading" },
   { route: "research", label: "Research" },
@@ -28,6 +29,8 @@ const NAV: { route: Route; label: string; later?: string; more?: boolean }[] = [
   { route: "charts", label: "Charts" },
   { route: "costs", label: "What a trade costs", more: true },
   { route: "rules", label: "Rules", more: true },
+  // The research summary: a link at the top right, by the API status.
+  { route: "thesis", label: "Thesis", corner: true },
   { route: "regimes", label: "Regimes", more: true },
   { route: "data", label: "Data", more: true },
 ];
@@ -217,6 +220,9 @@ export function App() {
     case "trading":
       page = <Trading />;
       break;
+    case "thesis":
+      page = <Thesis />;
+      break;
   }
 
   return (
@@ -231,7 +237,7 @@ export function App() {
             Kestrel
           </a>
           <nav className="nav" aria-label="Main">
-            {NAV.filter((n) => !n.more).map((n) => (
+            {NAV.filter((n) => !n.more && !n.corner).map((n) => (
               <a key={n.route} href={`#/${n.route}`} aria-current={route === n.route ? "page" : undefined}>
                 {n.label}
                 {n.later && <span className="later">{n.later}</span>}
@@ -240,6 +246,9 @@ export function App() {
             <MoreMenu route={route} items={NAV.filter((n) => n.more)} />
           </nav>
           <div className="topbar-end">
+            <a className="corner-link" href="#/thesis" aria-current={route === "thesis" ? "page" : undefined}>
+              Thesis
+            </a>
             {health.data ? (
               <Status tone="ok">
                 <span className="small secondary">API v{health.data.version}</span>

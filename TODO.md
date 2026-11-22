@@ -59,6 +59,9 @@ exists and Luke has checked the Swyftx employee trading policy.
 - [ ] Expectancy by conviction bucket (P2 leftover), once a strategy varies its sizing.
 
 ## Done recently
+- 2026-11-22 Dashboard: a Thesis page (the research summary, top right by the API status);
+  findings on the Rules page as one-line titles that open for detail. Fixed: findings 13-21
+  were glued onto 12 (their wrapped titles didn't parse); the parser now fails loudly.
 - 2026-11-22 A one-page research summary for employers (`docs/research-summary.md`), linked
   from the README; README status and findings intro brought up to date.
 - 2026-11-22 Paper alerts: a macOS notification for a halt, a failed run, falling behind, a
