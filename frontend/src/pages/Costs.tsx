@@ -134,6 +134,7 @@ export function Costs() {
 
       <Section
         title="One order, line by line"
+        tour="order"
         description={`Change the order to see where the cost comes from, and when the simulator refuses it. BTC is priced at an example ${fmt(PRICE, 0)} USDT.`}
       >
         <Panel>

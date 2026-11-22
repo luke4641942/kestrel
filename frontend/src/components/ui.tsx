@@ -18,14 +18,17 @@ export function Section({
   description,
   actions,
   children,
+  tour,
 }: {
   title?: ReactNode;
   description?: ReactNode;
   actions?: ReactNode;
   children: ReactNode;
+  /** A name the guided tour highlights this section by (tour.ts). */
+  tour?: string;
 }) {
   return (
-    <section className="section">
+    <section className="section" data-tour={tour}>
       {(title || actions) && (
         <div className="section-header">
           <div>
@@ -40,8 +43,12 @@ export function Section({
   );
 }
 
-export function Panel({ children, pad }: { children: ReactNode; pad?: boolean }) {
-  return <div className={`panel${pad ? " panel-pad" : ""}`}>{children}</div>;
+export function Panel({ children, pad, tour }: { children: ReactNode; pad?: boolean; tour?: string }) {
+  return (
+    <div className={`panel${pad ? " panel-pad" : ""}`} data-tour={tour}>
+      {children}
+    </div>
+  );
 }
 
 export function Stat({ label, value, note }: { label: string; value: ReactNode; note?: ReactNode }) {

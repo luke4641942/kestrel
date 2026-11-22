@@ -22,16 +22,6 @@ Rules live in CLAUDE.md; results in `research/findings.md`; ideas not yet schedu
 - [ ] Monitoring-tag drift: blocked on data. Binance's announcement feed holds 1 tag
       announcement in ~2,700 scanned (2026-11-18); the history would need another source.
 
-- [ ] In-app guided tour of the dashboard (Luke, 2026-11-22; about one session). Our own
-      small component, no library: the steps are data (page, element, short text), tested.
-      About 8 stops, following how a result is judged: Thesis, Rules (pass and scorecard),
-      Strategies (a frozen note, trials), Backtests (a run against holding at the same
-      exposure, including a strategy that failed), Research (luck bar, explore/confirm),
-      Trading (paper against the model, waiting for), costs, back to Thesis (the limits).
-      Started from a button by the Thesis link; Next/Back/Exit; works at phone width.
-      Later, only if wanted: a hosted read-only snapshot so employers can open it without
-      the Mac.
-
 ## Shorting research (hypothetical; Luke, 2026-11-16)
 Nothing here can be traded yet: retail shorting in Australia is CFDs at 2:1 (Eightcap,
 Swyftx Leverage), and real perps are wholesale-only (Coinbase AU). Each is a frozen note,
@@ -69,6 +59,10 @@ exists and Luke has checked the Swyftx employee trading policy.
 - [ ] Expectancy by conviction bucket (P2 leftover), once a strategy varies its sizing.
 
 ## Done recently
+- 2026-11-22 Guided tour of the dashboard ("Tour", top right): 11 stops from the question to
+  the limits, one of them a strategy failing its scorecard. Our own component; the stops
+  are data, tested to point at things that exist. Later, only if wanted: a hosted
+  read-only snapshot so employers can open it without the Mac.
 - 2026-11-22 Dashboard: a Thesis page (the research summary, top right by the API status);
   findings on the Rules page as one-line titles that open for detail. Fixed: findings 13-21
   were glued onto 12 (their wrapped titles didn't parse); the parser now fails loudly.

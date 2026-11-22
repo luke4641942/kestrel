@@ -49,6 +49,7 @@ export function Research() {
 
       <Section
         title="What has been tried, by family"
+        tour="families"
         description="Each strategy on each market gets one decision. Open a family for every decision and its reason."
       >
         <Panel>
@@ -120,6 +121,7 @@ export function Research() {
       {runs.length > 0 && (
         <Section
           title="The exploration experiment"
+          tour="exploration"
           description="Rules found by searching freely on half the altcoins (not evidence), then each run once on the other half, which nobody had looked at. Passing needs the strategy to beat holding on more than half the coins and in more than half the walk-forward windows. These are summaries, not saved backtests: one look each in their own trial pool."
         >
           <Panel>
@@ -202,6 +204,7 @@ export function Research() {
 
       <Section
         title="The luck bar over time"
+        tour="luck"
         description="The annual Sharpe the best of every trial so far would reach by luck alone, after each run or study. It rises with the number of trials and with how spread out their Sharpes are: very bad strategies widen the spread, so they raise the bar too."
       >
         <Panel pad>

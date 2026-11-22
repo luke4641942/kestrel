@@ -91,6 +91,13 @@ export function parseInline(text: string): Inline[] {
   return out;
 }
 
+/** A heading's id: lower case, words joined by hyphens ("Can't tell" -> "can-t-tell"). */
+export const slug = (text: string) =>
+  text
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-|-$/g, "");
+
 /** One line of text with its bold, code and links. */
 export function InlineText({ text }: { text: string }) {
   return (
@@ -126,7 +133,7 @@ export function Markdown({ source, skipTitle = false }: { source: string; skipTi
       case "heading": {
         const Tag = `h${Math.min(b.level + 1, 4)}` as "h2" | "h3" | "h4";
         return (
-          <Tag key={k}>
+          <Tag key={k} id={slug(b.text)}>
             <InlineText text={b.text} />
           </Tag>
         );

@@ -600,7 +600,7 @@ function RunSummaryPanel({ run: r }: { run: RunDetail }) {
 function ScorecardPanel({ card }: { card: Scorecard }) {
   const head = scorecardHeadline(card);
   return (
-    <Panel>
+    <Panel tour="scorecard">
       <div className="scorecard-head">
         <div>
           <h3>

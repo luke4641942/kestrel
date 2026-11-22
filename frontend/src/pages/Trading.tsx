@@ -61,7 +61,7 @@ export function Trading() {
       ) : (
         <>
           <TotalView />
-          <Section title="Accounts">
+          <Section title="Accounts" tour="accounts">
             <AccountsTable list={list} current={current?.name} onSelect={setChosen} />
           </Section>
           {current && <AccountView name={current.name} />}

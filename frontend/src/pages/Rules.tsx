@@ -30,7 +30,7 @@ export function Rules() {
     <>
       <PageHeader title="Rules" subtitle={`How every strategy is judged. Last reviewed ${date(r.reviewed)}.`} />
 
-      <Section title="What counts as a pass">
+      <Section title="What counts as a pass" tour="pass">
         <Panel pad>
           <p className="rules-lead">{r.passing}</p>
           {validation.data && (
@@ -43,6 +43,7 @@ export function Rules() {
 
       <Section
         title="The scorecard"
+        tour="scorecard"
         description="Every strategy, on data before the holdout. A research note may add tests but never remove one."
       >
         <Panel>

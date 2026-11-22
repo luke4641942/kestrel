@@ -13,7 +13,7 @@ export function Thesis() {
         title="Thesis"
         subtitle="What the research has found, on one page: how a result is judged, what's being paper-traded and why it isn't proven, and what failed."
       />
-      <Panel pad>
+      <Panel pad tour="thesis">
         {summary.data ? (
           <Markdown source={summary.data.markdown} skipTitle />
         ) : (

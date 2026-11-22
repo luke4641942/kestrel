@@ -12,6 +12,8 @@ import { Regimes } from "./pages/Regimes";
 import { Research } from "./pages/Research";
 import { Rules } from "./pages/Rules";
 import { Thesis } from "./pages/Thesis";
+import { Tour } from "./components/Tour";
+import { TOUR } from "./tour";
 import { Strategies } from "./pages/Strategies";
 import { Backtests } from "./pages/Backtests";
 import { Trading } from "./pages/Trading";
@@ -20,7 +22,7 @@ import { useTheme } from "./theme";
 export type Route = "overview" | "strategies" | "research" | "data" | "costs" | "rules" | "regimes" | "charts" | "backtests" | "trading" | "thesis";
 
 // Main tabs are about strategies and trading; reference and data pages live under More.
-const NAV: { route: Route; label: string; later?: string; more?: boolean; corner?: boolean }[] = [
+export const NAV: { route: Route; label: string; later?: string; more?: boolean; corner?: boolean }[] = [
   { route: "overview", label: "Overview" },
   { route: "trading", label: "Trading" },
   { route: "research", label: "Research" },
@@ -179,6 +181,7 @@ export function App() {
     setFast(active > 0);
   }, [active]);
   const [dockOpen, setDockOpen] = useState(false);
+  const [touring, setTouring] = useState(false);
 
   const go = (r: Route) => {
     window.location.hash = `/${r}`;
@@ -246,6 +249,9 @@ export function App() {
             <MoreMenu route={route} items={NAV.filter((n) => n.more)} />
           </nav>
           <div className="topbar-end">
+            <button type="button" className="corner-link corner-btn" onClick={() => setTouring(true)}>
+              Tour
+            </button>
             <a className="corner-link" href="#/thesis" aria-current={route === "thesis" ? "page" : undefined}>
               Thesis
             </a>
@@ -267,6 +273,7 @@ export function App() {
         {page}
       </main>
       <JobsDock jobs={jobList} open={dockOpen} setOpen={setDockOpen} onChange={jobs.reload} />
+      {touring && <Tour steps={TOUR} onClose={() => setTouring(false)} />}
     </>
   );
 }

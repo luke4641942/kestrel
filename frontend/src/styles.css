@@ -2622,3 +2622,87 @@ pre.report {
   white-space: normal;
   min-width: 120px;
 }
+
+/* ---------- the guided tour ---------- */
+.corner-btn {
+  background: none;
+  border: 0;
+  padding: 0;
+  cursor: pointer;
+  font-family: inherit;
+}
+
+.tour-ring,
+.tour-dim {
+  position: fixed;
+  z-index: 90;
+  pointer-events: none;
+}
+
+.tour-ring {
+  border-radius: 10px;
+  box-shadow:
+    0 0 0 2px var(--info),
+    0 0 0 9999px rgba(10, 12, 16, 0.45);
+  transition:
+    top 0.2s,
+    left 0.2s,
+    width 0.2s,
+    height 0.2s;
+}
+
+.tour-dim {
+  inset: 0;
+  background: rgba(10, 12, 16, 0.45);
+}
+
+.tour-card {
+  position: fixed;
+  z-index: 91;
+  width: min(380px, calc(100vw - 24px));
+  background: var(--bg);
+  border: 1px solid var(--line-strong);
+  border-radius: 10px;
+  box-shadow: var(--shadow);
+  padding: 16px 18px 14px;
+  outline: none;
+}
+
+.tour-card h3 {
+  margin: 4px 0 6px;
+  font-size: 15px;
+}
+
+.tour-card p {
+  line-height: 1.55;
+}
+
+.tour-sheet {
+  left: 12px;
+  right: 12px;
+  bottom: 12px;
+  width: auto;
+}
+
+.tour-actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 14px;
+  align-items: center;
+}
+
+.tour-spacer {
+  flex: 1;
+}
+
+.btn-ghost {
+  background: none;
+  border-color: transparent;
+  color: var(--text-2);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .tour-ring {
+    transition: none;
+  }
+}

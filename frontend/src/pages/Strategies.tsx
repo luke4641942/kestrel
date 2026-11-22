@@ -217,7 +217,7 @@ function Workspace({
 
   return (
     <>
-      <section className="strat-main" aria-label={d.name}>
+      <section className="strat-main" aria-label={d.name} data-tour="note">
         <div className="strat-head">
           <div>
             <h2 className="strat-title">{d.name}</h2>
