@@ -163,3 +163,17 @@ def test_the_cli_fits_4h_and_refuses_other_bars(tmp_path: Path) -> None:
     bad = CliRunner().invoke(app, [*base, "--interval", "1h"])
     assert bad.exit_code == 1
     assert "--interval is 1d or 4h" in bad.output
+
+
+def test_a_4h_report_says_4h_and_returns_per_day() -> None:
+    frame = four_hour_bars(6 * 120)
+    r = rg.walk_forward(frame, SMALL)
+    report = rg.format_regimes(r, frame, "BTCUSDT")
+    assert report.startswith("Regimes  ·  BTCUSDT 4h  ·")
+    assert "(row: this bar, column: the next)" in report
+    per_bar = [s for s in rg.describe(r, frame) if s.mean_return is not None]
+    states = r.states
+    returns = rg.inputs(frame, SMALL.vol_days, SMALL.bar)["return"].to_list()
+    k = per_bar[0].state
+    rs = [x for s, x in zip(states, returns, strict=True) if s == k and x is not None]
+    assert per_bar[0].mean_return == pytest.approx(6 * sum(rs) / len(rs))

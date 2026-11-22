@@ -368,7 +368,7 @@ class StateSummary:
     share: float
     """Share of filtered days on which this was the most likely state."""
     mean_return: float | None
-    """Average daily log return on those days."""
+    """Average log return per day (per bar x bars a day) in this state."""
     volatility: float | None
     """Annualised standard deviation of daily returns on those days."""
     average_run: float | None
@@ -403,7 +403,7 @@ def describe(regimes: Regimes, bars: pl.DataFrame) -> list[StateSummary]:
             StateSummary(
                 state=k,
                 share=len([1 for s, _ in labelled if s == k]) / len(labelled),
-                mean_return=float(np.mean(rs)) if rs else None,
+                mean_return=float(np.mean(rs)) * preset.bars_per_day if rs else None,
                 volatility=float(np.std(rs, ddof=1) * math.sqrt(365 * preset.bars_per_day))
                 if len(rs) > 1
                 else None,
@@ -417,15 +417,17 @@ def describe(regimes: Regimes, bars: pl.DataFrame) -> list[StateSummary]:
 def format_regimes(regimes: Regimes, bars: pl.DataFrame, symbol: str) -> str:
     """The CLI's report: each state as the model saw it, and the latest switching odds."""
     states = describe(regimes, bars)
+    p = regimes.preset
+    size = "1d" if p.bar_hours == 24 else f"{p.bar_hours}h"
     if not states:
-        return f"Regimes  ·  {symbol} 1d  ·  not enough history for a first fit"
+        return f"Regimes  ·  {symbol} {size}  ·  not enough history for a first fit"
 
     def pct(x: float | None, digits: int = 0) -> str:
         return "n/a" if x is None else f"{x:+.{digits}%}" if digits else f"{x:.0%}"
 
     latest = regimes.refits[-1]
     lines = [
-        f"Regimes  ·  {symbol} 1d  ·  {len(regimes.refits)} monthly refits from "
+        f"Regimes  ·  {symbol} {size}  ·  {len(regimes.refits)} monthly refits from "
         f"{regimes.refits[0].month:%Y-%m}, each on the {regimes.preset.train_days} days before it",
         "",
         f"  {'state':<7} {'share':>6} {'return/day':>11} {'volatility':>11} "
@@ -440,11 +442,16 @@ def format_regimes(regimes: Regimes, bars: pl.DataFrame, symbol: str) -> str:
     trans = latest.model.trans
     lines += [
         "",
-        f"  Switching odds from the {latest.month:%Y-%m} model (row: today, column: tomorrow)",
+        f"  Switching odds from the {latest.month:%Y-%m} model "
+        + (
+            "(row: today, column: tomorrow)"
+            if size == "1d"
+            else "(row: this bar, column: the next)"
+        ),
         *("  " + f"{i:<7}" + " ".join(f"{p:>6.1%}" for p in row) for i, row in enumerate(trans)),
         "",
-        "  States are sorted calmest first. Every day's state is what the model believed that",
-        "  day, from a model fitted only on earlier data.",
+        "  States are sorted calmest first. Every bar's state is what the model believed at",
+        "  its close, from a model fitted only on earlier data. Returns are per day.",
         f"  Out-of-sample log-likelihood: {regimes.oos_log_likelihood:.1f} "
         "(higher is better; compare inputs by this, never by trading results).",
     ]
