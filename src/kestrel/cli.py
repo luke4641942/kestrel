@@ -91,7 +91,8 @@ from kestrel.exploration import (
     make_split,
     write_split,
 )
-from kestrel.regimes import format_regimes
+from kestrel.regimes import FAST_PRESET, RegimeStore, format_regimes
+from kestrel.regimes import PRESET as REGIME_PRESET
 from kestrel.regimes import walk_forward as walk_regimes
 from kestrel.research import ResearchStore, run_target
 from kestrel.strategy import (
@@ -862,6 +863,12 @@ def regimes(
     symbol: str,
     start: Annotated[str, typer.Option(help="First month, YYYY-MM.")] = "2017-08",
     end: Annotated[str, typer.Option(help="Last month, YYYY-MM (inclusive).")] = "2025-10",
+    interval: Annotated[
+        str, typer.Option(help="1d (the preset) or 4h (findings 23's 4h model).")
+    ] = "1d",
+    save: Annotated[
+        bool, typer.Option(help="Store the fit (data/regimes/, or data/regimes/4h/).")
+    ] = False,
     data_dir: DataDir = Path("data"),
     config: Annotated[
         Path, typer.Option("--config", envvar="KESTREL_CONFIG", help="Config file.")
@@ -869,7 +876,11 @@ def regimes(
 ) -> None:
     """Market regimes from a hidden Markov model refitted monthly on past data only.
 
-    Describes the states; it doesn't trade them. Daily bars; never uses the holdout."""
+    Describes the states; it doesn't trade them. Never uses the holdout. A 4h fit is what
+    the regime_volatile_4h feature reads; the dashboard shows only daily fits."""
+    if interval not in ("1d", "4h"):
+        typer.echo("--interval is 1d or 4h", err=True)
+        raise typer.Exit(code=1)
     try:
         cfg = load_config(config)
     except ConfigError as e:
@@ -885,15 +896,19 @@ def regimes(
         )
         raise typer.Exit(code=1)
     bars = ParquetStore(data_dir).read(
-        symbol, Interval.D1, datetime(first.year, first.month, 1, tzinfo=UTC), until
+        symbol, Interval(interval), datetime(first.year, first.month, 1, tzinfo=UTC), until
     )
-    typer.echo(f"Fitting {symbol.upper()} month by month; this takes a minute or two...")
+    preset = REGIME_PRESET if interval == "1d" else FAST_PRESET
+    typer.echo(f"Fitting {symbol.upper()} {interval} month by month; this takes a few minutes...")
     try:
-        result = walk_regimes(bars)
+        result = walk_regimes(bars, preset)
     except ValueError as e:
         typer.echo(str(e), err=True)
         raise typer.Exit(code=1) from None
     typer.echo(format_regimes(result, bars, symbol.upper()))
+    if save:
+        RegimeStore(data_dir, interval).save(symbol.upper(), result, bars)
+        typer.echo(f"Saved to {RegimeStore(data_dir, interval).root / symbol.upper()}.json")
 
 
 @app.command()

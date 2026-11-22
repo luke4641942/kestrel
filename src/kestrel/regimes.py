@@ -30,6 +30,11 @@ before seeing it. That judges the model, not a trading result.
 
 The fixed preset (``PRESET``) is what the dashboard shows; changing it for a strategy
 means a research note, like any other setting.
+
+**4h bars** (``FAST_PRESET``): the same model shape on 4-hour bars, the 4h model of
+findings 23 (20-bar volatility, a 1-year window, 3 restarts). It is stored apart
+(``RegimeStore(data_dir, Interval.H4)``) and read by the ``regime_volatile_4h`` feature;
+the Regimes page shows only the daily fit.
 """
 
 from __future__ import annotations
@@ -61,12 +66,24 @@ collapsing onto a single day."""
 class Preset:
     states: int = 3
     vol_days: int = 20
+    """Bars of returns in the volatility input (days, on the daily preset)."""
     train_days: int = 4 * 365
     restarts: int = 10
     seed: int = 0
+    bar_hours: int = 24
+
+    @property
+    def bar(self) -> timedelta:
+        return timedelta(hours=self.bar_hours)
+
+    @property
+    def bars_per_day(self) -> float:
+        return 24 / self.bar_hours
 
 
 PRESET = Preset()
+FAST_PRESET = Preset(states=3, vol_days=20, train_days=365, restarts=3, seed=0, bar_hours=4)
+"""Findings 23's 4h model, fixed before it was run (2026-11-22)."""
 
 
 @dataclass(frozen=True)
@@ -241,16 +258,23 @@ def fit(
 # ---------- inputs ----------
 
 
-def inputs(bars: pl.DataFrame, vol_days: int = PRESET.vol_days) -> pl.DataFrame:
-    """Each day's inputs, null while the volatility window fills. Daily bars only: the
-    model's persistence is in days."""
-    if bars.height >= 2 and bars["open_time"].diff().median() != timedelta(days=1):
-        raise ValueError("regimes need daily bars")
+def inputs(
+    bars: pl.DataFrame, vol_days: int = PRESET.vol_days, bar: timedelta = PRESET.bar
+) -> pl.DataFrame:
+    """Each bar's inputs, null while the volatility window fills. The bars must be the
+    preset's size: the model's persistence is in bars."""
+    if bars.height >= 2 and bars["open_time"].diff().median() != bar:
+        raise ValueError(f"regimes need {'daily' if bar == timedelta(days=1) else bar} bars")
     if bars.height < 2:
         return bars.select("open_time").with_columns(
             pl.lit(None, pl.Float64).alias(f) for f in FEATURES
         )
-    vol = realised_volatility(bars, vol_days)
+    if bar == timedelta(days=1):
+        vol = realised_volatility(bars, vol_days)
+    else:  # a window of vol_days *bars*, as findings 23's 4h model (it reacts in hours)
+        c = bars["close"].cast(pl.Float64)
+        per_year = timedelta(days=365) / bar
+        vol = (c / c.shift(1)).log().rolling_std(vol_days) * math.sqrt(per_year)
     return bars.select(
         "open_time",
         (pl.col("close") / pl.col("close").shift(1)).log().alias("return"),
@@ -308,7 +332,7 @@ def walk_forward(
     """Refit at the start of each month on the ``train_days`` before it (once that much
     history exists), and filter the month with that model. ``on_month(done, total)`` is
     called before each month, for progress; it may raise to stop the fit."""
-    days = inputs(bars, preset.vol_days)
+    days = inputs(bars, preset.vol_days, preset.bar)
     ready = days.drop_nulls()
     times: list[datetime] = ready["open_time"].to_list()
     x = ready.select(FEATURES).to_numpy()
@@ -322,7 +346,7 @@ def walk_forward(
         since = month - timedelta(days=preset.train_days)
         train = [i for i, t in enumerate(times) if since <= t < month]
         test = [i for i, t in enumerate(times) if month <= t < after]
-        if not test or len(train) < 0.9 * preset.train_days:
+        if not test or len(train) < 0.9 * preset.train_days * preset.bars_per_day:
             continue
         model = fit(x[train], preset.states, restarts=preset.restarts, seed=preset.seed)
         span = x[train[0] : test[-1] + 1]
@@ -358,7 +382,8 @@ def describe(regimes: Regimes, bars: pl.DataFrame) -> list[StateSummary]:
     if not regimes.refits:
         return []
     latest = regimes.refits[-1].model
-    returns = inputs(bars)["return"].to_list()
+    preset = regimes.preset
+    returns = inputs(bars, preset.vol_days, preset.bar)["return"].to_list()
     labelled = [(s, r) for s, r in zip(regimes.states, returns, strict=True) if s is not None]
     runs: dict[int, list[int]] = {}
     previous, length = None, 0
@@ -379,9 +404,11 @@ def describe(regimes: Regimes, bars: pl.DataFrame) -> list[StateSummary]:
                 state=k,
                 share=len([1 for s, _ in labelled if s == k]) / len(labelled),
                 mean_return=float(np.mean(rs)) if rs else None,
-                volatility=float(np.std(rs, ddof=1) * math.sqrt(365)) if len(rs) > 1 else None,
-                average_run=float(np.mean(runs[k])) if k in runs else None,
-                expected_days=float(latest.expected_days()[k]),
+                volatility=float(np.std(rs, ddof=1) * math.sqrt(365 * preset.bars_per_day))
+                if len(rs) > 1
+                else None,
+                average_run=float(np.mean(runs[k])) / preset.bars_per_day if k in runs else None,
+                expected_days=float(latest.expected_days()[k]) / preset.bars_per_day,
             )
         )
     return out
@@ -430,13 +457,18 @@ def format_regimes(regimes: Regimes, bars: pl.DataFrame, symbol: str) -> str:
 class RegimeStore:
     """The latest fit per market, as the dashboard shows it:
 
-        <data>/regimes/<SYMBOL>.json
+        <data>/regimes/<SYMBOL>.json        (daily, the preset)
+        <data>/regimes/4h/<SYMBOL>.json     (4h, FAST_PRESET; not on the dashboard)
 
     Refitting a market replaces its file (written atomically). A fit is a description,
     not a trial: nothing here is traded or scored, so nothing is counted."""
 
-    def __init__(self, data_dir: Path | str) -> None:
+    def __init__(self, data_dir: Path | str, interval: str = "1d") -> None:
+        if interval not in ("1d", "4h"):
+            raise ValueError("regimes are fitted on 1d or 4h bars")
         self.root = Path(data_dir) / "regimes"
+        if interval != "1d":
+            self.root = self.root / interval
 
     def save(self, symbol: str, regimes: Regimes, bars: pl.DataFrame) -> dict[str, Any]:
         latest = regimes.refits[-1].model if regimes.refits else None

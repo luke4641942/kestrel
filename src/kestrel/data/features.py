@@ -19,11 +19,17 @@ believed, that day, that the market was in its most volatile state, else 0.0; nu
 the fit's first state. Every state is filtered (inputs up to that day only), so it is known
 at the day's close. Bars past the fit's last day are refused rather than left null: a
 strategy filtered by regimes must not quietly stop filtering when the fit is out of date.
+
+``regime_volatile_4h`` is the same, on daily bars, from the stored 4h fit
+(``RegimeStore(data_dir, "4h")``, kestrel.regimes.FAST_PRESET): the state of the 4h bar that
+closes at the day's close (opens at 20:00 UTC), filtered, so known at that close. Findings
+23: it turns volatile a median ~40 hours before the daily model, and 3 in 4 of its spells
+are false alarms.
 """
 
 from __future__ import annotations
 
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
 from pathlib import Path
 
 import polars as pl
@@ -36,7 +42,15 @@ from kestrel.regimes import RegimeStore
 BTC = "BTCUSDT"
 BTC_CLOSE = "btc_close"
 REGIME_VOLATILE = "regime_volatile"
-FEATURES = (sentiment.FEATURE, funding.FEATURE, BTC_CLOSE, REGIME_VOLATILE, stablecoins.FEATURE)
+REGIME_VOLATILE_4H = "regime_volatile_4h"
+FEATURES = (
+    sentiment.FEATURE,
+    funding.FEATURE,
+    BTC_CLOSE,
+    REGIME_VOLATILE,
+    REGIME_VOLATILE_4H,
+    stablecoins.FEATURE,
+)
 INPUT_MARKETS = {BTC_CLOSE: BTC}
 """Features read from another market's stored bars: a live run must bring that market up
 to date too, or the feature goes missing on the newest bar."""
@@ -67,6 +81,8 @@ def attach_features(
             bars = attach_btc_close(bars, interval, data_dir)
         elif feature == REGIME_VOLATILE:
             bars = attach_regime_volatile(bars, symbol, interval, data_dir)
+        elif feature == REGIME_VOLATILE_4H:
+            bars = attach_regime_volatile(bars, symbol, interval, data_dir, fit_interval="4h")
         elif feature == stablecoins.FEATURE:
             if interval is not Interval.D1:
                 raise ValueError(f"{feature} is daily; it needs 1d bars")
@@ -90,32 +106,48 @@ def attach_btc_close(bars: pl.DataFrame, interval: Interval, data_dir: Path | st
 
 
 def attach_regime_volatile(
-    bars: pl.DataFrame, symbol: str, interval: Interval, data_dir: Path | str
+    bars: pl.DataFrame,
+    symbol: str,
+    interval: Interval,
+    data_dir: Path | str,
+    fit_interval: str = "1d",
 ) -> pl.DataFrame:
+    """``fit_interval`` "4h" reads the 4h fit: each day gets the state of its last 4h bar
+    (the one that closes at the day's close)."""
+    column = REGIME_VOLATILE if fit_interval == "1d" else REGIME_VOLATILE_4H
     if interval is not Interval.D1:
-        raise ValueError("regimes are fitted on daily bars")
+        raise ValueError(f"{column} goes on daily bars")
     if bars.is_empty():
-        return bars.with_columns(pl.lit(None, pl.Float64).alias(REGIME_VOLATILE))
+        return bars.with_columns(pl.lit(None, pl.Float64).alias(column))
     try:
-        fit = RegimeStore(data_dir).load(symbol.upper())
+        fit = RegimeStore(data_dir, fit_interval).load(symbol.upper())
     except KeyError:
-        raise ValueError(
-            f"no regime fit for {symbol.upper()}; fit it first (kestrel regimes, or the "
-            "Regimes page)"
-        ) from None
-    last_fitted = datetime.fromtimestamp(fit["time"][-1], UTC)
+        if fit_interval == "1d":
+            what, how = "regime fit", "kestrel regimes, or the Regimes page"
+        else:
+            what, how = "4h regime fit", f"kestrel regimes {symbol.upper()} --interval 4h --save"
+        raise ValueError(f"no {what} for {symbol.upper()}; fit it first ({how})") from None
+    bar = timedelta(days=1) if fit_interval == "1d" else timedelta(hours=4)
+    # The day a fitted bar belongs to: the daily bar that closes when it closes.
+    shift = bar - timedelta(days=1)
+    last_fitted = datetime.fromtimestamp(fit["time"][-1], UTC) + shift
     newest: datetime = bars["open_time"].max()  # type: ignore[assignment]
     if newest > last_fitted:
         raise ValueError(
-            f"the {symbol.upper()} regime fit ends {last_fitted:%Y-%m-%d}; the bars run to "
-            f"{newest:%Y-%m-%d}. Refit before using regimes on later bars"
+            f"the {symbol.upper()} {'' if fit_interval == '1d' else '4h '}regime fit ends "
+            f"{last_fitted:%Y-%m-%d}; the bars run to {newest:%Y-%m-%d}. Refit before using "
+            "regimes on later bars"
         )
     volatile = len(fit["states"]) - 1  # states are sorted calmest first
+    rows = [
+        (t + shift, None if s is None else float(s == volatile))
+        for t, s in zip(
+            (datetime.fromtimestamp(t, UTC) for t in fit["time"]), fit["state"], strict=True
+        )
+        if fit_interval == "1d" or (t + bar).hour == 0
+    ]
     states = pl.DataFrame(
-        {
-            "open_time": [datetime.fromtimestamp(t, UTC) for t in fit["time"]],
-            REGIME_VOLATILE: [None if s is None else float(s == volatile) for s in fit["state"]],
-        },
-        schema={"open_time": pl.Datetime("us", "UTC"), REGIME_VOLATILE: pl.Float64},
+        {"open_time": [t for t, _ in rows], column: [v for _, v in rows]},
+        schema={"open_time": pl.Datetime("us", "UTC"), column: pl.Float64},
     )
     return bars.join(states, on="open_time", how="left").sort("open_time")

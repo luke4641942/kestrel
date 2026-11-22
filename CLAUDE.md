@@ -234,6 +234,9 @@ Agreed with Luke; don't re-litigate without a reason.
   calmest first after every fit. Fixed `PRESET` (3 states; log return and log 20-day
   volatility). Other inputs are compared by out-of-sample log-likelihood, never by trading
   results. A strategy that trades on states needs its own note and the scorecard.
+  `FAST_PRESET` is findings 23's 4h model (20 *bars* of volatility, a 1-year window, 3
+  restarts), stored apart (`kestrel regimes <COIN> --interval 4h --save`, `data/regimes/4h/`)
+  and read on daily bars as `regime_volatile_4h` (the 4h bar closing at the day's close).
 - **Features** (`kestrel.data.features`: Fear & Greed, funding, BTC's close, the volatile
   regime, stablecoin supply) are joined on `open_time` and must be known by the bar's close.
 - **Metrics.** Headline row, in order: return vs buy-and-hold of the same market · Sharpe

@@ -52,7 +52,7 @@ from kestrel.strategies.monthly_rotation import (
 from kestrel.strategies.order_flow import OrderFlow
 from kestrel.strategies.pattern_macd import PatternMacd
 from kestrel.strategies.pivots import PivotReversal
-from kestrel.strategies.regime import TrendVolTargetRegime
+from kestrel.strategies.regime import TrendVolTargetRegime, TrendVolTargetRegime4h
 from kestrel.strategies.reversal import DropReversal
 from kestrel.strategies.rotation import DualMomentum
 from kestrel.strategies.rsi_dip import RsiDip
@@ -475,6 +475,24 @@ STRATEGIES: dict[str, StrategySpec] = {
                 Param("regime_filter", 1, 0, 1, "1: out in the volatile regime; 0: plain rule"),
             ),
             features=("regime_volatile",),
+        ),
+        StrategySpec(
+            "trend-vol-target-regime-4h",
+            "research",
+            "Trend-vol-target, in cash on days the 4h regime model's last bar of the day is in "
+            "its most volatile state (an earlier, noisier warning than the daily model). "
+            "regime_filter 0 is the plain rule, for comparison. Research: runs only through "
+            "its frozen note.",
+            TrendVolTargetRegime4h,
+            (
+                Param("fast_days", 20, 5, 60, "Shortest trend lookback, in days"),
+                Param("mid_days", 60, 20, 180, "Middle trend lookback, in days"),
+                Param("slow_days", 120, 60, 365, "Longest trend lookback, in days"),
+                Param("vol_days", 30, 10, 90, "Days of returns that measure volatility"),
+                Param("target_vol_pct", 50, 10, 150, "Annual volatility to size towards, in %"),
+                Param("regime_filter", 1, 0, 1, "1: out in the 4h volatile regime; 0: plain rule"),
+            ),
+            features=("regime_volatile_4h",),
         ),
         StrategySpec(
             "trend-vol-target-brake",

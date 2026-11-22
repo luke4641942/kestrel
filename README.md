@@ -139,7 +139,7 @@ its own.
 | `kestrel.validation` | Deflated Sharpe and the trial pools, walk-forward, robustness, the random-entry control, the holdout test, the scorecard, the confirmation run |
 | `kestrel.research`, `kestrel.decisions` | Versioned, frozen research notes; the one rule set for starting a backtest; decisions per strategy and market |
 | `kestrel.exploration` | The explore-then-confirm split and its engine lock |
-| `kestrel.regimes` | A Gaussian HMM on filtered probabilities, refitted monthly; describes, never trades |
+| `kestrel.regimes` | A Gaussian HMM on filtered probabilities, refitted monthly, on daily bars (the preset) or 4h bars (`FAST_PRESET`); describes, never trades |
 | `kestrel.execution` | The venue interface, the shared rebalance step, the paper runner and ledger, the Binance testnet venue, safety limits and kill switch, tracking against the model |
 | `kestrel.assistant` | The research assistant on Claude, given the note and code only, never results |
 | `kestrel.api` | REST endpoints and the job runner |

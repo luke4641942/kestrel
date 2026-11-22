@@ -16,6 +16,8 @@ Rules live in CLAUDE.md; results in `research/findings.md`; ideas not yet schedu
   sleeps (a missed day is recorded, never traded late).
 
 ## Waiting on Luke
+- Freeze note `trend-vol-target-out-in-the-4h-volatile-regime` (drafted 2026-11-23; read the
+  rules and adoption test first). Then Claude runs its 6 backtests once.
 - GitHub Actions won't start jobs (billing / spending limit, 2026-11-22): CI is down; the
   local `scripts/check.sh` is the gate until it's fixed.
 
