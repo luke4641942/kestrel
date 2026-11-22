@@ -1,6 +1,6 @@
 // Plain logic behind the Trading page: how a paper account is tracking its model, in one
 // line. Kept out of components so it can be tested directly.
-import type { Condition, PaperDetail, PaperSummary, PaperTotal, PaperTrade, Waiting } from "./api";
+import type { Condition, Decay, PaperDetail, PaperSummary, PaperTotal, PaperTrade, Waiting } from "./api";
 import type { Tone } from "./components/ui";
 
 /** The verdict that matters first: do decisions match the backtest's code, and how far
@@ -25,6 +25,17 @@ export function trackingVerdict(d: PaperDetail): { tone: Tone; text: string } {
   if (t.missed > 0) parts.push(`${t.missed} day${t.missed === 1 ? " was" : "s were"} missed (the run was late).`);
   const drift = Math.abs(t.difference ?? 0) > 0.02 || t.missed > 0;
   return { tone: drift ? "warn" : "ok", text: parts.join(" ") };
+}
+
+/** The decay check as a stat: has the edge the backtest showed faded? Information only. */
+export function decayView(d: Decay | null | undefined): { value: string; tone: Tone | null; note: string } {
+  if (!d) return { value: "n/a", tone: null, note: "Its backtest's data isn't stored" };
+  if (d.status === "too early" || d.sharpe === null || d.floor === null) {
+    return { value: "Too early", tone: null, note: `${d.days} of ${d.min_days} days; then its Sharpe is checked against its backtest's` };
+  }
+  const against = `Sharpe ${d.sharpe.toFixed(2)} over ${d.days} days; backtest 1-in-20 floor ${d.floor.toFixed(2)}, median ${(d.median ?? 0).toFixed(2)}`;
+  if (d.status === "flagged") return { value: "Flagged", tone: "warn", note: `${against}. A prompt to look; nothing changes without Luke.` };
+  return { value: "In line", tone: "ok", note: against };
 }
 
 export function venueLabel(venue: string): string {

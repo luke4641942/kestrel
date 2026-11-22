@@ -20,10 +20,6 @@ Rules live in CLAUDE.md; results in `research/findings.md`; ideas not yet schedu
   local `scripts/check.sh` is the gate until it's fixed.
 
 ## Next
-- [ ] Decay monitor: a rule fixed in advance per pursued strategy for when paper results say
-      the edge has gone (information; a downgrade waits for Luke).
-- [ ] Exploration round 2: fix the pool (coins listed since round 1's split) and split it now,
-      before anyone looks.
 - [ ] Pick the next idea by independence from the trend bet (news tone first): expected overlap
       written in the note, measured overlap reported beside its scorecard.
 - [ ] Monitoring-tag drift: blocked on data. Binance's announcement feed holds 1 tag
@@ -43,6 +39,10 @@ exists and Luke has checked the Swyftx employee trading policy.
       on about 330 USDT).
 
 ## Parked
+- Exploration round 2 (Luke, 2026-11-22: not this design). Proposed: a new coin split, the
+  confirmation half read only on data from 2026-11 onward, first run 2027-11. Pre-holdout data
+  is searched almost everywhere and the holdout year can't be used, so time forward is the
+  only fresh data; revisit with a different design if wanted.
 - The two exit rules (Luke, 2026-11-21): sell a coin when its delisting is announced
   (findings 11); don't hold one through its first month of perps (findings 18). Both built
   into the dropped altcoin portfolio (`kestrel.data.coin_events`); nothing pursued holds
@@ -69,6 +69,9 @@ exists and Luke has checked the Swyftx employee trading policy.
 - [ ] Expectancy by conviction bucket (P2 leftover), once a strategy varies its sizing.
 
 ## Done recently
+- 2026-11-22 Decay check (rule agreed with Luke): after 90 paper days, a model replay below the
+  5th percentile of its own backtest's bootstrapped Sharpe is flagged (`paper track`, the
+  account view, an alert). All accounts too early until about 2027-02.
 - 2026-11-22 Stablecoin hold (watch), Luke's request: its one holdout look, volatility-sized
   version: BTC passes (-7.7% vs -14.7% held at 53%), ETH fails (-28.2% vs -18.1% at 46%); a
   split, stays watch. Paper accounts scs-btc and scs-eth opened; the paper runner now refreshes

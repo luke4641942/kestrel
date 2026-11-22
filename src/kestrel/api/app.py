@@ -35,6 +35,7 @@ from kestrel.api.models import (
     CreateResearch,
     CurvePoint,
     Dataset,
+    DecayOut,
     DecisionOut,
     EditNote,
     EventStudyOut,
@@ -125,7 +126,7 @@ from kestrel.strategy import (
 )
 from kestrel.studies import cost_gate, shorting
 from kestrel.studies import events as event_studies
-from kestrel.validation import rules
+from kestrel.validation import decay, rules
 from kestrel.validation.deflated import (
     TrialSet,
     counts_as_trial,
@@ -692,6 +693,28 @@ def create_app(
             return tracking.track_basket(account, market, load_config(config_path))
         return tracking.track(account, market, load_config(config_path))
 
+    references: dict[tuple[object, ...], list[float]] = {}
+
+    def _decay(terms: paper.Terms, tracked: tracking.Tracking) -> DecayOut | None:
+        """The decay check. Its backtest reads only pre-holdout data, which never changes,
+        so each strategy, market and setting's returns are computed once per server."""
+        key = (terms.strategy, terms.symbol, terms.interval, tuple(sorted(terms.params.items())),
+               terms.initial_cash)  # fmt: skip
+
+        def reference() -> list[float]:
+            if key not in references:
+                references[key] = decay.reference_returns(terms, data_dir, load_config(config_path))
+            return references[key]
+
+        try:
+            d = decay.assess(decay.model_returns(tracked), reference)
+        except ValueError:
+            return None
+        return DecayOut(
+            days=d.days, min_days=decay.MIN_DAYS, percentile=decay.PERCENTILE, sharpe=d.sharpe,
+            floor=d.floor, median=d.median, status=d.status,
+        )  # fmt: skip
+
     def _waiting(terms: paper.Terms) -> WaitingOut | None:
         """The strategy's entry tests at the latest stored close, if it describes them."""
         if spec_for(terms.strategy).universe:
@@ -810,6 +833,7 @@ def create_app(
                 cost_bps=_float(tracked.mean_cost()),
                 expected_bps=_float(tracked.mean_cost(expected=True)),
             ),
+            decay=_decay(terms, tracked),
         )
 
     # ---------- regimes ----------

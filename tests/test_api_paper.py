@@ -43,6 +43,13 @@ def test_accounts_are_listed_and_shown_with_their_tracking(tmp_path: Path) -> No
     assert d["equity_series"]["time"][0] == int(T0.timestamp()) + 86_400  # marked at the close
     assert d["tracking"]["decision_mismatches"] == 0
     assert d["tracking"]["difference"] == 0
+    # The decay check is made once there are 90 days; before, it is "too early" and free.
+    expected = "too early" if n - 1 < 90 else None
+    if expected:
+        assert d["decay"]["status"] == expected
+        assert d["decay"]["days"] == n - 1
+    else:
+        assert d["decay"] is None or d["decay"]["status"] in ("in line", "flagged")
     assert d["fills"]
     assert d["fills"][0]["cost_bps"] == pytest.approx(d["fills"][0]["expected_bps"])
     assert d["decisions"][0]["bar"] > d["decisions"][-1]["bar"]  # newest first

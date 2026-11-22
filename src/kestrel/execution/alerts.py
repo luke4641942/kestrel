@@ -9,7 +9,9 @@ After every scheduled run (`kestrel paper run`), the account's ledger is reviewe
 - **behind**: no bar handled for over a day past when it should have been (the Mac asleep,
   or the schedule broken);
 - **missed**: a day recorded as missed (the run was late, so it didn't trade);
-- **trade**: it bought or sold.
+- **trade**: it bought or sold;
+- **decay**: the decay check (kestrel.validation.decay) flagged its model replay, once per
+  account: a prompt to look, never a stop.
 
 Each alert has a key; sent keys are appended to ``alerts.jsonl`` in the account's folder, so
 nothing is sent twice. The first review of an account only records what is already there:
@@ -26,12 +28,15 @@ from collections.abc import Callable, Sequence
 from dataclasses import asdict, dataclass
 from datetime import datetime
 from pathlib import Path
-from typing import Literal
+from typing import TYPE_CHECKING, Literal
 
 from kestrel.execution import safety
 from kestrel.execution.paper import PaperAccount
 
-Kind = Literal["halted", "failed", "behind", "missed", "trade"]
+if TYPE_CHECKING:
+    from kestrel.validation.decay import Decay
+
+Kind = Literal["halted", "failed", "behind", "missed", "trade", "decay"]
 LOG = "alerts.jsonl"
 
 
@@ -47,7 +52,9 @@ class Alert:
 Send = Callable[[Alert], None]
 
 
-def found(account: PaperAccount, now: datetime, failure: str | None = None) -> list[Alert]:
+def found(
+    account: PaperAccount, now: datetime, failure: str | None = None, decay: Decay | None = None
+) -> list[Alert]:
     """Everything worth an alert in the account now (sent or not)."""
     name = account.dir.name
     terms = account.terms()
@@ -93,6 +100,15 @@ def found(account: PaperAccount, now: datetime, failure: str | None = None) -> l
             )  # fmt: skip
         if e["type"] == "kill":
             out.append(Alert(name, "halted", f"kill:{e['at']}", "Killed: sold to cash and halted"))
+    if decay is not None and decay.status == "flagged":
+        out.append(
+            Alert(
+                name, "decay", "decay:flagged",
+                f"Decay check flagged: Sharpe {decay.sharpe:.2f} over {decay.days} days, below "
+                f"its backtest's 1-in-20 floor ({decay.floor:.2f}). Worth a look; nothing changes "
+                "without Luke.",
+            )
+        )  # fmt: skip
     return out
 
 
@@ -118,10 +134,14 @@ def _record(account: PaperAccount, alerts: Sequence[Alert], at: datetime, sent: 
 
 
 def review(
-    account: PaperAccount, now: datetime, send: Send, failure: str | None = None
+    account: PaperAccount,
+    now: datetime,
+    send: Send,
+    failure: str | None = None,
+    decay: Decay | None = None,
 ) -> list[Alert]:
     """Send every new alert (the first review only records), and return what was sent."""
-    current = found(account, now, failure)
+    current = found(account, now, failure, decay)
     seen = sent_keys(account)
     if seen is None:
         # First review: history isn't news. A failure happening now still is.

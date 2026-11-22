@@ -127,6 +127,12 @@ Never pipe check output through `tail` or similar inside an `&&` chain: it hides
   reports how much it overlaps the pursued strategies (`kestrel overlap`: correlation, in
   BTC's falls too, and BTC beta). It never decides a pass; it says whether a pass would be a
   second edge or more of the same bet (findings 16).
+- **Decay check (information only; Luke, 2026-11-22).** After 90 paper days, an account's model
+  replay is flagged if its Sharpe is below the 5th percentile of its own backtest's (same
+  strategy, settings and market, 2020-01 to the holdout; circular block-bootstrapped paths of
+  the same length): `kestrel.validation.decay`, `paper track`, the Trading page, an alert. A
+  flag is a prompt to look; any downgrade waits for Luke. At 90 days the floor is near Sharpe
+  -2.3, at 395 near -0.4: it catches collapse early, not slow fading.
 - **Risk-managed holding** is a separate category for a strategy that hasn't passed but
   Luke may run because it smooths the ride. It is labelled "not a proven edge" and never
   counts as a pass.

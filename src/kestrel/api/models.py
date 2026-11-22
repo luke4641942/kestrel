@@ -972,6 +972,20 @@ class PaperTotalOut(BaseModel):
     expected: Series
 
 
+class DecayOut(BaseModel):
+    """The decay check (kestrel.validation.decay): the model replay's Sharpe against its
+    own backtest's. Information only."""
+
+    days: int
+    min_days: int
+    percentile: int
+    sharpe: float | None
+    floor: float | None
+    median: float | None
+    status: str
+    """"too early", "in line" or "flagged"."""
+
+
 class PaperDetailOut(PaperSummaryOut):
     equity_series: Series
     """The account's marks."""
@@ -984,6 +998,8 @@ class PaperDetailOut(PaperSummaryOut):
     """Newest first."""
     events: list[PaperEventOut]
     tracking: PaperTrackingOut
+    decay: DecayOut | None = None
+    """None if the check couldn't be made (its backtest's data is missing)."""
 
 
 class LookOut(BaseModel):

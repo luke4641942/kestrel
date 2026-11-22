@@ -16,6 +16,7 @@ import {
   tradeReturn,
   tradesSummary,
   trackingVerdict,
+  decayView,
   venueLabel,
 } from "../paperView";
 import { money } from "../summary";
@@ -203,6 +204,7 @@ function AccountView({ name }: { name: string }) {
   const holding = holdingView(d);
   const p = accountProfit(d);
   const trades = tradesSummary(d.trades);
+  const fade = decayView(d.decay);
   const model = d.expected.equity.at(-1) ?? null;
   const bps = (x: number | null) => (x === null ? "n/a" : `${x.toFixed(1)} bps`);
   return (
@@ -231,6 +233,11 @@ function AccountView({ name }: { name: string }) {
               label="Days handled"
               value={t.days}
               note={`${t.missed ? `${t.missed} missed` : "None missed"}; fills cost ${bps(t.cost_bps)} vs ${bps(t.expected_bps)} modelled`}
+            />
+            <Stat
+              label="Decay check"
+              value={fade.tone ? <Status tone={fade.tone}>{fade.value}</Status> : fade.value}
+              note={fade.note}
             />
           </div>
         </Panel>

@@ -43,7 +43,7 @@ bias, unrealistic fills, ignored costs, and research code that is rewritten
 | 2. Backtester | Event-driven and vectorised engines (parity-tested), cost model, metrics with uncertainty, stops/targets with risk sizing, resting limit orders, a portfolio engine for coin baskets | Done |
 | 3. Validation | Deflated Sharpe over every trial, walk-forward, robustness, random-entry control, the holdout test, one scorecard graded on every run | Done |
 | 3.5 Research method | Pre-registered notes, decisions per strategy and market, an explore-then-confirm experiment on a fixed split of coins | Done |
-| 4. Execution | Paper trading through the backtest's own code (single coins and coin baskets) on a simulated venue or Binance Spot Testnet, reconciliation, risk limits, kill switch, tracking against the model, scheduled runs | Running (live venue later) |
+| 4. Execution | Paper trading through the backtest's own code (single coins and coin baskets) on a simulated venue or Binance Spot Testnet, reconciliation, risk limits, kill switch, tracking against the model, a decay check, alerts, scheduled runs | Running (live venue later) |
 | Parked | Perps (not offered to Australian retail; ASIC caps retail crypto leverage at 2:1); multi-strategy portfolios; a settings page | Parked |
 
 ## Quick start
@@ -101,7 +101,7 @@ live progress, logs and cancellation.
 | Tour (top right) | A 12-stop guided tour of how a result is judged, from the question to a strategy failing its tests honestly to the limits, ending back on the Overview |
 | Thesis (top right) | The one-page research summary ([docs/research-summary.md](docs/research-summary.md)) |
 | Overview | What to pursue (one entry per strategy, with the coins it trades), holdout tests, the research pipeline, recent studies |
-| Trading | Each paper account: equity, positions, what it's waiting for, decisions, fills, safety state, tracking against the model |
+| Trading | Each paper account: equity, positions, what it's waiting for, decisions, fills, safety state, tracking against the model, the decay check against its own backtest |
 | Research | Every decision grouped by strategy family, the luck bar over time, the exploration experiment coin by coin, the findings |
 | Strategies | Research notes, frozen before testing, with versions, the code they run, signals, their trial log and a research assistant that never sees results |
 | Backtests | Saved runs with the scorecard, equity and drawdown, costs, start-date and bootstrap analysis, fills and provenance |

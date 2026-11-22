@@ -127,6 +127,7 @@ from kestrel.studies.weekly_signal import (
     run_signal_study,
     stablecoin_flags,
 )
+from kestrel.validation import decay
 from kestrel.validation.confirmation import confirm, format_confirmation
 from kestrel.validation.control import PATHS, format_control, run_control
 from kestrel.validation.holdout import HoldoutLog, format_holdout, holdout_test
@@ -1772,7 +1773,14 @@ def paper_run(
         raise
     finally:
         if alerts:
-            sent = alert_review(account, datetime.now(UTC), _notifier(), failure)
+            check: decay.Decay | None = None
+            try:
+                check = _decay_check(
+                    account, _tracking(account, data_dir, config), data_dir, config
+                )
+            except Exception:
+                check = None
+            sent = alert_review(account, datetime.now(UTC), _notifier(), failure, check)
             for a in sent:
                 typer.echo(f"alert sent: {a.message}")
 
@@ -1960,23 +1968,42 @@ def paper_track(
     match), fill costs against the cost model, and equity."""
     account = paper_trading.PaperAccount(data_dir, name)
     try:
-        terms = account.terms()
-        spec = spec_for(terms.strategy)
-        if spec.universe:
-            panel = paper_trading.basket_panel(
-                ParquetStore(data_dir), terms, list(spec.assets), datetime.now(UTC)
-            )
-            result = tracking.track_basket(account, panel, load_config(config))
-        else:
-            bars = ParquetStore(data_dir).read(terms.symbol, terms.interval)
-            bars = attach_features(bars, spec.features, terms.symbol, terms.interval, data_dir)
-            result = tracking.track(account, bars, load_config(config))
+        result = _tracking(account, data_dir, config)
+        check = _decay_check(account, result, data_dir, config)
     except (ValueError, ConfigError) as e:
         typer.echo(str(e), err=True)
         raise typer.Exit(code=1) from None
     typer.echo(tracking.format_tracking(name, result))
+    typer.echo(decay.format_decay(check))
     if result.decision_mismatches:
         raise typer.Exit(code=1)
+
+
+def _tracking(
+    account: paper_trading.PaperAccount, data_dir: Path, config: Path
+) -> tracking.Tracking:
+    """An account against its replay on the simulated venue, over the stored data."""
+    terms = account.terms()
+    spec = spec_for(terms.strategy)
+    if spec.universe:
+        panel = paper_trading.basket_panel(
+            ParquetStore(data_dir), terms, list(spec.assets), datetime.now(UTC)
+        )
+        return tracking.track_basket(account, panel, load_config(config))
+    bars = ParquetStore(data_dir).read(terms.symbol, terms.interval)
+    bars = attach_features(bars, spec.features, terms.symbol, terms.interval, data_dir)
+    return tracking.track(account, bars, load_config(config))
+
+
+def _decay_check(
+    account: paper_trading.PaperAccount, result: tracking.Tracking, data_dir: Path, config: Path
+) -> decay.Decay:
+    """The decay check (kestrel.validation.decay); its backtest runs only once it's due."""
+    terms = account.terms()
+    return decay.assess(
+        decay.model_returns(result),
+        lambda: decay.reference_returns(terms, data_dir, load_config(config)),
+    )
 
 
 @paper_app.command("schedule")

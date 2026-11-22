@@ -3,6 +3,7 @@ import type { PaperDetail, Waiting } from "./api";
 import {
   accountProfit,
   conditionText,
+  decayView,
   holdingView,
   ruleText,
   waitingSummary,
@@ -142,5 +143,21 @@ describe("what an account is waiting for", () => {
     expect(ruleText(g1)).toContain("If it bought now: BNB, BTC.");
     const tvt = waiting({ rule: "any", conditions: [test("BTCUSDT", false, 0.1), test("BTCUSDT", false, 0.1), test("BTCUSDT", false, 0.1)] });
     expect(ruleText(tvt)).toContain("each test that holds buys 1/3 of the position");
+  });
+});
+
+describe("decayView", () => {
+  const base = { days: 40, min_days: 90, percentile: 5, sharpe: null, floor: null, median: null, status: "too early" as const };
+  it("says too early, and n/a without a check", () => {
+    expect(decayView(base)).toEqual({ value: "Too early", tone: null, note: "40 of 90 days; then its Sharpe is checked against its backtest's" });
+    expect(decayView(null).value).toBe("n/a");
+    expect(decayView(undefined).value).toBe("n/a");
+  });
+  it("shows the Sharpe against the floor, and a flag as a prompt, never a verdict", () => {
+    const ok = decayView({ ...base, days: 120, sharpe: 0.4, floor: -1.9, median: 1.1, status: "in line" });
+    expect(ok).toEqual({ value: "In line", tone: "ok", note: "Sharpe 0.40 over 120 days; backtest 1-in-20 floor -1.90, median 1.10" });
+    const bad = decayView({ ...base, days: 120, sharpe: -2.5, floor: -1.9, median: 1.1, status: "flagged" });
+    expect(bad.tone).toBe("warn");
+    expect(bad.note).toContain("nothing changes without Luke");
   });
 });

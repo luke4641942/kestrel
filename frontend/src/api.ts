@@ -511,6 +511,19 @@ export interface PaperDetail extends PaperSummary {
     cost_bps: number | null;
     expected_bps: number | null;
   };
+  /** The decay check (kestrel.validation.decay); null if it couldn't be made. */
+  decay?: Decay | null;
+}
+
+/** The model replay's Sharpe against its own backtest's: information only. */
+export interface Decay {
+  days: number;
+  min_days: number;
+  percentile: number;
+  sharpe: number | null;
+  floor: number | null;
+  median: number | null;
+  status: "too early" | "in line" | "flagged";
 }
 
 export interface Study {
