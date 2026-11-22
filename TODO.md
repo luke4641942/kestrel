@@ -15,7 +15,8 @@ Rules live in CLAUDE.md; results in `research/findings.md`; ideas not yet schedu
   sleeps (a missed day is recorded, never traded late).
 
 ## Waiting on Luke
-- Nothing (2026-11-21).
+- GitHub Actions won't start jobs (billing / spending limit, 2026-11-22): CI is down; the
+  local `scripts/check.sh` is the gate until it's fixed.
 
 ## Next
 - [ ] Monitoring-tag drift: blocked on data. Binance's announcement feed holds 1 tag
@@ -53,12 +54,12 @@ exists and Luke has checked the Swyftx employee trading policy.
 - [ ] News-tone study (`kestrel signal-study news-tone`): blocked on data. `kestrel
       ingest-news BTCUSDT ETHUSDT` is resumable but GDELT rate-limits hard: by 2026-11-22
       BTC had 2017-01..2018-08, ETH 2017-01..2017-11. Needs 2017..2025-10, then a note.
-- [ ] Why G1 works (started 2026-11-22; exploration mode, not trials, not evidence): the BTC filter alone, the
-      ranking alone, and risk-adjusted ranking (90-day return / volatility). Round 2 already
-      suggested the filter does most of the work. Nothing found here can change G1's rule.
 - [ ] Expectancy by conviction bucket (P2 leftover), once a strategy varies its sizing.
 
 ## Done recently
+- 2026-11-22 Why G1 works (exploration, `research/exploration/why_g1.py`, log): the BTC
+  filter is the edge in 2018-21; in 2022-25 no version beats BTC held (G1 0.66 vs 0.69),
+  the ranking only beats random picks. Risk-adjusted ranking doesn't help.
 - 2026-11-22 Tokenized stocks excluded from the coin universe by Binance's `bStocks` tag
   (104 pairs) and XAUT as gold: 700 coins to 595. None first traded before the holdout, so
   no research result changes.

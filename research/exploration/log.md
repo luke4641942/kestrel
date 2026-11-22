@@ -111,3 +111,32 @@ rule: G1 (top 3 of 8) PASSED, flat while BTC fell 29% (-4.7% for BTC at its expo
 G2 (top 1 of 4) FAILED, -22.6% (-5.7%). The search ranked them as equals (Sharpe 1.55 and
 1.51 on the engine); the fresh year separated the diversified one from the concentrated
 one. Findings item 15.
+
+# Why G1 works (2026-11-22; exploration, not evidence)
+
+Script `why_g1.py`: G1's rule taken apart on the real portfolio engine (330 USDT, costs,
+minimum orders), its own 8 coins, 2018-01 to 2025-10. The switches at G1's settings
+reproduce G1's decisions exactly. Sharpe (full, 2018-21, 2022-25):
+
+| Variant | Sharpe | 2018-21 | 2022-25 | Return | Max DD | Exposure |
+|---|---|---|---|---|---|---|
+| G1 (BTC filter + top 3 by 90-day return) | 1.55 | 2.30 | 0.66 | +4,048% | -37% | 27% |
+| Filter alone (every eligible coin) | 1.45 | 2.34 | 0.49 | +2,333% | -39% | 28% |
+| Ranking alone (no filter) | 1.30 | 1.88 | 0.70 | +4,655% | -67% | 57% |
+| Filter + risk-adjusted top 3 (return / volatility) | 1.53 | 2.34 | 0.50 | +4,045% | -41% | 28% |
+| Every coin, no filter (control) | 1.18 | 1.68 | 0.67 | +2,666% | -59% | 58% |
+| BTC held | 0.74 | 0.80 | 0.69 | +718% | -81% | 100% |
+
+Filter + 3 random coins (100 seeds): median Sharpe 1.31 (2.11 in 2018-21, 0.42 in 2022-25);
+G1 beats 99, 94 and 95 of them.
+
+- **2018-21: the filter is the edge.** Holding every coin while BTC trends does as well as
+  G1 (2.34 vs 2.30); the ranking adds nothing there.
+- **2022-25: G1 doesn't beat BTC held (0.66 vs 0.69).** Every variant sits at 0.5-0.7.
+  The filter alone is worse than BTC (0.49); the ranking pulls it back to level, beating
+  random picks (95 of 100) but not holding BTC. The full-period edge is mostly 2018-21's
+  broad altcoin boom, on a coin list chosen in hindsight (findings 15).
+- **Risk-adjusted ranking doesn't help** (worse in 2022-25: 0.50).
+- What this means for paper trading: expect G1 to roughly track BTC's Sharpe with a
+  quarter of the exposure and a much smaller drawdown, not to beat it, unless a broad
+  altcoin rally comes back. Nothing here changes G1's rule or decision.
