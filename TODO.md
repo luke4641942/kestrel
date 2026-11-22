@@ -16,8 +16,8 @@ Rules live in CLAUDE.md; results in `research/findings.md`; ideas not yet schedu
   sleeps (a missed day is recorded, never traded late).
 
 ## Waiting on Luke
-- Freeze note `trend-vol-target-out-in-the-4h-volatile-regime` (drafted 2026-11-23; read the
-  rules and adoption test first). Then Claude runs its 6 backtests once.
+- Reject note `trend-vol-target-out-in-the-4h-volatile-regime`? Its 6 runs (2026-11-23)
+  failed its pre-registered test on all 3 coins (findings 24). Waiting on Luke's say-so.
 - GitHub Actions won't start jobs (billing / spending limit, 2026-11-22): CI is down; the
   local `scripts/check.sh` is the gate until it's fixed.
 
@@ -71,6 +71,8 @@ exists and Luke has checked the Swyftx employee trading policy.
 - [ ] Expectancy by conviction bucket (P2 leftover), once a strategy varies its sizing.
 
 ## Done recently
+- 2026-11-23 4h regime filter on trend-vol-target run (findings 24): worse on BTC, ETH and SOL.
+  4h regime fits stored (`kestrel regimes --interval 4h --save`).
 - 2026-11-22 Regimes compared (findings 23): the preset stays (more states only track volatility
   more finely); a 4h model warns of daily volatile spells about 40 hours early, 3 times in 4
   falsely. Non-trend notes rejected (Luke).

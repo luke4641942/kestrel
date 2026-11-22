@@ -374,6 +374,19 @@ from 2026-11-16) is the test that's left.
     daily close within a week. The 1h model flickers (about 430 spells, 20 hours each;
     calling 100% of onsets is near chance, about 85%). A real early warning at 4h, three times
     in four a false one; trading on it would need its own note.
+24. **Stepping out on the 4h model's warnings made trend-vol-target worse on every coin
+    (2026-11-23, note `trend-vol-target-out-in-the-4h-volatile-regime`; 6 trials, 872 in all,
+    luck bar 2.27).** The daily filter (finding 8) failed because it came too late; the 4h
+    model warns ~40 hours earlier, so it was given one try, pre-registered to pass on 2 of 3
+    coins. Filter on vs off, same days: BTC Sharpe 0.41 vs 0.64 (2020-12 to 2025-10), ETH
+    0.63 vs 0.72, SOL 0.12 vs 0.78 (2021-08 to 2025-10); returns +43% vs +104%, +100% vs
+    +152%, -2% vs +138%. Drawdown was barely shallower on BTC (-46.8% vs -48.0%) and SOL (-35.6% vs -36.4%),
+    deeper on ETH (-42% vs -38%). It traded no more often but turned over 1.3-1.7x as much
+    (it sells whole positions); costs rose 26% on BTC and 43% on ETH, and on SOL the
+    break-even cost fell below the actual one (18 vs 22 bps). The false alarms sell good days: being out
+    when the 4h model is volatile misses rebounds as well as falls. Regime timing does not
+    help this rule at either speed; its own trend votes and volatility sizing already do
+    the job.
 
 ## The holdout year (2025-11 to 2026-10)
 
@@ -437,6 +450,7 @@ edge, and the holdout can't be used again for either strategy.
 | Crash brake on weekly momentum | ETH 1d | Sharpe 1.21 vs 1.23 without it; drawdown -41.4% vs -41.6%; 16 of 29 trips sold a dip that recovered | Drop |
 | Crash brake on trend-vol-target | BTC 1d | Sharpe 0.91 vs 1.21; return +272% vs +639%; drawdown -45.9% vs -48.3% | Drop |
 | Regime filter on trend-vol-target | BTC 1d | Sharpe 0.64 vs 0.69 (2021-05 to 2025-10); the plain rule already holds 13% in volatile spells | Drop |
+| 4h regime filter on trend-vol-target (a second try at the row above, disclosed) | BTC, ETH, SOL 1d, 2020-12/2021-08 to 2025-10 | Sharpe 0.41/0.63/0.12 vs 0.64/0.72/0.78 for the plain rule; fails its adoption test on all three | Fails its rule; rejection waits for Luke |
 | Study: MACD direction in volatile spells | BTC, ETH 1d | Spread +3.70% a week (up +1.63%, down -2.00%), P = 98%: TREND | Study passed |
 | Study: rising attention (Wikipedia) | BTC, ETH 1d | Next week +0.65% after rising attention vs +0.74%; P 46%: KILL | Drop |
 | Study: extreme fear | BTC, ETH 1d | Next week +0.27% after Extreme Fear vs +0.59%; P 39%: KILL | Drop |
