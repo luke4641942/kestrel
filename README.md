@@ -86,9 +86,12 @@ duckdb.sql("""
 
 ## Dashboard
 
-![Kestrel dashboard, Data page](docs/dashboard-light.png)
+![Kestrel dashboard: a backtest and its scorecard](docs/dashboard-light.png)
 
-<sub>Screenshot uses synthetic test data. Light and dark themes; toggle in the top bar.</sub>
+<sub>A real run from the research: trend following on BTC, 2020-25, after costs. It beats BTC
+held at the same exposure (Sharpe 1.21 vs 1.07) but fails the luck and walk-forward tests,
+so it is paper-traded as risk-managed holding, not called an edge. Light and dark themes
+(the [Thesis page in dark](docs/dashboard-dark.png)); toggle in the top bar.</sub>
 
 The dashboard reads; research and trading actions run from the CLI or as **jobs** with
 live progress, logs and cancellation.
