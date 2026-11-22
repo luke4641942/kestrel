@@ -240,3 +240,30 @@ def test_the_store_keeps_the_latest_fit_per_market(tmp_path: Path) -> None:
     assert store.load("BTCUSDT")["preset"]["states"] == FAST.states
     with pytest.raises(KeyError):
         store.load("SOLUSDT")
+
+
+def test_the_predictive_score_with_every_input_is_the_out_of_sample_likelihood() -> None:
+    m = model(k=3, d=2, seed=4)
+    x = np.random.default_rng(5).normal(0, 1, (40, 2))
+    whole, first = rg.log_likelihood(m, x), rg.log_likelihood(m, x[:25])
+    assert rg.predictive_log_likelihood(m, x, 25) == pytest.approx(whole - first)
+    assert rg.predictive_log_likelihood(m, x, 0) == pytest.approx(whole)
+
+
+def test_scoring_some_inputs_predicts_them_from_beliefs_updated_on_all() -> None:
+    m = model(k=2, d=2, seed=6)
+    x = np.random.default_rng(7).normal(0, 1, (6, 2))
+    # By hand: predict day t's first input from beliefs updated on both inputs before t.
+    belief, total = m.start, 0.0
+    for t in range(len(x)):
+        prior = belief if t == 0 else belief @ m.trans
+        if t >= 2:
+            one = [
+                math.exp(-((x[t, 0] - m.means[s, 0]) ** 2) / (2 * m.variances[s, 0]))
+                / math.sqrt(2 * math.pi * m.variances[s, 0])
+                for s in range(2)
+            ]
+            total += math.log(float(prior @ np.array(one)))
+        post = prior * np.array([density(m, s, x[t]) for s in range(2)])
+        belief = post / post.sum()
+    assert rg.predictive_log_likelihood(m, x, 2, [0]) == pytest.approx(total)

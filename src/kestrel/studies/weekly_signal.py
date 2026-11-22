@@ -23,6 +23,19 @@ Signals, each fixed before it is run:
   stablecoins) known at the close against its value 4 weeks before; on when it grew (new
   dollars entering crypto).
 
+- ``coinbase-premium``: Coinbase's dollar price over Binance's (adjusted by Coinbase's
+  USDT-USD), its 7-day mean against the median of the 180 days before; on when above (US
+  buying, note does-us-buying-on-coinbase-lead-prices).
+- ``variance-premium``: Deribit's DVOL minus 30-day realised volatility, the same 7-day
+  against 180-day rule (note does-a-high-variance-premium-lead-prices).
+- ``net-liquidity``: Fed assets minus the Treasury's account minus reverse repo, the latest
+  Wednesday known at the close (from the Saturday after) against 4 weeks before; on when
+  it grew (note does-dollar-liquidity-lead-crypto).
+
+The last three were pre-registered with an independence control: the spread must also be
+positive both in weeks whose past week rose and in weeks whose past week fell, or the
+signal is momentum (or dip-buying) under another name and the verdict is KILL.
+
 Attention rises with price, so the result also reports how often the past week rose when
 the signal was on and when it was off: a signal that only repeats last week's move is
 momentum under another name (weekly momentum failed out of sample here).
@@ -31,16 +44,32 @@ momentum under another name (weekly momentum failed out of sample here).
 from __future__ import annotations
 
 import math
+import statistics
 from dataclasses import dataclass
-from datetime import timedelta
+from datetime import date, datetime, timedelta
 
 import polars as pl
 
 from kestrel.data import attention, news, stablecoins
+from kestrel.indicators import realised_volatility
 from kestrel.studies.volatile_direction import CONFIDENCE, Sample, Side, compare
 
 FEAR_BELOW = 25
-SIGNALS = ("attention", "extreme-fear", "news-tone", "stablecoins")
+SIGNALS = (
+    "attention",
+    "extreme-fear",
+    "news-tone",
+    "stablecoins",
+    "coinbase-premium",
+    "variance-premium",
+    "net-liquidity",
+)
+CONTROLLED = frozenset({"coinbase-premium", "variance-premium", "net-liquidity"})
+"""Signals whose notes pre-registered the past-week control."""
+RECENT_DAYS = 7
+NORMAL_DAYS = 180
+LIQUIDITY_KNOWN_AFTER = timedelta(days=3)
+"""A Wednesday's H.4.1 figure (published Thursday afternoon US time) counts from Saturday."""
 
 
 def attention_flags(bars: pl.DataFrame, views: pl.DataFrame) -> list[bool | None]:
@@ -82,6 +111,84 @@ def news_flags(bars: pl.DataFrame, tone: pl.DataFrame) -> list[bool | None]:
 def stablecoin_flags(bars: pl.DataFrame, supply: pl.DataFrame) -> list[bool | None]:
     """On when the stablecoin supply known at the close is above its value 4 weeks before."""
     return stablecoins.growing(bars["open_time"].to_list(), supply)
+
+
+def above_normal(open_times: list[datetime], daily: dict[date, float]) -> list[bool | None]:
+    """For each daily bar: is the mean of the last 7 days' values (to the bar's own day) above
+    the median of the 180 days before those 7? Unknown if any of the 187 is missing."""
+    out: list[bool | None] = []
+    for t in open_times:
+        day = t.date()
+        recent = [daily.get(day - timedelta(days=k)) for k in range(RECENT_DAYS)]
+        normal = [
+            daily.get(day - timedelta(days=k))
+            for k in range(RECENT_DAYS, RECENT_DAYS + NORMAL_DAYS)
+        ]
+        if any(v is None for v in [*recent, *normal]):
+            out.append(None)
+            continue
+        out.append(
+            statistics.fmean(v for v in recent if v is not None)
+            > statistics.median(v for v in normal if v is not None)
+        )
+    return out
+
+
+def coinbase_premium(
+    bars: pl.DataFrame, coinbase: pl.DataFrame, usdt: pl.DataFrame | None
+) -> dict[date, float]:
+    """Each day's premium: Coinbase's USD close over Binance's USDT close times USDT's dollar
+    price, less one (``usdt`` None: unadjusted, USDT taken as a dollar)."""
+    cb = dict(zip(coinbase["date"].to_list(), coinbase["value"].to_list(), strict=True))
+    tether = (
+        None
+        if usdt is None
+        else dict(zip(usdt["date"].to_list(), usdt["value"].to_list(), strict=True))
+    )
+    out: dict[date, float] = {}
+    for t, close in zip(bars["open_time"].to_list(), bars["close"].to_list(), strict=True):
+        day = t.date()
+        dollar = 1.0 if tether is None else tether.get(day)
+        if day in cb and dollar is not None and close > 0:
+            out[day] = cb[day] / (close * dollar) - 1
+    return out
+
+
+def variance_premium(bars: pl.DataFrame, dvol: pl.DataFrame) -> dict[date, float]:
+    """Each day's DVOL close less the coin's realised volatility over the last 30 days, both
+    annualised percent (365 days)."""
+    implied = dict(zip(dvol["date"].to_list(), dvol["value"].to_list(), strict=True))
+    realised = realised_volatility(bars, 30).to_list()
+    out: dict[date, float] = {}
+    for t, rv in zip(bars["open_time"].to_list(), realised, strict=True):
+        day = t.date()
+        if day in implied and rv is not None and not math.isnan(rv):
+            out[day] = implied[day] - 100 * rv
+    return out
+
+
+def net_liquidity(walcl: pl.DataFrame, tga: pl.DataFrame, rrp: pl.DataFrame) -> dict[date, float]:
+    """Each Wednesday's net liquidity in billions: WALCL (millions) / 1000 - WTREGEN - RRP."""
+    t = dict(zip(tga["date"].to_list(), tga["value"].to_list(), strict=True))
+    r = dict(zip(rrp["date"].to_list(), rrp["value"].to_list(), strict=True))
+    out: dict[date, float] = {}
+    for day, assets in zip(walcl["date"].to_list(), walcl["value"].to_list(), strict=True):
+        if day.isoweekday() == 3 and day in t and day in r:
+            out[day] = assets / 1000 - t[day] - r[day]
+    return out
+
+
+def liquidity_flags(open_times: list[datetime], weekly: dict[date, float]) -> list[bool | None]:
+    """On when the latest Wednesday known at the close is above the Wednesday 4 weeks before.
+    Unknown if either is missing (a holiday Wednesday is a gap, not filled)."""
+    out: list[bool | None] = []
+    for t in open_times:
+        close = (t + timedelta(days=1)).date()
+        known = close - LIQUIDITY_KNOWN_AFTER
+        wednesday = known - timedelta(days=(known.isoweekday() - 3) % 7)
+        now, then = weekly.get(wednesday), weekly.get(wednesday - timedelta(weeks=4))
+        out.append(None if now is None or then is None else now > then)
+    return out
 
 
 def fear_flags(bars: pl.DataFrame) -> list[bool | None]:
@@ -132,11 +239,24 @@ class SignalResult:
     hurdle: float
     weeks: Side
     overlap: dict[str, Overlap]
+    after_rise: Side | None = None
+    """The control (CONTROLLED signals only): the same spread in weeks whose past week rose."""
+    after_fall: Side | None = None
+
+    @property
+    def control_holds(self) -> bool | None:
+        if self.after_rise is None or self.after_fall is None:
+            return None
+        return all(
+            s.spread is not None and s.spread > 0 for s in (self.after_rise, self.after_fall)
+        )
 
     @property
     def verdict(self) -> str:
         w = self.weeks
         if w.spread is None or w.p_positive is None:
+            return "KILL"
+        if self.control_holds is False:
             return "KILL"
         return "PROCEED" if w.p_positive >= CONFIDENCE and w.spread > self.hurdle else "KILL"
 
@@ -154,7 +274,23 @@ def run_signal_study(
     per_market = {m: sunday_samples(b, f, m) for m, (b, f) in markets.items()}
     found = [s for ss in per_market.values() for s in ss]
     overlap = {m: momentum_overlap(markets[m][0], ss) for m, ss in per_market.items()}
-    return SignalResult(signal, list(markets), hurdle, compare(found, resamples, seed), overlap)
+    weeks = compare(found, resamples, seed)
+    if signal not in CONTROLLED:
+        return SignalResult(signal, list(markets), hurdle, weeks, overlap)
+    rose: list[Sample] = []
+    fell: list[Sample] = []
+    for m, ss in per_market.items():
+        closes = dict(
+            zip(markets[m][0]["open_time"].to_list(), markets[m][0]["close"].to_list(), strict=True)
+        )
+        for s in ss:
+            before = closes.get(s.day - timedelta(days=7))
+            if before is not None:
+                (rose if closes[s.day] > before else fell).append(s)
+    return SignalResult(
+        signal, list(markets), hurdle, weeks, overlap,
+        compare(rose, resamples, seed), compare(fell, resamples, seed),
+    )  # fmt: skip
 
 
 def format_signal_study(r: SignalResult) -> str:
@@ -177,6 +313,24 @@ def format_signal_study(r: SignalResult) -> str:
         *(
             f"    {m}: {share(o.rose_when_on)} of on-weeks, {share(o.rose_when_off)} of off-weeks"
             for m, o in r.overlap.items()
+        ),
+        *(
+            [
+                "",
+                "  Control (pre-registered): the spread after a rising and a falling past week",
+                f"    after a rise  on {r.after_rise.n_up:>3} / off "
+                f"{r.after_rise.n_down:>3} weeks   spread {pct(r.after_rise.spread)}",
+                f"    after a fall  on {r.after_fall.n_up:>3} / off "
+                f"{r.after_fall.n_down:>3} weeks   spread {pct(r.after_fall.spread)}",
+                "    "
+                + (
+                    "holds: positive in both"
+                    if r.control_holds
+                    else "FAILS: not positive in both, so it is momentum or dip-buying in disguise"
+                ),
+            ]
+            if r.after_rise is not None and r.after_fall is not None
+            else []
         ),
         "",
         f"  Verdict: {r.verdict}"

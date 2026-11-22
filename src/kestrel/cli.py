@@ -23,7 +23,7 @@ import shlex
 import sys
 import time
 from collections.abc import Callable
-from datetime import UTC, datetime, timedelta
+from datetime import UTC, date, datetime, timedelta
 from decimal import Decimal
 from pathlib import Path
 from typing import Annotated, Any
@@ -45,7 +45,16 @@ from kestrel.backtest.runs import (
     visible,
 )
 from kestrel.config import Config, ConfigError, load_config
-from kestrel.data import attention, delistings, funding, live, news, sentiment, stablecoins
+from kestrel.data import (
+    attention,
+    delistings,
+    external,
+    funding,
+    live,
+    news,
+    sentiment,
+    stablecoins,
+)
 from kestrel.data.binance_vision import BinanceVisionClient, Month, last_complete_month
 from kestrel.data.features import attach_features, markets_for
 from kestrel.data.quality import check_klines
@@ -120,12 +129,18 @@ from kestrel.studies.delisting_short import (
 from kestrel.studies.volatile_direction import format_study as format_volatile_study
 from kestrel.studies.volatile_direction import run_study as run_volatile_study
 from kestrel.studies.weekly_signal import (
+    SIGNALS,
+    above_normal,
     attention_flags,
+    coinbase_premium,
     fear_flags,
     format_signal_study,
+    liquidity_flags,
+    net_liquidity,
     news_flags,
     run_signal_study,
     stablecoin_flags,
+    variance_premium,
 )
 from kestrel.validation import decay
 from kestrel.validation.confirmation import confirm, format_confirmation
@@ -1108,9 +1123,7 @@ def ingest_unlocks(data_dir: DataDir = Path("data")) -> None:
 
 @app.command("signal-study")
 def signal_study(
-    signal: Annotated[
-        str, typer.Argument(help="attention, extreme-fear, news-tone or stablecoins.")
-    ],
+    signal: Annotated[str, typer.Argument(help=f"One of: {', '.join(SIGNALS)}.")],
     symbols: list[str],
     research: Annotated[
         str | None,
@@ -1132,6 +1145,7 @@ def signal_study(
                 raise ValueError(f"{research} names {note.implementation}, not study:{signal}")
         cfg = load_config(config)
         markets: dict[str, tuple[pl.DataFrame, list[bool | None]]] = {}
+        unadjusted: dict[str, tuple[pl.DataFrame, list[bool | None]]] = {}
         for symbol in symbols:
             bars = ParquetStore(data_dir).read(
                 symbol, Interval.D1, None, cfg.backtest.holdout_start
@@ -1147,21 +1161,74 @@ def signal_study(
                 flags = fear_flags(bars)
             elif signal == "stablecoins":
                 flags = stablecoin_flags(bars, stablecoins.load(data_dir))
-            else:
-                raise ValueError(
-                    f"unknown signal {signal!r}; one of attention, extreme-fear, news-tone, "
-                    "stablecoins"
+            elif signal == "coinbase-premium":
+                coin = f"coinbase:{_coin(symbol)}-USD"
+                cb, usdt = (
+                    external.load(data_dir, coin),
+                    external.load(data_dir, "coinbase:USDT-USD"),
                 )
+                times = bars["open_time"].to_list()
+                flags = above_normal(times, coinbase_premium(bars, cb, usdt))
+                # Beside it, deciding nothing (the note): from 2018-01 with USDT as a dollar.
+                plain = above_normal(times, coinbase_premium(bars, cb, None))
+                unadjusted[symbol.upper()] = (bars, _since(times, plain, date(2018, 1, 1)))
+            elif signal == "variance-premium":
+                dvol = external.load(data_dir, f"dvol:{_coin(symbol)}")
+                flags = above_normal(bars["open_time"].to_list(), variance_premium(bars, dvol))
+            elif signal == "net-liquidity":
+                weekly = net_liquidity(
+                    external.load(data_dir, "fred:WALCL"),
+                    external.load(data_dir, "fred:WTREGEN"),
+                    external.load(data_dir, "fred:RRPONTSYD"),
+                )
+                times = bars["open_time"].to_list()
+                flags = _since(times, liquidity_flags(times, weekly), date(2018, 1, 1))
+            else:
+                raise ValueError(f"unknown signal {signal!r}; one of {', '.join(SIGNALS)}")
             markets[symbol.upper()] = (bars, flags)
         c = cfg.costs
         hurdle = math.log1p(float(2 * (c.taker_fee_bps + c.half_spread_bps)) / 1e4)
         result = run_signal_study(signal, markets, hurdle=hurdle)
+        beside = run_signal_study(signal, unadjusted, hurdle=hurdle) if unadjusted else None
     except (ConfigError, ValueError) as e:
         typer.echo(str(e), err=True)
         raise typer.Exit(code=1) from None
     if research is not None:
         store.mark_backtested(s.slug, note.version)
     typer.echo(format_signal_study(result))
+    if beside is not None:
+        typer.echo("\nBeside it, deciding nothing: from 2018-01, USDT taken as a dollar\n")
+        typer.echo(format_signal_study(beside))
+
+
+def _coin(symbol: str) -> str:
+    return symbol.upper().removesuffix("USDT")
+
+
+def _since(times: list[datetime], flags: list[bool | None], first: date) -> list[bool | None]:
+    """The flags, unknown before ``first`` (a note's span)."""
+    return [f if t.date() >= first else None for t, f in zip(times, flags, strict=True)]
+
+
+@app.command("ingest-external")
+def ingest_external(data_dir: DataDir = Path("data")) -> None:
+    """Download the outside daily series the signal studies read (kestrel.data.external):
+    Coinbase closes, Deribit's DVOL, FRED's liquidity series. Gaps are reported."""
+    today = datetime.now(UTC).date()
+    try:
+        with httpx.Client(timeout=60) as http:
+            for name, every in external.SERIES.items():
+                frame = external.fetch(name, http, date(2017, 1, 1), today)
+                external.save(frame, data_dir, name)
+                missing = external.gaps(frame, every)
+                days = frame["date"].to_list() or [None]
+                typer.echo(
+                    f"{name}: {frame.height} rows, {days[0]} to {days[-1]}"
+                    + (f"; {len(missing)} missing (not filled)" if missing else "")
+                )
+    except (httpx.HTTPError, external.ExternalError) as e:
+        typer.echo(f"external: {e}", err=True)
+        raise typer.Exit(code=1) from None
 
 
 @app.command("delisting-study")

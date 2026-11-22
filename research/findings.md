@@ -335,6 +335,28 @@ from 2026-11-16) is the test that's left.
     holding a little of the coin. Grids skipped for a strategy failing test 1 (Luke's
     standing rule). 3 trials.
 
+22. **Three non-trend signals don't pick better weeks once past weeks are controlled for
+    (2026-11-22, `kestrel signal-study`; notes does-us-buying-on-coinbase-lead-prices,
+    does-a-high-variance-premium-lead-prices, does-dollar-liquidity-lead-crypto).** Chosen to
+    be independent of the trend bet (findings 16), each pre-registered with a control: the
+    spread must be positive both after a rising and after a falling past week. BTC and ETH
+    pooled, Sunday closes, one run each:
+    - US buying on Coinbase (its 7-day premium over Binance, USDT-adjusted, above its 180-day
+      median), 2021-11 to 2025-10: spread +0.67% a week, P 79% (90% needed); +1.42% after a
+      falling week, -0.35% after a rising one: KILL. A rebound effect, not a demand signal.
+    - A high variance premium (Deribit DVOL less 30-day realised volatility, the same rule),
+      2021-09 to 2025-10: +0.73%, P 81%; +1.45% after falls, -0.20% after rises: KILL, the
+      dip-buying family in disguise, as the note warned.
+    - Dollar net liquidity growing over 4 weeks (Fed assets less the Treasury account and
+      reverse repo), 2018-01 to 2025-10: -0.71%, P 17%, negative after rises and falls alike:
+      KILL; weeks after liquidity grew were worse. Matches the New York Fed's finding that
+      Bitcoin doesn't respond to rate surprises.
+    Deciding nothing, by its note: the Coinbase premium from 2018 with USDT taken as a dollar
+    passed (spread +1.32%, P 96%, positive after rises and falls). It can't count: it was
+    labelled beside the result before the run, and its extra years (2018 to early 2021) are
+    when USDT itself swung, so there the "premium" is partly fear of USDT. Pursuing it would
+    need a new note, disclosed as chosen after a look, judged forward only.
+
 ## The holdout year (2025-11 to 2026-10)
 
 Reserved on 2026-10-31, before any research, and read once on 2026-11-14 for the two watched
@@ -447,6 +469,9 @@ edge, and the holdout can't be used again for either strategy.
 | Study: large token unlocks (2%+ of unlocked supply) | 122 unlocks on 12 exploration-half coins, 2020-25 (DefiLlama schedules) | 30 days before vs the other coins: +0.4% (P(< 0) 47%); the same coins on random days -4.5%: KILL. Insiders -7.1% (7 events), large-for-volume -2.1% vs +2.6% | Rejected (Luke) |
 | Altcoin portfolio: G1's rule on a point-in-time universe, with delisting and new-perp exits | Exploration-half coins 1d, 2019-01 to 2025-10 (2019 cash) | +101%, Sharpe 0.53 vs 0.44 for the large-basket control (pass) but 1.10 for BTC at the same 17% exposure; neighbours 0.46-0.70; walk-forward 3 of 9; 2-year starts 32%; drawdown -33%; luck 0% | Drop (Luke) |
 | Tori Trades trendline method, long only (Luke's request; chart pattern, disclosed) | BTC, ETH, SOL 4h, 2020-25 | +26/+45/+65%, Sharpe 0.41/0.57/0.82 vs 1.07/1.12/1.24 for the coin at the same 6-10% exposure; +0.17R to +0.40R a trade; drawdowns -18% to -25%. Fails test 1 on all three | Drop (Luke) |
+| Study: US buying on Coinbase (USDT-adjusted premium above normal) | BTC, ETH 1d 2021-25 | Spread +0.67% a week, P 79%; +1.42% after falling weeks, -0.35% after rising ones (control fails) | KILL (rejection waits for Luke) |
+| Study: high variance premium (DVOL less realised) | BTC, ETH 1d 2021-25 | Spread +0.73%, P 81%; +1.45% after falls, -0.20% after rises (control fails) | KILL (rejection waits for Luke) |
+| Study: dollar net liquidity growing | BTC, ETH 1d 2018-25 | Spread -0.71%, P 17%; negative after rises and falls | KILL (rejection waits for Luke) |
 
 Each strategy was judged by its own note's pass test, written before it ran. From
 2026-11-14 every strategy is judged on one scorecard instead.

@@ -69,6 +69,9 @@ exists and Luke has checked the Swyftx employee trading policy.
 - [ ] Expectancy by conviction bucket (P2 leftover), once a strategy varies its sizing.
 
 ## Done recently
+- 2026-11-22 Three non-trend signal studies (findings 22): Coinbase premium, variance
+  premium, dollar liquidity. All KILL under their past-week control; rejecting the notes waits
+  for Luke. Outside series: `kestrel ingest-external` (Coinbase, Deribit DVOL, FRED).
 - 2026-11-22 Decay check (rule agreed with Luke): after 90 paper days, a model replay below the
   5th percentile of its own backtest's bootstrapped Sharpe is flagged (`paper track`, the
   account view, an alert). All accounts too early until about 2027-02.

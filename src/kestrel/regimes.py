@@ -134,6 +134,35 @@ def log_likelihood(model: Hmm, x: np.ndarray) -> float:
     return filtered(model, x)[1]
 
 
+def predictive_log_likelihood(
+    model: Hmm, x: np.ndarray, start: int, columns: list[int] | None = None
+) -> float:
+    """The sum, over days ``t >= start``, of log p(day t's ``columns`` | every input before
+    t): each day predicted one step ahead, beliefs updated on all of ``x``'s inputs.
+
+    With every column this is log p(x[start:] | x[:start]), the out-of-sample score. With
+    only some, it lets models with different extra inputs be compared fairly: each is scored
+    on how well it predicts the same shared inputs, and the extra ones count only through
+    what they teach the filter. Raw likelihoods over different inputs aren't comparable."""
+    cols = list(range(x.shape[1])) if columns is None else columns
+    full = _log_emissions(model, x)
+    scored = _log_emissions(
+        replace(model, means=model.means[:, cols], variances=model.variances[:, cols]),
+        x[:, cols],
+    )
+    total = 0.0
+    belief = model.start
+    for t in range(len(x)):
+        prior = belief if t == 0 else belief @ model.trans
+        if t >= start:
+            top = scored[t].max()
+            total += float(top + np.log(prior @ np.exp(scored[t] - top)))
+        top = full[t].max()
+        posterior = prior * np.exp(full[t] - top)
+        belief = posterior / posterior.sum()
+    return total
+
+
 # ---------- fitting ----------
 
 
