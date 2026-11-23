@@ -90,6 +90,12 @@ export const FAMILIES: Family[] = [
     strategies: ["funding-hold", "funding-trend", "stablecoin-hold", "volatile-macd", "turn-of-month"],
   },
   {
+    key: "carry",
+    name: "Carry",
+    what: "Hold the higher-yielding side and collect the interest difference.",
+    strategies: ["fx:carry"],
+  },
+  {
     key: "holding",
     name: "Risk-managed holding",
     what: "Always in the market, sized down when it is volatile.",

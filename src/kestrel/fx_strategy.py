@@ -140,4 +140,5 @@ def validated_fx_weights(
 
 # The registered forex strategies, each added with its note (imported last: they register
 # themselves through ``register`` above).
+from kestrel.strategies import fx_carry as _fx_carry  # noqa: E402, F401
 from kestrel.strategies import fx_trend as _fx_trend  # noqa: E402, F401
