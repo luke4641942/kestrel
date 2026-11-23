@@ -16,8 +16,6 @@ Rules live in CLAUDE.md; results in `research/findings.md`; ideas not yet schedu
   sleeps (a missed day is recorded, never traded late).
 
 ## Waiting on Luke
-- Reject note `does-a-coinbase-listing-move-a-coin-on-binance`? Run once 2026-11-23: KILL
-  (findings 27). Waiting on Luke's say-so.
 - Before any forex paper or live trading: check the Swyftx employee trading policy.
 - GitHub Actions won't start jobs (billing / spending limit, 2026-11-22): CI is down; the
   local `scripts/check.sh` is the gate until it's fixed.
@@ -102,6 +100,8 @@ exists and Luke has checked the Swyftx employee trading policy.
 - [ ] Expectancy by conviction bucket (P2 leftover), once a strategy varies its sizing.
 
 ## Done recently
+- 2026-11-23 Coinbase-listing study: KILL, the move comes before the listing (findings 27);
+  note rejected (Luke).
 - 2026-11-23 Basket tracking compared one day short (rot-g1): a basket decision now records
   the forming opens it traded at, and tracking replays them, as single-coin tracking does.
 - 2026-11-23 Alerts: a network failure (the Mac just woke) alerts only the second time in a row;
