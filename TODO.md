@@ -16,8 +16,6 @@ Rules live in CLAUDE.md; results in `research/findings.md`; ideas not yet schedu
   sleeps (a missed day is recorded, never traded late).
 
 ## Waiting on Luke
-- Reject note `forex-carry-across-the-10-pairs`? Run once 2026-11-23: failed every test
-  (findings 26). Waiting on Luke's say-so.
 - Before any forex paper or live trading: check the Swyftx employee trading policy.
 - GitHub Actions won't start jobs (billing / spending limit, 2026-11-22): CI is down; the
   local `scripts/check.sh` is the gate until it's fixed.
@@ -49,7 +47,7 @@ Rules fixed in CLAUDE.md before any forex data: its own trial pool, holdout from
       -30%, fails every test (findings 25). Costs (spread plus a ~1% markup on ~2.8x
       gross) outweighed a +2.3%/yr gross edge. Rejected (Luke).
 - [x] 5. Carry note `forex-carry-across-the-10-pairs`, run once 2026-11-23: Sharpe -0.37, -50%,
-      fails every test (findings 26): financing +103 AUD, prices lost ~350, mostly 2007-08.
+      fails every test (findings 26): financing +103 AUD, prices lost ~350, mostly 2007-08. Rejected (Luke).
 
 ## Next
 - [ ] Pick the next idea by independence from the trend bet (news tone first): expected overlap

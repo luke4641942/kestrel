@@ -1,0 +1,28 @@
+{
+  "slug": "forex-carry-across-the-10-pairs",
+  "name": "Forex carry across the 10 pairs",
+  "created_at": "2026-11-23T04:49:29.829482+00:00",
+  "status": "rejected",
+  "history": [
+    {
+      "status": "idea",
+      "at": "2026-11-23T04:49:29.829482+00:00",
+      "reason": "Created"
+    },
+    {
+      "status": "specified",
+      "at": "2026-11-23T04:50:30.642162+00:00",
+      "reason": "v1 frozen"
+    },
+    {
+      "status": "backtested",
+      "at": "2026-11-23T04:50:36.897677+00:00",
+      "reason": "first run on v1"
+    },
+    {
+      "status": "rejected",
+      "at": "2026-11-23T04:53:49.315092+00:00",
+      "reason": "Failed every test its note set (rejected with Luke's say-so, 2026-11-23): run 20261123-045036-03f368, 2006-02 to 2022-12, -50.2%, Sharpe -0.37 (P > 0 6%), deflated 2%, max drawdown -60%, 2 of 8 two-year windows, no profit to break even. Financing earned +103 AUD and spreads cost 5, but prices lost about 350: -13% in 2007 and -47% in 2008 as carry trades unwound, then near-zero rates left a small book drifting to 2022. Correlation with the rejected trend run -0.11. Findings 26."
+    }
+  ]
+}
