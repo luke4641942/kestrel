@@ -22,9 +22,9 @@ snapshot (open equals close), not a traded range.
 What the first ingest found (2026-11-23, all 10 pairs clean on integrity): 2002-2004 is
 snapshots (1-2 ticks a day, no real range), so research starts in 2005. From 2005 to 2013
 OANDA also printed thin weekend candles (60-100 a year opening Saturday, a median of a few
-hundred ticks against tens of thousands on weekdays); from 2014 there are none. Whether a
-strategy drops or folds them is a research decision, made in the open (TODO, P6 step 3),
-never here.
+hundred ticks against tens of thousands on weekdays); from 2014 there are none. Luke's
+decision (2026-11-23): strategies drop them (``trading_days``); a Saturday quote that thin
+isn't a tradable day. The stored file keeps them, as OANDA served them.
 
 Stored as ``<data>/fx/oanda/<PAIR>-1d.parquet``, one file per pair, replaced atomically.
 """
@@ -281,6 +281,14 @@ def check(frame: pl.DataFrame, pair: str, holdout_start: datetime) -> FxQuality:
         spread = ((pl.col("ask_close") - pl.col("bid_close")) / pip(pair)).median()
         report.median_spread_pips = float(before.select(spread).item())
     return report
+
+
+def trading_days(frame: pl.DataFrame) -> tuple[pl.DataFrame, int]:
+    """The candles of the trading week (opening Sunday to Thursday, New York), and how
+    many weekend candles were dropped. Every strategy and backtest reads forex this way."""
+    weekday = pl.col("open_time").dt.convert_time_zone(NEW_YORK).dt.weekday()
+    kept = frame.filter(~weekday.is_in([5, 6]))  # Friday and Saturday opens
+    return kept, frame.height - kept.height
 
 
 # ---------- storage ----------

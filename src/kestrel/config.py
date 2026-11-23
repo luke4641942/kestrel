@@ -93,6 +93,11 @@ class FxConfig:
     """First instant of forex's holdout (UTC); pre-registered before any forex data."""
     pairs: tuple[str, ...]
     """The fixed universe, as six-letter pairs (EURUSD)."""
+    account_currency: str = "AUD"
+    max_gross_leverage: Decimal = Decimal(3)
+    """Largest sum of |weights| a strategy may ask for."""
+    financing_markup_pct: Decimal = Decimal("2.5")
+    """Broker markup on overnight financing, annual %, charged on both sides."""
 
 
 @dataclass(frozen=True)
@@ -263,7 +268,17 @@ def parse_config(document: dict[str, Any]) -> Config:
 def _fx(raw: Any) -> FxConfig:
     if not isinstance(raw, dict):
         raise ConfigError("[fx] must be a table")
-    _expect_keys(raw, {"holdout_start", "pairs"}, "[fx]")
+    _expect_keys(
+        raw,
+        {
+            "holdout_start",
+            "pairs",
+            "account_currency",
+            "max_gross_leverage",
+            "financing_markup_pct",
+        },
+        "[fx]",
+    )
     holdout = raw["holdout_start"]
     if isinstance(holdout, datetime) or not isinstance(holdout, date):
         raise ConfigError(
@@ -281,7 +296,16 @@ def _fx(raw: Any) -> FxConfig:
         raise ConfigError(
             f"[fx] pairs must be distinct six-letter pairs like EURUSD, got {pairs!r}"
         )
-    return FxConfig(datetime(holdout.year, holdout.month, holdout.day, tzinfo=UTC), tuple(pairs))
+    currency = raw["account_currency"]
+    if not isinstance(currency, str) or len(currency) != 3 or not currency.isalpha():
+        raise ConfigError(f"[fx] account_currency must be a currency code, got {currency!r}")
+    return FxConfig(
+        datetime(holdout.year, holdout.month, holdout.day, tzinfo=UTC),
+        tuple(pairs),
+        currency.upper(),
+        _decimal(raw, "max_gross_leverage", "[fx]", low=0, high=30, low_inclusive=False),
+        _decimal(raw, "financing_markup_pct", "[fx]", low=0, high=20),
+    )
 
 
 def _spread_tiers(raw: Any) -> tuple[tuple[Decimal, Decimal], ...]:

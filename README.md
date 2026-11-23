@@ -132,7 +132,7 @@ its own.
 | Package | Responsibility |
 |---|---|
 | `kestrel.data` | Canonical schema, Binance archive download and checksums, atomic Parquet store, quality audit, live updates, the coin universe (delisted coins included), features (funding, Fear & Greed, BTC's close, stablecoin supply, attention, news), delisting announcements, daily forex bid/ask from OANDA (`kestrel ingest-fx`, P6) |
-| `kestrel.backtest` | Cost model, event-driven engine (weights or brackets, limit entries), vectorised engine, portfolio engine, per-coin spread bands, metrics and analysis, saved runs |
+| `kestrel.backtest` | Cost model, event-driven engine (weights or brackets, limit entries), vectorised engine, portfolio engine, the forex engine (signed and leveraged weights across pairs, bid/ask fills, financing, AUD), per-coin spread bands, metrics and analysis, saved runs |
 | `kestrel.strategy`, `kestrel.strategies` | The strategy interfaces, the registry, the lookahead check, and every strategy and control tested |
 | `kestrel.indicators` | One tested implementation of each indicator |
 | `kestrel.studies` | Raw-effect studies run before any trading rule (anchor day, volatile spells, weekly signals, delistings, cross-sectional funding and flow) and the minute-chart cost gate |

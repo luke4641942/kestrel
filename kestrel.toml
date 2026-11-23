@@ -96,3 +96,13 @@ max_drawdown = 0.5
 [fx]
 holdout_start = 2023-01-01
 pairs = ["EURUSD", "GBPUSD", "USDJPY", "USDCHF", "USDCAD", "AUDUSD", "NZDUSD", "EURGBP", "EURJPY", "GBPJPY"]
+# The account's currency: every pair's profit and loss is converted to it at the day's
+# close, through the pairs above.
+account_currency = "AUD"
+# Gross exposure (sum of |weights|) a strategy may ask for. A research limit well inside
+# ASIC's retail cap (30:1 on major pairs); fixed before any forex result.
+max_gross_leverage = 3
+# Overnight financing: a position earns or pays the two currencies' interest difference,
+# less this broker markup (annual %, on the notional, on both long and short positions).
+# An assumption until checked against OANDA's published financing rates (TODO, P6).
+financing_markup_pct = 2.5

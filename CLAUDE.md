@@ -237,6 +237,14 @@ Agreed with Luke; don't re-litigate without a reason.
   with 365 days; risk-free rate 0; returns measured daily at 00:00 UTC; engine parity is
   tested on a large account (the vectorised engine can't model minimums). Keep the
   fractional-weights parity case: it catches drift bugs.
+- **Forex engine** (`kestrel.backtest.fx_engine`, P6, 2026-11-23): its own engine, so
+  shorting and leverage never touch the crypto engine the paper accounts use. Signed
+  weights per pair, gross at most `[fx] max_gross_leverage`; fills at the bid/ask from the
+  data; marks at the mid; financing per calendar night (rate difference less
+  `financing_markup_pct`, both sides; rates are an input, never defaulted); P&L in AUD
+  through the pairs' own mids; a holiday is neither traded nor marked; a wipe-out stops
+  the run. Parity-tested against the crypto engine (long only, unlevered). Weekend candles
+  are dropped (`fx.trading_days`, Luke's decision 2026-11-23).
 - **Stops and sizing:** intrabar stop/target exits from the bar's high/low, the stop
   assumed first when a bar touches both; size = risk% x equity / stop distance, capped at
   100%; results in R. Bracket strategies may emit an `exit` column and a null target, and

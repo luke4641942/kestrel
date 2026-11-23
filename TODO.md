@@ -29,11 +29,17 @@ Rules fixed in CLAUDE.md before any forex data: its own trial pool, holdout from
       snapshots (research from 2005); 2005-13 has thin Saturday candles (60-100 a year),
       none from 2014; ~30 holiday gaps per pair. Median spread before the holdout 2.5 pips
       (EURUSD) to 9.6 (GBPJPY). Re-run `kestrel ingest-fx` to refresh.
-- [ ] 3a. Decide (Luke) before any engine run: weekend candles dropped, or folded into
-      Sunday's? (Dropping is simplest; a Saturday quote that thin isn't a tradable day.)
-- [ ] 3. Engine: weights in [-L, L], margin and a leverage cap, CFD costs (the spread from
-      the data's bid/ask, overnight financing on both sides), AUD accounting; parity with the
-      crypto engine when shorting and leverage are off. Trial log and luck bar per pool.
+- [x] 3a. Weekend candles dropped (Luke, 2026-11-23): `fx.trading_days`.
+- [x] 3b. Engine (2026-11-23): `kestrel.backtest.fx_engine.run_fx`. Signed weights, a 3x
+      gross cap, bid/ask fills, mid marks, financing per calendar night, AUD conversion
+      through the pairs, holidays, wipe-out; parity with the crypto engine on long-only,
+      unlevered weights. `[fx]` gained account_currency, max_gross_leverage, markup.
+- [ ] 3c. Interest rates for financing: each currency's short-term rate by month (FRED,
+      OECD 3-month interbank series; reported gaps, known with a lag), and check the 2.5%
+      markup against OANDA's financing rates today. Until then a run has no honest carry.
+- [ ] 3d. Trial pools in code: the validation log and luck bar per market (crypto, forex),
+      with the total across pools shown beside every bar. Then a `kestrel fx-backtest`
+      command (frozen notes only, like crypto) and saved forex runs with metrics.
 - [ ] 4. First note: trend following across the 10 pairs (outside evidence: Moskowitz, Ooi
       and Pedersen 2012; Hurst et al., A Century of Evidence on Trend-Following), scored
       against holding nothing (forex has no buy-and-hold) and the carry it pays or earns.
