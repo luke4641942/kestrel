@@ -201,3 +201,42 @@ def test_a_saved_study_is_served_to_the_dashboard(tmp_path: Path) -> None:
     assert served["weeks"]["n_on"] == result.weeks.n_up
     assert served["control_holds"] == result.control_holds
     assert served["report"] == "the report"
+
+
+def test_coinbase_listing_dates_are_each_coins_earliest_product() -> None:
+    first = {"ABC-USD": date(2021, 3, 4), "ABC-EUR": date(2021, 6, 1), "XYZ-USD": None}
+    products = [
+        {"id": "ABC-USD", "base_currency": "ABC"},
+        {"id": "ABC-EUR", "base_currency": "ABC"},
+        {"id": "XYZ-USD", "base_currency": "XYZ"},
+        {"id": "BTC-USD", "base_currency": "BTC"},  # not asked for
+    ]
+    asked: list[str] = []
+
+    def handle(request: httpx.Request) -> httpx.Response:
+        if request.url.path == "/products":
+            return httpx.Response(200, json=products)
+        product = request.url.path.split("/")[2]
+        asked.append(product)
+        start = datetime.fromisoformat(request.url.params["start"].replace("Z", "+00:00")).date()
+        end = datetime.fromisoformat(request.url.params["end"].replace("Z", "+00:00")).date()
+        day = first[product]
+        rows = []
+        if day is not None:
+            d = max(day, start)
+            while d <= end:
+                rows.append(
+                    [int(datetime(d.year, d.month, d.day, tzinfo=UTC).timestamp()), 1, 2, 1, 1.5, 9]
+                )
+                d += DAY
+        return httpx.Response(200, json=rows)
+
+    http = httpx.Client(transport=httpx.MockTransport(handle))
+    frame = external.coinbase_listings(
+        {"ABC", "XYZ"}, http, date(2025, 10, 31), sleep=lambda _: None
+    )
+    assert frame.rows() == [("ABC", "ABC-USD", date(2021, 3, 4))]  # earliest of its products
+    assert "BTC-USD" not in asked
+    # Products are searched in name order: ABC-EUR first (2021-06), then ABC-USD only up to
+    # that date, since a later listing can't be the first.
+    assert asked.count("ABC-USD") <= asked.count("ABC-EUR")

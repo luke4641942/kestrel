@@ -178,3 +178,77 @@ def fetch(name: str, http: httpx.Client, start: date, end: date) -> pl.DataFrame
     if kind == "fred":
         return fetch_fred(ident, http).filter(pl.col("date") <= end)
     raise ExternalError(f"unknown series {name!r}")
+
+
+# ---------- Coinbase listing dates (note: does a Coinbase listing move a coin on Binance) ----
+
+
+PRODUCTS = "https://api.exchange.coinbase.com/products"
+LISTINGS = "coinbase_listings"
+LISTING_SCHEMA = {"base": pl.Utf8, "product": pl.Utf8, "first_day": pl.Date}
+SEARCH_FROM = date(2015, 1, 1)
+"""Coinbase Exchange's daily candles start in 2015; nothing is listed before."""
+
+
+def coinbase_products(http: httpx.Client) -> list[tuple[str, str]]:
+    """Every (base currency, product id) Coinbase Exchange lists, delisted ones included."""
+    r = http.get(PRODUCTS, headers={"User-Agent": USER_AGENT})
+    r.raise_for_status()
+    body = r.json()
+    if not isinstance(body, list):
+        raise ExternalError(f"coinbase products: unexpected reply {str(body)[:80]}")
+    return sorted((str(p["base_currency"]).upper(), str(p["id"])) for p in body)
+
+
+def first_trading_day(
+    product: str,
+    http: httpx.Client,
+    end: date,
+    sleep: Callable[[float], None] = time.sleep,
+) -> date | None:
+    """The first day ``product`` has a daily candle, searching 300-day pages forward from
+    2015; None if it never traded by ``end``. Only the date is kept: no price is read."""
+    chunk = SEARCH_FROM
+    while chunk <= end:
+        stop = min(chunk + timedelta(days=299), end)
+        r = http.get(
+            COINBASE.format(product=product),
+            params={
+                "granularity": 86400,
+                "start": f"{chunk.isoformat()}T00:00:00Z",
+                "end": f"{stop.isoformat()}T00:00:00Z",
+            },
+            headers={"User-Agent": USER_AGENT},
+        )
+        sleep(0.25)  # well under Coinbase's public rate limit
+        if r.status_code == 404:
+            return None
+        r.raise_for_status()
+        body = r.json()
+        if not isinstance(body, list):
+            raise ExternalError(f"coinbase {product}: unexpected reply {str(body)[:80]}")
+        if body:
+            return min(datetime.fromtimestamp(int(c[0]), UTC).date() for c in body)
+        chunk = stop + timedelta(days=1)
+    return None
+
+
+def coinbase_listings(
+    bases: set[str],
+    http: httpx.Client,
+    end: date,
+    sleep: Callable[[float], None] = time.sleep,
+) -> pl.DataFrame:
+    """For each of ``bases`` Coinbase lists: its earliest first trading day across all its
+    products (USD, USDC, USDT, EUR...), and which product that was."""
+    rows: list[tuple[str, str, date]] = []
+    found: dict[str, tuple[str, date]] = {}
+    for base, product in coinbase_products(http):
+        if base not in bases:
+            continue
+        bound = min(end, found[base][1]) if base in found else end  # only earlier matters
+        day = first_trading_day(product, http, bound, sleep)
+        if day is not None and (base not in found or day < found[base][1]):
+            found[base] = (product, day)
+    rows = [(b, p, d) for b, (p, d) in sorted(found.items())]
+    return pl.DataFrame(rows, schema=LISTING_SCHEMA, orient="row")

@@ -594,7 +594,7 @@ def _commit() -> str | None:
 
 @app.command("event-study")
 def event_study(
-    event: Annotated[str, typer.Argument(help="perp-listing or token-unlocks.")],
+    event: Annotated[str, typer.Argument(help="perp-listing, token-unlocks or coinbase-listing.")],
     research_dir: ResearchDir = Path("research"),
     data_dir: DataDir = Path("data"),
     config: Annotated[
@@ -611,6 +611,10 @@ def event_study(
     notes = {
         "perp-listing": ("does-a-perp-listing-mark-a-top", "study:perp-listing"),
         "token-unlocks": ("do-coins-fall-into-large-token-unlocks", "study:token-unlocks"),
+        "coinbase-listing": (
+            "does-a-coinbase-listing-move-a-coin-on-binance",
+            "study:coinbase-listing",
+        ),
     }
     if event not in notes:
         typer.echo(f"no event study {event!r}; one of {', '.join(notes)}", err=True)
@@ -649,6 +653,19 @@ def event_study(
             saved = events.save(event, slug, result, report, path, data_dir, _commit())
             typer.echo(f"Saved for the dashboard: {saved}")
             typer.echo(f"\nMapping written to {target} ({len(mapping)} protocols mapped).")
+            return
+        if event == "coinbase-listing":
+            listed = external.load(data_dir, external.LISTINGS)
+            days = {f"{b}USDT": d for b, d in zip(listed["base"], listed["first_day"], strict=True)}
+            result, found, path = events.run_coinbase_listing(
+                panel, {c: d for c, d in days.items() if c in coins}, holdout, tiers
+            )
+            store.mark_backtested(s.slug, note.version)
+            report = events.format_result(f"Coinbase listings (note {slug})", result)
+            typer.echo(report)
+            typer.echo(f"\n{len(found)} events found (the note counted them before any return).")
+            saved = events.save(event, slug, result, report, path, data_dir, _commit())
+            typer.echo(f"Saved for the dashboard: {saved}")
             return
         first: dict[str, datetime | None] = {}
         for c in coins:
@@ -1345,6 +1362,35 @@ def fx_backtest_command(
         typer.echo(str(e), err=True)
         raise typer.Exit(code=1) from None
     typer.echo(run.report)
+
+
+@app.command("ingest-coinbase-listings")
+def ingest_coinbase_listings(
+    data_dir: DataDir = Path("data"),
+    research_dir: ResearchDir = Path("research"),
+    config: Annotated[
+        Path, typer.Option("--config", envvar="KESTREL_CONFIG", help="Config file.")
+    ] = Path("kestrel.toml"),
+) -> None:
+    """Each exploration-half coin's first trading day on Coinbase Exchange (dates only: no
+    price is read or kept), for the Coinbase-listing study. A few minutes: one request per
+    300 days of each product's history, 0.25 s apart."""
+    import tomllib
+
+    try:
+        cfg = load_config(config)
+        split = tomllib.loads((Path(research_dir) / "exploration" / "split.toml").read_text())
+        bases = {c.removesuffix("USDT") for c in split["exploration"]}
+        end = (cfg.backtest.holdout_start - timedelta(days=1)).date()
+        with httpx.Client(timeout=60) as http:
+            frame = external.coinbase_listings(bases, http, end)
+    except (ConfigError, OSError, KeyError, httpx.HTTPError, external.ExternalError) as e:
+        typer.echo(f"coinbase listings: {e}", err=True)
+        raise typer.Exit(code=1) from None
+    external.save(frame, data_dir, external.LISTINGS)
+    typer.echo(
+        f"{frame.height} of {len(bases)} exploration-half coins have traded on Coinbase by {end}"
+    )
 
 
 @app.command("delisting-study")

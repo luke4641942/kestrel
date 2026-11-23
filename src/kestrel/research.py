@@ -317,6 +317,7 @@ STUDIES = {
     "study:taker-flow": "kestrel cross-study taker-flow",
     "study:perp-listing": "kestrel event-study perp-listing",
     "study:token-unlocks": "kestrel event-study token-unlocks",
+    "study:coinbase-listing": "kestrel event-study coinbase-listing",
     # Non-trend angles (2026-11-22): drafted before their code exists, so notes can freeze.
     "study:coinbase-premium": "kestrel signal-study coinbase-premium",
     "study:variance-premium": "kestrel signal-study variance-premium",

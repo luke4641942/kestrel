@@ -41,6 +41,12 @@ describe("eventVerdict", () => {
   });
   it("names each study", () => {
     expect(eventName({ name: "token-unlocks" })).toBe("Large token unlocks");
+    expect(eventName({ name: "coinbase-listing" })).toBe("A coin's first Coinbase listing");
+  });
+  it("calls a two-sided pass upward a lead for a note, not a result", () => {
+    const v = eventVerdict(eventStudy({ name: "coinbase-listing", verdict: "LEAD" }));
+    expect(v.label).toBe("Lead");
+    expect(v.text).toMatch(/worth a frozen strategy note/);
   });
 });
 

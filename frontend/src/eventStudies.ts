@@ -6,6 +6,7 @@ import type { Tone } from "./components/ui";
 const TITLES: Record<string, string> = {
   "perp-listing": "A coin's first perp listing",
   "token-unlocks": "Large token unlocks",
+  "coinbase-listing": "A coin's first Coinbase listing",
 };
 
 export const eventName = (s: { name: string }) => TITLES[s.name] ?? s.name;
@@ -19,6 +20,13 @@ export function eventVerdict(s: EventStudy): { tone: Tone; label: string; text: 
       tone: "ok",
       label: "Exit rule",
       text: `Passed all ${tests.length} of its pre-registered tests: a reason not to hold a coin around this event (a rule for an altcoin portfolio), not a trade by itself.`,
+    };
+  }
+  if (s.verdict === "LEAD") {
+    return {
+      tone: "info",
+      label: "Lead",
+      text: `Passed all ${tests.length} of its pre-registered tests: worth a frozen strategy note, not a result by itself.`,
     };
   }
   if (s.verdict === "INSUFFICIENT") {

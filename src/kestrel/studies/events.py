@@ -242,6 +242,56 @@ def run_perp_listing(
     return result, events, event_path(g, events)
 
 
+# ---------- Coinbase listings (note does-a-coinbase-listing-move-a-coin-on-binance) ----------
+
+
+def coinbase_listings(g: Grid, first_day: dict[str, date], holdout: datetime) -> list[Event]:
+    """Each coin's first trading day on Coinbase, where the coin already had at least 60
+    days of unbroken Binance spot history (Binance first) and its 30-day window ends before
+    the holdout."""
+    index = {d: i for i, d in enumerate(g.days)}
+    out = []
+    for coin, day in sorted(first_day.items()):
+        i = index.get(day)
+        if i is None or coin not in g.symbols:
+            continue
+        if g.age[i, g.symbols.index(coin)] < MIN_SPOT_DAYS + 1:
+            continue  # Coinbase listed it first, or too little Binance history before
+        if datetime.combine(day, datetime.min.time(), UTC) + timedelta(days=PRIMARY[1]) >= holdout:
+            continue
+        out.append(Event(coin, day))
+    return out
+
+
+def coinbase_verdict(r: EventResult) -> str:
+    """Two-sided (either sign would be news), so each side needs 95%, not 90%."""
+    if r.event_days < 50:
+        return "INSUFFICIENT"
+    p_above = 1 - r.p_below
+    placebo_at_or_above = 1 - r.placebo_share_at_or_below
+    if r.mean >= 0.03 and p_above >= 0.95 and placebo_at_or_above <= 0.05:
+        return "LEAD"
+    if r.mean <= -0.03 and r.p_below >= 0.95 and r.placebo_share_at_or_below <= 0.05:
+        return "EXIT RULE"
+    return "KILL"
+
+
+def run_coinbase_listing(
+    panel: pl.DataFrame,
+    first_day: dict[str, date],
+    holdout: datetime,
+    tiers: Sequence[tuple[float, float]],
+) -> tuple[EventResult, list[Event], list[tuple[int, float]]]:
+    g = grid(panel, {}, tiers)
+    found = coinbase_listings(g, first_day, holdout)
+    last = (holdout - timedelta(days=1)).date()
+    result = study(
+        g, found, PRIMARY, OTHERS, last_day=last if last in g.days else None,
+        verdict=coinbase_verdict,
+    )  # fmt: skip
+    return result, found, event_path(g, found)
+
+
 def format_result(title: str, r: EventResult, primary: str = "day 1 to 31") -> str:
     lines = [
         title,
@@ -443,6 +493,20 @@ def exit_rule_tests(r: EventResult) -> dict[str, bool]:
     }
 
 
+def coinbase_tests(r: EventResult) -> dict[str, bool]:
+    """The Coinbase-listing note's tests: two-sided, so 95% on whichever side the mean is."""
+    up = r.mean >= 0
+    return {
+        "at least 50 event days": r.event_days >= 50,
+        "mean at least +3% or at most -3%": abs(r.mean) >= 0.03,
+        "P(same sign) at least 95%": (1 - r.p_below if up else r.p_below) >= 0.95,
+        "beyond 95% of the placebo means": (
+            1 - r.placebo_share_at_or_below if up else r.placebo_share_at_or_below
+        )
+        <= 0.05,
+    }
+
+
 def save(
     name: str,
     slug: str,
@@ -468,7 +532,7 @@ def save(
         "share_negative": result.share_negative,
         "placebo_median": float(np.median(result.placebo_means)) if result.placebo_means else None,
         "placebo_share_at_or_below": result.placebo_share_at_or_below,
-        "tests": exit_rule_tests(result),
+        "tests": coinbase_tests(result) if name == "coinbase-listing" else exit_rule_tests(result),
         "path": [{"day": k, "abnormal": None if not np.isfinite(v) else v} for k, v in path],
         "report": report,
     }

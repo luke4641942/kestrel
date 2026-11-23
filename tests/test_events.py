@@ -172,3 +172,31 @@ def test_a_study_is_saved_with_its_path_and_served(tmp_path) -> None:  # type: i
     assert (study["verdict"], study["note"], study["events"]) == ("EXIT RULE", "note-slug", 60)
     assert all(study["tests"].values())
     assert len(study["path"]) == 61
+
+
+def test_coinbase_listings_need_binance_history_first_and_a_window_before_the_holdout() -> None:
+    g = coins(4, 400)
+    g.age[:, 1] = np.maximum(0, g.age[:, 1] - 250)  # coin 1 reached Binance on day 250
+    first = {
+        "C00USDT": g.days[100],  # counts
+        "C01USDT": g.days[280],  # Coinbase within 30 days of Binance: too little history
+        "C02USDT": g.days[390],  # its 30 days run into the holdout
+        "C09USDT": g.days[100],  # not in the universe
+    }
+    holdout = datetime.combine(g.days[399], datetime.min.time(), UTC)
+    assert ev.coinbase_listings(g, first, holdout) == [ev.Event("C00USDT", g.days[100])]
+
+
+def test_the_coinbase_verdict_is_two_sided_at_95_percent() -> None:
+    g = coins(30, 1400, noise=0.002)
+    events = []
+    for k in range(60):
+        j, i = k % 30, 200 + 15 * k
+        plant(g, j, i, -0.10)  # a 10% rise
+        events.append(ev.Event(g.symbols[j], g.days[i]))
+    up = ev.study(g, events, verdict=ev.coinbase_verdict, placebo_days=50)
+    assert up.mean == pytest.approx(0.10, abs=0.02)
+    assert up.verdict == "LEAD"
+    assert all(ev.coinbase_tests(up).values())
+    flat = ev.study(coins(30, 1400), events, verdict=ev.coinbase_verdict, placebo_days=50)
+    assert flat.verdict == "KILL"
