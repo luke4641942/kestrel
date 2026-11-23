@@ -16,8 +16,27 @@ Rules live in CLAUDE.md; results in `research/findings.md`; ideas not yet schedu
   sleeps (a missed day is recorded, never traded late).
 
 ## Waiting on Luke
+- Forex data source (P6 step 2): open a free OANDA practice account (ASIC-licensed; no
+  money) and put its API token in `KESTREL_OANDA_TOKEN` in ~/.zshrc. Its bid/ask candles are
+  the data, and the same account is the later paper venue. Dukascopy's free feed refused
+  scripted downloads (503, 2026-11-23).
+- Before any forex paper or live trading: check the Swyftx employee trading policy.
 - GitHub Actions won't start jobs (billing / spending limit, 2026-11-22): CI is down; the
   local `scripts/check.sh` is the gate until it's fixed.
+
+## Forex (P6; Luke, 2026-11-23)
+Rules fixed in CLAUDE.md before any forex data: its own trial pool, holdout from 2023-01-01,
+10 pairs. Futures parked (paid data, contracts too big for the account).
+- [x] 1. Rules: pools per market, forex holdout, universe, EUR/GBP disclosure (2026-11-23).
+- [ ] 2. Data: daily bid and ask candles for the 10 pairs from OANDA (`kestrel ingest-fx`),
+      stored with quality checks; the day closes 17:00 New York; weekend gaps are expected,
+      others reported. Waiting on the OANDA token.
+- [ ] 3. Engine: weights in [-L, L], margin and a leverage cap, CFD costs (the spread from
+      the data's bid/ask, overnight financing on both sides), AUD accounting; parity with the
+      crypto engine when shorting and leverage are off. Trial log and luck bar per pool.
+- [ ] 4. First note: trend following across the 10 pairs (outside evidence: Moskowitz, Ooi
+      and Pedersen 2012; Hurst et al., A Century of Evidence on Trend-Following), scored
+      against holding nothing (forex has no buy-and-hold) and the carry it pays or earns.
 
 ## Next
 - [ ] Pick the next idea by independence from the trend bet (news tone first): expected overlap

@@ -14,6 +14,11 @@ This file is the rulebook. Results go in `research/findings.md`, not here.
   5 USDT, so a strategy holds at most 3 coins at once. Revisit if the account grows.
 - Low turnover (4h/daily horizons). Fees dominate at this size; never present a result
   without costs included.
+- **Forex (P6, Luke 2026-11-23): research first, its own market.** Long and short, through
+  an ASIC-licensed CFD broker (retail leverage capped by ASIC); costed as spread plus
+  overnight financing. The spot, long-only rule above stays for crypto. No forex trading
+  (paper or live) before a pass, and not before Luke has checked the Swyftx employee trading
+  policy. Futures are research-only and parked until the account is far bigger.
 - A strategy must behave identically in backtest, paper and live. Strategies talk to an
   `ExecutionVenue` interface, never to an exchange directly.
 - Luke works in ~45-minute weekday sessions and longer on days off. Size tasks so one
@@ -103,7 +108,12 @@ Never pipe check output through `tail` or similar inside an `&&` chain: it hides
       exploration experiment), the exploration split and confirmation run, cross-sectional
       studies, delisting studies, the minute-chart cost gate, the overlap report
       (`kestrel overlap`: how much saved runs are one bet).
-- Parked: P5 perps (see Parked), multi-strategy portfolios, Settings page.
+- [ ] P6 Forex (started 2026-11-23; plan in TODO.md): rules (pools, holdout, universe),
+      bid/ask daily data, an engine that takes signed and leveraged weights (margin,
+      financing, AUD accounting; parity with the crypto engine when both are off), then the
+      first note: trend following across the 10 pairs, with published outside evidence.
+- Parked: P5 perps (see Parked), futures research (paid data; contracts too large for the
+  account), multi-strategy portfolios, Settings page.
 
 ## Research rules (reviewed 2026-11-14)
 - **What a pass means.** A strategy passes only if it beats holding the same coin *at the
@@ -180,6 +190,19 @@ Never pipe check output through `tail` or similar inside an `&&` chain: it hides
     holdout test before it could be pursued.
 - **Don't rescue a strategy by tuning.** A setting chosen after seeing results is a new
   trial. A genuinely new reason means a new note version, and its runs count.
+- **Trial pools: one per market (Luke, 2026-11-23).** Crypto (every trial up to now),
+  forex, and futures each have their own trial log and luck bar; a pass is judged only
+  against its own pool. Fixed before any forex or futures result; pools are never merged
+  or split after a look. Every report of a luck bar also states the total trials across
+  all pools. An idea carried over from crypto (trend-vol-target, say) is a new trial in
+  the new pool, and its note says where its shape came from.
+- **Forex holdout starts 2023-01-01 00:00 UTC (fixed, pre-registered 2026-11-23 before any
+  forex data was ingested; never move it).** Research uses forex data before it. Disclosed:
+  trend-vol-target already ran on Binance's EURUSDT and GBPUSDT (2020-01 to 2025-10, Sharpe
+  -0.68 and -0.88, dropped), so EUR/USD and GBP/USD from 2023 have been seen once by a trend
+  rule. A forex holdout verdict for a trend strategy is reported with and without those two
+  pairs, and must pass both ways. Universe fixed now: EURUSD, GBPUSD, USDJPY, USDCHF, USDCAD,
+  AUDUSD, NZDUSD, EURGBP, EURJPY, GBPJPY; adding a pair later is a note, never a rescue.
 - **Holdout starts 2025-11-01 00:00 UTC (fixed, pre-registered 2026-10-31).** All
   research, tuning and validation use data before it. The engine refuses holdout data
   without the CLI's explicit flag and logs every such run; the dashboard and API can never
