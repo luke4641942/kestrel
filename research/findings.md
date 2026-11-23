@@ -417,6 +417,20 @@ from 2026-11-16) is the test that's left.
     returns correlated -0.11 with the rejected trend run: a different bet, equally unpaid.
     Two textbook forex premia, run once each at retail CFD costs, both lost from 2006.
 
+27. **After a Coinbase listing, nothing tradable is left (2026-11-23, note
+    `does-a-coinbase-listing-move-a-coin-on-binance`; a raw-effect study, not a trial).**
+    Every Binance coin outside the locked half that Coinbase listed after it had 60 days on
+    Binance, 2019 to 2025-10: 72 events on 58 listing days. Against the other coins, day 1
+    to day 31: mean -1.7%, P(< 0) 63%, 72% of events below zero, and 34% of placebo means
+    as low: KILL (two-sided, 95% needed either way). The move comes before the listing
+    (day -30 to day 1: +25.6% against the other coins, reported, deciding nothing), as the
+    published studies found (Li, Luo, Wang and Wei 2025; Laucht's cross-listing study):
+    by the time a Binance trader can see the listing, the effect is spent. Most events
+    lag, but a few big winners pull the mean back towards zero; by year it swings from
+    +15% (2020, 6 events) to -27% (2023, 2), too few each to read. Not an exit rule either,
+    unlike a coin's first perp listing (-15%).
+
+
 
 
 ## The holdout year (2025-11 to 2026-10)

@@ -16,8 +16,8 @@ Rules live in CLAUDE.md; results in `research/findings.md`; ideas not yet schedu
   sleeps (a missed day is recorded, never traded late).
 
 ## Waiting on Luke
-- Freeze note `does-a-coinbase-listing-move-a-coin-on-binance` (72 events, 58 listing days,
-  counted from dates only), then Claude runs `kestrel event-study coinbase-listing` once.
+- Reject note `does-a-coinbase-listing-move-a-coin-on-binance`? Run once 2026-11-23: KILL
+  (findings 27). Waiting on Luke's say-so.
 - Before any forex paper or live trading: check the Swyftx employee trading policy.
 - GitHub Actions won't start jobs (billing / spending limit, 2026-11-22): CI is down; the
   local `scripts/check.sh` is the gate until it's fixed.
