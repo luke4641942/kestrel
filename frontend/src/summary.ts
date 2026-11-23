@@ -339,6 +339,13 @@ export function luckBar(trials: number, expectedMax: number): string {
   return `${trials.toLocaleString("en-AU")} trials so far: a backtest Sharpe has to beat about ${expectedMax.toFixed(2)} before it stands out from luck.`;
 }
 
+/** Beside the crypto bar: how many trials every pool holds (one pool per market). */
+export function poolsNote(pools: Record<string, number> | undefined, all: number | undefined): string {
+  if (!pools || all === undefined) return "crypto pool";
+  const forex = pools.forex ?? 0;
+  return `crypto pool; ${all.toLocaleString("en-AU")} across all pools${forex ? ` (forex ${forex})` : ""}`;
+}
+
 export const GRADE: Record<GradeStatus, { tone: Tone; label: string }> = {
   pass: { tone: "ok", label: "Pass" },
   fail: { tone: "bad", label: "Fail" },

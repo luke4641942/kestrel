@@ -38,9 +38,11 @@ Rules fixed in CLAUDE.md before any forex data: its own trial pool, holdout from
       (FRED), refreshed by `kestrel ingest-fx`; one blank since 2005 (USD 2020-04, bridged
       and counted). EUR and GBP stop at 2026-01 (holdout years only). Markup measured from
       OANDA's financing rates today: ~1.0% (yen pairs quote 0 on practice); set to 1.0.
-- [ ] 3d. Trial pools in code: the validation log and luck bar per market (crypto, forex),
-      with the total across pools shown beside every bar. Then a `kestrel fx-backtest`
-      command (frozen notes only, like crypto) and saved forex runs with metrics.
+- [x] 3d. (2026-11-23) Forex trial pool (`pool_of`: market "forex"), every pool's total
+      beside each bar (Research tab, `fx-backtest`); `kestrel.fx_strategy` (fx: keys, a
+      registry filled by notes, the lookahead check); `kestrel fx-backtest` (frozen notes
+      only, pre-holdout, optional warm-up); runs in `data/fx/runs/`, metrics on calendar
+      days so a Sharpe means what it means elsewhere.
 - [ ] 4. First note: trend following across the 10 pairs (outside evidence: Moskowitz, Ooi
       and Pedersen 2012; Hurst et al., A Century of Evidence on Trend-Following), scored
       against holding nothing (forex has no buy-and-hold) and the carry it pays or earns.

@@ -132,6 +132,7 @@ from kestrel.validation.deflated import (
     TrialSet,
     counts_as_trial,
     deflated_sharpe,
+    every_pool,
     pool_of,
     trial_history,
     trial_set,
@@ -895,12 +896,18 @@ def create_app(
 
     @api.get("/validation")
     def get_validation() -> ValidationOut:
-        t = trial_set(runs.summaries(), studies.studies())
+        from kestrel.backtest.fx_runs import FxRunStore
+
+        found = studies.studies()
+        pools = every_pool([*runs.summaries(), *FxRunStore(data_dir).summaries()], found)
+        t = pools["main"]
         return ValidationOut(
             trials=t.count,
             sharpe_std=t.sharpe_std * math.sqrt(DAYS_PER_YEAR),
             expected_max_sharpe=t.expected_max_sharpe_annual,
-            studies=[StudyOut.model_validate(x) for x in studies.studies()],
+            studies=[StudyOut.model_validate(x) for x in found],
+            pools={p: x.count for p, x in pools.items()},
+            all_trials=sum(x.count for x in pools.values()),
         )
 
     @api.get("/validation/history")

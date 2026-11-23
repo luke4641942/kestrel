@@ -1308,6 +1308,44 @@ def ingest_fx(
         raise typer.Exit(code=1)
 
 
+@app.command("fx-backtest")
+def fx_backtest_command(
+    research: Annotated[str, typer.Option(help="The frozen forex note (fx:... strategy).")],
+    start: Annotated[str, typer.Option(help="First month traded, YYYY-MM.")],
+    end: Annotated[str, typer.Option(help="Last month traded, YYYY-MM (inclusive).")],
+    cash: Annotated[float, typer.Option(help="Starting equity, in [fx] account_currency.")] = 500,
+    param: Annotated[list[str] | None, typer.Option(help="name=value (repeatable).")] = None,
+    warmup_from: Annotated[
+        str | None, typer.Option(help="First month the strategy may see (its note says).")
+    ] = None,
+    research_dir: ResearchDir = Path("research"),
+    data_dir: DataDir = Path("data"),
+    config: Annotated[
+        Path, typer.Option("--config", envvar="KESTREL_CONFIG", help="Config file.")
+    ] = Path("kestrel.toml"),
+) -> None:
+    """Backtest a frozen forex note across the [fx] pairs, before the forex holdout. Saved
+    under data/fx/runs/ and counted in the forex trial pool."""
+    from kestrel.fx_backtest import fx_backtest
+
+    try:
+        run = fx_backtest(
+            ResearchStore(research_dir),
+            research,
+            data_dir,
+            load_config(config),
+            start,
+            end,
+            cash,
+            _parse_params(param or []),
+            warmup_from,
+        )
+    except (ConfigError, ValueError) as e:
+        typer.echo(str(e), err=True)
+        raise typer.Exit(code=1) from None
+    typer.echo(run.report)
+
+
 @app.command("delisting-study")
 def delisting_study(
     research: Annotated[

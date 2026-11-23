@@ -196,6 +196,8 @@ def test_runs_are_deflated_for_every_strategy_tried(client: TestClient) -> None:
     validation = client.get("/api/validation").json()
     assert validation["trials"] == 2
     assert validation["expected_max_sharpe"] >= 0
+    assert validation["pools"] == {"main": 2, "confirmation": 0, "forex": 0}
+    assert validation["all_trials"] == 2
     listed = client.get("/api/backtests").json()
     by = {r["strategy"]: r for r in listed}
     assert by["buy-and-hold"]["deflated_sharpe"] is None

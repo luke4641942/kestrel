@@ -63,13 +63,40 @@ class TrialSet:
         return self.expected_max_sharpe * math.sqrt(DAYS_PER_YEAR)
 
 
-Pool = Literal["main", "confirmation"]
+Pool = Literal["main", "confirmation", "forex"]
+POOLS: tuple[Pool, ...] = ("main", "confirmation", "forex")
+"""One pool per market (Luke, 2026-11-23): "main" is crypto (every trial before forex),
+"confirmation" the exploration experiment's confirmation runs, "forex" P6. A pass is
+judged against its own pool; every report of a bar also gives the total of all pools."""
 
 
 def pool_of(item: dict[str, Any]) -> Pool:
-    """Which trial pool a run or study belongs to: confirmation runs of the exploration
-    experiment (kestrel.exploration) are counted apart from everything else."""
+    """Which trial pool a run or study belongs to: forex runs (``market: "forex"``,
+    kestrel.backtest.fx_runs) and confirmation runs of the exploration experiment
+    (kestrel.exploration) are counted apart from the main crypto research."""
+    if item.get("market") == "forex":
+        return "forex"
     return "confirmation" if item.get("confirmation") else "main"
+
+
+def every_pool(
+    runs: Iterable[dict[str, Any]], studies: Iterable[dict[str, Any]] = ()
+) -> dict[Pool, TrialSet]:
+    """Each pool's trial set, from all runs (crypto and forex) and studies together."""
+    runs, studies = list(runs), list(studies)
+    return {pool: trial_set(runs, studies, pool) for pool in POOLS}
+
+
+def format_pools(pools: dict[Pool, TrialSet], judged: Pool) -> str:
+    """The bar a result is judged against, and the total across every pool beside it."""
+    own = pools[judged]
+    total = sum(t.count for t in pools.values())
+    names = {"main": "crypto", "confirmation": "confirmation", "forex": "forex"}
+    return (
+        f"Luck bar ({names[judged]} pool): Sharpe {own.expected_max_sharpe_annual:.2f} from "
+        f"{own.count} trials; {total} trials across all pools "
+        f"({', '.join(f'{names[p]} {t.count}' for p, t in pools.items())})"
+    )
 
 
 def counts_as_trial(run: dict[str, Any], pool: Pool | None = None) -> bool:

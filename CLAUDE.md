@@ -246,7 +246,11 @@ Agreed with Luke; don't re-litigate without a reason.
   charging, `known_rate` (month before last) for any decision); P&L in AUD
   through the pairs' own mids; a holiday is neither traded nor marked; a wipe-out stops
   the run. Parity-tested against the crypto engine (long only, unlevered). Weekend candles
-  are dropped (`fx.trading_days`, Luke's decision 2026-11-23).
+  are dropped (`fx.trading_days`, Luke's decision 2026-11-23). Forex strategies have `fx:`
+  keys (`kestrel.fx_strategy`, lookahead-checked like crypto's) and run only through
+  `kestrel fx-backtest` from a frozen note; runs live in `data/fx/runs/` (never with crypto
+  runs), metrics on calendar days (equity carried over weekends) so annualising stays 365,
+  and count in the forex pool (`validation.deflated.pool_of`).
 - **Stops and sizing:** intrabar stop/target exits from the bar's high/low, the stop
   assumed first when a bar touches both; size = risk% x equity / stop distance, capped at
   100%; results in R. Bracket strategies may emit an `exit` column and a null target, and

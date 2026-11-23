@@ -26,6 +26,7 @@ from pathlib import Path
 from typing import Any, Literal
 
 from kestrel.atomic import write_atomically
+from kestrel.fx_strategy import FX_STRATEGIES
 from kestrel.strategy import STRATEGIES
 
 Status = Literal["idea", "specified", "backtested", "validated", "paper", "live", "rejected"]
@@ -159,7 +160,11 @@ class ResearchStore:
         unknown = set(sections) - set(SECTIONS)
         if unknown:
             raise ResearchError(f"unknown section(s): {', '.join(sorted(unknown))}")
-        if implementation is not None and implementation not in {**STRATEGIES, **STUDIES}:
+        if implementation is not None and implementation not in {
+            **STRATEGIES,
+            **STUDIES,
+            **FX_STRATEGIES,
+        }:
             raise ResearchError(f"unknown implementation {implementation!r}")
         note.sections.update(sections)
         note.implementation = implementation
@@ -345,6 +350,8 @@ def run_target(
             raise ResearchError(
                 f"{research} is a study, not a strategy: run it with {STUDIES[note.implementation]}"
             )
+        if note.implementation in FX_STRATEGIES:
+            raise ResearchError(f"{research} trades forex: run it with kestrel fx-backtest")
         return note.implementation, (s.slug, note.version)
     if strategy not in STRATEGIES:
         raise ResearchError(f"unknown strategy {strategy!r}; one of {', '.join(STRATEGIES)}")

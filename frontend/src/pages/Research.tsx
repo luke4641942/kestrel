@@ -5,7 +5,7 @@ import { Empty, PageHeader, Panel, Section, Stat, Status } from "../components/u
 import { date } from "../format";
 import { useResource } from "../hooks";
 import { byFamily, confirmationRuns, luckSeries, tally } from "../researchView";
-import { DECISION, luckBar, studyTone } from "../summary";
+import { DECISION, luckBar, poolsNote, studyTone } from "../summary";
 
 const pct = (x: number) => `${Math.round(x * 100)}%`;
 const sharpe = (x: number | null) => (x === null ? "–" : x.toFixed(2));
@@ -38,7 +38,11 @@ export function Research() {
           <Stat label="Strategy and market decisions" value={all.length || "–"} />
           <Stat label="Pursue" value={count("pursue")} note="to paper trading, not proven" />
           <Stat label="Watch or drop" value={`${count("watch")} · ${count("drop")}`} />
-          <Stat label="Trials logged" value={validation.data ? validation.data.trials.toLocaleString("en-AU") : "–"} />
+          <Stat
+            label="Trials logged"
+            value={validation.data ? validation.data.trials.toLocaleString("en-AU") : "–"}
+            note={validation.data ? poolsNote(validation.data.pools, validation.data.all_trials) : undefined}
+          />
           <Stat
             label="Luck bar"
             value={validation.data ? validation.data.expected_max_sharpe.toFixed(2) : "–"}

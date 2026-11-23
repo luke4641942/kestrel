@@ -231,6 +231,10 @@ export interface Validation {
   expected_max_sharpe: number;
   /** Robustness checks and walk-forwards, newest first; their settings count as trials. */
   studies: Study[];
+  /** Trials per pool (main is crypto, confirmation, forex); `trials` is main's. */
+  pools?: Record<string, number>;
+  /** Every trial in every pool: reported beside each bar. */
+  all_trials?: number;
 }
 
 /** The trial log after one saved run or study (GET /validation/history). */

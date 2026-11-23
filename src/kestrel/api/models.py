@@ -1075,6 +1075,10 @@ class ValidationOut(BaseModel):
     """Annual Sharpe the best of that many worthless strategies would reach by luck."""
     studies: list[StudyOut] = Field(default_factory=list)
     """Every validation study, newest first; their settings count as trials."""
+    pools: dict[str, int] = Field(default_factory=dict)
+    """Trials in each pool (main is crypto, confirmation, forex); ``trials`` is main's."""
+    all_trials: int = 0
+    """Every trial in every pool: reported beside each bar (CLAUDE.md, trial pools)."""
 
 
 class ChatMessage(BaseModel):

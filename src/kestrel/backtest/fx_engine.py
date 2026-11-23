@@ -73,6 +73,8 @@ class FxFill:
     """The fill: the ask for a buy, the bid for a sell."""
     spread_cost: float
     """In account currency: the distance from the mid, times the units."""
+    notional: float = 0.0
+    """In account currency, at the mid open."""
 
 
 @dataclass
@@ -142,6 +144,7 @@ def run_fx(
 
     ``conversion`` holds the pairs used only to convert to the account currency (every
     traded pair is used too); ``band`` is the no-trade band, a share of equity."""
+    initial_equity = float(initial_equity)
     pairs = tuple(sorted(bars))
     for pair in pairs:
         if pair not in weights.columns:
@@ -227,7 +230,7 @@ def run_fx(
                 units[pair] += delta
                 equity -= cost
                 result.spread_cost += cost
-                result.fills.append(FxFill(day, pair, delta, price, cost))
+                result.fills.append(FxFill(day, pair, delta, price, cost, abs(delta) * per_unit))
         # 3. The day: open to close, then convert at the close.
         for pair in pairs:
             bar = by_day[pair].get(day)

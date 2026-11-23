@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { breakEvenLabel, groupDecisions, shortMarket, gateKey, gateSetupName, hasOwnTarget, drawdownPaths, mostPromising, newestFirst, gateTone, holdoutEdge, datasetsLine, scorecardHeadline, luckBar, splitClosed, startDateVerdict, windowLabel, DECISION, studyTitle, studyTone, deflatedNote, spreadBands, DEFAULT_RUN_SORT, KIND_LABEL, UNIVERSE, marketLabel, marketsFor, defaultDataset, nextSort, sortRuns, fewTrades, signalsCaption, MAX_LABELLED_TRADES, MAX_MARKED_TRADES, costHeadroom, paramsText, runRole, tradeCount, heldAsset, money, span, trackRecord, tradeMarkers, verdict } from "./summary";
+import { breakEvenLabel, groupDecisions, shortMarket, gateKey, gateSetupName, hasOwnTarget, drawdownPaths, mostPromising, newestFirst, gateTone, holdoutEdge, datasetsLine, scorecardHeadline, luckBar, poolsNote, splitClosed, startDateVerdict, windowLabel, DECISION, studyTitle, studyTone, deflatedNote, spreadBands, DEFAULT_RUN_SORT, KIND_LABEL, UNIVERSE, marketLabel, marketsFor, defaultDataset, nextSort, sortRuns, fewTrades, signalsCaption, MAX_LABELLED_TRADES, MAX_MARKED_TRADES, costHeadroom, paramsText, runRole, tradeCount, heldAsset, money, span, trackRecord, tradeMarkers, verdict } from "./summary";
 import { run, trade } from "./test/fixtures";
 
 describe("verdict", () => {
@@ -525,5 +525,13 @@ describe("decisions grouped by strategy", () => {
     expect(shortMarket("SOLUSDT 1d")).toBe("SOL 1d");
     expect(shortMarket("BTC/ETH/SOL 1d")).toBe("BTC/ETH/SOL 1d");
     expect(shortMarket("Confirmation-half altcoins 1d")).toBe("Confirmation-half altcoins 1d");
+  });
+});
+
+describe("poolsNote", () => {
+  it("puts every pool's total beside the crypto bar", () => {
+    expect(poolsNote({ main: 900, confirmation: 2, forex: 6 }, 908)).toBe("crypto pool; 908 across all pools (forex 6)");
+    expect(poolsNote({ main: 900, confirmation: 2, forex: 0 }, 902)).toBe("crypto pool; 902 across all pools");
+    expect(poolsNote(undefined, undefined)).toBe("crypto pool");
   });
 });
