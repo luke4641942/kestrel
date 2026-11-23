@@ -28,7 +28,7 @@ import polars as pl
 from kestrel.atomic import write_atomically
 
 API = "https://api.gdeltproject.org/api/v2/doc/doc"
-USER_AGENT = "kestrel-research/0.1 (https://github.com/luke4641942/kestrel)"
+USER_AGENT = "kestrel-research/0.1"
 FIRST = date(2017, 1, 1)
 KNOWN_AFTER = timedelta(days=2)
 QUERIES = {"BTCUSDT": "bitcoin", "ETHUSDT": "ethereum"}
@@ -37,6 +37,8 @@ PAUSE = 10.0
 """Seconds between requests; GDELT's stated limit is one per five."""
 BACKOFF = (30.0, 60.0, 120.0, 240.0)
 """Waits after each refusal (HTTP 429) before giving up."""
+GENTLE_BACKOFF = (30.0,)
+"""A scheduled run's single retry after a refusal; it gives up for the run after that."""
 
 
 class NewsError(ValueError):

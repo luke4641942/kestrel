@@ -1038,8 +1038,9 @@ def ingest_news(
     about one request every few seconds, so a full history takes a while. Each month is
     saved as it arrives; run it again to continue an interrupted fetch. With --max-months
     (an hourly schedule) it is gentle: the market furthest behind goes first, each gets one
-    try per month asked for (no retries), a minute apart, and a refusal or a dropped
-    connection waits for the next run instead of failing it."""
+    try per month asked for, plus one retry 30 seconds after a refusal, a minute apart, and
+    a refusal or a dropped connection waits for the next run instead of failing it. Within a
+    run, months are 10 seconds apart: half GDELT's stated limit at most."""
     failed = False
     gentle = max_months is not None
     order = news.furthest_behind(symbols, data_dir) if gentle else symbols
@@ -1051,7 +1052,7 @@ def ingest_news(
                 frame = news.ingest(
                     symbol, http, data_dir, limit=max_months,
                     on_month=lambda m: typer.echo(f"  {m:%Y-%m}"),
-                    backoff=() if gentle else news.BACKOFF,
+                    backoff=news.GENTLE_BACKOFF if gentle else news.BACKOFF,
                 )  # fmt: skip
             except (news.NewsRefusedError, httpx.TransportError) as e:
                 if not gentle:

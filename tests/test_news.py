@@ -175,7 +175,7 @@ def test_a_scheduled_run_waits_out_a_refusal_instead_of_failing(
 
     news.ingest("BTCUSDT", FakeGdelt().client(), tmp_path, end=date(2017, 2, 15), sleep=no_wait)
     asked: list[str] = []
-    fake = FakeGdelt(refusals=1)  # the first request of the run is refused
+    fake = FakeGdelt(refusals=2)  # the first request and its one retry are refused
 
     def handler(request: httpx.Request) -> httpx.Response:
         asked.append(request.url.params["query"])
@@ -187,6 +187,24 @@ def test_a_scheduled_run_waits_out_a_refusal_instead_of_failing(
     args = ["ingest-news", "BTCUSDT", "ETHUSDT", "--max-months", "1", "--data-dir", str(tmp_path)]
     got = CliRunner().invoke(app, args)
     assert got.exit_code == 0, got.output
-    assert asked == ["ethereum", "bitcoin"]  # ETH is further behind: first, and tried once
+    # ETH is further behind: first, tried and retried once, then left for the next run.
+    assert asked == ["ethereum", "ethereum", "bitcoin"]
     assert "ETHUSDT: GDELT refused (rate limit); the next run tries again" in got.output
     assert "  2017-03" in got.output  # BTC carried on
+
+
+def test_a_scheduled_run_retries_a_refusal_once_and_carries_on(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    import kestrel.cli as cli
+
+    fake = FakeGdelt(refusals=1)
+    client = fake.client()  # built before httpx.Client is replaced
+    waits: list[float] = []
+    monkeypatch.setattr(cli.httpx, "Client", lambda **_: client)
+    monkeypatch.setattr(cli.time, "sleep", waits.append)
+    args = ["ingest-news", "BTCUSDT", "--max-months", "3", "--data-dir", str(tmp_path)]
+    got = CliRunner().invoke(app, args)
+    assert got.exit_code == 0, got.output
+    assert fake.months == ["2017-01", "2017-02", "2017-03"]  # recovered, then kept going
+    assert waits == [30.0, news.PAUSE, news.PAUSE]  # never faster than one request per 10s

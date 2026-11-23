@@ -25,7 +25,7 @@ import polars as pl
 from kestrel.atomic import write_atomically
 
 API = "https://wikimedia.org/api/rest_v1/metrics/pageviews/per-article/en.wikipedia/all-access/user"
-USER_AGENT = "kestrel-research/0.1 (https://github.com/luke4641942/kestrel)"
+USER_AGENT = "kestrel-research/0.1"
 FIRST = date(2015, 7, 1)
 """Wikimedia's pageview history starts here."""
 KNOWN_AFTER = timedelta(days=2)

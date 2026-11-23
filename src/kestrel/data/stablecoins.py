@@ -22,7 +22,7 @@ import polars as pl
 from kestrel.atomic import write_atomically
 
 API = "https://stablecoins.llama.fi/stablecoincharts/all"
-USER_AGENT = "kestrel-research/0.1 (https://github.com/luke4641942/kestrel)"
+USER_AGENT = "kestrel-research/0.1"
 KNOWN_AFTER = timedelta(days=2)
 SCHEMA = {"date": pl.Date, "supply": pl.Float64}
 FEATURE = "stablecoins_up"
