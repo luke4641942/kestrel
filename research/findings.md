@@ -467,7 +467,7 @@ edge, and the holdout can't be used again for either strategy.
 | Crash brake on trend-vol-target | BTC 1d | Sharpe 0.91 vs 1.21; return +272% vs +639%; drawdown -45.9% vs -48.3% | Drop |
 | Regime filter on trend-vol-target | BTC 1d | Sharpe 0.64 vs 0.69 (2021-05 to 2025-10); the plain rule already holds 13% in volatile spells | Drop |
 | 4h regime filter on trend-vol-target (a second try at the row above, disclosed) | BTC, ETH, SOL 1d, 2020-12/2021-08 to 2025-10 | Sharpe 0.41/0.63/0.12 vs 0.64/0.72/0.78 for the plain rule; fails its adoption test on all three | Rejected (Luke) |
-| Forex trend, 12-month time-series momentum (textbook; first forex trial) | 10 forex pairs 1d, 2006-02 to 2022-12 | -30%, Sharpe -0.07, drawdown -58%, 2 of 8 two-year windows; +2.3%/yr before costs, eaten by spread and a ~2.8%/yr financing markup at 2.8x gross | Fails its rule; rejection waits for Luke |
+| Forex trend, 12-month time-series momentum (textbook; first forex trial) | 10 forex pairs 1d, 2006-02 to 2022-12 | -30%, Sharpe -0.07, drawdown -58%, 2 of 8 two-year windows; +2.3%/yr before costs, eaten by spread and a ~2.8%/yr financing markup at 2.8x gross | Rejected (Luke) |
 | Study: MACD direction in volatile spells | BTC, ETH 1d | Spread +3.70% a week (up +1.63%, down -2.00%), P = 98%: TREND | Study passed |
 | Study: rising attention (Wikipedia) | BTC, ETH 1d | Next week +0.65% after rising attention vs +0.74%; P 46%: KILL | Drop |
 | Study: extreme fear | BTC, ETH 1d | Next week +0.27% after Extreme Fear vs +0.59%; P 39%: KILL | Drop |

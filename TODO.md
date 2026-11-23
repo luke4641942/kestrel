@@ -16,8 +16,6 @@ Rules live in CLAUDE.md; results in `research/findings.md`; ideas not yet schedu
   sleeps (a missed day is recorded, never traded late).
 
 ## Waiting on Luke
-- Reject note `forex-trend-across-the-10-pairs`? Run once 2026-11-23: failed every test
-  (findings 25). Waiting on Luke's say-so.
 - Before any forex paper or live trading: check the Swyftx employee trading policy.
 - GitHub Actions won't start jobs (billing / spending limit, 2026-11-22): CI is down; the
   local `scripts/check.sh` is the gate until it's fixed.
@@ -47,7 +45,7 @@ Rules fixed in CLAUDE.md before any forex data: its own trial pool, holdout from
       days so a Sharpe means what it means elsewhere.
 - [x] 4. First note `forex-trend-across-the-10-pairs`, run once 2026-11-23: Sharpe -0.07,
       -30%, fails every test (findings 25). Costs (spread plus a ~1% markup on ~2.8x
-      gross) outweighed a +2.3%/yr gross edge.
+      gross) outweighed a +2.3%/yr gross edge. Rejected (Luke).
 
 ## Next
 - [ ] Pick the next idea by independence from the trend bet (news tone first): expected overlap
