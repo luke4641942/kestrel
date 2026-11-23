@@ -200,3 +200,19 @@ def test_a_crypto_note_is_not_a_forex_run(tmp_path: Path, registered: str) -> No
     with pytest.raises(ValueError, match="not a forex strategy"):
         fx_backtest(store, slug, tmp_path, fx_config(), "2010-01", "2010-06", 500)
     assert TrialSet(0, 0).expected_max_sharpe == 0
+
+
+def test_a_losing_run_has_no_break_even_to_report() -> None:
+    from kestrel.backtest.fx_runs import format_fx_report
+
+    eq = pl.DataFrame(
+        {
+            "close_time": [T0 + DAY * k for k in (1, 2, 3)],
+            "equity": [100.0, 95.0, 90.0],
+            "gross": [1.0] * 3,
+            "net": [1.0] * 3,
+        }
+    )
+    result = FxResult("t", ("EURAUD",), 100.0, "AUD", equity=eq, spread_cost=2.0)
+    text = format_fx_report(result, compute_fx_metrics(result))
+    assert "no profit to lose: it lost money after costs" in text

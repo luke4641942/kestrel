@@ -199,8 +199,12 @@ def format_fx_report(result: FxResult, m: FxMetrics, extra: list[str] | None = N
         f"  Carry             financing was {m.financing:+,.2f} of a "
         f"{m.final_equity - result.initial_equity:+,.2f} profit; each +1%/yr of markup costs "
         f"about {m.cost_per_markup_pct:,.2f}",
-        f"  Break-even        the spread could be {m.spread_break_even:.1f}x what it was before "
-        "the profit is gone",
+        "  Break-even        "
+        + (
+            f"the spread could be {m.spread_break_even:.1f}x what it was before the profit is gone"
+            if m.final_equity > result.initial_equity
+            else "no profit to lose: it lost money after costs"
+        ),
         f"  2-year windows    Sharpe above zero in {m.windows_positive} of {m.windows}",
     ]
     if m.wiped_out:

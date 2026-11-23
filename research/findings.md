@@ -388,6 +388,22 @@ from 2026-11-16) is the test that's left.
     help this rule at either speed; its own trend votes and volatility sizing already do
     the job.
 
+25. **Forex trend lost money after costs, and the costs are structural (2026-11-23, note
+    `forex-trend-across-the-10-pairs`, the first forex trial; forex pool 1 trial, 875 across
+    all pools).** Textbook 12-month time-series momentum (Moskowitz, Ooi and Pedersen 2012)
+    across the 10 pairs, each sized to 3% volatility, capped at 3x gross, 2006-02 to 2022-12,
+    500 AUD: -30.2% (CAGR -2.1%), Sharpe -0.07 (95% CI -0.55 to 0.40), max drawdown -58%,
+    underwater for 14 of the 17 years, Sharpe above zero in 2 of 8 two-year windows. It
+    fails every test its note set. Before costs it made about +2.3% a year (Sharpe 0.16,
+    checked by hand against the engine), in line with reports that currency momentum faded
+    after 2008. Costs took more than that: spreads 106 AUD and financing -176 AUD, chiefly
+    the broker's markup, about 1% a year on a book averaging 2.8x gross, so roughly 2.8% of
+    equity a year before any carry. The general lesson for forex at retail CFD terms: a
+    strategy must earn more than its gross exposure times the markup, every year, before it
+    earns anything; leverage multiplies that drag, not just the returns. Turnover was 46x
+    equity a year (daily volatility rescaling through a 2% band per pair).
+
+
 ## The holdout year (2025-11 to 2026-10)
 
 Reserved on 2026-10-31, before any research, and read once on 2026-11-14 for the two watched
@@ -451,6 +467,7 @@ edge, and the holdout can't be used again for either strategy.
 | Crash brake on trend-vol-target | BTC 1d | Sharpe 0.91 vs 1.21; return +272% vs +639%; drawdown -45.9% vs -48.3% | Drop |
 | Regime filter on trend-vol-target | BTC 1d | Sharpe 0.64 vs 0.69 (2021-05 to 2025-10); the plain rule already holds 13% in volatile spells | Drop |
 | 4h regime filter on trend-vol-target (a second try at the row above, disclosed) | BTC, ETH, SOL 1d, 2020-12/2021-08 to 2025-10 | Sharpe 0.41/0.63/0.12 vs 0.64/0.72/0.78 for the plain rule; fails its adoption test on all three | Rejected (Luke) |
+| Forex trend, 12-month time-series momentum (textbook; first forex trial) | 10 forex pairs 1d, 2006-02 to 2022-12 | -30%, Sharpe -0.07, drawdown -58%, 2 of 8 two-year windows; +2.3%/yr before costs, eaten by spread and a ~2.8%/yr financing markup at 2.8x gross | Fails its rule; rejection waits for Luke |
 | Study: MACD direction in volatile spells | BTC, ETH 1d | Spread +3.70% a week (up +1.63%, down -2.00%), P = 98%: TREND | Study passed |
 | Study: rising attention (Wikipedia) | BTC, ETH 1d | Next week +0.65% after rising attention vs +0.74%; P 46%: KILL | Drop |
 | Study: extreme fear | BTC, ETH 1d | Next week +0.27% after Extreme Fear vs +0.59%; P 39%: KILL | Drop |
