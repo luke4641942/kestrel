@@ -4,8 +4,12 @@ After every scheduled run (`kestrel paper run`), the account's ledger is reviewe
 
 - **halted**: a risk breach or failed reconciliation stopped it (only `kestrel paper resume`
   lifts it);
-- **failed**: the run itself failed (stale or bad data, the exchange unreachable...), once a
-  day per distinct error;
+- **failed**: the run itself failed (stale or bad data, a bug...), once a day per distinct
+  error. A *network* failure (no connection, a name that won't resolve: the Mac just woke)
+  alerts only the second time in a row for the account (Luke, 2026-11-23): the next hourly
+  run retries anyway, and one blip woke him with nine notifications. The first is recorded,
+  not sent; any run that gets through, or fails for another reason, resets the count
+  (``network.json`` in the account's folder);
 - **behind**: no bar handled for over a day past when it should have been (the Mac asleep,
   or the schedule broken);
 - **missed**: a day recorded as missed (the run was late, so it didn't trade);
@@ -38,6 +42,9 @@ if TYPE_CHECKING:
 
 Kind = Literal["halted", "failed", "behind", "missed", "trade", "decay"]
 LOG = "alerts.jsonl"
+NETWORK = "network.json"
+NETWORK_IN_A_ROW = 2
+"""Network failures in a row before one is sent."""
 
 
 @dataclass(frozen=True)
@@ -133,16 +140,51 @@ def _record(account: PaperAccount, alerts: Sequence[Alert], at: datetime, sent: 
         path.touch()
 
 
+def _network_in_a_row(account: PaperAccount, network_failure: bool) -> int:
+    """Count this run in the account's run of network failures (0 resets it)."""
+    path = account.dir / NETWORK
+    try:
+        before = int(json.loads(path.read_text())["in_a_row"])
+    except (FileNotFoundError, ValueError, KeyError, TypeError):
+        before = 0
+    count = before + 1 if network_failure else 0
+    account.dir.mkdir(parents=True, exist_ok=True)
+    path.write_text(json.dumps({"in_a_row": count}))
+    return count
+
+
 def review(
     account: PaperAccount,
     now: datetime,
     send: Send,
     failure: str | None = None,
     decay: Decay | None = None,
+    network: bool = False,
 ) -> list[Alert]:
-    """Send every new alert (the first review only records), and return what was sent."""
+    """Send every new alert (the first review only records), and return what was sent.
+    ``network``: the failure was the connection, not Kestrel or the data."""
+    in_a_row = _network_in_a_row(account, failure is not None and network)
     current = found(account, now, failure, decay)
-    seen = sent_keys(account)
+    seen = sent_keys(account)  # before anything is recorded: is this the first review?
+    if failure is not None and network:
+        failed = [a for a in current if a.kind == "failed"]
+        current = [a for a in current if a.kind != "failed"]
+        if in_a_row < NETWORK_IN_A_ROW:
+            held = [
+                Alert(
+                    a.account,
+                    "failed",
+                    f"held:{now.isoformat()}",
+                    f"{a.message} (held: first in a row)",
+                )
+                for a in failed
+            ]
+            _record(account, held, now, sent=False)
+        else:
+            current += [
+                Alert(a.account, a.kind, a.key, f"{a.message} ({in_a_row} runs in a row)")
+                for a in failed
+            ]
     if seen is None:
         # First review: history isn't news. A failure happening now still is.
         quiet = [a for a in current if a.kind != "failed"]

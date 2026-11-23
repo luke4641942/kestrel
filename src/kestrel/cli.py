@@ -1942,10 +1942,12 @@ def paper_run(
     mark, decide, and trade at the next open. Refuses to trade on data with problems."""
     account = paper_trading.PaperAccount(data_dir, name)
     failure: str | None = None
+    network = False
     try:
         _paper_run(account, name, data_dir, config)
     except _RunFailedError as e:
         failure = str(e)
+        network = e.network
         typer.echo(failure, err=True)
         raise typer.Exit(code=1) from None
     except (typer.Exit, KeyboardInterrupt):
@@ -1962,13 +1964,20 @@ def paper_run(
                 )
             except Exception:
                 check = None
-            sent = alert_review(account, datetime.now(UTC), _notifier(), failure, check)
+            sent = alert_review(
+                account, datetime.now(UTC), _notifier(), failure, check, network=network
+            )
             for a in sent:
                 typer.echo(f"alert sent: {a.message}")
 
 
 class _RunFailedError(Exception):
-    """A paper run that couldn't finish; the message says why."""
+    """A paper run that couldn't finish; the message says why. ``network``: the connection
+    failed (no route, a name that won't resolve), not Kestrel or the data."""
+
+    def __init__(self, message: str, network: bool = False) -> None:
+        super().__init__(message)
+        self.network = network
 
 
 def _notifier() -> AlertSend:
@@ -1983,7 +1992,7 @@ def _paper_run(
             _paper_run_basket(account, data_dir, config)
             return
     except (ValueError, ConfigError, httpx.HTTPError, ConfirmationLockedError) as e:
-        raise _RunFailedError(str(e)) from None
+        raise _RunFailedError(str(e), network=isinstance(e, httpx.TransportError)) from None
     try:
         terms = account.terms()
         cfg = load_config(config)
@@ -2019,7 +2028,7 @@ def _paper_run(
             )  # fmt: skip
             _reconcile(account, venue, cfg)
     except (ValueError, ConfigError, httpx.HTTPError, BinanceError) as e:
-        raise _RunFailedError(str(e)) from None
+        raise _RunFailedError(str(e), network=isinstance(e, httpx.TransportError)) from None
     halt_reason = safety.halted(account)
     if not handled and halt_reason is None:
         typer.echo(f"{name}: nothing new (the next bar hasn't closed)")

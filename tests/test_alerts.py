@@ -120,3 +120,54 @@ def test_paper_run_with_alerts_sends_one_when_the_run_fails(
     assert quiet.exit_code == 1
     assert len(sent) == 1
     assert (acct.dir / alerts.LOG).exists()
+
+
+DNS = "[Errno 8] nodename nor servname provided, or not known"
+
+
+def test_a_network_failure_alerts_only_the_second_time_in_a_row(tmp_path: Path) -> None:
+    acct, now = account(tmp_path)
+    sent: list[Alert] = []
+    review(acct, now, sent.append)  # the first review records history
+    assert review(acct, now, sent.append, failure=DNS, network=True) == []  # held
+    held = (acct.dir / alerts.LOG).read_text()
+    assert "held: first in a row" in held  # recorded, not sent
+    (again,) = review(acct, now + timedelta(hours=1), sent.append, failure=DNS, network=True)
+    assert again.message == f"Run failed: {DNS} (2 runs in a row)"
+    assert sent == [again]
+
+
+def test_a_run_that_gets_through_resets_the_count(tmp_path: Path) -> None:
+    acct, now = account(tmp_path)
+    sent: list[Alert] = []
+    review(acct, now, sent.append)
+    review(acct, now, sent.append, failure=DNS, network=True)
+    review(acct, now + timedelta(hours=1), sent.append)  # the Mac's network came back
+    review(acct, now + timedelta(hours=2), sent.append, failure=DNS, network=True)
+    assert sent == []  # two blips, never two in a row
+    # Any other failure still alerts the first time, and breaks a network run too.
+    (other,) = review(acct, now + timedelta(hours=3), sent.append, failure="bad data")
+    assert other.message == "Run failed: bad data"
+    assert review(acct, now + timedelta(hours=4), sent.append, failure=DNS, network=True) == []
+
+
+def test_paper_run_marks_connection_errors_as_network(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    import httpx
+
+    import kestrel.cli as cli
+
+    account(tmp_path)
+    sent: list[Alert] = []
+    monkeypatch.setattr(cli, "_notifier", lambda: sent.append)
+
+    def offline(*_: Any) -> None:
+        raise httpx.ConnectError(DNS)  # the first network call of the run
+
+    monkeypatch.setattr(cli, "spec_for", offline)
+    args = ["paper", "run", "btc", "--data-dir", str(tmp_path), "--alerts"]
+    assert CliRunner().invoke(cli.app, args).exit_code == 1
+    assert sent == []  # the first network failure is held
+    assert CliRunner().invoke(cli.app, args).exit_code == 1
+    assert [a.message for a in sent] == [f"Run failed: {DNS} (2 runs in a row)"]
