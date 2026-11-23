@@ -28,6 +28,7 @@ from typing import Any
 import numpy as np
 import polars as pl
 
+from kestrel.atomic import write_atomically
 from kestrel.studies.shorting import Grid, grid
 
 RESAMPLES = 5000
@@ -473,9 +474,7 @@ def save(
     }
     target = Path(data_dir) / "events" / f"{name}.json"
     target.parent.mkdir(parents=True, exist_ok=True)
-    tmp = target.with_suffix(".tmp")
-    tmp.write_text(json.dumps(doc, indent=2))
-    tmp.replace(target)
+    write_atomically(target, lambda tmp: tmp.write_text(json.dumps(doc, indent=2)))
     return target
 
 

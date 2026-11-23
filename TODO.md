@@ -94,6 +94,9 @@ exists and Luke has checked the Swyftx employee trading policy.
 - [ ] Expectancy by conviction bucket (P2 leftover), once a strategy varies its sizing.
 
 ## Done recently
+- 2026-11-23 Paper runs crashed when jobs refreshing the same market wrote at once (a shared
+  temp-file name; brt-eth stuck since 2026-11-21, 17 crashes in all): every atomic write now
+  uses its own temp file (`kestrel.atomic`), with a test that reproduces the crash.
 - 2026-11-23 4h regime filter on trend-vol-target run (findings 24): worse on BTC, ETH and SOL;
   note rejected (Luke).
   4h regime fits stored (`kestrel regimes --interval 4h --save`).

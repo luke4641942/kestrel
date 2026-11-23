@@ -35,6 +35,7 @@ from typing import Any, Literal
 import numpy as np
 import polars as pl
 
+from kestrel.atomic import write_atomically
 from kestrel.backtest.spread import with_half_spread
 
 DAYS_PER_YEAR = 365
@@ -927,9 +928,7 @@ def save(outcome: Outcome, slug: str, data_dir: Path | str, commit: str | None) 
     }
     target = Path(data_dir) / "shorting" / f"{outcome.name}.json"
     target.parent.mkdir(parents=True, exist_ok=True)
-    tmp = target.with_suffix(".tmp")
-    tmp.write_text(json.dumps(doc, indent=2))
-    tmp.replace(target)
+    write_atomically(target, lambda tmp: tmp.write_text(json.dumps(doc, indent=2)))
     return target
 
 

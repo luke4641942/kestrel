@@ -25,6 +25,7 @@ from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any, Literal
 
+from kestrel.atomic import write_atomically
 from kestrel.strategy import STRATEGIES
 
 Status = Literal["idea", "specified", "backtested", "validated", "paper", "live", "rejected"]
@@ -354,6 +355,4 @@ def run_target(
 
 def _write(path: Path, data: dict[str, Any]) -> None:
     """Write via a temp file and rename, so a crash never leaves half a note."""
-    tmp = path.with_suffix(".tmp")
-    tmp.write_text(json.dumps(data, indent=2) + "\n")
-    tmp.replace(path)
+    write_atomically(path, lambda tmp: tmp.write_text(json.dumps(data, indent=2) + "\n"))

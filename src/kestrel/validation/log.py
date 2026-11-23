@@ -19,6 +19,8 @@ from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any, Literal
 
+from kestrel.atomic import write_atomically
+
 
 @dataclass(frozen=True)
 class Look:
@@ -53,9 +55,10 @@ class ValidationLog:
         study_id = f"{created:%Y%m%d-%H%M%S}-{uuid.uuid4().hex[:6]}"
         self.root.mkdir(parents=True, exist_ok=True)
         doc = {"id": study_id, "created_at": created.isoformat(), **asdict(study)}
-        tmp = self.root / f".{study_id}.tmp"
-        tmp.write_text(json.dumps(doc, indent=2, default=str))
-        tmp.replace(self.root / f"{study_id}.json")
+        write_atomically(
+            self.root / f"{study_id}.json",
+            lambda tmp: tmp.write_text(json.dumps(doc, indent=2, default=str)),
+        )
         return study_id
 
     def studies(self) -> list[dict[str, Any]]:

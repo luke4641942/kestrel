@@ -39,6 +39,7 @@ from pathlib import Path
 import httpx
 import polars as pl
 
+from kestrel.atomic import write_atomically
 from kestrel.data.binance_vision import BinanceVisionClient, Month
 from kestrel.data.schema import Interval
 from kestrel.data.store import ParquetStore
@@ -262,6 +263,4 @@ def _write_manifest(
         "tokenized_source": PRODUCTS_URL,
         "unclassified": unclassified,
     }
-    tmp = path.with_suffix(".tmp")
-    tmp.write_text(json.dumps(doc, indent=2))
-    tmp.replace(path)
+    write_atomically(path, lambda tmp: tmp.write_text(json.dumps(doc, indent=2)))

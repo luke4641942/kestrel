@@ -31,6 +31,8 @@ from typing import Any
 import httpx
 import polars as pl
 
+from kestrel.atomic import write_atomically
+
 LIST_URL = "https://www.binance.com/bapi/composite/v1/public/cms/article/list/query"
 DETAIL_URL = "https://www.binance.com/bapi/composite/v1/public/cms/article/detail/query"
 CATALOG = 161
@@ -278,9 +280,7 @@ def ingest(
 def save(frame: pl.DataFrame, data_dir: Path | str) -> Path:
     target = directory(data_dir) / "events.parquet"
     target.parent.mkdir(parents=True, exist_ok=True)
-    tmp = target.with_suffix(".tmp")
-    frame.write_parquet(tmp)
-    tmp.replace(target)
+    write_atomically(target, lambda tmp: frame.write_parquet(tmp))
     return target
 
 

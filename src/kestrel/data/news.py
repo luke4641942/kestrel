@@ -25,6 +25,8 @@ from pathlib import Path
 import httpx
 import polars as pl
 
+from kestrel.atomic import write_atomically
+
 API = "https://api.gdeltproject.org/api/v2/doc/doc"
 USER_AGENT = "kestrel-research/0.1 (https://github.com/luke4641942/kestrel)"
 FIRST = date(2017, 1, 1)
@@ -115,9 +117,7 @@ def load(data_dir: Path | str, symbol: str) -> pl.DataFrame:
 def _save(frame: pl.DataFrame, data_dir: Path | str, symbol: str) -> None:
     target = path(data_dir, symbol)
     target.parent.mkdir(parents=True, exist_ok=True)
-    tmp = target.with_suffix(".tmp")
-    frame.sort("date").write_parquet(tmp)
-    tmp.replace(target)
+    write_atomically(target, lambda tmp: frame.sort("date").write_parquet(tmp))
 
 
 def ingest(

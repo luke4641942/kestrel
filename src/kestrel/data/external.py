@@ -27,6 +27,8 @@ from pathlib import Path
 import httpx
 import polars as pl
 
+from kestrel.atomic import write_atomically
+
 USER_AGENT = "kestrel-research/0.1"
 SCHEMA = {"date": pl.Date, "value": pl.Float64}
 COINBASE = "https://api.exchange.coinbase.com/products/{product}/candles"
@@ -128,9 +130,7 @@ def path(data_dir: Path | str, name: str) -> Path:
 def save(frame: pl.DataFrame, data_dir: Path | str, name: str) -> Path:
     target = path(data_dir, name)
     target.parent.mkdir(parents=True, exist_ok=True)
-    tmp = target.with_suffix(".tmp")
-    frame.write_parquet(tmp)
-    tmp.replace(target)
+    write_atomically(target, lambda tmp: frame.write_parquet(tmp))
     return target
 
 

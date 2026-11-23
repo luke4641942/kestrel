@@ -36,6 +36,7 @@ from pathlib import Path
 import httpx
 import polars as pl
 
+from kestrel.atomic import write_atomically
 from kestrel.data.binance_vision import Month, month_range, verify_checksum
 
 BASE_URL = "https://data.binance.vision/data/futures/um/monthly/fundingRate"
@@ -150,9 +151,7 @@ def save(history: FundingHistory, data_dir: Path | str) -> Path:
     """Replace the stored history (atomically), with a note of when it was fetched."""
     target = path(data_dir, history.symbol)
     target.parent.mkdir(parents=True, exist_ok=True)
-    tmp = target.with_suffix(".tmp")
-    history.frame.write_parquet(tmp)
-    tmp.replace(target)
+    write_atomically(target, lambda tmp: history.frame.write_parquet(tmp))
     meta = {
         "fetched_at": datetime.now(UTC).isoformat(),
         "source": BASE_URL,

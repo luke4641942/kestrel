@@ -11,12 +11,12 @@ because each file is written to a temp path and atomically renamed.
 
 from __future__ import annotations
 
-import os
 from datetime import datetime
 from pathlib import Path
 
 import polars as pl
 
+from kestrel.atomic import write_atomically
 from kestrel.data.schema import KLINE_SCHEMA, Interval, conform
 
 
@@ -46,9 +46,12 @@ class ParquetStore:
         keyed = df.with_columns(pl.col("open_time").dt.strftime("%Y-%m").alias("_month"))
         for (month,), part in keyed.group_by("_month", maintain_order=True):
             path = target_dir / f"month={month}.parquet"
-            tmp = path.with_suffix(".parquet.tmp")
-            part.drop("_month").write_parquet(tmp, compression="zstd", statistics=True)
-            os.replace(tmp, path)
+            data = part.drop("_month")
+
+            def save(tmp: Path, data: pl.DataFrame = data) -> None:
+                data.write_parquet(tmp, compression="zstd", statistics=True)
+
+            write_atomically(path, save)
             written.append(path)
         return written
 

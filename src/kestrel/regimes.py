@@ -50,6 +50,7 @@ from typing import Any
 import numpy as np
 import polars as pl
 
+from kestrel.atomic import write_atomically
 from kestrel.indicators import realised_volatility
 
 FEATURES = ("return", "log_volatility")
@@ -498,9 +499,7 @@ class RegimeStore:
             "oos_log_likelihood": regimes.oos_log_likelihood,
         }
         self.root.mkdir(parents=True, exist_ok=True)
-        tmp = self.root / f".{symbol}.tmp"
-        tmp.write_text(json.dumps(doc))
-        tmp.replace(self.root / f"{symbol}.json")
+        write_atomically(self.root / f"{symbol}.json", lambda tmp: tmp.write_text(json.dumps(doc)))
         return doc
 
     def load(self, symbol: str) -> dict[str, Any]:

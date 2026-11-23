@@ -19,6 +19,8 @@ from pathlib import Path
 import httpx
 import polars as pl
 
+from kestrel.atomic import write_atomically
+
 API = "https://stablecoins.llama.fi/stablecoincharts/all"
 USER_AGENT = "kestrel-research/0.1 (https://github.com/luke4641942/kestrel)"
 KNOWN_AFTER = timedelta(days=2)
@@ -69,9 +71,7 @@ def path(data_dir: Path | str) -> Path:
 def save(frame: pl.DataFrame, data_dir: Path | str) -> Path:
     target = path(data_dir)
     target.parent.mkdir(parents=True, exist_ok=True)
-    tmp = target.with_suffix(".tmp")
-    frame.write_parquet(tmp)
-    tmp.replace(target)
+    write_atomically(target, lambda tmp: frame.write_parquet(tmp))
     return target
 
 

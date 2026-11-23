@@ -44,6 +44,7 @@ from typing import Any
 
 import polars as pl
 
+from kestrel.atomic import write_atomically
 from kestrel.indicators import atr
 from kestrel.strategies import order_flow
 
@@ -284,9 +285,7 @@ def save(
     }
     target = path(data_dir, interval, setup)
     target.parent.mkdir(parents=True, exist_ok=True)
-    tmp = target.with_suffix(".tmp")
-    tmp.write_text(json.dumps(doc, indent=2))
-    tmp.replace(target)
+    write_atomically(target, lambda tmp: tmp.write_text(json.dumps(doc, indent=2)))
     return target
 
 

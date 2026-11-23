@@ -24,6 +24,8 @@ from pathlib import Path
 import httpx
 import polars as pl
 
+from kestrel.atomic import write_atomically
+
 URL = "https://api.alternative.me/fng/"
 FEATURE = "fear_greed"
 KNOWN_AFTER = timedelta(days=1)
@@ -96,9 +98,7 @@ def save(history: SentimentHistory, data_dir: Path | str) -> Path:
     """Replace the stored history (atomically), with a note of when it was fetched."""
     target = path(data_dir)
     target.parent.mkdir(parents=True, exist_ok=True)
-    tmp = target.with_suffix(".tmp")
-    history.frame.write_parquet(tmp)
-    tmp.replace(target)
+    write_atomically(target, lambda tmp: history.frame.write_parquet(tmp))
     meta = {
         "fetched_at": datetime.now(UTC).isoformat(),
         "source": URL,

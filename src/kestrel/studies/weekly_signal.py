@@ -53,6 +53,7 @@ from typing import Any
 
 import polars as pl
 
+from kestrel.atomic import write_atomically
 from kestrel.data import attention, news, stablecoins
 from kestrel.indicators import realised_volatility
 from kestrel.studies.volatile_direction import CONFIDENCE, Sample, Side, compare
@@ -403,9 +404,7 @@ def save(
     }
     target = Path(data_dir) / "signals" / f"{result.signal}.json"
     target.parent.mkdir(parents=True, exist_ok=True)
-    tmp = target.with_suffix(".tmp")
-    tmp.write_text(json.dumps(doc, indent=2))
-    tmp.replace(target)
+    write_atomically(target, lambda tmp: tmp.write_text(json.dumps(doc, indent=2)))
     return target
 
 

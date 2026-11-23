@@ -36,6 +36,7 @@ from typing import Any
 
 import polars as pl
 
+from kestrel.atomic import write_atomically
 from kestrel.backtest.engine import BacktestResult, run_backtest
 from kestrel.backtest.metrics import daily_equity
 from kestrel.config import Config
@@ -171,9 +172,10 @@ class HoldoutLog:
             "drawdown_passes": result.drawdown_passes,
             "passes": result.passes,
         }
-        tmp = self.root / f".{slug}.tmp"
-        tmp.write_text(json.dumps(doc, indent=2, default=str))
-        tmp.replace(self.root / f"{slug}.json")
+        write_atomically(
+            self.root / f"{slug}.json",
+            lambda tmp: tmp.write_text(json.dumps(doc, indent=2, default=str)),
+        )
 
     def records(self) -> list[dict[str, Any]]:
         return [json.loads(p.read_text()) for p in sorted(self.root.glob("*.json"))]

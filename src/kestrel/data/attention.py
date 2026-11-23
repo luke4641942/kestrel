@@ -22,6 +22,8 @@ from pathlib import Path
 import httpx
 import polars as pl
 
+from kestrel.atomic import write_atomically
+
 API = "https://wikimedia.org/api/rest_v1/metrics/pageviews/per-article/en.wikipedia/all-access/user"
 USER_AGENT = "kestrel-research/0.1 (https://github.com/luke4641942/kestrel)"
 FIRST = date(2015, 7, 1)
@@ -73,9 +75,7 @@ def path(data_dir: Path | str, symbol: str) -> Path:
 def save(frame: pl.DataFrame, data_dir: Path | str, symbol: str) -> Path:
     target = path(data_dir, symbol)
     target.parent.mkdir(parents=True, exist_ok=True)
-    tmp = target.with_suffix(".tmp")
-    frame.write_parquet(tmp)
-    tmp.replace(target)
+    write_atomically(target, lambda tmp: frame.write_parquet(tmp))
     return target
 
 

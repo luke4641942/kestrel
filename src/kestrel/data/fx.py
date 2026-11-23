@@ -40,6 +40,7 @@ from pathlib import Path
 import httpx
 import polars as pl
 
+from kestrel.atomic import write_atomically
 from kestrel.data.schema import UTC_US
 
 PRACTICE = "https://api-fxpractice.oanda.com"
@@ -301,9 +302,9 @@ def path(data_dir: Path | str, pair: str) -> Path:
 def save(frame: pl.DataFrame, data_dir: Path | str, pair: str) -> Path:
     target = path(data_dir, pair)
     target.parent.mkdir(parents=True, exist_ok=True)
-    tmp = target.with_suffix(".tmp")
-    frame.select(list(FX_SCHEMA)).sort("open_time").write_parquet(tmp)
-    tmp.replace(target)
+    write_atomically(
+        target, lambda tmp: frame.select(list(FX_SCHEMA)).sort("open_time").write_parquet(tmp)
+    )
     return target
 
 
