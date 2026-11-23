@@ -200,3 +200,8 @@ def test_the_coinbase_verdict_is_two_sided_at_95_percent() -> None:
     assert all(ev.coinbase_tests(up).values())
     flat = ev.study(coins(30, 1400), events, verdict=ev.coinbase_verdict, placebo_days=50)
     assert flat.verdict == "KILL"
+
+
+def test_the_open_universe_is_every_coin_outside_the_locked_half() -> None:
+    stored = ["AAAUSDT", "BBBUSDT", "CCCUSDT", "USDCUSDT", "AAAUPUSDT", "PAXGUSDT", "EURUSDT"]
+    assert ev.open_universe(stored, locked={"BBBUSDT"}) == ["AAAUSDT", "CCCUSDT"]

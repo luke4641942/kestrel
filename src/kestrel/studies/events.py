@@ -19,7 +19,7 @@ does-a-perp-listing-mark-a-top). Prices come from kestrel.studies.shorting's dai
 from __future__ import annotations
 
 import json
-from collections.abc import Callable, Sequence
+from collections.abc import Callable, Collection, Sequence
 from dataclasses import dataclass, field
 from datetime import UTC, date, datetime, timedelta
 from pathlib import Path
@@ -243,6 +243,17 @@ def run_perp_listing(
 
 
 # ---------- Coinbase listings (note does-a-coinbase-listing-move-a-coin-on-binance) ----------
+
+
+def open_universe(stored: Collection[str], locked: Collection[str]) -> list[str]:
+    """Every stored USDT pair that is a coin (kestrel.data.universe: no leveraged tokens,
+    stablecoins, fiat, gold or tokenized stocks), less the locked confirmation half: the
+    exploration half plus the coins too young to have been split. The Coinbase-listing
+    study's universe (its note, v1, set after counting events and before any return)."""
+    from kestrel.data.universe import split_universe
+
+    coins, _ = split_universe(sorted(stored))
+    return sorted(set(coins) - set(locked))
 
 
 def coinbase_listings(g: Grid, first_day: dict[str, date], holdout: datetime) -> list[Event]:

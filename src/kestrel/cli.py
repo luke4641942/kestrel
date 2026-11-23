@@ -655,6 +655,13 @@ def event_study(
             typer.echo(f"\nMapping written to {target} ({len(mapping)} protocols mapped).")
             return
         if event == "coinbase-listing":
+            # Its own universe: every coin outside the locked half (note v1).
+            stored = [s for s, iv in ParquetStore(data_dir).datasets() if iv is Interval.D1]
+            coins = events.open_universe(stored, cfg.split.confirmation)
+            panel = load_panel(
+                ParquetStore(data_dir), coins, Interval.D1, Month(2017, 8),
+                Month(last.year, last.month),
+            ).filter(pl.col("open_time") < holdout)  # fmt: skip
             listed = external.load(data_dir, external.LISTINGS)
             days = {f"{b}USDT": d for b, d in zip(listed["base"], listed["first_day"], strict=True)}
             result, found, path = events.run_coinbase_listing(
@@ -1372,25 +1379,31 @@ def ingest_coinbase_listings(
         Path, typer.Option("--config", envvar="KESTREL_CONFIG", help="Config file.")
     ] = Path("kestrel.toml"),
 ) -> None:
-    """Each exploration-half coin's first trading day on Coinbase Exchange (dates only: no
-    price is read or kept), for the Coinbase-listing study. A few minutes: one request per
-    300 days of each product's history, 0.25 s apart."""
-    import tomllib
+    """Each study coin's first trading day on Coinbase Exchange (dates only: no price is
+    read or kept), for the Coinbase-listing study: every stored coin outside the locked
+    confirmation half. Dates already saved are kept and not fetched again. Tens of
+    minutes: one request per 300 days of each product's history, 0.25 s apart."""
+    from kestrel.studies.events import open_universe
 
     try:
         cfg = load_config(config)
-        split = tomllib.loads((Path(research_dir) / "exploration" / "split.toml").read_text())
-        bases = {c.removesuffix("USDT") for c in split["exploration"]}
+        if cfg.split is None:
+            raise ValueError("no exploration split: the locked half is unknown")
+        stored = [s for s, iv in ParquetStore(data_dir).datasets() if iv is Interval.D1]
+        bases = {c.removesuffix("USDT") for c in open_universe(stored, cfg.split.confirmation)}
+        try:
+            known = external.load(data_dir, external.LISTINGS)
+        except external.ExternalError:
+            known = pl.DataFrame(schema=external.LISTING_SCHEMA)
         end = (cfg.backtest.holdout_start - timedelta(days=1)).date()
         with httpx.Client(timeout=60) as http:
-            frame = external.coinbase_listings(bases, http, end)
-    except (ConfigError, OSError, KeyError, httpx.HTTPError, external.ExternalError) as e:
+            fresh = external.coinbase_listings(bases - set(known["base"].to_list()), http, end)
+    except (ConfigError, ValueError, OSError, httpx.HTTPError) as e:
         typer.echo(f"coinbase listings: {e}", err=True)
         raise typer.Exit(code=1) from None
+    frame = pl.concat([known, fresh]).unique("base").sort("base")
     external.save(frame, data_dir, external.LISTINGS)
-    typer.echo(
-        f"{frame.height} of {len(bases)} exploration-half coins have traded on Coinbase by {end}"
-    )
+    typer.echo(f"{frame.height} of {len(bases)} study coins have traded on Coinbase by {end}")
 
 
 @app.command("delisting-study")
