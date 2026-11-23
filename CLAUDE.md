@@ -190,6 +190,12 @@ Never pipe check output through `tail` or similar inside an `&&` chain: it hides
     holdout test before it could be pursued.
 - **Don't rescue a strategy by tuning.** A setting chosen after seeing results is a new
   trial. A genuinely new reason means a new note version, and its runs count.
+- **Markets on the dashboard (Luke, 2026-11-23).** A switcher in the top bar (All, Crypto,
+  Forex, Futures parked) filters Research, Strategies and Backtests; pages built for crypto
+  only say so under another market. A strategy's market is read from its key
+  (`kestrel.markets`: `fx:` is forex), never written twice. The Research tab's grid lays
+  families against markets, each column with its own luck bar and every pool's total; a
+  good cell nobody predicted is a lead for a new note, never a finding.
 - **Trial pools: one per market (Luke, 2026-11-23).** Crypto (every trial up to now),
   forex, and futures each have their own trial log and luck bar; a pass is judged only
   against its own pool. Fixed before any forex or futures result; pools are never merged

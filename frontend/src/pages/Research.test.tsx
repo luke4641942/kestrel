@@ -1,6 +1,7 @@
 import { fireEvent, render, screen } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { api, type Decision } from "../api";
+import { MarketProvider } from "../market";
 import { Research } from "./Research";
 
 vi.mock("../api", async (importOriginal) => {
@@ -32,6 +33,21 @@ const DECISIONS: Decision[] = [
 ];
 
 beforeEach(() => {
+  localStorage.clear();
+  api.researchList = vi.fn().mockResolvedValue([
+    {
+      slug: "forex-trend-across-the-10-pairs",
+      name: "Forex trend across the 10 pairs",
+      status: "specified",
+      created_at: "2026-11-23T00:00:00Z",
+      version: 1,
+      frozen: true,
+      implementation: "fx:trend",
+      runs: 0,
+      trials: 0,
+      asset_class: "forex",
+    },
+  ]);
   api.decisions = vi.fn().mockResolvedValue(DECISIONS);
   api.validation = vi.fn().mockResolvedValue({
     trials: 751,
@@ -113,5 +129,20 @@ describe("Research", () => {
     api.decisions = vi.fn().mockRejectedValue(new Error("decisions.toml is malformed"));
     render(<Research />);
     expect(await screen.findByText("decisions.toml is malformed")).toBeInTheDocument();
+  });
+
+  it("lays families against markets, and the switch filters the page", async () => {
+    render(
+      <MarketProvider>
+        <Research />
+      </MarketProvider>,
+    );
+    expect(await screen.findByText("1 note open")).toBeInTheDocument();
+    expect(screen.getByText("pursue · 1 decision")).toBeInTheDocument();
+    expect(screen.getAllByText("not tried").length).toBeGreaterThan(0);
+    fireEvent.click(screen.getByRole("button", { name: "Forex" }));
+    // Under Forex the family table holds forex decisions only: none yet.
+    expect(screen.queryByRole("button", { name: "Reversals and dips" })).not.toBeInTheDocument();
+    expect(screen.getByText("No decisions yet")).toBeInTheDocument();
   });
 });

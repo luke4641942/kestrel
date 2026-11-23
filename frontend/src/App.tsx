@@ -18,6 +18,7 @@ import { Strategies } from "./pages/Strategies";
 import { Backtests } from "./pages/Backtests";
 import { Trading } from "./pages/Trading";
 import { useTheme } from "./theme";
+import { MarketNotice, MarketSwitch } from "./market";
 
 export type Route = "overview" | "strategies" | "research" | "data" | "costs" | "rules" | "regimes" | "charts" | "backtests" | "trading" | "thesis";
 
@@ -249,6 +250,7 @@ export function App() {
             <MoreMenu route={route} items={NAV.filter((n) => n.more)} />
           </nav>
           <div className="topbar-end">
+            <MarketSwitch />
             <button type="button" className="corner-link corner-btn" onClick={() => setTouring(true)}>
               Tour
             </button>
@@ -270,6 +272,7 @@ export function App() {
       </header>
       <main className="main">
         <ErrorBanner error={health.error} />
+        <MarketNotice route={route} />
         {page}
       </main>
       <JobsDock jobs={jobList} open={dockOpen} setOpen={setDockOpen} onChange={jobs.reload} />

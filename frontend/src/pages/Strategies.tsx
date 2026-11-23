@@ -1,4 +1,6 @@
 import { useEffect, useRef, useState, type FormEvent, type ReactNode } from "react";
+import { MarketBadge, useMarket } from "../market";
+import { classOf, inMarket } from "../markets";
 import {
   api,
   type Dataset,
@@ -46,7 +48,9 @@ export function Strategies({ jobs, onJobStarted }: { jobs: Job[]; onJobStarted: 
   const select = (s: string) => {
     window.location.hash = `/strategies/${s}`;
   };
-  const items = list.data ?? [];
+  const { market } = useMarket();
+  // A draft with no implementation yet belongs to no market: it shows under every one.
+  const items = (list.data ?? []).filter((s) => s.implementation === null || inMarket(s, market));
   const { live, closed } = splitClosed(items, (s) => isSettled(s.status));
   const current = slug ?? live[0]?.slug ?? items[0]?.slug;
   // Rejected ideas are folded away, but one that is open stays visible in the list.
@@ -115,7 +119,9 @@ function StrategyItem({ s, active, onSelect }: { s: ResearchSummary; active: boo
   return (
     <li>
       <button type="button" className={`strat-item${active ? " active" : ""}`} onClick={onSelect}>
-        <span className="strat-item-name">{s.name}</span>
+        <span className="strat-item-name">
+          {s.name} <MarketBadge cls={classOf(s)} />
+        </span>
         <span className="strat-item-meta">
           <Status tone={STATUS[s.status].tone}>
             <span className="small secondary">{STATUS[s.status].label}</span>

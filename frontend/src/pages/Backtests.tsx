@@ -1,4 +1,6 @@
 import { useEffect, useMemo, useRef, useState, type FormEvent, type ReactNode } from "react";
+import { ForexRuns } from "../components/ForexRuns";
+import { useMarket } from "../market";
 import { api, type Dataset, type Job, type Metrics, type RunDetail, type RunSummary, type Scorecard } from "../api";
 import { EquityChart } from "../components/EquityChart";
 import { ParamInputs, defaultParams } from "../components/ParamInputs";
@@ -86,6 +88,19 @@ export function Backtests({ jobs, onJobStarted }: { jobs: Job[]; onJobStarted: (
 
   const list = runs.data ?? [];
   const current = list.find((r) => r.id === selected) ?? list[0];
+  const { market } = useMarket();
+
+  if (market === "forex" || market === "futures") {
+    return (
+      <>
+        <PageHeader
+          title="Backtests"
+          subtitle="Forex strategies run through the forex engine: signed and leveraged weights, bid and ask fills, nightly financing, in AUD."
+        />
+        {market === "forex" && <ForexRuns />}
+      </>
+    );
+  }
 
   return (
     <>
@@ -128,6 +143,8 @@ export function Backtests({ jobs, onJobStarted }: { jobs: Job[]; onJobStarted: (
       </Section>
 
       {current && <RunView key={current.id} id={current.id} />}
+
+      {market === "all" && <ForexRuns />}
     </>
   );
 }

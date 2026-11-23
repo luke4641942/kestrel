@@ -3113,3 +3113,35 @@ pre.report {
   color: var(--gold);
   letter-spacing: 0.12em;
 }
+
+/* Market switch (top bar) and notices: which market each page shows. */
+.market-switch button {
+  padding: 3px 10px;
+  font-size: 12.5px;
+}
+.market-switch button.parked:not([aria-pressed="true"]) {
+  color: var(--text-3, var(--text-2));
+  font-style: italic;
+}
+.market-notice {
+  margin: 0 0 16px;
+  padding: 10px 14px;
+  border: 1px dashed var(--line-strong);
+  border-radius: var(--radius-sm);
+  font-size: 13px;
+}
+.chip.market-forex {
+  border-style: dashed;
+}
+.market-grid td,
+.market-grid th {
+  vertical-align: top;
+}
+.market-grid td.untried {
+  color: var(--text-2);
+}
+@media (max-width: 720px) {
+  .market-switch {
+    order: 2;
+  }
+}

@@ -22,6 +22,8 @@ export const FAMILIES: Family[] = [
       "trend-vol-target-brake",
       "trend-vol-target-regime",
       "trend-vol-target-stablecoin",
+      "trend-vol-target-regime-4h",
+      "fx:trend",
     ],
   },
   {

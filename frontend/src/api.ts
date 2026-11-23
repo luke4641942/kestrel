@@ -208,13 +208,17 @@ export interface ResearchSummary {
   trials: number;
   /** The best deflated Sharpe among this hypothesis's trials. */
   deflated_sharpe?: number | null;
+  /** crypto, forex or futures, read from the implementation. */
+  asset_class?: string;
 }
 
 /** What to do with a tested strategy (research/decisions.toml). */
 export interface Decision {
   strategy: string;
   name: string;
+  /** The instrument ("BTCUSDT 1d"); the market it trades in is `asset_class`. */
   market: string;
+  asset_class?: string;
   /** needs-shorting: a hypothetical shorting study that passed; never traded. */
   decision: "pursue" | "watch" | "needs-shorting" | "drop";
   decided: string;
@@ -235,6 +239,38 @@ export interface Validation {
   pools?: Record<string, number>;
   /** Every trial in every pool: reported beside each bar. */
   all_trials?: number;
+  /** Each pool's luck bar (annual Sharpe). */
+  pool_bars?: Record<string, number>;
+}
+
+/** A saved forex run (GET /fx-runs), deflated against the forex pool. */
+export interface FxRun {
+  id: string;
+  created_at: string;
+  strategy: string;
+  /** The pairs, comma separated. */
+  symbol: string;
+  start: string;
+  end: string;
+  initial_cash: number;
+  account_currency: string;
+  research: { slug: string; version: number } | null;
+  params: Record<string, number>;
+  metrics: {
+    sharpe: number;
+    total_return: number;
+    max_drawdown: number;
+    average_gross: number;
+    financing: number;
+    spread_costs: number;
+    trades: number;
+    windows: number;
+    windows_positive: number;
+    wiped_out: boolean;
+  };
+  deflated_sharpe: number | null;
+  deflated_trials: number;
+  asset_class: string;
 }
 
 /** The trial log after one saved run or study (GET /validation/history). */
@@ -853,6 +889,7 @@ export const api = {
   validation: () => request<Validation>("/validation"),
   validationHistory: () => request<LuckPoint[]>("/validation/history"),
   decisions: () => request<Decision[]>("/decisions"),
+  fxRuns: () => request<FxRun[]>("/fx-runs"),
   paper: () => request<PaperSummary[]>("/paper"),
   paperTotal: () => request<PaperTotal>("/paper-total"),
   paperAccount: (name: string) => request<PaperDetail>(`/paper/${enc(name)}`),

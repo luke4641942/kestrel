@@ -6,6 +6,8 @@ import { date } from "../format";
 import { useResource } from "../hooks";
 import { byFamily, confirmationRuns, luckSeries, tally } from "../researchView";
 import { DECISION, luckBar, poolsNote, studyTone } from "../summary";
+import { MarketBadge, useMarket } from "../market";
+import { ASSET_CLASSES, LABEL, MARKETS, cellText, classOf, inMarket, marketGrid, poolBar, poolLine } from "../markets";
 
 const pct = (x: number) => `${Math.round(x * 100)}%`;
 const sharpe = (x: number | null) => (x === null ? "–" : x.toFixed(2));
@@ -14,16 +16,26 @@ const sharpe = (x: number | null) => (x === null ? "–" : x.toFixed(2));
 // research/findings.md); the page only groups and draws it.
 export function Research() {
   const decisions = useResource(api.decisions, []);
+  const notes = useResource(api.researchList, []);
+  const { market, setMarket } = useMarket();
   const validation = useResource(api.validation, []);
   const history = useResource(api.validationHistory, []);
   const rules = useResource(api.rules, []);
   const [open, setOpen] = useState<string | null>(null);
   const [openRun, setOpenRun] = useState<string | null>(null);
 
-  const rows = useMemo(() => byFamily(decisions.data ?? []), [decisions.data]);
+  const shown = useMemo(
+    () => (decisions.data ?? []).filter((d) => inMarket(d, market)),
+    [decisions.data, market],
+  );
+  const rows = useMemo(() => byFamily(shown), [shown]);
+  const grid = useMemo(
+    () => marketGrid(decisions.data ?? [], notes.data ?? []),
+    [decisions.data, notes.data],
+  );
   const points = useMemo(() => luckSeries(history.data ?? []), [history.data]);
   const runs = useMemo(() => confirmationRuns(validation.data?.studies ?? []), [validation.data]);
-  const all = decisions.data ?? [];
+  const all = shown;
   const count = (k: "pursue" | "watch" | "drop") => all.filter((d) => d.decision === k).length;
 
   return (
@@ -38,18 +50,85 @@ export function Research() {
           <Stat label="Strategy and market decisions" value={all.length || "–"} />
           <Stat label="Pursue" value={count("pursue")} note="to paper trading, not proven" />
           <Stat label="Watch or drop" value={`${count("watch")} · ${count("drop")}`} />
-          <Stat
-            label="Trials logged"
-            value={validation.data ? validation.data.trials.toLocaleString("en-AU") : "–"}
-            note={validation.data ? poolsNote(validation.data.pools, validation.data.all_trials) : undefined}
-          />
-          <Stat
-            label="Luck bar"
-            value={validation.data ? validation.data.expected_max_sharpe.toFixed(2) : "–"}
-            note="annual Sharpe"
-          />
+          {market === "all" || market === "crypto" ? (
+            <>
+              <Stat
+                label="Trials logged"
+                value={validation.data ? validation.data.trials.toLocaleString("en-AU") : "–"}
+                note={validation.data ? poolsNote(validation.data.pools, validation.data.all_trials) : undefined}
+              />
+              <Stat
+                label="Luck bar"
+                value={validation.data ? validation.data.expected_max_sharpe.toFixed(2) : "–"}
+                note="annual Sharpe, crypto pool"
+              />
+            </>
+          ) : (
+            <>
+              <Stat
+                label={`Trials logged, ${LABEL[market].toLowerCase()}`}
+                value={(validation.data?.pools?.[market === "forex" ? "forex" : "futures"] ?? 0).toLocaleString("en-AU")}
+                note={validation.data ? `${validation.data.all_trials ?? validation.data.trials} across all pools` : undefined}
+              />
+              <Stat label="Luck bar" value={poolBar(validation.data, market)} note="annual Sharpe, its own pool" />
+            </>
+          )}
         </div>
       </Panel>
+
+      <Section
+        title="Which family, in which market"
+        tour="market-grid"
+        description="Families down, markets across: the best decision in each, and notes still open. Each market is judged against its own luck bar; a good cell nobody predicted is a lead for a new note, not a finding."
+      >
+        <Panel>
+          {grid.length === 0 ? (
+            <Empty title={decisions.loading ? "Loading" : "Nothing tried yet"} />
+          ) : (
+            <div className="table-wrap">
+              <table className="table market-grid">
+                <thead>
+                  <tr>
+                    <th>Family</th>
+                    {ASSET_CLASSES.map((c) => (
+                      <th key={c}>
+                        <button type="button" className="link-button" onClick={() => setMarket(c)}>
+                          {LABEL[c]}
+                        </button>
+                        <div className="small secondary" style={{ fontWeight: 400 }}>
+                          {MARKETS.find((m) => m.id === c)?.parked ? "parked" : poolLine(validation.data, c)}
+                        </div>
+                      </th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody>
+                  {grid.map((r) => (
+                    <tr key={r.family.key}>
+                      <td>
+                        <span style={{ fontWeight: 500 }}>{r.family.name}</span>
+                      </td>
+                      {ASSET_CLASSES.map((c) => {
+                        const cell = r.cells[c];
+                        const tried = cell.decisions.length > 0 || cell.open > 0;
+                        return (
+                          <td key={c} className={tried ? undefined : "untried"}>
+                            {cell.best ? (
+                              <Status tone={DECISION[cell.best].tone}>{cellText(cell)}</Status>
+                            ) : (
+                              cellText(cell)
+                            )}
+                          </td>
+                        );
+                      })}
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </Panel>
+      </Section>
 
       <Section
         title="What has been tried, by family"
@@ -101,7 +180,7 @@ export function Research() {
                                 <li key={`${d.strategy}-${d.market}`}>
                                   <div>
                                     <Status tone={DECISION[d.decision].tone}>{DECISION[d.decision].label}</Status>{" "}
-                                    <span style={{ fontWeight: 500 }}>{d.name}</span>{" "}
+                                    <span style={{ fontWeight: 500 }}>{d.name}</span> <MarketBadge cls={classOf(d)} />{" "}
                                     <span className="secondary">
                                       {d.market} · {date(d.decided)}
                                     </span>

@@ -18,6 +18,7 @@ from datetime import date
 from pathlib import Path
 from typing import Any, Literal, cast
 
+from kestrel.fx_strategy import FX_STRATEGIES
 from kestrel.research import STUDIES
 from kestrel.strategy import STRATEGIES
 
@@ -82,7 +83,7 @@ def _parse(entry: Any, n: int) -> Decision:
         raise DecisionError(f"{where}: missing {', '.join(sorted(missing))}")
     if unknown:
         raise DecisionError(f"{where}: unknown key(s) {', '.join(sorted(unknown))}")
-    if entry["strategy"] not in STRATEGIES and entry["strategy"] not in STUDIES:
+    if entry["strategy"] not in {**STRATEGIES, **STUDIES, **FX_STRATEGIES}:
         raise DecisionError(f"{where}: no strategy or study {entry['strategy']!r}")
     if entry["decision"] == "needs-shorting" and entry["strategy"] not in STUDIES:
         raise DecisionError(f"{where}: needs-shorting is for a hypothetical shorting study")

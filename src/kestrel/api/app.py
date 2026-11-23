@@ -40,6 +40,7 @@ from kestrel.api.models import (
     EditNote,
     EventStudyOut,
     FillOut,
+    FxRunOut,
     GradeOut,
     Health,
     HoldoutOut,
@@ -103,6 +104,7 @@ from kestrel.data.store import ParquetStore
 from kestrel.decisions import DecisionError, load_decisions
 from kestrel.execution import paper, safety, tracking
 from kestrel.indicators import PRESETS, compute_presets
+from kestrel.markets import asset_class
 from kestrel.provenance import code_version
 from kestrel.regimes import RegimeStore
 from kestrel.regimes import walk_forward as walk_regimes
@@ -315,7 +317,10 @@ def create_app(
             found = load_decisions(Path(research_dir) / "decisions.toml")
         except DecisionError as e:
             raise HTTPException(status.HTTP_503_SERVICE_UNAVAILABLE, str(e)) from None
-        return [DecisionOut.model_validate(asdict(d)) for d in found]
+        return [
+            DecisionOut.model_validate({**asdict(d), "asset_class": asset_class(d.strategy)})
+            for d in found
+        ]
 
     @api.get("/summary")
     def get_summary() -> SummaryOut:
@@ -908,7 +913,30 @@ def create_app(
             studies=[StudyOut.model_validate(x) for x in found],
             pools={p: x.count for p, x in pools.items()},
             all_trials=sum(x.count for x in pools.values()),
+            pool_bars={p: x.expected_max_sharpe_annual for p, x in pools.items()},
         )
+
+    @api.get("/fx-runs")
+    def list_fx_runs() -> list[FxRunOut]:
+        """Saved forex runs, newest first, each deflated against the forex pool."""
+        from kestrel.backtest.fx_runs import FxRunStore
+
+        saved = FxRunStore(data_dir).summaries()
+        forex = every_pool([*runs.summaries(), *saved], studies.studies())["forex"]
+        out = []
+        for meta in saved:
+            m = meta["metrics"]
+            dsr = (
+                deflated_sharpe(m.get("sharpe"), m["days"], m.get("skew"), m.get("kurtosis"), forex)
+                if counts_as_trial(meta)
+                else None
+            )
+            out.append(
+                FxRunOut.model_validate(
+                    {**meta, "deflated_sharpe": dsr, "deflated_trials": forex.count}
+                )
+            )
+        return out
 
     @api.get("/validation/history")
     def get_validation_history() -> list[LuckPointOut]:
@@ -999,6 +1027,7 @@ def create_app(
             runs=len(logged),
             trials=count_trials(logged),
             deflated_sharpe=max(scored) if scored else None,
+            asset_class=asset_class(s.latest.implementation),
         )
 
     def _detail(slug: str) -> ResearchDetail:

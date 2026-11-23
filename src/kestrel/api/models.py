@@ -638,6 +638,8 @@ class ResearchSummary(BaseModel):
     """Distinct configurations tested (identical re-runs are one trial)."""
     deflated_sharpe: float | None = None
     """The best deflated Sharpe among this hypothesis's trials."""
+    asset_class: str = "crypto"
+    """crypto, forex or futures: read from the implementation (kestrel.markets)."""
 
 
 class DecisionOut(BaseModel):
@@ -646,6 +648,8 @@ class DecisionOut(BaseModel):
     strategy: str
     name: str
     market: str
+    asset_class: str = "crypto"
+    """crypto, forex or futures (kestrel.markets); ``market`` is the instrument."""
     decision: str
     """pursue, watch, needs-shorting or drop."""
     decided: date
@@ -1079,6 +1083,29 @@ class ValidationOut(BaseModel):
     """Trials in each pool (main is crypto, confirmation, forex); ``trials`` is main's."""
     all_trials: int = 0
     """Every trial in every pool: reported beside each bar (CLAUDE.md, trial pools)."""
+    pool_bars: dict[str, float] = Field(default_factory=dict)
+    """Each pool's luck bar (annual Sharpe the best of its trials would reach by luck)."""
+
+
+class FxRunOut(BaseModel):
+    """A saved forex run (kestrel.backtest.fx_runs), deflated against the forex pool."""
+
+    id: str
+    created_at: datetime
+    strategy: str
+    symbol: str
+    """The pairs, comma separated."""
+    start: str
+    end: str
+    initial_cash: float
+    account_currency: str
+    research: dict[str, Any] | None = None
+    params: dict[str, int] = Field(default_factory=dict)
+    metrics: dict[str, Any]
+    detail: dict[str, Any] = Field(default_factory=dict)
+    deflated_sharpe: float | None = None
+    deflated_trials: int = 0
+    asset_class: str = "forex"
 
 
 class ChatMessage(BaseModel):
