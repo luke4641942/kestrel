@@ -403,6 +403,21 @@ from 2026-11-16) is the test that's left.
     earns anything; leverage multiplies that drag, not just the returns. Turnover was 46x
     equity a year (daily volatility rescaling through a 2% band per pair).
 
+26. **Forex carry collected its interest and lost far more to the 2008 crash (2026-11-23,
+    note `forex-carry-across-the-10-pairs`; forex pool 2 trials, luck bar 0.11; 876 across
+    all pools).** Hold each pair towards its higher yield where the published rate
+    difference beats the 1% markup, 3% volatility per pair, monthly, 2006-02 to 2022-12, 500
+    AUD: -50.2% (CAGR -4.0%), Sharpe -0.37 (P(true Sharpe > 0) 6%), max drawdown -60%,
+    skew -1.0 and kurtosis 30, 2 of 8 two-year windows. It fails every test its note set.
+    The mechanism worked: financing earned +103 AUD and spreads cost 5. Prices took ~350:
+    +5% in 2006, -13% in 2007 and -47% in 2008 as carry trades unwound together, then
+    near-zero rates left a small book (0.4-1x gross) drifting a few percent either way to
+    2022. That is the published crash risk of carry (Brunnermeier, Nagel and Pedersen
+    2008), taken at its worst point and never earned back at retail terms. Its daily
+    returns correlated -0.11 with the rejected trend run: a different bet, equally unpaid.
+    Two textbook forex premia, run once each at retail CFD costs, both lost from 2006.
+
+
 
 ## The holdout year (2025-11 to 2026-10)
 
@@ -468,6 +483,7 @@ edge, and the holdout can't be used again for either strategy.
 | Regime filter on trend-vol-target | BTC 1d | Sharpe 0.64 vs 0.69 (2021-05 to 2025-10); the plain rule already holds 13% in volatile spells | Drop |
 | 4h regime filter on trend-vol-target (a second try at the row above, disclosed) | BTC, ETH, SOL 1d, 2020-12/2021-08 to 2025-10 | Sharpe 0.41/0.63/0.12 vs 0.64/0.72/0.78 for the plain rule; fails its adoption test on all three | Rejected (Luke) |
 | Forex trend, 12-month time-series momentum (textbook; first forex trial) | 10 forex pairs 1d, 2006-02 to 2022-12 | -30%, Sharpe -0.07, drawdown -58%, 2 of 8 two-year windows; +2.3%/yr before costs, eaten by spread and a ~2.8%/yr financing markup at 2.8x gross | Rejected (Luke) |
+| Forex carry, towards the higher yield where it beats the 1% markup (second forex trial) | 10 forex pairs 1d, 2006-02 to 2022-12 | -50%, Sharpe -0.37, drawdown -60%; earned +103 AUD financing, lost ~350 on prices, mostly 2007-08 (-13%, -47%) | Fails its rule; rejection waits for Luke |
 | Study: MACD direction in volatile spells | BTC, ETH 1d | Spread +3.70% a week (up +1.63%, down -2.00%), P = 98%: TREND | Study passed |
 | Study: rising attention (Wikipedia) | BTC, ETH 1d | Next week +0.65% after rising attention vs +0.74%; P 46%: KILL | Drop |
 | Study: extreme fear | BTC, ETH 1d | Next week +0.27% after Extreme Fear vs +0.59%; P 39%: KILL | Drop |
