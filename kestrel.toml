@@ -104,5 +104,8 @@ account_currency = "AUD"
 max_gross_leverage = 3
 # Overnight financing: a position earns or pays the two currencies' interest difference,
 # less this broker markup (annual %, on the notional, on both long and short positions).
-# An assumption until checked against OANDA's published financing rates (TODO, P6).
-financing_markup_pct = 2.5
+# Measured 2026-11-23 from OANDA's financing rates (practice API): a pair's long and short
+# rates add up to minus twice the markup, and came to 1.01-1.06% on every pair that
+# quoted them (the three yen pairs showed 0 both ways, taken as a practice-account quirk,
+# not free financing). Earlier years' markups are unknown; a note may test 2.5% beside it.
+financing_markup_pct = 1.0

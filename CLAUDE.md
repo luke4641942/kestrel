@@ -241,7 +241,9 @@ Agreed with Luke; don't re-litigate without a reason.
   shorting and leverage never touch the crypto engine the paper accounts use. Signed
   weights per pair, gross at most `[fx] max_gross_leverage`; fills at the bid/ask from the
   data; marks at the mid; financing per calendar night (rate difference less
-  `financing_markup_pct`, both sides; rates are an input, never defaulted); P&L in AUD
+  `financing_markup_pct`, 1.0% measured from OANDA, both sides; rates are an input, never
+  defaulted: `kestrel.data.rates`, OECD 3-month interbank, the month's own rate for
+  charging, `known_rate` (month before last) for any decision); P&L in AUD
   through the pairs' own mids; a holiday is neither traded nor marked; a wipe-out stops
   the run. Parity-tested against the crypto engine (long only, unlevered). Weekend candles
   are dropped (`fx.trading_days`, Luke's decision 2026-11-23).

@@ -34,9 +34,10 @@ Rules fixed in CLAUDE.md before any forex data: its own trial pool, holdout from
       gross cap, bid/ask fills, mid marks, financing per calendar night, AUD conversion
       through the pairs, holidays, wipe-out; parity with the crypto engine on long-only,
       unlevered weights. `[fx]` gained account_currency, max_gross_leverage, markup.
-- [ ] 3c. Interest rates for financing: each currency's short-term rate by month (FRED,
-      OECD 3-month interbank series; reported gaps, known with a lag), and check the 2.5%
-      markup against OANDA's financing rates today. Until then a run has no honest carry.
+- [x] 3c. Rates (2026-11-23): `kestrel.data.rates`, OECD 3-month interbank per currency
+      (FRED), refreshed by `kestrel ingest-fx`; one blank since 2005 (USD 2020-04, bridged
+      and counted). EUR and GBP stop at 2026-01 (holdout years only). Markup measured from
+      OANDA's financing rates today: ~1.0% (yen pairs quote 0 on practice); set to 1.0.
 - [ ] 3d. Trial pools in code: the validation log and luck bar per market (crypto, forex),
       with the total across pools shown beside every bar. Then a `kestrel fx-backtest`
       command (frozen notes only, like crypto) and saved forex runs with metrics.

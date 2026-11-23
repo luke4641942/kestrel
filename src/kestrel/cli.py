@@ -53,6 +53,7 @@ from kestrel.data import (
     fx,
     live,
     news,
+    rates,
     sentiment,
     stablecoins,
 )
@@ -1262,8 +1263,9 @@ def ingest_fx(
     ] = Path("kestrel.toml"),
 ) -> None:
     """Daily forex candles (bid, ask, mid) from OANDA for the pairs fixed in [fx], with a
-    quality report per pair. Read-only; the token comes from KESTREL_OANDA_TOKEN. A pair
-    with integrity errors is reported and not saved."""
+    quality report per pair, and each currency's interest rate (FRED) for financing.
+    Read-only; the token comes from KESTREL_OANDA_TOKEN. A pair with integrity errors is
+    reported and not saved."""
     try:
         cfg = load_config(config)
         if cfg.fx is None:
@@ -1292,6 +1294,16 @@ def ingest_fx(
                 fx.save(frame, data_dir, name)
             else:
                 failed = True
+        typer.echo("Interest rates for financing (OECD 3-month interbank, monthly, FRED):")
+        try:
+            for r in rates.ingest(data_dir, http, date(2005, 1, 1)):
+                blanks = ", ".join(f"{m:%Y-%m}" for m in r.missing) or "none"
+                typer.echo(
+                    f"  {r.currency}: {r.first} to {r.last}; blank months since 2005: {blanks}"
+                )
+        except (httpx.HTTPError, external.ExternalError) as e:
+            typer.echo(f"rates: {e}", err=True)
+            failed = True
     if failed:
         raise typer.Exit(code=1)
 
