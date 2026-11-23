@@ -89,6 +89,9 @@ class FxResult:
     spread_cost: float = 0.0
     financing: float = 0.0
     """Net financing in account currency: positive means it earned more than it paid."""
+    notional_nights: float = 0.0
+    """Sum over nights of the notional held (account currency): what a different markup
+    would change. Each extra 1% a year of markup costs about notional_nights / 365 / 100."""
     band_skips: int = 0
     wiped_out: datetime | None = None
     used_holdout: bool = False
@@ -255,6 +258,7 @@ def run_fx(
             base, quote = rates(pair[:3], day), rates(pair[3:], day)
             carry = (base - quote) if units[pair] > 0 else (quote - base)
             earned = notional * (carry - markup) / 365 * nights
+            result.notional_nights += notional * nights
             equity += earned
             result.financing += earned
         held = {p: units[p] * last_close[p] * to_account(p) for p in pairs if units[p]}

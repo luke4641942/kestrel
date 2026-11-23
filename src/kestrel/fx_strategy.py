@@ -136,3 +136,8 @@ def validated_fx_weights(
                         f"changes when days after {days[i]:%Y-%m-%d} are removed"
                     )
     return weights
+
+
+# The registered forex strategies, each added with its note (imported last: they register
+# themselves through ``register`` above).
+from kestrel.strategies import fx_trend as _fx_trend  # noqa: E402, F401

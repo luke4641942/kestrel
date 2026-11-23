@@ -89,6 +89,15 @@ class FxMetrics:
     turnover: float
     """Traded notional per year as a multiple of average equity."""
     wiped_out: bool
+    cost_per_markup_pct: float = 0.0
+    """Extra financing, in account currency, for each 1% a year more markup (about; from
+    the notional held each night). The note's 2.5% check reads it."""
+    spread_break_even: float = math.nan
+    """How many times the spread paid it could have paid before the profit was gone."""
+    windows: int = 0
+    """Non-overlapping 2-year windows from the start (a partial last one left out)."""
+    windows_positive: int = 0
+    """Of those, how many had a Sharpe above zero."""
 
     def to_dict(self) -> dict[str, Any]:
         d = asdict(self)
@@ -127,6 +136,15 @@ def compute_fx_metrics(result: FxResult) -> FxMetrics:
             longest = max(longest, (d - peak_day).days)
     avg_equity = float(result.equity["equity"].mean())  # type: ignore[arg-type]
     traded = sum(f.notional for f in result.fills)
+    profit = float(eq[-1]) - float(eq[0])
+    spread = result.spread_cost
+    windows = positive = 0
+    span = 730
+    for k in range((daily.height - 1) // span):
+        part = eq.slice(k * span, span + 1).pct_change().drop_nulls()
+        sd = float(part.std() or 0.0)  # type: ignore[arg-type]
+        windows += 1
+        positive += int(sd > 0 and float(part.mean()) / sd > 0)  # type: ignore[arg-type]
     return FxMetrics(
         start=daily["date"][0],
         end=daily["date"][-1],
@@ -150,6 +168,10 @@ def compute_fx_metrics(result: FxResult) -> FxMetrics:
         financing=result.financing,
         turnover=traded / avg_equity / years if years > 0 and avg_equity > 0 else math.nan,
         wiped_out=result.wiped_out is not None,
+        cost_per_markup_pct=result.notional_nights / 365 / 100,
+        spread_break_even=(profit + spread) / spread if spread > 0 else math.nan,
+        windows=windows,
+        windows_positive=positive,
     )
 
 
@@ -174,6 +196,12 @@ def format_fx_report(result: FxResult, m: FxMetrics, extra: list[str] | None = N
         f"  Costs             spread {m.spread_costs:,.2f}, financing {m.financing:+,.2f} "
         f"{result.account_currency} (+ means earned)",
         f"  Turnover          {m.turnover:.1f}x equity per year",
+        f"  Carry             financing was {m.financing:+,.2f} of a "
+        f"{m.final_equity - result.initial_equity:+,.2f} profit; each +1%/yr of markup costs "
+        f"about {m.cost_per_markup_pct:,.2f}",
+        f"  Break-even        the spread could be {m.spread_break_even:.1f}x what it was before "
+        "the profit is gone",
+        f"  2-year windows    Sharpe above zero in {m.windows_positive} of {m.windows}",
     ]
     if m.wiped_out:
         lines.append(f"  WIPED OUT on {result.wiped_out:%Y-%m-%d}: the account was lost")

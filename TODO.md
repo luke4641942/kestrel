@@ -16,6 +16,7 @@ Rules live in CLAUDE.md; results in `research/findings.md`; ideas not yet schedu
   sleeps (a missed day is recorded, never traded late).
 
 ## Waiting on Luke
+- Freeze note `forex-trend-across-the-10-pairs` (Strategies tab), then Claude runs it once.
 - Before any forex paper or live trading: check the Swyftx employee trading policy.
 - GitHub Actions won't start jobs (billing / spending limit, 2026-11-22): CI is down; the
   local `scripts/check.sh` is the gate until it's fixed.
@@ -43,9 +44,9 @@ Rules fixed in CLAUDE.md before any forex data: its own trial pool, holdout from
       registry filled by notes, the lookahead check); `kestrel fx-backtest` (frozen notes
       only, pre-holdout, optional warm-up); runs in `data/fx/runs/`, metrics on calendar
       days so a Sharpe means what it means elsewhere.
-- [ ] 4. First note: trend following across the 10 pairs (outside evidence: Moskowitz, Ooi
-      and Pedersen 2012; Hurst et al., A Century of Evidence on Trend-Following), scored
-      against holding nothing (forex has no buy-and-hold) and the carry it pays or earns.
+- [ ] 4. First note `forex-trend-across-the-10-pairs` (drafted 2026-11-23, fx:trend coded
+      and tested on synthetic data only): waiting on Luke to read and freeze it; then one
+      run, 2006-02 to 2022-12, warm-up from 2005-01.
 
 ## Next
 - [ ] Pick the next idea by independence from the trend bet (news tone first): expected overlap
