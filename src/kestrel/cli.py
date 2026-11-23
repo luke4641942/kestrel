@@ -72,6 +72,7 @@ from kestrel.data.universe import (
 )
 from kestrel.execution import paper as paper_trading
 from kestrel.execution import safety, tracking
+from kestrel.execution import status as status_export
 from kestrel.execution.alerts import Send as AlertSend
 from kestrel.execution.alerts import mac_notifier
 from kestrel.execution.alerts import review as alert_review
@@ -2410,6 +2411,78 @@ def paper_status(name: str, data_dir: DataDir = Path("data")) -> None:
     )
     typer.echo(f"  holding {held}, cash {state.cash:.2f}; {fills} fills; "
                f"{len(marks)} days handled")  # fmt: skip
+
+
+@paper_app.command("export")
+def paper_export(
+    push: Annotated[
+        bool, typer.Option(help=f"Commit it to the {status_export.BRANCH} branch and push.")
+    ] = False,
+    repo: Annotated[Path, typer.Option(help="The git repository to publish from.")] = Path("."),
+    data_dir: DataDir = Path("data"),
+    config: Annotated[
+        Path, typer.Option("--config", envvar="KESTREL_CONFIG", help="Config file.")
+    ] = Path("kestrel.toml"),
+) -> None:
+    """Every paper account as one JSON snapshot (equity, profit, holdings, trades, the
+    model check, what each is waiting for). Printed, or with --push committed as
+    paper-status.json to its own branch (never main, never the working tree) and pushed."""
+    try:
+        text = status_export.render(status_export.snapshot(data_dir, load_config(config)))
+    except (ValueError, ConfigError) as e:
+        typer.echo(str(e), err=True)
+        raise typer.Exit(code=1) from None
+    if not push:
+        typer.echo(text, nl=False)
+        return
+    try:
+        said = status_export.publish(status_export.git_in(repo), text)
+    except status_export.PublishError as e:
+        typer.echo(str(e), err=True)
+        raise typer.Exit(code=1) from None
+    typer.echo(f"{datetime.now(UTC):%Y-%m-%d %H:%M} UTC: {said}")
+
+
+@paper_app.command("schedule-export")
+def paper_schedule_export(
+    remove: Annotated[bool, typer.Option(help="Delete the job instead.")] = False,
+    agents_dir: Annotated[
+        Path, typer.Option(help="Where launchd looks for per-user jobs.")
+    ] = LAUNCH_AGENTS,
+    repo: Annotated[Path, typer.Option(help="The git repository to publish from.")] = Path("."),
+    data_dir: DataDir = Path("data"),
+    config: Annotated[
+        Path, typer.Option("--config", envvar="KESTREL_CONFIG", help="Config file.")
+    ] = Path("kestrel.toml"),
+) -> None:
+    """Write (or remove) a launchd job that publishes the export hourly at 40 past, half an
+    hour after the paper runs. A run that changes nothing commits nothing. Written, not
+    loaded: the command to load it is printed."""
+    label = "com.kestrel.paper-export"
+    path = agents_dir / f"{label}.plist"
+    if remove:
+        path.unlink(missing_ok=True)
+        typer.echo(f"Removed {path}. If it was loaded: launchctl bootout gui/$(id -u)/{label}")
+        return
+    kestrel_bin = Path(sys.executable).parent / "kestrel"
+    command = (
+        f"exec {shlex.quote(str(kestrel_bin))} paper export --push "
+        f"--repo {shlex.quote(str(repo.resolve()))} "
+        f"--data-dir {shlex.quote(str(data_dir.resolve()))} "
+        f"--config {shlex.quote(str(config.resolve()))}"
+    )
+    log = data_dir.resolve() / "paper" / "export.log"
+    job = {
+        "Label": label,
+        "ProgramArguments": ["/bin/zsh", "-c", command],
+        "StartCalendarInterval": [{"Minute": 40}],
+        "StandardOutPath": str(log),
+        "StandardErrorPath": str(log),
+    }
+    agents_dir.mkdir(parents=True, exist_ok=True)
+    path.write_bytes(plistlib.dumps(job))
+    typer.echo(f"Wrote {path}: publishes hourly at 40 past, logging to {log}")
+    typer.echo(f"Load it with:  launchctl bootstrap gui/$(id -u) {shlex.quote(str(path))}")
 
 
 @app.command()

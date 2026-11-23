@@ -80,7 +80,10 @@ Never pipe check output through `tail` or similar inside an `&&` chain: it hides
       schedule, the Trading page. Left: a live venue (real money: not before the paper test
       says so). Alerts (`kestrel.execution.alerts`, 2026-11-22): `paper run --alerts` (the
       launchd jobs pass it) sends a macOS notification for a new halt, failed run, falling
-      behind, missed day or trade; sent keys in each account's `alerts.jsonl`. A network failure
+      behind, missed day or trade; sent keys in each account's `alerts.jsonl`. `kestrel paper export --push`
+      (launchd hourly at :40, `paper schedule-export`) publishes every account as
+      `paper-status.json` to its own `paper-status` branch through git plumbing: never main,
+      the index or the working tree; a commit only when the content changed. A network failure
       alerts only the second time in a row (Luke, 2026-11-23); the first is logged as held. Plan and progress in TODO.md. The
       backtest and the paper runner share one rebalance step (`kestrel.execution.rebalance`);
       the latest closed bars come from `kestrel.data.live` (`kestrel update`). The paper

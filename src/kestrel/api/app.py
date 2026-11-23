@@ -103,6 +103,7 @@ from kestrel.data.schema import Interval
 from kestrel.data.store import ParquetStore
 from kestrel.decisions import DecisionError, load_decisions
 from kestrel.execution import paper, safety, tracking
+from kestrel.execution import status as paper_status
 from kestrel.indicators import PRESETS, compute_presets
 from kestrel.markets import asset_class
 from kestrel.provenance import code_version
@@ -119,7 +120,6 @@ from kestrel.strategy import (
     STRATEGIES,
     BracketStrategy,
     StrategySpec,
-    make_portfolio_strategy,
     make_strategy,
     resolve_params,
     spec_for,
@@ -685,26 +685,11 @@ def create_app(
         return [_paper_summary(paper.PaperAccount(data_dir, n)) for n in paper.accounts(data_dir)]
 
     def _market(terms: paper.Terms) -> pl.DataFrame:
-        """What the account's strategy reads: a basket's coin panel, or one market's bars
-        with its features."""
-        spec = spec_for(terms.strategy)
-        if spec.universe:
-            return paper.basket_panel(store, terms, list(spec.assets), datetime.now(UTC))
-        return attach_features(
-            store.read(terms.symbol, terms.interval),
-            spec.features,
-            terms.symbol,
-            terms.interval,
-            data_dir,
-        )
+        return paper_status.market(terms, data_dir)
 
     def _tracked(account: paper.PaperAccount) -> tracking.Tracking:
         """An account against its replay on the simulated venue (the model)."""
-        terms = account.terms()
-        market = _market(terms)
-        if spec_for(terms.strategy).universe:
-            return tracking.track_basket(account, market, load_config(config_path))
-        return tracking.track(account, market, load_config(config_path))
+        return paper_status.tracked(account, _market(account.terms()), load_config(config_path))
 
     references: dict[tuple[object, ...], list[float]] = {}
 
@@ -730,17 +715,7 @@ def create_app(
 
     def _waiting(terms: paper.Terms) -> WaitingOut | None:
         """The strategy's entry tests at the latest stored close, if it describes them."""
-        if spec_for(terms.strategy).universe:
-            strategy: object = make_portfolio_strategy(terms.strategy, terms.params)
-        else:
-            strategy = make_strategy(terms.strategy, terms.symbol, terms.params)
-        describe = getattr(strategy, "waiting", None)
-        if describe is None:
-            return None
-        try:
-            found = describe(_market(terms))
-        except ValueError:  # missing data: the page shows nothing rather than failing
-            return None
+        found = paper_status.waiting(terms, _market(terms))
         if found is None:
             return None
         return WaitingOut(

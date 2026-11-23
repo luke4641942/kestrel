@@ -14,6 +14,9 @@ Rules live in CLAUDE.md; results in `research/findings.md`; ideas not yet schedu
   months (`kestrel paper track`; first around 2027-02-15), a failure-only check at 182 days
   (around 2027-05-15), verdicts around 2027-12-14. Runs are late or missed while the Mac
   sleeps (a missed day is recorded, never traded late).
+- Status export, hourly at 40 past (`kestrel paper export --push`, launchd): every account
+  as `paper-status.json` on the `paper-status` branch, for reading away from the Mac. It
+  commits only when something changed; log in `data/paper/export.log`.
 
 ## Waiting on Luke
 - Before any forex paper or live trading: check the Swyftx employee trading policy.
@@ -100,6 +103,10 @@ exists and Luke has checked the Swyftx employee trading policy.
 - [ ] Expectancy by conviction bucket (P2 leftover), once a strategy varies its sizing.
 
 ## Done recently
+- 2026-11-23 Paper status export: `kestrel paper export [--push]` and `paper
+  schedule-export`; published to its own branch by git plumbing (never main or the
+  working tree). The API's account market and waiting tests moved into the engine
+  (`kestrel.execution.status`), so both read one copy.
 - 2026-11-23 Coinbase-listing study: KILL, the move comes before the listing (findings 27);
   note rejected (Luke).
 - 2026-11-23 Basket tracking compared one day short (rot-g1): a basket decision now records
