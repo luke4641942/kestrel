@@ -61,7 +61,9 @@ def test_fetching_identifies_itself_and_reports_problems(tmp_path: Path) -> None
         "Bitcoin", attention.FIRST, attention.FIRST + timedelta(days=59), fake.client()
     )
     assert frame.height == 60
-    assert "github.com" in fake.agents[0]  # Wikimedia's policy: say who we are
+    # Wikimedia asks clients to name themselves: a descriptive client name, and no
+    # personal details or accounts in requests to outside services (Luke's rule).
+    assert fake.agents[0] == "kestrel-research/0.1"
     attention.save(frame, tmp_path, "btcusdt")
     assert attention.load(tmp_path, "BTCUSDT").equals(frame)
     assert attention.gaps(frame.filter(pl.col("date") != attention.FIRST + timedelta(days=5))) == [
