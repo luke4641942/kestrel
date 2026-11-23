@@ -24,11 +24,13 @@ Rules live in CLAUDE.md; results in `research/findings.md`; ideas not yet schedu
 Rules fixed in CLAUDE.md before any forex data: its own trial pool, holdout from 2023-01-01,
 10 pairs. Futures parked (paid data, contracts too big for the account).
 - [x] 1. Rules: pools per market, forex holdout, universe, EUR/GBP disclosure (2026-11-23).
-- [ ] 2. Data: daily bid and ask candles for the 10 pairs from OANDA (`kestrel ingest-fx`),
-      stored with quality checks; the day closes 17:00 New York; weekend gaps are expected,
-      others reported. OANDA practice token set and checked (2026-11-23, read-only): daily
-      bid/ask from 2002-05, but before 2005 tick counts are 1 and a day repeats (to report);
-      research likely from 2005. The practice account is the later paper venue.
+- [x] 2. Data (2026-11-23): `kestrel ingest-fx`, daily bid/ask/mid from OANDA (practice
+      token, read-only), 10 pairs, 2002-05 to now, all clean on integrity. 2002-04 is
+      snapshots (research from 2005); 2005-13 has thin Saturday candles (60-100 a year),
+      none from 2014; ~30 holiday gaps per pair. Median spread before the holdout 2.5 pips
+      (EURUSD) to 9.6 (GBPJPY). Re-run `kestrel ingest-fx` to refresh.
+- [ ] 3a. Decide (Luke) before any engine run: weekend candles dropped, or folded into
+      Sunday's? (Dropping is simplest; a Saturday quote that thin isn't a tradable day.)
 - [ ] 3. Engine: weights in [-L, L], margin and a leverage cap, CFD costs (the spread from
       the data's bid/ask, overnight financing on both sides), AUD accounting; parity with the
       crypto engine when shorting and leverage are off. Trial log and luck bar per pool.

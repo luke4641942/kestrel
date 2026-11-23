@@ -50,6 +50,7 @@ from kestrel.data import (
     delistings,
     external,
     funding,
+    fx,
     live,
     news,
     sentiment,
@@ -1247,6 +1248,52 @@ def ingest_external(data_dir: DataDir = Path("data")) -> None:
     except (httpx.HTTPError, external.ExternalError) as e:
         typer.echo(f"external: {e}", err=True)
         raise typer.Exit(code=1) from None
+
+
+@app.command("ingest-fx")
+def ingest_fx(
+    pair: Annotated[
+        list[str] | None, typer.Option(help="One pair (repeatable); default every [fx] pair.")
+    ] = None,
+    start: Annotated[str, typer.Option(help="First day, YYYY-MM-DD.")] = "2002-01-01",
+    data_dir: DataDir = Path("data"),
+    config: Annotated[
+        Path, typer.Option("--config", envvar="KESTREL_CONFIG", help="Config file.")
+    ] = Path("kestrel.toml"),
+) -> None:
+    """Daily forex candles (bid, ask, mid) from OANDA for the pairs fixed in [fx], with a
+    quality report per pair. Read-only; the token comes from KESTREL_OANDA_TOKEN. A pair
+    with integrity errors is reported and not saved."""
+    try:
+        cfg = load_config(config)
+        if cfg.fx is None:
+            raise ConfigError("no [fx] table in the config")
+        wanted = [p.upper() for p in pair] if pair else list(cfg.fx.pairs)
+        unknown = sorted(set(wanted) - set(cfg.fx.pairs))
+        if unknown:
+            raise ConfigError(f"not in [fx] pairs (fixed; adding one is a note): {unknown}")
+        auth = fx.token()
+        since = datetime.fromisoformat(start).replace(tzinfo=UTC)
+    except (ConfigError, fx.FxError, ValueError) as e:
+        typer.echo(str(e), err=True)
+        raise typer.Exit(code=1) from None
+    failed = False
+    with httpx.Client(timeout=60) as http:
+        for name in wanted:
+            try:
+                frame = fx.fetch_daily(name, http, auth, since)
+            except (httpx.HTTPError, fx.FxError) as e:
+                typer.echo(f"{name}: {e}", err=True)
+                failed = True
+                continue
+            report = fx.check(frame, name, cfg.fx.holdout_start)
+            typer.echo(report.summary())
+            if report.is_clean:
+                fx.save(frame, data_dir, name)
+            else:
+                failed = True
+    if failed:
+        raise typer.Exit(code=1)
 
 
 @app.command("delisting-study")

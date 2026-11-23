@@ -86,6 +86,16 @@ class UniverseConfig:
 
 
 @dataclass(frozen=True)
+class FxConfig:
+    """Forex (P6): its own market, holdout and fixed pairs (CLAUDE.md, 2026-11-23)."""
+
+    holdout_start: datetime
+    """First instant of forex's holdout (UTC); pre-registered before any forex data."""
+    pairs: tuple[str, ...]
+    """The fixed universe, as six-letter pairs (EURUSD)."""
+
+
+@dataclass(frozen=True)
 class Config:
     account_currency: str
     costs: CostConfig
@@ -94,6 +104,8 @@ class Config:
     universe: UniverseConfig
     risk: RiskConfig
     document: dict[str, Any]
+    fx: FxConfig | None = None
+    """``[fx]``, when the config has one."""
     split: Split | None = None
     """The exploration experiment's split (kestrel.exploration), read from beside the
     config file; not part of the fingerprint, which covers the TOML document only."""
@@ -146,7 +158,7 @@ def load_config(path: Path | str = "kestrel.toml") -> Config:
 
 def parse_config(document: dict[str, Any]) -> Config:
     _expect_keys(
-        document,
+        {k: v for k, v in document.items() if k != "fx"},
         {"account_currency", "costs", "backtest", "instruments", "universe", "risk"},
         "top level",
     )
@@ -244,7 +256,32 @@ def parse_config(document: dict[str, Any]) -> Config:
         universe=universe,
         risk=risk,
         document=document,
+        fx=_fx(document["fx"]) if "fx" in document else None,
     )
+
+
+def _fx(raw: Any) -> FxConfig:
+    if not isinstance(raw, dict):
+        raise ConfigError("[fx] must be a table")
+    _expect_keys(raw, {"holdout_start", "pairs"}, "[fx]")
+    holdout = raw["holdout_start"]
+    if isinstance(holdout, datetime) or not isinstance(holdout, date):
+        raise ConfigError(
+            f"[fx] holdout_start must be a TOML date like 2023-01-01, got {holdout!r}"
+        )
+    pairs = raw["pairs"]
+    if (
+        not isinstance(pairs, list)
+        or not pairs
+        or not all(
+            isinstance(x, str) and len(x) == 6 and x.isalpha() and x.isupper() for x in pairs
+        )
+        or len(set(pairs)) != len(pairs)
+    ):
+        raise ConfigError(
+            f"[fx] pairs must be distinct six-letter pairs like EURUSD, got {pairs!r}"
+        )
+    return FxConfig(datetime(holdout.year, holdout.month, holdout.day, tzinfo=UTC), tuple(pairs))
 
 
 def _spread_tiers(raw: Any) -> tuple[tuple[Decimal, Decimal], ...]:
