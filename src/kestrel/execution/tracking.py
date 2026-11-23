@@ -147,8 +147,10 @@ def track(account: PaperAccount, bars: pl.DataFrame, config: Config) -> Tracking
 
 def track_basket(account: PaperAccount, panel: pl.DataFrame, config: Config) -> Tracking:
     """``track`` for a basket account: replay its strategy on the simulated venue over
-    ``panel`` (the stored bars of every coin it can hold). A bar whose next open isn't
-    stored yet isn't compared until it is."""
+    ``panel`` (the stored bars of every coin it can hold). For the newest bar, whose next
+    bar isn't stored yet, the replay uses the opens the account recorded with its decision
+    (as ``track`` uses the recorded price); an older decision without them waits until the
+    bar is stored."""
     actual = account.ledger.events()
     decided = [e for e in actual if e["type"] == "decision"]
     if not decided:
@@ -156,9 +158,15 @@ def track_basket(account: PaperAccount, panel: pl.DataFrame, config: Config) -> 
     terms = replace(account.terms(), venue="sim")
     last = datetime.fromisoformat(decided[-1]["bar"])
     upto = panel.filter(pl.col("open_time") <= last + terms.interval.duration)
+    recorded = {d["bar"]: d["opens"] for d in decided if d.get("opens")}
+
+    def opens(at: datetime) -> dict[str, Decimal]:
+        found = recorded.get((at - terms.interval.duration).isoformat(), {})
+        return {sym: Decimal(price) for sym, price in found.items()}
+
     with tempfile.TemporaryDirectory() as tmp:
         model = PaperAccount.open(tmp, terms)
-        run_basket(model, upto, config)
+        run_basket(model, upto, config, opens)
         expected = model.ledger.events()
     marks, model_marks = _by(actual, "mark", "bar"), _by(expected, "mark", "bar")
     model_decisions = _by(expected, "decision", "bar")

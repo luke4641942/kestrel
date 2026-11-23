@@ -173,3 +173,26 @@ def test_killing_a_basket_sells_every_coin_and_halts(tmp_path: Path) -> None:
     assert state.cash > 0
     assert set(state.book) == {"last_bar", "stranded", "previous"}
     assert safety.halted(paper) == "killed: drill"
+
+
+def test_tracking_compares_the_newest_day_from_the_opens_it_recorded(tmp_path: Path) -> None:
+    """The newest decision trades at the forming bar's opens, which aren't stored yet; the
+    decision records them, so tracking replays and compares that day too (it once stopped
+    a day short, 2026-11-23)."""
+    from kestrel.execution.tracking import track_basket
+
+    panel = coins()
+    last = panel["open_time"].max()
+    paper = account(tmp_path)
+    run_basket(paper, panel, config())
+    opens = {s: Decimal("100") for s in panel["symbol"].unique().to_list()}
+    run_basket(paper, panel, config(), lambda _: opens)
+    newest = of(paper.ledger.events(), "decision")[-1]
+    assert newest["bar"] == last.isoformat()
+    assert newest["opens"] == {s: "100" for s in opens}
+    older = of(paper.ledger.events(), "decision")[-2]
+    assert "opens" not in older  # its next bar was stored: nothing to record
+
+    t = track_basket(paper, panel, config())
+    assert t.days[-1].bar == last  # the newest day is compared, not dropped
+    assert all(d.equity == d.expected and d.target == d.expected_target for d in t.days)

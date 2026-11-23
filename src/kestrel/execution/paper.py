@@ -521,11 +521,12 @@ def run_basket(
     handled: list[BasketHandled] = []
     for t in pending:
         after = t + duration
+        forming: dict[str, Decimal] = {}
         if after not in stored_days:
-            opens = next_opens(after)
-            if not opens:
+            forming = next_opens(after)
+            if not forming:
                 break  # the next bar hasn't opened: pick up from here next run
-            for sym, price in opens.items():
+            for sym, price in forming.items():
                 bars[(sym, after)] = (price, price, Decimal(0), Decimal(0))
         equity = close_day(guard, book, t, bars)
         breach = check_mark(account, equity, config.risk)
@@ -542,6 +543,10 @@ def run_basket(
             if target is None
             else {k: None if w is None else str(w) for k, w in target.items()},
         }
+        if forming:
+            # The forming bar's opens it traded at, so tracking can replay this day before
+            # that bar is stored (kestrel.execution.tracking.track_basket).
+            decision["opens"] = {k: str(v) for k, v in forming.items()}
         if live and t != latest:
             account.ledger.append(mark)
             account.ledger.append({**decision, "missed": True})

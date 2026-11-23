@@ -99,6 +99,8 @@ exists and Luke has checked the Swyftx employee trading policy.
 - [ ] Expectancy by conviction bucket (P2 leftover), once a strategy varies its sizing.
 
 ## Done recently
+- 2026-11-23 Basket tracking compared one day short (rot-g1): a basket decision now records
+  the forming opens it traded at, and tracking replays them, as single-coin tracking does.
 - 2026-11-23 Alerts: a network failure (the Mac just woke) alerts only the second time in a row;
   other failures still alert at once.
 - 2026-11-23 Markets on the dashboard: the top-bar switcher (All, Crypto, Forex, Futures
