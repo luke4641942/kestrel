@@ -189,6 +189,16 @@ Never pipe check output through `tail` or similar inside an `&&` chain: it hides
     unsearched data (new listings, or time going forward) and its own split.
   - The holdout rule is unchanged: a graduate that passes still needs its own
     holdout test before it could be pursued.
+- **Keeping a passed rule private (Luke, 2026-11-24; fixed before any strategy has
+  passed).** The research is public, and everything up to this date stays public. A
+  strategy's exact rule may be held back only once it has passed the full scorecard, luck
+  included, and then its paper test. Then its rule, code and settings move to a private
+  repository. What stays public, always: that it exists, its family and who-pays story,
+  every scorecard result, its trial count, its holdout and paper record, and a plain line
+  saying the rule is held back. Only the rule is ever held back, never a result. Failures
+  are never hidden, so the public record has no survivorship. Its trials still count in its
+  market's pool, so every luck bar stays honest. Holding back is decided by this rule, not
+  case by case after seeing a result.
 - **Don't rescue a strategy by tuning.** A setting chosen after seeing results is a new
   trial. A genuinely new reason means a new note version, and its runs count.
 - **Markets on the dashboard (Luke, 2026-11-23).** A switcher in the top bar (All, Crypto,
