@@ -19,6 +19,9 @@ Rules live in CLAUDE.md; results in `research/findings.md`; ideas not yet schedu
   commits only when something changed; log in `data/paper/export.log`.
 
 ## Waiting on Luke
+- Freeze the news-tone note (`does-improving-news-tone-lead-prices-gdelt`, drafted
+  2026-11-24), ideally before the download finishes. It runs once both coins reach 2025-10
+  (the command refuses before then).
 - Before any forex paper or live trading: check the Swyftx employee trading policy.
 - GitHub Actions won't start jobs (billing / spending limit, 2026-11-22): CI is down; the
   local `scripts/check.sh` is the gate until it's fixed.
@@ -98,11 +101,14 @@ exists and Luke has checked the Swyftx employee trading policy.
       one retry 30 s after a refusal, months 10 s apart (half GDELT's stated limit), and a
       refusal or drop ends the run. By 2026-11-23 BTC had 2017-01..2019-06, ETH
       2017-01..2018-02. When both reach 2025-10: unload it (`launchctl bootout
-      gui/$(id -u)/com.kestrel.news`), then draft the note. If it stalls for days: GDELT's
+      gui/$(id -u)/com.kestrel.news`), then run the note (drafted 2026-11-24; 2026-11-24 BTC
+      was at 2022-08, ETH at 2019-12). If it stalls for days: GDELT's
       BigQuery tables (needs a Google Cloud account).
 - [ ] Expectancy by conviction bucket (P2 leftover), once a strategy varies its sizing.
 
 ## Done recently
+- 2026-11-24 News-tone note drafted, with the past-week control (news-tone joins the
+  controlled signals) and a refusal to run on an unfinished download.
 - 2026-11-23 Paper status export: `kestrel paper export [--push]` and `paper
   schedule-export`; published to its own branch by git plumbing (never main or the
   working tree). The API's account market and waiting tests moved into the engine

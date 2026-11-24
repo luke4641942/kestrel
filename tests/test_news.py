@@ -208,3 +208,31 @@ def test_a_scheduled_run_retries_a_refusal_once_and_carries_on(
     assert got.exit_code == 0, got.output
     assert fake.months == ["2017-01", "2017-02", "2017-03"]  # recovered, then kept going
     assert waits == [30.0, news.PAUSE, news.PAUSE]  # never faster than one request per 10s
+
+
+def test_the_study_waits_for_the_whole_download_and_controls_for_the_past_week(
+    tmp_path: Path,
+) -> None:
+    """Its note pre-registers both: one look, on the whole history to the holdout, and the
+    spread positive after rising and after falling weeks alike."""
+    start = datetime(2025, 3, 1, tzinfo=UTC)
+    bars = daily([0.01 * (1 if i % 14 < 7 else -1) for i in range(200)])
+    bars = bars.with_columns(pl.col("open_time") - (bars["open_time"][0] - start))
+    ParquetStore(tmp_path).write("BTCUSDT", Interval.D1, bars)
+    days = [date(2025, 1, 1) + timedelta(days=i) for i in range(303)]  # to 2025-10-30
+    tone = pl.DataFrame({"date": days, "tone": [-1.0 + (i % 9) / 10 for i in range(303)]},
+                        schema=news.SCHEMA)  # fmt: skip
+    news.path(tmp_path, "BTCUSDT").parent.mkdir(parents=True, exist_ok=True)
+    tone.write_parquet(news.path(tmp_path, "BTCUSDT"))
+    args = ["signal-study", "news-tone", "BTCUSDT", "--data-dir", str(tmp_path),
+            "--config", REPO_CONFIG]  # fmt: skip
+    early = CliRunner().invoke(app, args)
+    assert early.exit_code == 1
+    assert "reaches 2025-10-30, not 2025-10-31; let kestrel ingest-news finish" in early.output
+    last = pl.DataFrame({"date": [date(2025, 10, 31)], "tone": [0.0]}, schema=news.SCHEMA)
+    pl.concat([tone, last]).write_parquet(news.path(tmp_path, "BTCUSDT"))
+    done = CliRunner().invoke(app, args)
+    assert done.exit_code == 0, done.output
+    assert "Control (pre-registered)" in done.output
+    with pytest.raises(news.NewsError, match="reaches nothing"):
+        news.require_through(tone.head(0), "ethusdt", date(2025, 10, 31))

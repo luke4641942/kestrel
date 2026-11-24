@@ -21,6 +21,7 @@ import time
 from collections.abc import Callable
 from datetime import UTC, date, datetime, timedelta
 from pathlib import Path
+from typing import cast
 
 import httpx
 import polars as pl
@@ -107,6 +108,17 @@ def furthest_behind(symbols: list[str], data_dir: Path | str) -> list[str]:
 
 def path(data_dir: Path | str, symbol: str) -> Path:
     return Path(data_dir) / "news" / f"{symbol.upper()}.parquet"
+
+
+def require_through(tone: pl.DataFrame, symbol: str, last: date) -> None:
+    """Refuse a study on a download that isn't finished: its one look would be spent on
+    part of the history."""
+    stored = cast("date | None", tone["date"].max() if tone.height else None)
+    if stored is None or stored < last:
+        raise NewsError(
+            f"news tone for {symbol.upper()} reaches {stored or 'nothing'}, not {last}; "
+            "let kestrel ingest-news finish first"
+        )
 
 
 def load(data_dir: Path | str, symbol: str) -> pl.DataFrame:

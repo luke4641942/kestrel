@@ -1199,7 +1199,10 @@ def signal_study(
             if signal == "attention":
                 flags = attention_flags(bars, attention.load(data_dir, symbol))
             elif signal == "news-tone":
-                flags = news_flags(bars, news.load(data_dir, symbol))
+                tone = news.load(data_dir, symbol)
+                last = (cfg.backtest.holdout_start - timedelta(days=1)).date()
+                news.require_through(tone, symbol, last)
+                flags = news_flags(bars, tone)
             elif signal == "extreme-fear":
                 bars = attach_features(bars, ("fear_greed",), symbol, Interval.D1, data_dir)
                 flags = fear_flags(bars)

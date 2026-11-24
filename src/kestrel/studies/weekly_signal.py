@@ -32,9 +32,10 @@ Signals, each fixed before it is run:
   Wednesday known at the close (from the Saturday after) against 4 weeks before; on when
   it grew (note does-dollar-liquidity-lead-crypto).
 
-The last three were pre-registered with an independence control: the spread must also be
-positive both in weeks whose past week rose and in weeks whose past week fell, or the
-signal is momentum (or dip-buying) under another name and the verdict is KILL.
+News tone and the last three were pre-registered with an independence control: the
+spread must also be positive both in weeks whose past week rose and in weeks whose past
+week fell, or the signal is momentum (or dip-buying) under another name and the verdict
+is KILL.
 
 Attention rises with price, so the result also reports how often the past week rose when
 the signal was on and when it was off: a signal that only repeats last week's move is
@@ -68,7 +69,7 @@ SIGNALS = (
     "variance-premium",
     "net-liquidity",
 )
-CONTROLLED = frozenset({"coinbase-premium", "variance-premium", "net-liquidity"})
+CONTROLLED = frozenset({"news-tone", "coinbase-premium", "variance-premium", "net-liquidity"})
 """Signals whose notes pre-registered the past-week control."""
 RECENT_DAYS = 7
 NORMAL_DAYS = 180
