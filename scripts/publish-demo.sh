@@ -25,7 +25,8 @@ if [[ "${1:-}" == "--push" ]]; then
   git -C "$tmp" init -q -b gh-pages
   git -C "$tmp" add -A
   git -C "$tmp" commit -q -m "Demo from $commit"
-  git -C "$tmp" push -q --force "$remote" gh-pages
+  # One large push over HTTPS needs more than git's default buffer.
+  git -C "$tmp" -c http.postBuffer=524288000 push -q --force "$remote" gh-pages
   rm -rf "$tmp"
   echo "Published to gh-pages (from $commit)"
 else
