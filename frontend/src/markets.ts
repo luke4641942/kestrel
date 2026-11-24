@@ -85,6 +85,8 @@ export interface GridCell {
   best?: Decision["decision"];
   /** Notes still open (not settled, frozen or not): work in progress, not results. */
   open: number;
+  /** Notes run and rejected with no decision recorded: tried, and failed. */
+  rejected: number;
 }
 
 export interface GridRow {
@@ -101,21 +103,23 @@ export function marketGrid(decisions: Decision[], notes: ResearchSummary[]): Gri
     for (const cls of ASSET_CLASSES) {
       const own = decisions.filter((d) => classOf(d) === cls && familyOf(d.strategy).key === family.key);
       const decided = new Set(own.map((d) => d.strategy));
-      const open = notes.filter(
+      const mine = notes.filter(
         (n) =>
           classOf(n) === cls &&
           n.implementation !== null &&
           familyOf(n.implementation).key === family.key &&
-          !decided.has(n.implementation) &&
-          n.status !== "rejected" &&
-          n.status !== "validated",
-      ).length;
+          !decided.has(n.implementation),
+      );
+      const open = mine.filter((n) => n.status !== "rejected" && n.status !== "validated").length;
+      const rejected = mine.filter((n) => n.status === "rejected").length;
       const best = [...own].sort((a, b) => RANK[a.decision] - RANK[b.decision])[0]?.decision;
-      cells[cls] = { decisions: own, best, open };
+      cells[cls] = { decisions: own, best, open, rejected };
     }
     return { family, cells };
   });
-  return rows.filter((r) => ASSET_CLASSES.some((c) => r.cells[c].decisions.length || r.cells[c].open));
+  return rows.filter((r) =>
+    ASSET_CLASSES.some((c) => r.cells[c].decisions.length || r.cells[c].open || r.cells[c].rejected),
+  );
 }
 
 /** What a grid cell says. */
@@ -125,6 +129,7 @@ export function cellText(cell: GridCell): string {
     const n = cell.decisions.length;
     parts.push(`${cell.best === "needs-shorting" ? "needs shorting" : cell.best} · ${n} decision${n === 1 ? "" : "s"}`);
   }
+  if (cell.rejected) parts.push(`${cell.rejected} rejected`);
   if (cell.open) parts.push(`${cell.open} note${cell.open === 1 ? "" : "s"} open`);
   return parts.join(" · ") || "not tried";
 }

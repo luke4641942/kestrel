@@ -60,18 +60,21 @@ describe("markets", () => {
     expect(poolBar(undefined, "forex")).toBe("–");
   });
 
-  it("lays families against markets: best decision, open notes, or not tried", () => {
+  it("lays families against markets: best decision, rejected and open notes, or not tried", () => {
     const grid = marketGrid(
       [decision("trend-vol-target", "pursue"), decision("trend-trio", "drop"), decision("rsi-dip", "drop")],
       [note("fx:trend", "specified", "forex"), note("rsi-dip", "rejected"), note("fx:trend", "rejected", "forex")],
     );
     const trend = grid.find((r) => r.family.key === "trend")!;
     expect(cellText(trend.cells.crypto)).toBe("pursue · 2 decisions");
-    expect(cellText(trend.cells.forex)).toBe("1 note open");
+    // A rejected note was tried: it never reads "not tried".
+    expect(cellText(trend.cells.forex)).toBe("1 rejected · 1 note open");
     expect(cellText(trend.cells.futures)).toBe("not tried");
     const reversal = grid.find((r) => r.family.key === "reversal")!;
     expect(cellText(reversal.cells.crypto)).toBe("drop · 1 decision");
     expect(grid.some((r) => r.family.key === "breakout")).toBe(false); // tried nowhere: left out
+    const onlyRejected = marketGrid([], [note("fx:trend", "rejected", "forex")]);
+    expect(cellText(onlyRejected.find((r) => r.family.key === "trend")!.cells.forex)).toBe("1 rejected");
   });
 
   it("formats a forex run's row", () => {

@@ -1,5 +1,6 @@
 // Typed client for the Kestrel API. Types mirror src/kestrel/api/models.py
 // (the OpenAPI schema at /api/openapi.json is the source of truth).
+import { DEMO, demoRequest } from "./demo";
 
 export type Interval = "1m" | "5m" | "15m" | "30m" | "1h" | "4h" | "1d";
 export const INTERVALS: Interval[] = ["1m", "5m", "15m", "30m", "1h", "4h", "1d"];
@@ -840,6 +841,7 @@ export class ApiError extends Error {
 }
 
 async function request<T>(path: string, init?: RequestInit): Promise<T> {
+  if (DEMO) return demoRequest<T>(path, init);
   const res = await fetch(`/api${path}`, {
     headers: { "Content-Type": "application/json" },
     ...init,

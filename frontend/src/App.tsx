@@ -19,6 +19,8 @@ import { Backtests } from "./pages/Backtests";
 import { Trading } from "./pages/Trading";
 import { useTheme } from "./theme";
 import { MarketNotice, MarketSwitch } from "./market";
+import { DEMO } from "./demo";
+import { DemoBanner } from "./components/DemoBanner";
 
 export type Route = "overview" | "strategies" | "research" | "data" | "costs" | "rules" | "regimes" | "charts" | "backtests" | "trading" | "thesis";
 
@@ -257,7 +259,11 @@ export function App() {
             <a className="corner-link" href="#/thesis" aria-current={route === "thesis" ? "page" : undefined}>
               Thesis
             </a>
-            {health.data ? (
+            {DEMO ? (
+              <Status tone="neutral">
+                <span className="small secondary">Demo snapshot</span>
+              </Status>
+            ) : health.data ? (
               <Status tone="ok">
                 <span className="small secondary">API v{health.data.version}</span>
               </Status>
@@ -271,6 +277,7 @@ export function App() {
         </div>
       </header>
       <main className="main">
+        {DEMO && <DemoBanner />}
         <ErrorBanner error={health.error} />
         <MarketNotice route={route} />
         {page}

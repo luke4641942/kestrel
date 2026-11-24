@@ -4,16 +4,19 @@ A research-to-production platform for systematic crypto trading, built so that a
 strategy behaves the same way in research, backtest, paper trading and live
 trading, and so that a result can't look better than it is.
 
-> **Status (2026-11-22):** Data, backtester, validation, paper trading and the dashboard
-> are built and tested. 88 pre-registered research notes and 866 counted trials later,
-> three strategies are being paper-traded on Binance's Spot Testnet: trend following with
-> volatility targeting (BTC, ETH, SOL), a BTC-regime trend rule found by an
-> explore-then-confirm experiment (ETH, SOL), and a BTC-regime rotation among large coins.
-> None is a proven edge: all fail the luck test once every trial is counted, so the
-> forward record decides. **Start with the one-page
+> **Status (2026-11-24):** Data, backtester, validation, paper trading and the dashboard
+> are built and tested, for crypto and, since November 2026, forex. 99 pre-registered
+> research notes and 876 counted trials later, three crypto strategies are being
+> paper-traded on Binance's Spot Testnet: trend following with volatility targeting (BTC,
+> ETH, SOL), a BTC-regime trend rule found by an explore-then-confirm experiment (ETH, SOL),
+> and a BTC-regime rotation among large coins. None is a proven edge: all fail the luck test
+> once every trial is counted, so the forward record decides. **Start with the one-page
 > [research summary](docs/research-summary.md)**; every number is in
-> [research/findings.md](research/findings.md). No strategy trades real money yet, by
-> design.
+> [research/findings.md](research/findings.md), and the rules every result is judged by
+> are in [docs/rules.md](docs/rules.md). No strategy trades real money yet, by design.
+>
+> **[Live demo](https://luke4641942.github.io/kestrel/)**: the dashboard itself, read-only,
+> on a snapshot of the real research (every note, result, backtest and paper account).
 
 ## Why this exists
 

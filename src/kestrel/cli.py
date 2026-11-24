@@ -20,6 +20,7 @@ import json
 import math
 import plistlib
 import shlex
+import shutil
 import sys
 import time
 from collections.abc import Callable
@@ -2494,6 +2495,36 @@ def paper_schedule_export(
     path.write_bytes(plistlib.dumps(job))
     typer.echo(f"Wrote {path}: publishes hourly at 40 past, logging to {log}")
     typer.echo(f"Load it with:  launchctl bootstrap gui/$(id -u) {shlex.quote(str(path))}")
+
+
+@app.command("demo-export")
+def demo_export(
+    out: Annotated[Path, typer.Argument(help="Where to write the snapshot (emptied first).")],
+    data_dir: DataDir = Path("data"),
+    config: Annotated[
+        Path, typer.Option("--config", envvar="KESTREL_CONFIG", help="Config file.")
+    ] = Path("kestrel.toml"),
+) -> None:
+    """A read-only snapshot of the dashboard's API for the public demo (kestrel.api.demo).
+    Refuses a snapshot holding a local path or a term from data/demo-banned.txt."""
+    from fastapi.testclient import TestClient
+
+    from kestrel.api import demo
+    from kestrel.api.app import create_app
+
+    client = TestClient(create_app(data_dir, static_dir=None, config_path=config))
+    snap = demo.collect(client)
+    try:
+        demo.check(snap, demo.banned_terms(data_dir), str(Path.home()))
+    except demo.DemoError as e:
+        typer.echo(str(e), err=True)
+        raise typer.Exit(code=1) from None
+    if out.exists():
+        shutil.rmtree(out)
+    size = demo.write(snap, out, demo.commit(Path(".")))
+    typer.echo(f"Wrote {len(snap.files)} files ({size / 1e6:.1f} MB) to {out}")
+    for path in snap.missing:
+        typer.echo(f"  left out (the API refused it): {path}")
 
 
 @app.command()

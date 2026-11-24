@@ -100,6 +100,11 @@ Never pipe check output through `tail` or similar inside an `&&` chain: it hides
       trend-vol-target on BTC, ETH, SOL, btc-regime-trend on ETH, SOL, G1
       (btc-rotation-8, one basket account, rot-g1), and stablecoin-vol-hold on BTC, ETH (watch,
       scs-btc and scs-eth), each its own testnet account.
+- [x] Public demo (2026-11-24): `kestrel demo-export` snapshots the API's reads
+      (`kestrel.api.demo`: long series thinned for charts, refused if it holds a local path
+      or a locally banned term) and `scripts/publish-demo.sh --push` publishes the dashboard,
+      built with `VITE_DEMO=1` (`frontend/src/demo.ts`: reads from the snapshot, writes
+      refused), to GitHub Pages as one fresh gh-pages commit.
 - [x] Research tooling: the Research tab (decisions by family, the luck bar over time, the
       exploration experiment), the exploration split and confirmation run, cross-sectional
       studies, delisting studies, the minute-chart cost gate, the overlap report
