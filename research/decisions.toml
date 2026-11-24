@@ -509,7 +509,7 @@ name = "Cash-and-carry on BTC, ETH and SOL perps (hypothetical)"
 market = "BTC, ETH, SOL spot against their USDT-M perps"
 decision = "needs-shorting"
 decided = 2026-11-21
-reason = "Needs shorting (Luke, 2026-11-21): passed every pre-registered test (findings 17): +6.6% a year on equity 2020-01 to 2025-10, positive in 5 of 6 years, drawdown -6.6% (the spot-perp basis isn't modelled, so that is a floor), 53 trades, 14 margin calls; about 63 USDT more than a 4% stablecoin yield on 330 USDT over six years. It needs a real perp (wholesale-only in Australia; a CFD pays financing, not funding), so it is never traded until a licensed retail route exists and the Swyftx employee trading policy is checked. High carry tends to come before crashes (Schmeling, Schrimpf and Todorov 2023)."
+reason = "Needs shorting (Luke, 2026-11-21): passed every pre-registered test (findings 17): +6.6% a year on equity 2020-01 to 2025-10, positive in 5 of 6 years, drawdown -6.6% (the spot-perp basis isn't modelled, so that is a floor), 53 trades, 14 margin calls; about 63 USDT more than a 4% stablecoin yield on 330 USDT over six years. It needs a real perp (wholesale-only in Australia; a CFD pays financing, not funding), so it is never traded until a licensed retail route exists. High carry tends to come before crashes (Schmeling, Schrimpf and Todorov 2023)."
 evidence = ["cash-and-carry-on-btc-eth-and-sol-perps"]
 
 [[decision]]

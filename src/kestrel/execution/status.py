@@ -1,10 +1,11 @@
 """Where every paper account stands, as one JSON snapshot, and the push that publishes it.
 
-The ledgers live in ``data/`` on this Mac and are never pushed. The snapshot is read away
-from it (another Claude app reads it from GitHub). It is published to its own branch,
-``paper-status``, through git's plumbing: no checkout, no index, nothing on ``main``. So
-it can't touch work in progress or sweep up unpushed commits, and CI (main only) never
-runs for it. A commit is made only when the content changes.
+The ledgers live in ``data/`` on this Mac and are never pushed. The snapshot (and the
+private to-do list beside it) is read away from it, from a separate private repository:
+this repository is public. It is built with git's plumbing under a ref outside
+``refs/heads`` (``refs/kestrel/status``), so no checkout, no index and no branch of this
+repository is touched, and no ordinary push can carry it here. It is pushed to the other
+repository's ``main``. A commit is made only when the content changes.
 
 The snapshot holds only what the Trading page shows: no keys, no account identifiers.
 Money is in USDT, the engine's currency.
@@ -32,7 +33,11 @@ from kestrel.strategy import make_portfolio_strategy, make_strategy, spec_for
 from kestrel.validation import decay
 
 SCHEMA = 1
-BRANCH = "paper-status"
+REF = "refs/kestrel/status"
+"""Local only: outside refs/heads, so ``git push`` of branches never sends it."""
+REMOTE = "status"
+"""The git remote of the private repository it is published to."""
+REMOTE_BRANCH = "main"
 FILE = "paper-status.json"
 REFERENCE = "written_at"
 """The one field ignored when deciding whether anything changed."""
@@ -221,7 +226,7 @@ def git_in(repo: Path) -> Git:
 
 
 class PublishError(Exception):
-    """A git step failed; nothing on the branch was half-written."""
+    """A git step failed; nothing was half-written."""
 
 
 def _ok(git: Git, args: list[str], stdin: str | None = None) -> str:
@@ -236,36 +241,59 @@ def _ref(git: Git, ref: str) -> str | None:
     return done.stdout.strip() if done.returncode == 0 else None
 
 
-def _same(old: str, new: str) -> bool:
+def _comparable(name: str, text: str) -> object:
+    """The content that counts as a change: the snapshot without its writing time."""
+    if name != FILE:
+        return text
     try:
-        a, b = json.loads(old), json.loads(new)
+        snap = json.loads(text)
     except json.JSONDecodeError:
+        return text
+    snap.pop(REFERENCE, None)
+    return snap
+
+
+def _unchanged(git: Git, parent: str, files: dict[str, str]) -> bool:
+    if _ok(git, ["ls-tree", "--name-only", parent]).splitlines() != sorted(files):
         return False
-    a.pop(REFERENCE, None)
-    b.pop(REFERENCE, None)
-    return bool(a == b)
+    for name, text in files.items():
+        stored = git(["show", f"{parent}:{name}"], None)
+        if stored.returncode != 0:
+            raise PublishError(f"git show failed: {stored.stderr.strip()}")
+        if _comparable(name, stored.stdout) != _comparable(name, text):
+            return False
+    return True
 
 
-def publish(git: Git, text: str, remote: str = "origin", push: bool = True) -> str:
-    """Commit ``text`` as FILE on BRANCH when it changed, then push the branch if the remote
-    is behind. Returns what happened, in a line."""
-    local = f"refs/heads/{BRANCH}"
-    parent = _ref(git, local)
+def publish(git: Git, files: dict[str, str], remote: str = REMOTE, push: bool = True) -> str:
+    """Commit ``files`` (name to text) at REF when anything changed, then push it to the
+    remote's REMOTE_BRANCH if the remote is behind. Returns what happened, in a line."""
+    if not files:
+        raise PublishError("nothing to publish")
+    parent = _ref(git, REF)
     committed = None
-    if parent is None or not _same(_ok(git, ["show", f"{parent}:{FILE}"]), text):
-        blob = _ok(git, ["hash-object", "-w", "--stdin"], text)
-        tree = _ok(git, ["mktree"], f"100644 blob {blob}\t{FILE}\n")
-        message = f"Paper status as of {json.loads(text).get('as_of')}"
+    if parent is None or not _unchanged(git, parent, files):
+        lines = []
+        for name in sorted(files):
+            blob = _ok(git, ["hash-object", "-w", "--stdin"], files[name])
+            lines.append(f"100644 blob {blob}\t{name}\n")
+        tree = _ok(git, ["mktree"], "".join(lines))
+        as_of = json.loads(files[FILE]).get("as_of") if FILE in files else None
         committed = _ok(
-            git, ["commit-tree", tree, *(["-p", parent] if parent else []), "-m", message]
-        )
-        # Moves the branch only if nobody else moved it since it was read.
-        _ok(git, ["update-ref", local, committed, parent or "0" * 40])
+            git,
+            ["commit-tree", tree, *(["-p", parent] if parent else []),
+             "-m", f"Status as of {as_of}"],
+        )  # fmt: skip
+        # Moves the ref only if nobody else moved it since it was read.
+        _ok(git, ["update-ref", REF, committed, parent or "0" * 40])
     head = committed or parent
     said = f"committed {committed[:7]}" if committed else "unchanged"
     if not push:
         return said
-    if _ref(git, f"refs/remotes/{remote}/{BRANCH}") == head:
+    tracking_ref = f"refs/remotes/{remote}/{REMOTE_BRANCH}"
+    if _ref(git, tracking_ref) == head:
         return f"{said}; {remote} already has it"
-    _ok(git, ["push", "--quiet", remote, f"{local}:{local}"])
-    return f"{said}; pushed {BRANCH} to {remote}"
+    _ok(git, ["push", "--quiet", remote, f"{REF}:refs/heads/{REMOTE_BRANCH}"])
+    # A push by refspec from a non-branch ref doesn't move the tracking ref: record it.
+    _ok(git, ["update-ref", tracking_ref, str(head)])
+    return f"{said}; pushed to {remote}"

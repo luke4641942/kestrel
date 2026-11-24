@@ -1,7 +1,7 @@
 # Strategy backlog
 
 Ideas not yet scheduled, and where each stands. What has been tested, and what it found,
-is in `findings.md`; decisions are in `decisions.toml`; the active work is in `TODO.md`.
+is in `findings.md`; decisions are in `decisions.toml`; the active to-do list is kept outside the repository.
 Results recorded before Kestrel (Nov 2024 - Oct 2026) don't count: they came from scripts
 with synthetic data, in-sample fitting, lookahead, sweeps on the test data, or missing
 costs. Each idea is rebuilt as a pre-registered note and tested on real Binance data.
@@ -23,7 +23,7 @@ Status as of 2026-11-16.
 
 ## Out of reach for this account
 
-Shorting ideas are studied hypothetically (TODO.md, "Shorting research"); a result that
+Shorting ideas are studied hypothetically (docs/rules.md, "Parked"); a result that
 would be pursued is recorded as needs-shorting, not traded.
 
 | Idea | Why |
@@ -39,7 +39,7 @@ would be pursued is recorded as needs-shorting, not traded.
   half-spread band, square-root impact); decide at a bar's close, fill at the next open.
 - The note is frozen before the first run; every run is a counted trial; a setting chosen
   after seeing results is a new trial.
-- The full scorecard (CLAUDE.md); a study comes before a strategy when the effect itself
+- The full scorecard (docs/rules.md); a study comes before a strategy when the effect itself
   is in doubt.
 - The holdout (from 2025-11-01) is used once per strategy, for a finished strategy's final
   verdict; it is spent for BTC, ETH and SOL.

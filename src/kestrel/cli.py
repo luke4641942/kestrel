@@ -435,7 +435,7 @@ def exploration_split(
         Path, typer.Option("--config", envvar="KESTREL_CONFIG", help="Config file.")
     ] = Path("kestrel.toml"),
 ) -> None:
-    """Split the coins for the exploration experiment, once (CLAUDE.md). Reads only each
+    """Split the coins for the exploration experiment, once (docs/rules.md). Reads only each
     coin's months of daily bars and its median daily volume before the holdout, never its
     returns; refuses if a split already exists."""
     target = Path(research_dir) / "exploration" / "split.toml"
@@ -706,7 +706,7 @@ def short_study(
         Path, typer.Option("--config", envvar="KESTREL_CONFIG", help="Config file.")
     ] = Path("kestrel.toml"),
 ) -> None:
-    """A hypothetical shorting study (TODO.md, "Shorting research"), run once from its
+    """A hypothetical shorting study (docs/rules.md, "Parked"), run once from its
     frozen note, before the holdout. Each market is logged as a trial; a pass is
     needs-shorting, never traded."""
     from kestrel.data.panel import load_panel
@@ -2419,17 +2419,21 @@ def paper_status(name: str, data_dir: DataDir = Path("data")) -> None:
 @paper_app.command("export")
 def paper_export(
     push: Annotated[
-        bool, typer.Option(help=f"Commit it to the {status_export.BRANCH} branch and push.")
+        bool, typer.Option(help="Commit it, with TODO.md, and push to the private remote.")
     ] = False,
     repo: Annotated[Path, typer.Option(help="The git repository to publish from.")] = Path("."),
+    remote: Annotated[
+        str, typer.Option(help="The git remote of the private status repository.")
+    ] = status_export.REMOTE,
     data_dir: DataDir = Path("data"),
     config: Annotated[
         Path, typer.Option("--config", envvar="KESTREL_CONFIG", help="Config file.")
     ] = Path("kestrel.toml"),
 ) -> None:
     """Every paper account as one JSON snapshot (equity, profit, holdings, trades, the
-    model check, what each is waiting for). Printed, or with --push committed as
-    paper-status.json to its own branch (never main, never the working tree) and pushed."""
+    model check, what each is waiting for). Printed, or with --push committed with the
+    repository's TODO.md (gitignored) under refs/kestrel/status, never a branch here, and
+    pushed to the main branch of a private repository (remote 'status')."""
     try:
         text = status_export.render(status_export.snapshot(data_dir, load_config(config)))
     except (ValueError, ConfigError) as e:
@@ -2439,7 +2443,11 @@ def paper_export(
         typer.echo(text, nl=False)
         return
     try:
-        said = status_export.publish(status_export.git_in(repo), text)
+        files = {status_export.FILE: text}
+        todo = repo / "TODO.md"
+        if todo.exists():
+            files["TODO.md"] = todo.read_text()
+        said = status_export.publish(status_export.git_in(repo), files, remote)
     except status_export.PublishError as e:
         typer.echo(str(e), err=True)
         raise typer.Exit(code=1) from None

@@ -1,4 +1,4 @@
-"""Hypothetical shorting studies (TODO.md, "Shorting research"; Luke, 2026-11-16).
+"""Hypothetical shorting studies (docs/rules.md, "Parked"; Luke, 2026-11-16).
 
 Kestrel can't short: the engine's weights are in [0, 1]. These studies measure, outside the
 engine, what a short side would have added, each pre-registered in a frozen note and run

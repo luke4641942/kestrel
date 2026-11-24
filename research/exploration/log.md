@@ -1,6 +1,6 @@
 # Exploration log (not evidence)
 
-The exploration half of the experiment in CLAUDE.md. Anything goes here; nothing in this
+The exploration half of the experiment in docs/rules.md. Anything goes here; nothing in this
 file is a result, a trial, or evidence. It records how the graduates were found, so the
 search can be reproduced and judged. Scripts: `round1.py`, `round2.py`, `round3_engine.py`.
 
@@ -84,7 +84,7 @@ the same coins in both halves (2018-21, 2022-25), drawdown inside 50%.
 Leading shape, if anything graduates: each week, while BTC is above its 50-day average,
 hold the top 2-3 of a set of large coins by 90-day return, each sized to 50% volatility;
 otherwise cash. That is btc-regime-trend's timing with a momentum picker, the altcoin
-portfolio TODO.md already names. How graduates would be confirmed is still open (Luke).
+portfolio the to-do list already names. How graduates would be confirmed is still open (Luke).
 
 ## Round 2, part 2: extra filters (`rotation_round2.py`)
 

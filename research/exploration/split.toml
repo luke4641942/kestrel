@@ -1,4 +1,4 @@
-# The exploration experiment's split (CLAUDE.md). Fixed before any look; never
+# The exploration experiment's split (docs/rules.md). Fixed before any look; never
 # rewritten. Made by `kestrel exploration-split` from each coin's median daily
 # volume (no returns): adjacent pairs by volume, one of each pair to each half.
 made = 2026-11-15

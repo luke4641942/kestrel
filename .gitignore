@@ -20,3 +20,8 @@ htmlcov/
 src/kestrel/api/static/
 frontend/node_modules/
 *.tsbuildinfo
+
+# Private working notes: the repository is public. The rules are public in docs/rules.md;
+# CLAUDE.md (local instructions for the coding assistant) imports them.
+/CLAUDE.md
+/TODO.md

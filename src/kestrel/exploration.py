@@ -1,4 +1,4 @@
-"""The exploration experiment (CLAUDE.md, started 2026-11-16): one split of the coins,
+"""The exploration experiment (docs/rules.md, started 2026-11-16): one split of the coins,
 fixed before any look, into an exploration half and a confirmation half.
 
 - Exploration: anything goes. Runs are saved apart (``data/exploration/``), are not
@@ -81,7 +81,7 @@ def render(split: Split) -> str:
         return f"{name} = [\n{lines}\n]\n"
 
     return (
-        "# The exploration experiment's split (CLAUDE.md). Fixed before any look; never\n"
+        "# The exploration experiment's split (docs/rules.md). Fixed before any look; never\n"
         "# rewritten. Made by `kestrel exploration-split` from each coin's median daily\n"
         "# volume (no returns): adjacent pairs by volume, one of each pair to each half.\n"
         f"made = {split.made.isoformat()}\n"

@@ -77,20 +77,22 @@ def git(repo: Path, *args: str) -> str:
 
 @pytest.fixture
 def repo(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
-    """A working repo with one commit on main and a bare 'origin', with no global git
-    settings (signing, hooks) leaking in."""
+    """A working repo with one commit on main, a bare 'origin' (the public repository) and
+    a bare 'status' (the private one), with no global git settings leaking in."""
     monkeypatch.setenv("GIT_CONFIG_GLOBAL", str(tmp_path / "no-gitconfig"))
     monkeypatch.setenv("GIT_CONFIG_NOSYSTEM", "1")
     for who in ("AUTHOR", "COMMITTER"):
         monkeypatch.setenv(f"GIT_{who}_NAME", "Test")
         monkeypatch.setenv(f"GIT_{who}_EMAIL", "test@example.invalid")
-    remote, work = tmp_path / "origin.git", tmp_path / "work"
-    subprocess.run(["git", "init", "--bare", "-q", str(remote)], check=True)
+    work = tmp_path / "work"
+    for bare in ("origin.git", "status.git"):
+        subprocess.run(["git", "init", "--bare", "-q", str(tmp_path / bare)], check=True)
     subprocess.run(["git", "init", "-q", "-b", "main", str(work)], check=True)
     (work / "a.txt").write_text("work in progress\n")
     git(work, "add", "a.txt")
     git(work, "commit", "-q", "-m", "first")
-    git(work, "remote", "add", "origin", str(remote))
+    git(work, "remote", "add", "origin", str(tmp_path / "origin.git"))
+    git(work, "remote", "add", "status", str(tmp_path / "status.git"))
     (work / "a.txt").write_text("uncommitted change\n")  # must survive every publish
     return work
 
@@ -100,45 +102,49 @@ def doc(equity: float, written: str = "2026-11-23T12:00:00+00:00") -> str:
                           "total": {"equity_usdt": equity}})  # fmt: skip
 
 
-def test_publishing_commits_only_changes_to_its_own_branch(repo: Path) -> None:
+def files(equity: float, todo: str = "# To-do\n", written: str = "2026-11-23T12:00:00+00:00"):  # type: ignore[no-untyped-def]
+    return {export.FILE: doc(equity, written), "TODO.md": todo}
+
+
+def test_publishing_commits_only_changes_to_the_private_repository(repo: Path) -> None:
     run_git = export.git_in(repo)
     head, status = git(repo, "rev-parse", "HEAD"), git(repo, "status", "--porcelain")
+    private, public = repo.parent / "status.git", repo.parent / "origin.git"
 
-    assert export.publish(run_git, doc(100)).endswith("pushed paper-status to origin")
-    remote = repo.parent / "origin.git"
-    assert json.loads(git(remote, "show", f"paper-status:{export.FILE}"))["total"] == {
-        "equity_usdt": 100
-    }
-    assert git(remote, "ls-tree", "--name-only", "paper-status") == export.FILE  # one file
+    assert export.publish(run_git, files(100)).endswith("pushed to status")
+    assert git(private, "ls-tree", "--name-only", "main").split() == ["TODO.md", export.FILE]
+    assert json.loads(git(private, "show", f"main:{export.FILE}"))["total"] == {"equity_usdt": 100}
 
     # Only the time it was written differs: no commit, and nothing to push.
-    said = export.publish(run_git, doc(100, "2026-11-23T13:00:00+00:00"))
-    assert said == "unchanged; origin already has it"
+    said = export.publish(run_git, files(100, written="2026-11-23T13:00:00+00:00"))
+    assert said == "unchanged; status already has it"
 
-    said = export.publish(run_git, doc(101))
+    said = export.publish(run_git, files(100, todo="# To-do\n- new\n"))
     assert said.startswith("committed")
-    assert said.endswith("pushed paper-status to origin")
-    assert git(remote, "rev-list", "--count", "paper-status") == "2"  # history kept
-    assert git(remote, "log", "-1", "--format=%s", "paper-status") == (
-        "Paper status as of 2026-11-22"
-    )
+    assert git(private, "rev-list", "--count", "main") == "2"  # history kept
+    assert git(private, "log", "-1", "--format=%s", "main") == "Status as of 2026-11-22"
 
-    # main, the index and the working tree are untouched; nothing reached origin's main.
+    # This repository: main, the index and the working tree untouched; no branch made;
+    # nothing ever reaches the public remote, even when every branch is pushed.
     assert git(repo, "rev-parse", "HEAD") == head
-    assert git(repo, "branch", "--show-current") == "main"
     assert git(repo, "status", "--porcelain") == status
-    assert git(remote, "branch", "--list", "main") == ""
+    assert git(repo, "branch", "--format=%(refname:short)") == "main"
+    git(repo, "push", "-q", "--all", "origin")
+    assert git(public, "for-each-ref", "--format=%(refname)") == "refs/heads/main"
+    assert export.FILE not in git(public, "ls-tree", "--name-only", "main")
 
 
 def test_a_failed_push_is_reported_and_retried_next_time(repo: Path) -> None:
     run_git = export.git_in(repo)
-    remote = repo.parent / "origin.git"
-    remote.rename(repo.parent / "away.git")
+    private = repo.parent / "status.git"
+    private.rename(repo.parent / "away.git")
     with pytest.raises(export.PublishError, match="git push failed"):
-        export.publish(run_git, doc(100))
-    assert export.publish(run_git, doc(100), push=False) == "unchanged"  # committed locally
-    (repo.parent / "away.git").rename(remote)
-    assert export.publish(run_git, doc(100)) == "unchanged; pushed paper-status to origin"
+        export.publish(run_git, files(100))
+    assert export.publish(run_git, files(100), push=False) == "unchanged"  # committed locally
+    (repo.parent / "away.git").rename(private)
+    assert export.publish(run_git, files(100)) == "unchanged; pushed to status"
+    with pytest.raises(export.PublishError, match="nothing"):
+        export.publish(run_git, {})
 
 
 def test_the_commands(tmp_path: Path, repo: Path) -> None:
@@ -149,9 +155,11 @@ def test_the_commands(tmp_path: Path, repo: Path) -> None:
     assert shown.exit_code == 0, shown.output
     assert [a["name"] for a in json.loads(shown.output)["accounts"]] == ["btc", "tvt"]
 
+    (repo / "TODO.md").write_text("# To-do\n- private\n")
     pushed = CliRunner().invoke(app, ["paper", "export", "--push", "--repo", str(repo), *common])
     assert pushed.exit_code == 0, pushed.output
-    assert "pushed paper-status to origin" in pushed.output
+    assert "pushed to status" in pushed.output
+    assert git(repo.parent / "status.git", "show", "main:TODO.md") == "# To-do\n- private"
     failed = CliRunner().invoke(
         app, ["paper", "export", "--push", "--repo", str(tmp_path / "nowhere"), *common]
     )

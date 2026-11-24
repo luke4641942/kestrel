@@ -1,6 +1,6 @@
 """Performance metrics for a backtest, with their uncertainty.
 
-Conventions (CLAUDE.md): returns are measured daily at 00:00 UTC for every strategy,
+Conventions (docs/rules.md): returns are measured daily at 00:00 UTC for every strategy,
 whatever its bar interval, so strategies and the benchmark are comparable; years are
 365 days (crypto trades every day); the risk-free rate is 0.
 

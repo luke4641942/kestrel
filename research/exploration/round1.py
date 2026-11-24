@@ -1,4 +1,4 @@
-"""Exploration round 1 (CLAUDE.md "Exploration experiment"): a broad screen of daily rules
+"""Exploration round 1 (docs/rules.md "Exploration experiment"): a broad screen of daily rules
 on the exploration half only. Nothing here is a trial or evidence; it only finds ideas.
 
 Each rule gives a daily weight in [0, 1] per coin, decided at the close and held from the

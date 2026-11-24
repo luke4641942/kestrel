@@ -87,7 +87,7 @@ class UniverseConfig:
 
 @dataclass(frozen=True)
 class FxConfig:
-    """Forex (P6): its own market, holdout and fixed pairs (CLAUDE.md, 2026-11-23)."""
+    """Forex (P6): its own market, holdout and fixed pairs (docs/rules.md, 2026-11-23)."""
 
     holdout_start: datetime
     """First instant of forex's holdout (UTC); pre-registered before any forex data."""

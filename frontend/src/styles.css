@@ -2243,7 +2243,7 @@ p {
   line-height: 1.5;
 }
 
-/* The scorecard's numbers are its tests' names in CLAUDE.md and the notes ("test 4"). */
+/* The scorecard's numbers are its tests' names in docs/rules.md and the notes ("test 4"). */
 .scorecard,
 .lessons {
   list-style: none;

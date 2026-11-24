@@ -7,7 +7,7 @@ weight is a third of that. A coin with no bars yet (SOL before 2020-08) leaves i
 cash. Decided at each daily close; the portfolio engine rebalances a coin when its target
 moves more than the no-trade band.
 
-The weights come from a rule (equal thirds), as CLAUDE.md asks of a multi-strategy
+The weights come from a rule (equal thirds), as docs/rules.md asks of a multi-strategy
 portfolio; a different split would be a different trial. ``TrioHold`` is the control: a
 third of each coin, rebalanced each Sunday once all three trade.
 """

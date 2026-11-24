@@ -1082,7 +1082,7 @@ class ValidationOut(BaseModel):
     pools: dict[str, int] = Field(default_factory=dict)
     """Trials in each pool (main is crypto, confirmation, forex); ``trials`` is main's."""
     all_trials: int = 0
-    """Every trial in every pool: reported beside each bar (CLAUDE.md, trial pools)."""
+    """Every trial in every pool: reported beside each bar (docs/rules.md, trial pools)."""
     pool_bars: dict[str, float] = Field(default_factory=dict)
     """Each pool's luck bar (annual Sharpe the best of its trials would reach by luck)."""
 

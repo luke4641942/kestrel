@@ -148,7 +148,7 @@ Each is in findings.md with what it touched.
 
 | What | Where |
 |---|---|
-| The rules this research follows | [CLAUDE.md](../CLAUDE.md), "Research rules" |
+| The rules this research follows | [docs/rules.md](rules.md), "Research rules" |
 | Every result and the full table | [research/findings.md](../research/findings.md) |
 | The decision on each strategy | [research/decisions.toml](../research/decisions.toml) |
 | The frozen notes | [research/strategies/](../research/strategies/) |

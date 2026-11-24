@@ -13,7 +13,7 @@ tempt anyone (Luke, 2026-11-22):
   a run that bad would happen less than 1 time in 20 if the backtest were still true.
 
 The flag is information. It never stops an account or changes a decision: a downgrade
-waits for Luke (CLAUDE.md). Before ``MIN_DAYS`` it says "too early" and costs nothing.
+waits for Luke (docs/rules.md). Before ``MIN_DAYS`` it says "too early" and costs nothing.
 One flag on noisy data is a prompt to look, not a verdict; and it tests the strategy
 against its own past, not against holding, which the paper note's own rules still do.
 """

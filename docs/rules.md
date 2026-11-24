@@ -1,11 +1,13 @@
-# Kestrel: notes for Claude
+# Kestrel: the rules
 
-Systematic crypto trading platform, built to be shown to quant employers. Quality
-and honesty of results matter more than speed. Read README.md for architecture,
-`research/findings.md` for what the research has found, and `research/decisions.toml`
-for where each strategy stands.
+The rulebook this project is built and researched under: the constraints, the layers, the
+conventions, the research rules every result is judged by, and the engine decisions. Read
+[README.md](../README.md) for the architecture, [research/findings.md](../research/findings.md)
+for what the research has found, and [research/decisions.toml](../research/decisions.toml) for
+where each strategy stands. Results go in the findings, not here.
 
-This file is the rulebook. Results go in `research/findings.md`, not here.
+Notes frozen before 2026-11-24 cite this file as `CLAUDE.md`, where these rules lived until
+then.
 
 ## Goals and constraints
 - Spot only, long-only (Binance). Strategies output target weights in [0, 1] per symbol
@@ -17,12 +19,10 @@ This file is the rulebook. Results go in `research/findings.md`, not here.
 - **Forex (P6, Luke 2026-11-23): research first, its own market.** Long and short, through
   an ASIC-licensed CFD broker (retail leverage capped by ASIC); costed as spread plus
   overnight financing. The spot, long-only rule above stays for crypto. No forex trading
-  (paper or live) before a pass, and not before Luke has checked the Swyftx employee trading
-  policy. Futures are research-only and parked until the account is far bigger.
+  (paper or live) before a pass. Futures are research-only and parked until the account is
+  far bigger.
 - A strategy must behave identically in backtest, paper and live. Strategies talk to an
   `ExecutionVenue` interface, never to an exchange directly.
-- Luke works in ~45-minute weekday sessions and longer on days off. Size tasks so one
-  session ends with something merged, tested and working.
 
 ## Layers (dependencies point downward only)
 1. `frontend/` React + TypeScript dashboard. Talks only to the API.
@@ -46,13 +46,6 @@ reporting progress and logs and checking cancellation.
   for lines. Indicators are checked by recomputing on truncated histories.
 - Config lives in `kestrel.toml`, version-controlled. Every backtest run stores the full
   config, its fingerprint, the git commit and a dirty flag. No global settings UI.
-- After each step: commit, push, and watch CI (`gh run watch`). Luke commits research
-  notes in `research/strategies/` himself unless he asks otherwise.
-
-## To-do list
-`TODO.md` (repo root) is the active to-do list Luke reads in the IDE. Update it in the same
-change whenever a task is started, finished, added or parked, and move finished items to
-"Done recently" with the date. Keep it short: what's next, who it's waiting on.
 
 ## Before calling a task done
 ```bash
@@ -81,10 +74,10 @@ Never pipe check output through `tail` or similar inside an `&&` chain: it hides
       says so). Alerts (`kestrel.execution.alerts`, 2026-11-22): `paper run --alerts` (the
       launchd jobs pass it) sends a macOS notification for a new halt, failed run, falling
       behind, missed day or trade; sent keys in each account's `alerts.jsonl`. `kestrel paper export --push`
-      (launchd hourly at :40, `paper schedule-export`) publishes every account as
-      `paper-status.json` to its own `paper-status` branch through git plumbing: never main,
-      the index or the working tree; a commit only when the content changed. A network failure
-      alerts only the second time in a row (Luke, 2026-11-23); the first is logged as held. Plan and progress in TODO.md. The
+      (launchd hourly at :40, `paper schedule-export`) publishes a status snapshot of every
+      account to a separate private repository through git plumbing: never this repository's
+      branches, index or working tree; a commit only when the content changed. A network failure
+      alerts only the second time in a row (Luke, 2026-11-23); the first is logged as held. The
       backtest and the paper runner share one rebalance step (`kestrel.execution.rebalance`);
       the latest closed bars come from `kestrel.data.live` (`kestrel update`). The paper
       runner (`kestrel.execution.paper`) handles each closed bar like the engine (mark, decide,
@@ -103,16 +96,15 @@ Never pipe check output through `tail` or similar inside an `&&` chain: it hides
       and reconciliation adds up every testnet account (they share one exchange account). `kestrel paper schedule` writes a launchd job (keys from ~/.zshrc at run time).
       A run refreshes every market a strategy's features read (`kestrel.data.features
       .markets_for`: BTC for `btc_close`) and refuses to decide a bar with a missing input.
-      The dashboard's Trading page is read-only; every action is a CLI command. Running
-      (TODO.md): trend-vol-target on BTC, ETH, SOL, btc-regime-trend on ETH, SOL, G1
+      The dashboard's Trading page is read-only; every action is a CLI command. Running:
+      trend-vol-target on BTC, ETH, SOL, btc-regime-trend on ETH, SOL, G1
       (btc-rotation-8, one basket account, rot-g1), and stablecoin-vol-hold on BTC, ETH (watch,
-      scs-btc and scs-eth), each its own testnet account. An
-      always-on machine is parked (TODO.md).
+      scs-btc and scs-eth), each its own testnet account.
 - [x] Research tooling: the Research tab (decisions by family, the luck bar over time, the
       exploration experiment), the exploration split and confirmation run, cross-sectional
       studies, delisting studies, the minute-chart cost gate, the overlap report
       (`kestrel overlap`: how much saved runs are one bet).
-- [ ] P6 Forex (started 2026-11-23; plan in TODO.md): rules (pools, holdout, universe),
+- [ ] P6 Forex (started 2026-11-23): rules (pools, holdout, universe),
       bid/ask daily data, an engine that takes signed and leveraged weights (margin,
       financing, AUD accounting; parity with the crypto engine when both are off), then the
       first note: trend following across the 10 pairs, with published outside evidence.
@@ -234,7 +226,7 @@ Never pipe check output through `tail` or similar inside an `&&` chain: it hides
   textbook settings. No UI to change lengths and no automatic combination search.
 
 ## Engine decisions
-Agreed with Luke; don't re-litigate without a reason.
+Agreed decisions; changed only for a stated reason.
 - **Engine currency is USDT** (Binance spot quote). The dashboard converts to A$ for
   display only.
 - **No-trade band: 2% of equity** (`kestrel.toml`). Only rebalance when a target differs
@@ -298,7 +290,7 @@ Agreed with Luke; don't re-litigate without a reason.
 - **Hypothetical shorting studies** (Luke, 2026-11-16) are allowed: frozen notes, counted
   trials, costed as a 2:1 CFD (spread plus financing) and as a Binance perp (funding). A
   result that would be pursue or watch is recorded as `needs-shorting`: never traded until
-  a licensed retail route exists. List in TODO.md.
+  a licensed retail route exists.
 - **P5 perps.** Binance doesn't offer futures to Australian retail (licence cancelled April
   2023; Federal Court penalty reported March 2026); ASIC caps retail crypto CFD leverage at
   2:1. Revisit only if a spot strategy passes and shorting would clearly help. Never route
@@ -309,12 +301,3 @@ Agreed with Luke; don't re-litigate without a reason.
 - **Settings page (P4+).** Only risk limits (audited edits) and exchange connection
   status. Live balances are read from the exchange. API keys stay in env vars or the
   keychain, never in the UI.
-
-## Working with Luke
-- **Never reject a research note, or drop or downgrade a strategy's decision, without Luke's
-  explicit say-so** (2026-11-14). Run what a frozen note specifies, record the result
-  plainly (decisions reasons, findings, scorecard), say what the note's rule implies, and
-  ask. A pre-registered result is never softened in the record; only the status change waits.
-- Be direct. Push back on ideas that would overfit or fool us.
-- Explain design decisions briefly when making them. He needs to be able to
-  defend every part of this codebase in an interview.

@@ -27,7 +27,7 @@ export function shortVerdict(s: ShortStudy): { tone: Tone; label: string; text: 
   return { tone: "bad", label: "Failed", text: `Passed ${passed} of ${tests.length} of its pre-registered tests.` };
 }
 
-/** The research account size (CLAUDE.md): what a study's growth is shown on. */
+/** The research account size (docs/rules.md): what a study's growth is shown on. */
 export const STUDY_CASH = 330;
 
 /** A curve's money view on ``cash``: net profit after costs, total and yearly return, and

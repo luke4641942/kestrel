@@ -1,6 +1,6 @@
 """Which HMM describes BTC and ETH best? Variants compared by out-of-sample likelihood only.
 
-CLAUDE.md: other regime inputs are compared by out-of-sample log-likelihood, never by
+docs/rules.md: other regime inputs are compared by out-of-sample log-likelihood, never by
 trading results. Nothing here trades, so nothing here is a trial; it chooses a better
 *description*, not an edge. Pre-holdout data only (to 2025-10).
 

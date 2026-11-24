@@ -91,7 +91,7 @@ max_daily_loss = 0.15
 # Halt when equity falls more than this fraction below its peak: the scorecard's limit.
 max_drawdown = 0.5
 
-# Forex (P6): its own market, trial pool and holdout (CLAUDE.md). Both fixed 2026-11-23,
+# Forex (P6): its own market, trial pool and holdout (docs/rules.md). Both fixed 2026-11-23,
 # before any forex data was ingested. Never move the date; adding a pair is a note.
 [fx]
 holdout_start = 2023-01-01

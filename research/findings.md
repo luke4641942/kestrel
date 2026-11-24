@@ -72,7 +72,7 @@ how much BTC to hold (0, a third, two thirds or all). The position is scaled dow
 | Sharpe | 1.21 | about 1.07 | 1.07 |
 | Worst drawdown | -48% | | -77% |
 
-Against the scorecard every strategy is now judged on (CLAUDE.md, "Research rules"):
+Against the scorecard every strategy is now judged on (docs/rules.md, "Research rules"):
 
 | Test | Result | |
 |---|---|---|
@@ -104,7 +104,7 @@ Hold an altcoin only while BTC closes above its 50-day average and the coin is a
 close 30 days earlier, sized to 50% annual volatility (capped at 100%); otherwise cash.
 Daily bars, no tuning after it was found.
 
-It came from the exploration experiment (CLAUDE.md, research/exploration/log.md): about
+It came from the exploration experiment (docs/rules.md, research/exploration/log.md): about
 230 daily rules searched on 181 altcoins, two graduates, each run once on 180 coins nobody
 had looked at. On those it beat holding on 149 of 180 coins and won 427 of 771
 walk-forward windows (55%); the other graduate, a crash rebound, failed.
@@ -595,12 +595,17 @@ Each strategy was judged by its own note's pass test, written before it ran. Fro
   from reading the study log in the wrong folder. Caught on the dashboard, which reads it
   correctly. It happened again on 2026-11-16 (629 and a luck bar of 2.12 rather than 751
   and 2.23): a script opened the run store one folder too deep and found no runs. Caught
-  while building the Research tab; CLAUDE.md now names the right call.
+  while building the Research tab; docs/rules.md now names the right call.
 - **The paper runner didn't refresh markets a strategy reads (found 2026-11-16, before any
   account used one).** btc-regime-trend reads BTC's close; a run updated only the traded
   coin, so a day's missing BTC bar would have read as "unknown", meaning cash, and sold the
   position on missing data. Every input market is now refreshed, and a live run refuses to
   decide on a missing input.
+
+- **A wording redaction before the repository went public (2026-11-24).** A personal
+  compliance condition (an employer's trading-policy check) was cut from the wording of six
+  frozen shorting notes and one decision reason. No rule, setting, threshold, test or
+  result changed; the original wording is in the git history before that date.
 
 ## What these results can't tell you
 

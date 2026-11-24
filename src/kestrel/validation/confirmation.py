@@ -1,4 +1,4 @@
-"""The exploration experiment's confirmation run (CLAUDE.md): one graduate, every coin in
+"""The exploration experiment's confirmation run (docs/rules.md): one graduate, every coin in
 the confirmation half, once.
 
 For each confirmation coin with at least ``MIN_MONTHS`` months of daily bars before the

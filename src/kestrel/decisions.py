@@ -25,7 +25,7 @@ from kestrel.strategy import STRATEGIES
 Choice = Literal["pursue", "watch", "needs-shorting", "drop"]
 CHOICES: tuple[Choice, ...] = ("pursue", "watch", "needs-shorting", "drop")
 """In the order they are shown. needs-shorting: a hypothetical shorting study that passed,
-never traded until a licensed retail route to shorting exists (CLAUDE.md, Parked)."""
+never traded until a licensed retail route to shorting exists (docs/rules.md, Parked)."""
 
 
 class DecisionError(ValueError):
