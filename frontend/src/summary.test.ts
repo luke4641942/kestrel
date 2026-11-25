@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { breakEvenLabel, groupDecisions, shortMarket, gateKey, gateSetupName, hasOwnTarget, drawdownPaths, mostPromising, newestFirst, gateTone, holdoutEdge, datasetsLine, scorecardHeadline, luckBar, poolsNote, splitClosed, startDateVerdict, windowLabel, DECISION, studyTitle, studyTone, deflatedNote, spreadBands, DEFAULT_RUN_SORT, KIND_LABEL, UNIVERSE, marketLabel, marketsFor, defaultDataset, nextSort, sortRuns, fewTrades, signalsCaption, MAX_LABELLED_TRADES, MAX_MARKED_TRADES, costHeadroom, paramsText, runRole, tradeCount, heldAsset, money, span, trackRecord, tradeMarkers, verdict } from "./summary";
+import { breakEvenLabel, concentrationRows, groupDecisions, shortMarket, gateKey, gateSetupName, hasOwnTarget, drawdownPaths, mostPromising, newestFirst, gateTone, holdoutEdge, datasetsLine, scorecardHeadline, luckBar, poolsNote, splitClosed, startDateVerdict, windowLabel, DECISION, studyTitle, studyTone, deflatedNote, spreadBands, DEFAULT_RUN_SORT, KIND_LABEL, UNIVERSE, marketLabel, marketsFor, defaultDataset, nextSort, sortRuns, fewTrades, signalsCaption, MAX_LABELLED_TRADES, MAX_MARKED_TRADES, costHeadroom, paramsText, runRole, tradeCount, heldAsset, money, span, trackRecord, tradeMarkers, verdict } from "./summary";
 import { run, trade } from "./test/fixtures";
 
 describe("verdict", () => {
@@ -533,5 +533,21 @@ describe("poolsNote", () => {
     expect(poolsNote({ main: 900, confirmation: 2, forex: 6 }, 908)).toBe("crypto pool; 908 across all pools (forex 6)");
     expect(poolsNote({ main: 900, confirmation: 2, forex: 0 }, 902)).toBe("crypto pool; 902 across all pools");
     expect(poolsNote(undefined, undefined)).toBe("crypto pool");
+  });
+});
+
+describe("concentrationRows", () => {
+  const c = { total_return: 1.2, without_top_days: -0.15, top_days: 10, best_year: 2023, best_year_return: 1.69, without_best_year: -0.18 };
+  it("sets the return without the best days and year beside holding's", () => {
+    const hold = { ...c, without_top_days: -0.4, without_best_year: 0.5 };
+    expect(concentrationRows(c, hold)).toEqual([
+      ["Return without its 10 best days", "\u221215% (holding \u221240%)"],
+      ["Return without 2023, its best year (+169%)", "\u221218% (holding +50%)"],
+    ]);
+  });
+  it("leaves out what a short run can't say", () => {
+    expect(concentrationRows({ ...c, without_top_days: null, best_year: null, best_year_return: null, without_best_year: null }, null)).toEqual([]);
+    expect(concentrationRows(null, null)).toEqual([]);
+    expect(concentrationRows(c, undefined)[0]).toEqual(["Return without its 10 best days", "\u221215%"]);
   });
 });

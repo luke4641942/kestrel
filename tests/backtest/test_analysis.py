@@ -7,7 +7,7 @@ from decimal import Decimal
 import polars as pl
 import pytest
 
-from kestrel.backtest.analysis import analyse, start_dates
+from kestrel.backtest.analysis import analyse, concentration, start_dates
 from kestrel.backtest.engine import run_backtest
 from kestrel.backtest.metrics import compute_metrics, format_report
 from kestrel.data.schema import Interval
@@ -299,3 +299,31 @@ def test_drawdown_paths_bracket_the_backtests_drawdown() -> None:
     a = analyse(r, r)
     assert a.drawdown_paths is not None
     assert "Drawdown, paths" in format_report(r, compute_metrics(r), a)
+
+
+def test_concentration_takes_out_the_best_days_and_the_best_year() -> None:
+    # Daily marks from 2020-12-30. A mark belongs to the year of its close_time (as in the
+    # years table): 2020 is +10% (the 12-31 mark), 2021 is 132 / 110, +20%.
+    values = [100.0, 110, 110, 99, 132, 132, 132]
+    start = datetime(2020, 12, 30, tzinfo=UTC)
+    frame = equity_frame(values).with_columns(
+        close_time=pl.Series([start + i * DAY for i in range(len(values))])
+    )
+    c = concentration(frame, top_days=1)
+    assert c is not None
+    assert c.total_return == pytest.approx(0.32)
+    assert c.without_top_days == pytest.approx(1.32 / (132 / 99) - 1)  # the +33% day removed
+    assert (c.best_year, c.best_year_return) == (2021, pytest.approx(0.2))
+    assert c.without_best_year == pytest.approx(0.1)  # 2020's +10% remains
+    assert concentration(frame, top_days=4).without_top_days is None  # too short to say
+    assert concentration(frame.head(2)) is None
+
+
+def test_every_run_gets_its_concentration_beside_holdings() -> None:
+    r = run(BuyAndHold(), rising(400))
+    a = analyse(r, r)
+    assert a.concentration == a.hold_concentration
+    assert a.concentration is not None
+    assert a.concentration.without_top_days is not None
+    assert a.concentration.without_top_days < a.concentration.total_return
+    assert "best days" in "\n".join(format_report(r, compute_metrics(r), analysis=a).splitlines())

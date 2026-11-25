@@ -23,6 +23,12 @@ from the first day the strategy is invested (its warm-up in cash isn't held agai
 is compared with holding over the same days: the share of starts where the strategy had
 the better Sharpe, the smaller max drawdown, and the higher return.
 
+Concentration: how much of the result a few days or one year carry. Trend following earns
+most of its return in a few big runs, and a result that vanishes without its best year is
+one event, not a habit. Both are measured on holding too, because holding also leans on
+its best days: the comparison, not the strategy's figure alone, is the reading. As returns
+compounded without them, never as a share of profit (a share misleads near zero profit).
+
 Holding periods for the Australian tax view match sells to buys first-in first-out.
 Information only: the engine does not model tax, and this is not tax advice.
 """
@@ -48,6 +54,8 @@ START_WINDOWS = (365, 730)
 """Window lengths, in days, for the start-date comparison."""
 START_STEP = 30
 """Days between window starts."""
+TOP_DAYS = 10
+"""Best days removed for the concentration check."""
 LONG_TERM = timedelta(days=365)
 """Australian CGT discount needs an asset held at least 12 months."""
 
@@ -70,6 +78,51 @@ class StartDateRow:
     """Share where its max drawdown was smaller than holding's."""
     total_return: float | None
     """Share where its return was higher."""
+
+
+@dataclass(frozen=True)
+class Concentration:
+    """How much of a run's return its best days and best calendar year carry (module
+    docstring). Returns are fractions, compounded."""
+
+    total_return: float
+    without_top_days: float | None
+    """The return with the ``top_days`` best days taken out (None for a run of fewer than
+    ``2 x top_days`` days)."""
+    top_days: int
+    best_year: int | None
+    """The calendar year with the highest return (first and last years may be partial)."""
+    best_year_return: float | None
+    without_best_year: float | None
+    """The return with that whole year taken out (None with fewer than two years)."""
+
+
+def concentration(equity: pl.DataFrame, top_days: int = TOP_DAYS) -> Concentration | None:
+    """From equity marks (``close_time``, ``equity``); only the 00:00 UTC marks are read,
+    so a run's stored equity at any bar size gives the same answer as its daily marks.
+    None with fewer than three marks."""
+    t = pl.col("close_time")
+    marks = equity.filter((t.dt.hour() == 0) & (t.dt.minute() == 0)).sort("close_time")
+    if marks.height < 3:
+        return None
+    values = marks["equity"].to_list()
+    total = values[-1] / values[0] - 1
+    rets = sorted((b / a - 1 for a, b in itertools.pairwise(values) if a), reverse=True)
+    without_days = (
+        (1 + total) / math.prod(1 + r for r in rets[:top_days]) - 1
+        if len(rets) >= 2 * top_days
+        else None
+    )
+    years = _period_returns(marks.slice(1), "%Y", values[0])
+    best = max(years, key=lambda y: years[y]) if len(years) >= 2 else None
+    return Concentration(
+        total_return=total,
+        without_top_days=without_days,
+        top_days=top_days,
+        best_year=None if best is None else int(best),
+        best_year_return=None if best is None else years[best],
+        without_best_year=None if best is None else (1 + total) / (1 + years[best]) - 1,
+    )
 
 
 @dataclass(frozen=True)
@@ -123,6 +176,9 @@ class Analysis:
     negative. None for runs shorter than two days."""
     start_dates: list[StartDateRow]
     """Against holding, from every start date; see the module docstring."""
+    concentration: Concentration | None = None
+    hold_concentration: Concentration | None = None
+    """The same for holding the benchmark over the same days."""
 
 
 def analyse(
@@ -243,6 +299,8 @@ def analyse(
         block_days=block,
         drawdown_paths=drawdown_paths(logs, block, resamples, seed),
         start_dates=start_dates(result.equity, benchmark.equity),
+        concentration=concentration(daily),
+        hold_concentration=concentration(daily_equity(benchmark)),
     )
 
 

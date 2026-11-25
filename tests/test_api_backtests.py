@@ -252,3 +252,20 @@ def test_run_detail_carries_its_scorecard(client: TestClient, tmp_path: Path) ->
     card = client.get(f"/api/backtests/{run_id}").json()["scorecard"]
     out = next(g for g in card["grades"] if g["name"] == "Out of sample")
     assert (out["status"], out["measured"]) == ("pass", "Beat holding in 2 of 3 test windows")
+
+
+def test_runs_saved_before_concentration_get_it_from_their_equity(
+    client: TestClient, tmp_path: Path
+) -> None:
+    import json
+
+    job = _finish(client, BODY)
+    run_id = job["result"]["run_id"]
+    path = tmp_path / "runs" / run_id / "run.json"
+    meta = json.loads(path.read_text())
+    stored = meta["analysis"].pop("concentration")
+    held = meta["analysis"].pop("hold_concentration")
+    path.write_text(json.dumps(meta))
+    a = client.get(f"/api/backtests/{run_id}").json()["analysis"]
+    assert a["concentration"] == pytest.approx(stored)  # the same as when it was saved
+    assert a["hold_concentration"] == pytest.approx(held)

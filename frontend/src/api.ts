@@ -774,6 +774,20 @@ export interface Analysis {
   /** Max drawdown on resampled paths: [median, 95th percentile worst]; absent on older runs. */
   drawdown_paths?: number[] | null;
   start_dates: StartDateRow[];
+  /** How much of the return the best days and best year carry; holding's for comparison. */
+  concentration?: Concentration | null;
+  hold_concentration?: Concentration | null;
+}
+
+export interface Concentration {
+  total_return: number;
+  /** The return with the top_days best days taken out. */
+  without_top_days: number | null;
+  top_days: number;
+  best_year: number | null;
+  best_year_return: number | null;
+  /** The return with the best calendar year taken out. */
+  without_best_year: number | null;
 }
 
 export interface RunDetail extends RunSummary {

@@ -543,6 +543,18 @@ class StartDateOut(BaseModel):
     total_return: float | None
 
 
+class ConcentrationOut(BaseModel):
+    """How much of the return the best days and best year carry
+    (kestrel.backtest.analysis.Concentration)."""
+
+    total_return: float
+    without_top_days: float | None
+    top_days: int
+    best_year: int | None
+    best_year_return: float | None
+    without_best_year: float | None
+
+
 class AnalysisOut(BaseModel):
     """Deeper analysis; see kestrel.backtest.analysis. None where it doesn't apply."""
 
@@ -574,6 +586,10 @@ class AnalysisOut(BaseModel):
     start_dates: list[StartDateOut] = Field(default_factory=list)
     """Against holding from every start date. Runs saved before it existed get it
     computed from their stored equity."""
+    concentration: ConcentrationOut | None = None
+    hold_concentration: ConcentrationOut | None = None
+    """The same for holding. Runs saved before these existed get both computed from their
+    stored equity."""
 
 
 class GradeOut(BaseModel):

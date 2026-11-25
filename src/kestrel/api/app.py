@@ -90,10 +90,10 @@ from kestrel.api.models import (
     WaitingOut,
 )
 from kestrel.assistant import AssistantError, ResearchAssistant, chat_record, credentials_hint
-from kestrel.backtest.analysis import start_dates
+from kestrel.backtest.analysis import concentration, start_dates
 from kestrel.backtest.costs import CostModel, Fill, Side
 from kestrel.backtest.engine import HoldoutError
-from kestrel.backtest.metrics import DAYS_PER_YEAR
+from kestrel.backtest.metrics import DAYS_PER_YEAR, daily_marks
 from kestrel.backtest.runs import RunRequest, RunStore, count_trials, execute
 from kestrel.config import Config, ConfigError, InstrumentRules, load_config
 from kestrel.data.binance_vision import BinanceVisionClient, Month, last_complete_month
@@ -962,6 +962,16 @@ def create_app(
         if analysis is not None and "start_dates" not in analysis:
             rows = start_dates(saved.equity, saved.benchmark)
             analysis = {**analysis, "start_dates": [asdict(r) for r in rows]}
+        if analysis is not None and "concentration" not in analysis:
+            start = datetime.fromisoformat(saved.meta["metrics"]["start"])
+            cash = float(saved.meta["initial_cash"])
+            mine = concentration(daily_marks(saved.equity, start, cash))
+            held = concentration(daily_marks(saved.benchmark, start, cash))
+            analysis = {
+                **analysis,
+                "concentration": None if mine is None else asdict(mine),
+                "hold_concentration": None if held is None else asdict(held),
+            }
         card = grade(saved.meta, summary.deflated_sharpe, studies.studies(), analysis)
         return RunDetail.model_validate(
             {

@@ -93,13 +93,17 @@ class Metrics:
 def daily_equity(result: BacktestResult) -> pl.DataFrame:
     """Equity marked at each 00:00 UTC: the starting cash at the first bar's open (when
     that is midnight), then every bar close that falls on midnight."""
-    eq = result.equity
+    return daily_marks(result.equity, result.start, float(result.initial_cash))
+
+
+def daily_marks(equity: pl.DataFrame, start: datetime | None, initial: float) -> pl.DataFrame:
+    """``daily_equity`` from an equity frame (a saved run's, say), its start and cash."""
+    eq = equity
     at_midnight = (eq["close_time"].dt.hour() == 0) & (eq["close_time"].dt.minute() == 0)
     marks = eq.filter(at_midnight).select("close_time", "equity")
-    start = result.start
     if start is not None and start.hour == 0 and start.minute == 0:
         first = pl.DataFrame(
-            {"close_time": [start], "equity": [float(result.initial_cash)]},
+            {"close_time": [start], "equity": [initial]},
             schema=marks.schema,
         )
         marks = pl.concat([first, marks.filter(pl.col("close_time") > start)])
@@ -273,6 +277,17 @@ def _analysis_lines(a: Analysis, asset: str) -> list[str]:
         f"  Tails             worst day {a.worst_day:.1%}, worst month {a.worst_month:.1%}, "
         f"worst 5% of days average {a.expected_shortfall:.2%}"
     )
+    c, h = a.concentration, a.hold_concentration
+
+    def held(x: float | None) -> str:
+        return "" if x is None else f" (holding {p(x)})"
+
+    if c is not None and c.without_top_days is not None:
+        days = held(None if h is None else h.without_top_days)
+        lines.append(f"  Without {c.top_days} best days {p(c.without_top_days)}{days}")
+    if c is not None and c.without_best_year is not None:
+        year = held(None if h is None else h.without_best_year)
+        lines.append(f"  Without {c.best_year}      {p(c.without_best_year)}{year}, its best year")
     return lines
 
 

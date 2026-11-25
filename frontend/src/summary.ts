@@ -1,6 +1,6 @@
 // Plain logic behind the Backtests page: the verdict, the test-period wording and the
 // chart's trade markers. Kept out of components so it can be tested directly.
-import type { Dataset, Decision, GradeStatus, HoldoutRecord, ResearchStatus, Scorecard, Study, RunDetail, RunSummary, StartDateRow, StrategyInfo, StrategyKind } from "./api";
+import type { Concentration, Dataset, Decision, GradeStatus, HoldoutRecord, ResearchStatus, Scorecard, Study, RunDetail, RunSummary, StartDateRow, StrategyInfo, StrategyKind } from "./api";
 import type { Tone } from "./components/ui";
 import type { TradeMarker } from "./components/EquityChart";
 
@@ -520,4 +520,25 @@ export function groupDecisions(decisions: Decision[]): StrategyDecisions[] {
 /** "BTCUSDT 1d" -> "BTC 1d"; anything else is shown as it is. */
 export function shortMarket(market: string): string {
   return market.replace(/^([A-Z0-9]+)USDT\b/, "$1");
+}
+
+const signed0 = (x: number) => `${x >= 0 ? "+" : "\u2212"}${Math.abs(x * 100).toFixed(0)}%`;
+
+/** How much of a run's return its best days and best year carry, beside holding's, as
+ * ledger rows. Empty when the run is too short (or saved without its equity). */
+export function concentrationRows(
+  c: Concentration | null | undefined,
+  hold: Concentration | null | undefined,
+): [string, string][] {
+  if (!c) return [];
+  const beside = (mine: number | null, held: number | null | undefined) =>
+    mine === null ? null : `${signed0(mine)}${held === null || held === undefined ? "" : ` (holding ${signed0(held)})`}`;
+  const rows: [string, string][] = [];
+  const days = beside(c.without_top_days, hold?.without_top_days);
+  if (days) rows.push([`Return without its ${c.top_days} best days`, days]);
+  const year = beside(c.without_best_year, hold?.without_best_year);
+  if (year && c.best_year !== null && c.best_year_return !== null) {
+    rows.push([`Return without ${c.best_year}, its best year (${signed0(c.best_year_return)})`, year]);
+  }
+  return rows;
 }

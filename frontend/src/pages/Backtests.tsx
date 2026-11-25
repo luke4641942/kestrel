@@ -14,6 +14,7 @@ import {
   GRADE,
   MAX_LABELLED_TRADES,
   DEFAULT_RUN_SORT,
+  concentrationRows,
   costHeadroom,
   defaultDataset,
   fewTrades,
@@ -760,6 +761,7 @@ function StatisticsTab({ run: r }: { run: RunDetail }) {
                 ...(a.profit_without_top5 !== null
                   ? ([["Profit without the 5 best trades", `${money(a.profit_without_top5)} ${cur}`]] as [string, string][])
                   : []),
+                ...concentrationRows(a.concentration, a.hold_concentration),
               ]}
             />
           </Panel>
