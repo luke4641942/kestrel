@@ -32,7 +32,14 @@ class Look:
 
 @dataclass(frozen=True)
 class Study:
-    kind: Literal["robustness", "walk-forward", "random-entry", "confirmation", "short-study"]
+    kind: Literal[
+        "robustness",
+        "walk-forward",
+        "random-entry",
+        "random-timing",
+        "confirmation",
+        "short-study",
+    ]
     strategy: str
     symbol: str
     interval: str

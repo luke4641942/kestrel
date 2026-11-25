@@ -610,7 +610,7 @@ export interface Decay {
 export interface Study {
   id: string;
   created_at: string;
-  kind: "robustness" | "walk-forward" | "random-entry" | "confirmation";
+  kind: "robustness" | "walk-forward" | "random-entry" | "random-timing" | "confirmation";
   strategy: string;
   symbol: string;
   interval: Interval;
@@ -618,7 +618,8 @@ export interface Study {
   end: string;
   looks: { params: Record<string, number>; sharpe: number | null }[];
   /** ROBUST, FRAGILE or NO EDGE (robustness); SURVIVES or KILL (walk-forward); BEATS RANDOM,
-   * NO BETTER THAN RANDOM or NO TRADES (random-entry); PASS or FAIL (confirmation). */
+   * NO BETTER THAN RANDOM or NO TRADES (random-entry); BEATS RANDOM TIMING or NO BETTER THAN
+   * RANDOM (random-timing, information only); PASS or FAIL (confirmation). */
   verdict: string;
   /** What the study showed; for a confirmation run, its per-coin table (ConfirmationDetail). */
   detail?: Record<string, unknown>;

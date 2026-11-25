@@ -155,6 +155,8 @@ from kestrel.validation.holdout import HoldoutLog, format_holdout, holdout_test
 from kestrel.validation.holdout import score as score_holdout
 from kestrel.validation.log import Look, Study, ValidationLog
 from kestrel.validation.robustness import check_robustness, format_robustness
+from kestrel.validation.timing import PATHS as TIMING_PATHS
+from kestrel.validation.timing import format_timing, run_timing_control
 from kestrel.validation.walkforward import format_walk_forward, walk_forward
 
 app = typer.Typer(help="Kestrel trading platform.", no_args_is_help=True)
@@ -1856,6 +1858,92 @@ def random_entry(
             "beaten_share": result.beaten_share,
             "random_median_r": result.quantile(0.5),
             "random_p95_r": result.quantile(0.95),
+        },
+    )
+    typer.echo(f"Saved as study {ValidationLog(data_dir).save(study)}")
+
+
+@app.command("random-timing")
+def random_timing(
+    symbol: str,
+    start: Annotated[str, typer.Option(help="First month, YYYY-MM.")],
+    end: Annotated[str, typer.Option(help="Last month, YYYY-MM (inclusive).")],
+    strategy: Annotated[str, typer.Option(help="Strategy key (a weight strategy).")],
+    interval: IntervalOpt = Interval.D1,
+    param: Annotated[
+        list[str] | None,
+        typer.Option(help="Setting as name=value; repeatable. Default: the defaults."),
+    ] = None,
+    paths: Annotated[int, typer.Option(help="Rotated copies to run.")] = TIMING_PATHS,
+    cash: Annotated[float, typer.Option(help="Starting cash in USDT.")] = 330.0,
+    research: Annotated[
+        str | None,
+        typer.Option(help="Research strategy slug: its frozen note must name the strategy."),
+    ] = None,
+    research_dir: ResearchDir = Path("research"),
+    data_dir: DataDir = Path("data"),
+    config: Annotated[
+        Path, typer.Option("--config", envvar="KESTREL_CONFIG", help="Config file.")
+    ] = Path("kestrel.toml"),
+) -> None:
+    """Is a weight strategy's timing better than its own weights at random times (same
+    exposure, holding lengths and costs)? Information only, not a scorecard test. Saved as
+    a study; never uses the holdout; not a trial."""
+    try:
+        key, _ = run_target(ResearchStore(research_dir), strategy, research)
+        spec = spec_for(key)
+        settings = resolve_params(key, _parse_params(param or []))
+        if spec.universe:
+            raise ValueError(f"{key} ranks a universe; the control is for one-coin strategies")
+        made = make_strategy(key, symbol, settings)
+        if isinstance(made, BracketStrategy):
+            raise ValueError(f"{key} trades brackets: use kestrel random-entry")
+        cfg = load_config(config)
+        first, last = Month.parse(start), Month.parse(end)
+        after = last.next()
+        bars = ParquetStore(data_dir).read(
+            symbol,
+            interval,
+            datetime(first.year, first.month, 1, tzinfo=UTC),
+            datetime(after.year, after.month, 1, tzinfo=UTC),
+        )
+        if bars.height < 2:
+            raise ValueError(f"no stored {symbol.upper()} {interval.value} bars in that range")
+        bars = attach_features(bars, spec.features, symbol, interval, data_dir)
+        tick = max(1, paths // 10)
+        result = run_timing_control(
+            made,
+            bars,
+            interval,
+            cfg,
+            Decimal(str(cash)),
+            paths=paths,
+            on_path=lambda i: (
+                typer.echo(f"  {i}/{paths} copies", err=True) if i % tick == 0 else None
+            ),
+        )
+    except (HoldoutError, ConfigError, ValueError) as e:
+        typer.echo(str(e), err=True)
+        raise typer.Exit(code=1) from None
+    typer.echo(format_timing(result, f"{symbol.upper()} {interval.value}, {start} to {end}"))
+    study = Study(
+        kind="random-timing",
+        strategy=key,
+        symbol=symbol.upper(),
+        interval=interval.value,
+        start=start,
+        end=end,
+        looks=[],  # rotated copies aren't settings chosen from the data: no trials
+        verdict=result.verdict,
+        detail={
+            "params": settings,
+            "paths": len(result.paths),
+            "sharpe": result.sharpe,
+            "exposure": result.exposure,
+            "trades": result.trades,
+            "beaten_share": result.beaten_share,
+            "random_median_sharpe": result.quantile(0.5),
+            "random_p95_sharpe": result.quantile(0.95),
         },
     )
     typer.echo(f"Saved as study {ValidationLog(data_dir).save(study)}")

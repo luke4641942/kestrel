@@ -201,12 +201,21 @@ def _robustness(study: dict[str, Any] | None, params: dict[str, Any], held: floa
     )
 
 
-def _random_entry(study: dict[str, Any] | None, run: dict[str, Any]) -> Grade:
+def _random_entry(
+    study: dict[str, Any] | None, run: dict[str, Any], timing: dict[str, Any] | None = None
+) -> Grade:
     rule = rules.SCORECARD[8]
     if run.get("style") != "brackets":
-        return Grade(
-            rule.name, rule.rule, "n/a", "Holds weights, not brackets: no payoff shape to copy."
-        )
+        said = "Holds weights, not brackets: no payoff shape to copy."
+        params = run.get("params") or {}
+        if timing is not None and (timing["detail"].get("params") or {}) == params:
+            d = timing["detail"]
+            said += (
+                f" Information (random-timing control, not a test): beat "
+                f"{d['beaten_share']:.0%} of {d['paths']} copies of its own weights at random "
+                f"times ({rules.RANDOM_BEAT_SHARE:.0%} would say its timing beats chance)."
+            )
+        return Grade(rule.name, rule.rule, "n/a", said)
     params = run.get("params") or {}
     if study is None or (study["detail"].get("params") or {}) != params:
         return Grade(rule.name, rule.rule, "not run", "No random-entry control for these settings.")
@@ -250,6 +259,8 @@ def grade(
             _trades(metrics),
             _drawdown(metrics),
             _robustness(_latest(studies, "robustness", run), run.get("params") or {}, held),
-            _random_entry(_latest(studies, "random-entry", run), run),
+            _random_entry(
+                _latest(studies, "random-entry", run), run, _latest(studies, "random-timing", run)
+            ),
         ]
     )

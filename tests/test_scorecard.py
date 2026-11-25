@@ -227,6 +227,12 @@ def test_random_entry_applies_only_to_bracket_strategies() -> None:
         "n/a",
         "Holds weights, not brackets: no payoff shape to copy.",
     )
+    timing = {**control(0.97), "kind": "random-timing"}
+    shown = card_for("weights", [timing])
+    assert shown.status == "n/a"  # information only: never a pass or a fail
+    assert "beat 97% of 200 copies of its own weights at random times" in shown.measured
+    other = {**control(0.97, {"fast": 5, "slow": 120}), "kind": "random-timing"}
+    assert "random-timing" not in card_for("weights", [other]).measured  # other settings
     assert card_for("brackets", []).status == "not run"
     assert card_for("brackets", [control(0.99, {"fast": 5, "slow": 120})]).status == "not run"
     passed = card_for("brackets", [control(0.95)])

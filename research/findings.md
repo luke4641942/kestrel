@@ -429,6 +429,29 @@ from 2026-11-16) is the test that's left.
     lag, but a few big winners pull the mean back towards zero; by year it swings from
     +15% (2020, 6 events) to -27% (2023, 2), too few each to read. Not an exit rule either,
     unlike a coin's first perp listing (-15%).
+28. **The trend rules' timing beats their own weights at random times on ETH and SOL, not
+    quite on BTC (2026-11-26, `kestrel random-timing`; a control, not a trial, information
+    only).** Each paper-traded one-coin strategy against 200 copies of its own weights
+    rotated in time (same exposure, holding lengths, trades and costs; only the alignment
+    with the market lost), on its backtest period before the holdout:
+
+    | Strategy | Market | Sharpe after costs | Copies' median, 95th pct | Beats |
+    |---|---|---|---|---|
+    | btc-regime-trend | ETH | 1.33 | 0.58, 1.10 | 100% |
+    | btc-regime-trend | SOL | 1.72 | 0.69, 1.35 | 100% |
+    | trend-vol-target | SOL | 1.52 | 0.95, 1.43 | 98% |
+    | trend-vol-target | ETH | 1.24 | 0.75, 1.18 | 97% |
+    | trend-vol-target | BTC | 1.23 | 0.76, 1.28 | 94% |
+    | stablecoin-vol-hold | ETH | 0.87 | 0.45, 0.93 | 90% |
+    | stablecoin-vol-hold | BTC | 0.87 | 0.57, 1.05 | 78% |
+
+    So the timing itself carries information, most clearly for the BTC regime rule, which
+    is stricter than test 1 (the copies pay the strategy's own costs; holding doesn't). It
+    doesn't undo the luck test: that counts every trial ever run, this asks one question of
+    one strategy. Seven markets tested at 95% each, so one pass in seven could be chance.
+    A rotation also moves the volatility sizing off the days it was measured on, so "timing"
+    here includes sizing. stablecoin-vol-hold's timing can't be told from random, which fits
+    its `watch` decision. btc-rotation-8 (a basket) isn't covered.
 
 
 

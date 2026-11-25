@@ -141,6 +141,11 @@ Never pipe check output through `tail` or similar inside an `&&` chain: it hides
   reports how much it overlaps the pursued strategies (`kestrel overlap`: correlation, in
   BTC's falls too, and BTC beta). It never decides a pass; it says whether a pass would be a
   second edge or more of the same bet (findings 16).
+- **Random-timing control (information only; Luke, 2026-11-26).** A one-coin weight
+  strategy's Sharpe after costs against 200 copies of its own weights rotated in time
+  (`kestrel random-timing`, `kestrel.validation.timing`): the weight-strategy counterpart of
+  test 9, shown beside test 9's n/a. Not a trial, and not a scorecard test unless Luke adds
+  it (findings 28).
 - **Decay check (information only; Luke, 2026-11-22).** After 90 paper days, an account's model
   replay is flagged if its Sharpe is below the 5th percentile of its own backtest's (same
   strategy, settings and market, 2020-01 to the holdout; circular block-bootstrapped paths of
