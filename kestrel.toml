@@ -79,6 +79,10 @@ spread_tiers = [[500_000_000, 1], [100_000_000, 3], [20_000_000, 8], [0, 15]]
 [risk]
 # Limits on paper and live trading (kestrel.execution.safety); backtests ignore them.
 # Tripping one halts the account until it is resumed by hand, with a reason.
+# A halt is a prompt for a human, not a verdict (Luke, 2026-11-26: limits kept). Some
+# strategies cross these in their own backtests (stablecoin-vol-hold: max drawdown 51-57%,
+# worst days -19% and -32%; the pursued ones' 1-in-20 bootstrap drawdowns reach 50-58%), so
+# such a halt is expected: check the account did what its model replay did, then resume.
 
 # No single order above this notional (USDT). The account is ~330 USDT, so a bigger
 # order means something is wrong, not that the strategy wants more.

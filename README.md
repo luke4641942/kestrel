@@ -4,6 +4,9 @@ A research-to-production platform for systematic crypto trading, built so that a
 strategy behaves the same way in research, backtest, paper trading and live
 trading, and so that a result can't look better than it is.
 
+**[▶ Live demo](https://luke4641942.github.io/kestrel/)**: the dashboard itself, read-only, on a
+snapshot of the real research (every note, result, backtest and paper account). No install.
+
 > **Status (2026-11-24):** Data, backtester, validation, paper trading and the dashboard
 > are built and tested, for crypto and, since November 2026, forex. 99 pre-registered
 > research notes and 876 counted trials later, three crypto strategies are being
@@ -14,9 +17,6 @@ trading, and so that a result can't look better than it is.
 > [research summary](docs/research-summary.md)**; every number is in
 > [research/findings.md](research/findings.md), and the rules every result is judged by
 > are in [docs/rules.md](docs/rules.md). No strategy trades real money yet, by design.
->
-> **[Live demo](https://luke4641942.github.io/kestrel/)**: the dashboard itself, read-only,
-> on a snapshot of the real research (every note, result, backtest and paper account).
 
 ## Why this exists
 

@@ -89,6 +89,9 @@ Never pipe check output through `tail` or similar inside an `&&` chain: it hides
       Safety (`kestrel.execution.safety`, `[risk]` in kestrel.toml): breaches and failed
       reconciliations halt an account; only `kestrel paper resume --reason` lifts a halt;
       stale data stops a run without halting; `kestrel kill` sells to cash and halts.
+      A halt is a prompt to look, not a verdict (limits kept, 2026-11-26): some strategies
+      cross the limits in their own backtests, so a halt in a crash is expected; resume once
+      the account matches its model replay.
       A live account that was behind records missed days (no trade) and trades the latest.
       `kestrel.execution.tracking` compares an account with its sim replay (decisions must
       match). A basket strategy (G1) trades through the portfolio engine's own day step
