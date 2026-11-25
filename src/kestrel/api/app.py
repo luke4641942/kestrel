@@ -640,6 +640,7 @@ def create_app(
             halted=safety.halted(account),
             trade_count=len(tracking.round_trips(account.ledger.events(), terms.symbol)),
             waiting=_waiting(terms),
+            hold_return=paper_status.hold_return(terms, marks, data_dir, load_config(config_path)),
         )
 
     def _trade_out(t: tracking.RoundTrip, interval: Interval) -> PaperTradeOut:

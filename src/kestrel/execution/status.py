@@ -78,6 +78,33 @@ def waiting(terms: paper.Terms, frame: pl.DataFrame) -> Waiting | None:
     return found
 
 
+def hold_return(
+    terms: paper.Terms, marks: list[dict[str, Any]], data_dir: Path | str, config: Config
+) -> float | None:
+    """What holding the account's market made over the same days: bought at the close of
+    the first bar the account handled (when it was all cash) and held to its last, paying
+    one entry's fee and half-spread (the backtest benchmark's costs). A basket holds its
+    coins in equal parts. Closes are the market's, from the store (a testnet account's own
+    fills are at testnet prices). None before any mark, or when a close is missing."""
+    if not marks:
+        return None
+    first, last = (datetime.fromisoformat(str(marks[i]["bar"])) for i in (0, -1))
+    spec = spec_for(terms.strategy)
+    coins = spec.assets if spec.universe else (terms.symbol,)
+    store = ParquetStore(data_dir)
+    growth: list[float] = []
+    for coin in coins:
+        bars = store.read(coin, terms.interval)
+        at = dict(zip(bars["open_time"].to_list(), bars["close"].to_list(), strict=True))
+        if first not in at or last not in at:
+            return None
+        growth.append(float(at[last]) / float(at[first]))
+    entry = (1 + float(config.costs.half_spread_bps) / 10_000) * (
+        1 + float(config.costs.taker_fee_bps) / 10_000
+    )
+    return sum(growth) / len(growth) / entry - 1
+
+
 def _money(x: Decimal | None) -> float | None:
     return None if x is None else round(float(x), 2)
 
@@ -112,6 +139,8 @@ def account_status(
         reference or (lambda: decay.reference_returns(terms, data_dir, config)),
     )
     found = waiting(terms, frame)
+    held = hold_return(terms, marks, data_dir, config)
+    profit_pct = None if equity is None else float((equity / terms.initial_cash - 1) * 100)
     return {
         "name": terms.name,
         "strategy": terms.strategy,
@@ -125,9 +154,11 @@ def account_status(
         "initial_usdt": _money(terms.initial_cash),
         "equity_usdt": _money(equity),
         "profit_usdt": None if equity is None else _money(equity - terms.initial_cash),
-        "profit_pct": None
-        if equity is None
-        else round(float((equity / terms.initial_cash - 1) * 100), 2),
+        "profit_pct": None if profit_pct is None else round(profit_pct, 2),
+        "hold_pct": None if held is None else round(held * 100, 2),
+        "vs_hold_pct": None
+        if held is None or profit_pct is None
+        else round(profit_pct - held * 100, 2),
         "cash_usdt": _money(state.cash),
         "exposure_pct": None
         if not equity

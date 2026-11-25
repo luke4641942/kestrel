@@ -493,6 +493,9 @@ export interface PaperSummary {
   trade_count: number;
   /** Its entry tests at the latest stored close; null if the strategy doesn't describe them. */
   waiting: Waiting | null;
+  /** What holding its market made over the same days, one entry's costs paid (a basket: its
+   * coins in equal parts). A fraction; null before the first mark. */
+  hold_return?: number | null;
 }
 
 /** One entry test at the latest close (kestrel.strategies.conditions). */

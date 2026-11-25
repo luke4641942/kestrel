@@ -35,6 +35,8 @@ def test_accounts_are_listed_and_shown_with_their_tracking(tmp_path: Path) -> No
     assert (summary["name"], summary["venue"], summary["halted"]) == ("btc", "sim", None)
     assert summary["equity"] is not None
     assert summary["waiting"] is None  # ma-trend doesn't describe its tests
+    held = frame["close"][-2] / frame["close"][0]  # the first close handled to the last marked
+    assert summary["hold_return"] == pytest.approx(held - 1, rel=0.01)
 
     d = client.get("/api/paper/btc").json()
     n = frame.height - 1

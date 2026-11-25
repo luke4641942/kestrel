@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import type { PaperDetail, Waiting } from "./api";
 import {
   accountProfit,
+  versusHolding,
   conditionText,
   decayView,
   holdingView,
@@ -94,6 +95,15 @@ describe("profit and trades", () => {
     expect(accountProfit(paperDetail({ equity: 333, initial_cash: 330 }))).toEqual({ profit: 3, share: 3 / 330 });
     expect(accountProfit(paperDetail({ equity: null }))).toBeNull();
   });
+
+  it("sets an account against holding its market over the same days", () => {
+    const v = versusHolding(paperDetail({ equity: 329, initial_cash: 330, hold_return: -0.067 }));
+    expect(v?.account).toBeCloseTo(-1 / 330);
+    expect(v?.hold).toBe(-0.067);
+    expect(v?.gap).toBeCloseTo(-1 / 330 + 0.067);
+    expect(versusHolding(paperDetail({ hold_return: null }))).toBeNull();
+    expect(versusHolding(paperDetail({ equity: null, hold_return: 0.1 }))).toBeNull();
+  });
   it("counts trades, wins and losses, and what the closed ones made", () => {
     const s = tradesSummary([trade(5), trade(-2), trade(1, null)]);
     expect(s.text).toBe("2 closed (1 won, 1 lost), 1 open");
@@ -119,7 +129,7 @@ describe("what an account is waiting for", () => {
 
   it("names every missing move when all tests must hold", () => {
     const w = waiting({ conditions: [test("BTCUSDT", false, 0.28), test("ETHUSDT", false, 0.416)] });
-    expect(waitingSummary(w)).toBe("Cash until BTC +28.0% and ETH +41.6%");
+    expect(waitingSummary(w)).toBe("Cash; needs BTC +28.0% and ETH +41.6% by the next close");
     expect(waitingSummary(waiting({ conditions: [test("BTCUSDT", true, -0.1)] }))).toBe("All tests hold: in");
     expect(waitingSummary(waiting({ decides: "Sunday closes", conditions: [test("BTCUSDT", true, -0.1)] }))).toBe(
       "Tests hold; decides on Sunday closes",
@@ -131,9 +141,9 @@ describe("what an account is waiting for", () => {
       rule: "any",
       conditions: [test("BTCUSDT", false, 0.276), test("BTCUSDT", false, 0.402), test("BTCUSDT", false, 0.069)],
     });
-    expect(waitingSummary(w)).toBe("Cash; next: BTC +6.9%");
+    expect(waitingSummary(w)).toBe("Cash; nearest test: BTC +6.9% by the next close");
     const some = waiting({ rule: "any", conditions: [test("BTCUSDT", true, -0.05), test("BTCUSDT", false, 0.1)] });
-    expect(waitingSummary(some)).toBe("1 of 2 hold; next: BTC +10.0%");
+    expect(waitingSummary(some)).toBe("1 of 2 hold; nearest test: BTC +10.0% by the next close");
     expect(waitingSummary(null)).toBe("n/a");
   });
 

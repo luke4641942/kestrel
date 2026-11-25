@@ -936,6 +936,9 @@ class PaperSummaryOut(BaseModel):
     """Trades (a coin from flat to flat), open ones included."""
     waiting: WaitingOut | None = None
     """Its entry tests at the latest stored close, for strategies that describe them."""
+    hold_return: float | None = None
+    """What holding its market made over the same days, one entry's costs paid (a basket:
+    its coins in equal parts); kestrel.execution.status.hold_return. A fraction."""
 
 
 class PaperFillOut(BaseModel):

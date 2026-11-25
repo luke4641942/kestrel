@@ -87,6 +87,16 @@ export function accountProfit(a: PaperSummary): { profit: number; share: number 
   return { profit, share: profit / a.initial_cash };
 }
 
+/** The account against holding its market over the same days (both after costs): its
+ * return, holding's, and the gap in percentage points. A few weeks of this is mostly noise,
+ * and holding is fully invested where the strategy often isn't: the scorecard's test is
+ * against holding at the same average exposure. Null before the first mark. */
+export function versusHolding(a: PaperSummary): { account: number; hold: number; gap: number } | null {
+  const own = accountProfit(a);
+  if (own === null || a.hold_return === null || a.hold_return === undefined) return null;
+  return { account: own.share, hold: a.hold_return, gap: own.share - a.hold_return };
+}
+
 /** Its trades in a line: how many closed, won and lost, how many open, and what the closed
  * ones made. */
 export function tradesSummary(trades: PaperTrade[]): { text: string; realised: number } {
@@ -121,10 +131,10 @@ export function waitingSummary(w: Waiting | null): string {
     if (unmet.length === 0) return `All ${total} tests hold: fully in`;
     const nearest = unmet.reduce((a, b) => (Math.abs(b.move) < Math.abs(a.move) ? b : a));
     const head = met ? `${met} of ${total} hold` : "Cash";
-    return `${head}; next: ${coin(nearest.subject)} ${pct1(nearest.move)}`;
+    return `${head}; nearest test: ${coin(nearest.subject)} ${pct1(nearest.move)} by the next close`;
   }
   if (unmet.length === 0) return w.decides === "every close" ? "All tests hold: in" : `Tests hold; decides on ${w.decides}`;
-  return `Cash until ${unmet.map((c) => `${coin(c.subject)} ${pct1(c.move)}`).join(" and ")}`;
+  return `Cash; needs ${unmet.map((c) => `${coin(c.subject)} ${pct1(c.move)}`).join(" and ")} by the next close`;
 }
 
 /** How the tests combine, for the account view. */

@@ -53,6 +53,13 @@ def test_the_snapshot_says_where_every_account_stands(tmp_path: Path) -> None:
     assert btc["model"]["decision_mismatches"] == 0  # the sim venue is the model
     assert btc["model"]["equity_usdt"] == btc["equity_usdt"]
     assert btc["trades"] >= 1
+    # Holding BTC from the first close handled (bar 0) to the last marked (bar 78), costs paid.
+    closes = walk(200)["close"]
+    costs = load_config(REPO_CONFIG).costs
+    entry = (1 + float(costs.half_spread_bps) / 1e4) * (1 + float(costs.taker_fee_bps) / 1e4)
+    held = (closes[78] / closes[0] / entry - 1) * 100
+    assert btc["hold_pct"] == pytest.approx(held, abs=0.01)
+    assert btc["vs_hold_pct"] == pytest.approx(btc["profit_pct"] - btc["hold_pct"], abs=0.02)
     assert btc["waiting"] is None  # ma-trend doesn't describe its tests
     assert btc["decay"] == {
         "status": "too early", "days": 78, "due_at_days": 90, "sharpe": None, "floor": None,

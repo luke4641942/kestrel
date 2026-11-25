@@ -18,6 +18,7 @@ import {
   trackingVerdict,
   decayView,
   venueLabel,
+  versusHolding,
 } from "../paperView";
 import { money } from "../summary";
 
@@ -147,6 +148,8 @@ function AccountsTable({
               <th>Venue</th>
               <th className="num">Equity (USDT)</th>
               <th className="num">Profit</th>
+              <th className="num" title="Holding its market over the same days, one entry's costs paid (a basket: its coins in equal parts)">Holding</th>
+              <th className="num" title="The account's return less holding's, in percentage points. Weeks of this are noise; the scorecard compares against holding at the same exposure">vs holding</th>
               <th className="num">Trades</th>
               <th>Waiting for</th>
               <th>Last bar</th>
@@ -171,6 +174,7 @@ function AccountsTable({
                 <td className="nw">{venueLabel(a.venue)}</td>
                 <td className="num">{usd(a.equity)}</td>
                 <td className="num">{accountProfit(a) ? money(accountProfit(a)!.profit) : "n/a"}</td>
+                <HoldingCells a={a} />
                 <td className="num">{a.trade_count}</td>
                 <td className="small secondary">{waitingSummary(a.waiting)}</td>
                 <td className="nw secondary">{a.last_bar ? date(a.last_bar) : "not yet"}</td>
@@ -183,6 +187,25 @@ function AccountsTable({
         </table>
       </div>
     </Panel>
+  );
+}
+
+function HoldingCells({ a }: { a: PaperSummary }) {
+  const v = versusHolding(a);
+  if (v === null) {
+    return (
+      <>
+        <td className="num secondary">n/a</td>
+        <td className="num secondary">n/a</td>
+      </>
+    );
+  }
+  const pts = `${signedPct(v.gap, 1).slice(0, -1)} pts`;
+  return (
+    <>
+      <td className="num secondary">{signedPct(v.hold, 1)}</td>
+      <td className="num">{pts}</td>
+    </>
   );
 }
 
