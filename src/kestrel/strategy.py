@@ -27,7 +27,7 @@ from kestrel.strategies.basket import LargeCoinBasket
 from kestrel.strategies.basket_breakout import BasketBreakout
 from kestrel.strategies.bollinger_pullback import BollingerPullback
 from kestrel.strategies.brake import TrendVolTargetBrake, WeeklyMomentumBrake
-from kestrel.strategies.btc_regime import BtcRegimeTrend
+from kestrel.strategies.btc_regime import BtcRegimeAblation, BtcRegimeTrend
 from kestrel.strategies.btc_rotation import (
     CONFIRM_4,
     CONFIRM_8,
@@ -677,6 +677,24 @@ STRATEGIES: dict[str, StrategySpec] = {
                 Param("coin_days", 30, 5, 120, "Lookback for the coin's own trend, days"),
                 Param("vol_days", 30, 10, 90, "Days of returns in the volatility"),
                 Param("target_vol_pct", 50, 10, 100, "Annualised volatility target, %"),
+            ),
+            features=("btc_close",),
+        ),
+        StrategySpec(
+            "btc-regime-ablation",
+            "research",
+            "btc-regime-trend with its BTC filter, coin trend and volatility sizing each "
+            "switchable (1 on, 0 off); all on is btc-regime-trend exactly. For the ablation "
+            "note only: runs only through its frozen note.",
+            BtcRegimeAblation,
+            (
+                Param("btc_days", 50, 20, 200, "BTC's moving average, days"),
+                Param("coin_days", 30, 5, 120, "Lookback for the coin's own trend, days"),
+                Param("vol_days", 30, 10, 90, "Days of returns in the volatility"),
+                Param("target_vol_pct", 50, 10, 100, "Annualised volatility target, %"),
+                Param("btc_filter", 1, 0, 1, "BTC above its average required (1) or ignored (0)"),
+                Param("coin_trend", 1, 0, 1, "Coin's own trend required (1) or ignored (0)"),
+                Param("vol_sizing", 1, 0, 1, "Sized to volatility (1) or fully in (0)"),
             ),
             features=("btc_close",),
         ),

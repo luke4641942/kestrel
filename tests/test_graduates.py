@@ -9,7 +9,7 @@ import polars as pl
 import pytest
 
 from kestrel.data.features import BTC_CLOSE
-from kestrel.strategies.btc_regime import BtcRegimeTrend
+from kestrel.strategies.btc_regime import BtcRegimeAblation, BtcRegimeTrend
 from kestrel.strategies.crash_rebound import CrashRebound
 from kestrel.strategy import make_strategy, validated_weights
 from tests.backtest.helpers import bars
@@ -59,9 +59,32 @@ def test_a_crash_holds_the_coin_for_hold_days() -> None:
     assert CrashRebound("X").target_weights(daily(mild)).sum() == 0
 
 
-@pytest.mark.parametrize("key", ["btc-regime-trend", "crash-rebound"])
+@pytest.mark.parametrize("key", ["btc-regime-trend", "btc-regime-ablation", "crash-rebound"])
 def test_no_lookahead_and_the_registry_builds_them(key: str) -> None:
     closes = [100.0 * (0.6 if i in (60, 61) else 1.0) * 1.003**i for i in range(150)]
     btc = [100.0 + (i % 40) for i in range(150)]
     strategy = make_strategy(key, "XUSDT")
     validated_weights(strategy, daily(closes, btc))  # raises on any lookahead
+
+
+def test_the_ablation_with_every_part_on_is_the_regime_trend() -> None:
+    closes = [100.0 * (0.6 if i in (60, 61) else 1.0) * 1.003**i for i in range(150)]
+    btc = [100.0 + (i % 40) for i in range(150)]
+    frame = daily(closes, btc)
+    full = BtcRegimeTrend("X").target_weights(frame)
+    assert BtcRegimeAblation("X").target_weights(frame).to_list() == full.to_list()
+
+    def weights(**off: int) -> list[float]:
+        return BtcRegimeAblation("X", **off).target_weights(frame).to_list()
+
+    no_btc, no_trend, fully_in = weights(btc_filter=0), weights(coin_trend=0), weights(vol_sizing=0)
+    vol_hold = weights(btc_filter=0, coin_trend=0)
+    held = [i for i, w in enumerate(full.to_list()) if w > 0]
+    assert all(no_btc[i] == full[i] for i in held)  # dropping a filter only adds days
+    assert sum(x > 0 for x in no_btc) >= len(held)
+    assert all(no_trend[i] == full[i] for i in held)
+    assert all(fully_in[i] == 1.0 for i in held)  # same days in, but fully
+    assert [i for i, w in enumerate(fully_in) if w > 0] == held
+    start = next(i for i, w in enumerate(vol_hold) if w > 0)
+    assert all(w > 0 for w in vol_hold[start:])  # vol-hold: always in once warmed up
+    assert all(w == 0 for w in no_btc[:start])  # every variant shares the warm-up
