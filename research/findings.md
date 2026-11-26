@@ -677,7 +677,7 @@ from 2026-11-16) is the test that's left.
     last (as the note says), where the forex engine charges the month's own rate: one night
     a meeting, a fraction of a basis point either way. Two textbook forex premia (findings
     25 and 26) and now a published event premium, each run once at retail CFD costs: none
-    passes.
+    passes. Note rejected (Luke, 2026-11-26).
 
 ## The holdout year (2025-11 to 2026-10)
 
