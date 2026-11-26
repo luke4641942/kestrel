@@ -605,6 +605,28 @@ from 2026-11-16) is the test that's left.
     older version of its note unless told it is a new trial (`--as-new-trial`).
 
 
+34. **G1's rule still beats BTC and its own basket on coins picked at the time, but the
+    hindsight list carried about half its margin (2026-11-26, note
+    does-g1-s-rule-work-on-coins-picked-at-the-time, 2 trials).** G1's rule unchanged, but
+    each Sunday it may hold only that week's 8 coins with the highest 30-day median volume
+    and a year of history (45 different coins over the period), from every coin the engine
+    may use, delisted ones included. Over the same 2,633 days from 2018-08-17, after costs:
+
+    | Test (both needed) | Result | |
+    |---|---|---|
+    | A. Sharpe beats BTC held | 1.08 vs 0.94 (+702% vs +162% for BTC at its 25% exposure) | Pass |
+    | B. Sharpe beats the same weekly top 8 held equally | 1.08 vs 0.65 (basket drawdown -86%) | Pass |
+
+    By the note's rule the list did not make G1's backtest: the rule works on coins it
+    could have picked then. Deciding nothing: G1 on its own coins scores 1.57 over the same
+    days, so the hindsight list carried about half of its margin over BTC (0.63 of Sharpe
+    against 0.14 here); worst drawdown -38%; in the market 169 of 376 weeks, mostly BTC,
+    ETH and BNB (60, 58 and 58 weeks), SOL 46, LTC 38; daily correlation 0.84 with G1's
+    own-coins run. Deflated 0.1% at 883 trials (bar 2.29): it passes neither luck nor
+    anything out of sample, and G1's settings were searched on this data. The locked
+    confirmation half (XRP, ADA, AVAX and others) was out of the candidates, as for every
+    universe run.
+
 ## The holdout year (2025-11 to 2026-10)
 
 Reserved on 2026-10-31, before any research, and read once on 2026-11-14 for the two watched
