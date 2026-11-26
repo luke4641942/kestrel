@@ -182,6 +182,9 @@ def _robustness(study: dict[str, Any] | None, params: dict[str, Any], held: floa
         )
     if study is None or study["detail"].get("center") != params:
         return Grade(rule.name, rule.rule, "not run", "No robustness check around these settings.")
+    # Holding over the grid's own days (studies from 2026-11-26 store it; older ones were
+    # scored over the run's days).
+    held = study["detail"].get("held_sharpe", held)
     if held is None:
         return Grade(rule.name, rule.rule, "not run", "No holding Sharpe to compare with.")
     neighbours = [

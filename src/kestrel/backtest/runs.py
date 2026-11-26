@@ -34,6 +34,7 @@ from typing import Any, Literal
 
 import polars as pl
 
+from kestrel.backtest import warmup
 from kestrel.backtest.analysis import Analysis, analyse
 from kestrel.backtest.engine import BacktestResult, run_backtest
 from kestrel.backtest.metrics import Metrics, compute_metrics
@@ -42,7 +43,7 @@ from kestrel.backtest.vectorised import run_vectorised
 from kestrel.config import Config
 from kestrel.data.binance_vision import Month
 from kestrel.data.features import MARKET_WIDE, attach_features
-from kestrel.data.panel import load_panel
+from kestrel.data.panel import load_panel, refuse_gaps
 from kestrel.data.schema import Interval
 from kestrel.data.store import ParquetStore
 from kestrel.data.universe import manifest_path
@@ -100,22 +101,10 @@ def execute(request: RunRequest, store: ParquetStore, config: Config) -> RunOutc
         return _execute_universe(request, store, config)
     symbol = request.symbol.upper()
     strategy = make_strategy(request.strategy, symbol, request.params)
-    after = request.end.next()
-    bars = store.read(
-        symbol,
-        request.interval,
-        datetime(request.start.year, request.start.month, 1, tzinfo=UTC),
-        datetime(after.year, after.month, 1, tzinfo=UTC),
+    loaded = coin_bars(
+        store, request.strategy, symbol, request.interval, request.start, request.end
     )
-    if bars.height < 2:
-        raise ValueError(
-            f"no stored {symbol} {request.interval.value} bars for "
-            f"{request.start}..{request.end}; ingest them first"
-        )
-    bars = attach_features(
-        bars, spec_for(request.strategy).features, symbol, request.interval, store.root
-    )
-
+    history, bars = warm_split(loaded, request.strategy, request.params, request.start)
     engine = run_vectorised if request.engine == "vectorised" else run_backtest
 
     def run(s: Strategy | BracketStrategy) -> BacktestResult:
@@ -128,8 +117,12 @@ def execute(request: RunRequest, store: ParquetStore, config: Config) -> RunOutc
             allow_holdout=request.allow_holdout,
         )
 
-    result = run(strategy)
-    benchmark = result if isinstance(strategy, BuyAndHold) else run(BuyAndHold(symbol))
+    if isinstance(strategy, BuyAndHold):
+        result = benchmark = run(strategy)
+    else:
+        result = run(warmup.warmed(strategy, history))
+        benchmark = run(BuyAndHold(symbol))
+    result.history_from = history["open_time"][0] if history.height else None
     return RunOutcome(
         request,
         result,
@@ -138,6 +131,56 @@ def execute(request: RunRequest, store: ParquetStore, config: Config) -> RunOutc
         compute_metrics(benchmark),
         analyse(result, benchmark),
     )
+
+
+def coin_bars(
+    store: ParquetStore, key: str, symbol: str, interval: Interval, start: Month, end: Month
+) -> pl.DataFrame:
+    """One coin's bars for ``start..end`` plus the history before it a strategy may read
+    (kestrel.backtest.warmup), with ``key``'s features attached. A gap anywhere in them is
+    refused: the history is read as much as the scored bars are (findings 31)."""
+    first, after = _first_instant(start), end.next()
+    loaded = store.read(
+        symbol.upper(),
+        interval,
+        warmup.history_start(first),
+        datetime(after.year, after.month, 1, tzinfo=UTC),
+    )
+    if loaded.filter(pl.col("open_time") >= first).height < 2:
+        raise ValueError(
+            f"no stored {symbol.upper()} {interval.value} bars for {start}..{end}; "
+            "ingest them first"
+        )
+    refuse_gaps(loaded, interval, symbol.upper())
+    return attach_features(loaded, spec_for(key).features, symbol.upper(), interval, store.root)
+
+
+def scored_start(loaded: pl.DataFrame, key: str, params: dict[str, int], start: Month) -> datetime:
+    """The first bar ``key`` is scored on: ``start``, or later on data that begins too late
+    for its lookback (kestrel.backtest.warmup)."""
+    days = warmup.warmup_days(key, resolve_params(key, params))
+    return warmup.scored_from(loaded["open_time"].min(), _first_instant(start), days)  # type: ignore[arg-type]
+
+
+def warm_split(
+    loaded: pl.DataFrame,
+    key: str,
+    params: dict[str, int],
+    start: Month,
+    at: datetime | None = None,
+) -> tuple[pl.DataFrame, pl.DataFrame]:
+    """(history ``key`` reads, the bars it is scored on): from ``scored_start``, or from
+    ``at`` when the caller scores several settings over the same days (never earlier than
+    the setting's own start)."""
+    own = scored_start(loaded, key, params, start)
+    history, bars = warmup.split(loaded, max(own, at) if at else own)
+    if bars["open_time"].n_unique() < 2:
+        raise ValueError(f"the bars end before {key}'s warm-up has filled")
+    return history, bars
+
+
+def _first_instant(month: Month) -> datetime:
+    return datetime(month.year, month.month, 1, tzinfo=UTC)
 
 
 def universe_panel(
@@ -199,25 +242,40 @@ def strategy_panel(
     return panel
 
 
+def universe_bars(
+    store: ParquetStore, config: Config, key: str, interval: Interval, start: Month, end: Month
+) -> pl.DataFrame:
+    """A universe strategy's visible panel for ``start..end`` plus the history before it
+    (kestrel.backtest.warmup)."""
+    first = _first_instant(start)
+    since = warmup.history_start(first)
+    panel = visible(
+        strategy_panel(store, key, interval, Month.parse(f"{since:%Y-%m}"), end), config, key
+    ).filter(pl.col("open_time") >= since)
+    if panel.filter(pl.col("open_time") >= first).is_empty():
+        raise ValueError(f"no universe bars stored for {start}..{end}")
+    return panel
+
+
 def _execute_universe(request: RunRequest, store: ParquetStore, config: Config) -> RunOutcome:
     strategy = make_portfolio_strategy(request.strategy, request.params)
     if request.symbol.upper() != UNIVERSE:
         raise ValueError(f"{request.strategy} runs on {UNIVERSE}, not {request.symbol}")
     if request.engine != "event":
         raise ValueError("cross-sectional strategies run on the event engine only")
-    panel = visible(
-        strategy_panel(store, request.strategy, request.interval, request.start, request.end),
-        config,
-        request.strategy,
+    loaded = universe_bars(
+        store, config, request.strategy, request.interval, request.start, request.end
     )
+    history, panel = warm_split(loaded, request.strategy, request.params, request.start)
     result = run_portfolio(
-        strategy,
+        warmup.warmed_portfolio(strategy, history),
         panel,
         request.interval,
         config,
         request.initial_cash,
         allow_holdout=request.allow_holdout,
     )
+    result.history_from = history["open_time"].min() if history.height else None  # type: ignore[assignment]
     first, last = panel["open_time"].min(), panel["open_time"].max()
     btc = store.read(UNIVERSE_BENCHMARK, request.interval).filter(
         pl.col("open_time").is_between(first, last)
@@ -299,6 +357,8 @@ class RunStore:
             "interval": req.interval.value,
             "start": str(req.start),
             "end": str(req.end),
+            "scored_from": res.start.isoformat() if res.start else None,
+            "history_from": res.history_from.isoformat() if res.history_from else None,
             "initial_cash": str(req.initial_cash),
             "account_currency": config.account_currency,
             "used_holdout": res.used_holdout,

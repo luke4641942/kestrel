@@ -566,7 +566,36 @@ from 2026-11-16) is the test that's left.
     2021-12, so more history can only come from time going forward. Note rejected (Luke,
     2026-11-26).
 
+33. **Backtests now warm up on history before their start, and G1 beats its own coins held
+    equally (2026-11-26; the strategy review's items b and c).** A backtest used to load no
+    bars before its start, so a rule sat in cash while its lookback filled and holding was
+    invested from day one (trend-vol-target on BTC 121 days; G1 427, while BTC fell 72%).
+    Now the strategy reads up to 400 days before the start, read only: the account opens
+    with its cash at the start and trades from the next open, as holding does. A coin
+    listed later is scored, with holding, from when the lookback has filled (SOL from
+    2020-12-09 for trend-vol-target, 2020-09-30 for the regime rule; G1 from 2018-08-17).
+    A robustness grid scores every setting and holding over the same days.
 
+    Re-scored, Sharpe (holding) old → new: trend-vol-target BTC 1.23 (1.07) → 1.24 (1.07),
+    ETH 1.24 (1.12) → 1.29 (1.12), SOL 1.52 (1.24) → 1.58 (1.41); btc-regime-trend ETH 1.33
+    (1.12) → 1.48 (1.12), SOL 1.72 (1.24) → 1.75 (1.28); G1 1.55 (BTC 0.74) → 1.57 (0.94);
+    trend-trio 1.59 → 1.61 (1.07); stablecoin-vol-hold 0.87 → 0.85 on BTC (0.74) and ETH
+    (0.68). Deflated 0-9% throughout. No scorecard verdict moves on any of the nine.
+    Robustness, rerun for the five with open notes, stays ROBUST (19/19, 19/19, 15/16,
+    15/16 and 22/22 neighbours beat holding over the grid's days). The five runs were saved
+    again; the other three have rejected notes and were re-scored unsaved. Two reruns were
+    first saved under the regime note's v2 (which says v1's runs stand), counting as two
+    new trials; they were deleted within a minute. The count is unchanged by the reruns;
+    the bar moved 2.28 → 2.29 as warmed Sharpes replaced old ones.
+
+    G1 against its own coins (fixed in the to-do list before the run: each of its 8 coins
+    1/8 of equity once a year old, rebalanced each Sunday, no signal; `own-8-basket`, one
+    trial): over the same 2,633 days, Sharpe 1.57 against 1.08 after costs, a pass of test
+    1 against the control docs/rules.md asks of a universe strategy. At G1's 29% exposure
+    the basket made +298% against +3,608%; its drawdown -79% against -37%; daily
+    correlation 0.64. Both share the coin list's survivorship (findings 15), so this says
+    the regime and ranking add to holding these coins, not that they were knowable in 2018.
+    G1 deflates to 2% at 881 trials (bar 2.29).
 
 
 ## The holdout year (2025-11 to 2026-10)
@@ -765,18 +794,20 @@ Each strategy was judged by its own note's pass test, written before it ran. Fro
   were kept. Each test was honest; the set of survivors is still chosen by that year. It was
   also a falling year, and its test compares against holding at a constant exposure, so a
   rule that steps aside in falls starts ahead (an outside review, 2026-11-26).
-- **Every backtest starts in cash while it warms up.** A rule needs its lookback before it
-  can hold anything, but holding is invested from day one: trend-vol-target on BTC first
-  held on 2020-05-02, missing the March 2020 crash by construction, not by choice. Removing
-  those days changes no test 1 verdict (the same review); runs will load history before
-  their start to remove it (TODO).
+- **Runs saved before 2026-11-26 started in cash while they warmed up.** A rule needed its
+  lookback before it could hold anything, but holding was invested from day one:
+  trend-vol-target on BTC first held on 2020-05-02, missing the March 2020 crash by
+  construction, not by choice. Fixed on 2026-11-26 (findings 33: runs read history before
+  their start); the live decisions' runs were re-scored and no verdict moved. The other
+  saved runs, most of them rejected ideas, were not rerun, so their figures still carry it.
 - **The paper test can say little, and nothing yet about costs.** Each account's length
   was set so its own backtest Sharpe would just pass, so even a true edge passes only about
   half the time; testnet fills aren't the market's (the first round trip cost 107 bps
   against 8.5 modelled); and the eight accounts are closer to two or three bets than eight
   (findings 16 and the review: stablecoin-vol-hold correlates about 0.8 with trend-vol-target
   on the same coin).
-- **G1 is compared with BTC held, not yet with the large-basket control** that docs/rules.md
-  asks of universe strategies; that control is to be run (TODO).
+- **G1's control shares its survivorship.** G1 now beats its own 8 coins held equally
+  (findings 33), but both use today's large coins, so neither says those coins could have
+  been picked in 2018.
 - **Exploration results are not evidence.** Numbers in research/exploration/log.md were
   found by searching; only the confirmation run and later pre-registered tests count.

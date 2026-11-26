@@ -766,6 +766,10 @@ export interface RunSummary {
   interval: Interval;
   start: string;
   end: string;
+  /** First scored bar; later than start on a coin listed too late for the lookback. Older runs leave it out. */
+  scored_from?: string | null;
+  /** First bar of history the strategy read before scored_from; null: none. */
+  history_from?: string | null;
   initial_cash: string;
   account_currency: string;
   used_holdout: boolean;

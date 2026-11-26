@@ -138,6 +138,9 @@ class BacktestResult:
     """New strategy decisions (target changed) not traded because the change was inside
     the no-trade band. Weight drift from price moves is not counted."""
     used_holdout: bool = False
+    history_from: datetime | None = None
+    """The first bar the strategy read before ``start`` (kestrel.backtest.warmup): it
+    reads history but trades only from ``start``. None: it read none."""
     forced_exits: int = 0
     """Portfolio runs: coins sold at their last close because their bars stopped."""
     config_fingerprint: str = ""

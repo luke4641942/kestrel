@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { breakEvenLabel, concentrationRows, groupDecisions, shortMarket, gateKey, gateSetupName, hasOwnTarget, drawdownPaths, mostPromising, newestFirst, gateTone, holdoutEdge, datasetsLine, scorecardHeadline, luckBar, poolsNote, splitClosed, startDateVerdict, windowLabel, DECISION, studyTitle, studyTone, deflatedNote, spreadBands, DEFAULT_RUN_SORT, KIND_LABEL, UNIVERSE, marketLabel, marketsFor, defaultDataset, nextSort, sortRuns, fewTrades, signalsCaption, MAX_LABELLED_TRADES, MAX_MARKED_TRADES, costHeadroom, paramsText, runRole, tradeCount, heldAsset, money, span, trackRecord, tradeMarkers, verdict } from "./summary";
+import { breakEvenLabel, concentrationRows, groupDecisions, shortMarket, gateKey, gateSetupName, hasOwnTarget, drawdownPaths, mostPromising, newestFirst, gateTone, holdoutEdge, datasetsLine, scorecardHeadline, luckBar, poolsNote, splitClosed, startDateVerdict, windowLabel, DECISION, studyTitle, studyTone, deflatedNote, spreadBands, DEFAULT_RUN_SORT, KIND_LABEL, UNIVERSE, marketLabel, marketsFor, defaultDataset, nextSort, sortRuns, fewTrades, signalsCaption, MAX_LABELLED_TRADES, MAX_MARKED_TRADES, costHeadroom, paramsText, runRole, tradeCount, heldAsset, money, span, trackRecord, tradeMarkers, verdict, warmupLabel } from "./summary";
 import { run, trade } from "./test/fixtures";
 
 describe("verdict", () => {
@@ -549,5 +549,21 @@ describe("concentrationRows", () => {
     expect(concentrationRows({ ...c, without_top_days: null, best_year: null, best_year_return: null, without_best_year: null }, null)).toEqual([]);
     expect(concentrationRows(null, null)).toEqual([]);
     expect(concentrationRows(c, undefined)[0]).toEqual(["Return without its 10 best days", "\u221215%"]);
+  });
+});
+
+describe("warmupLabel", () => {
+  it("says what history a run read, and when a late coin's scoring began", () => {
+    const base = { start: "2020-01" };
+    expect(warmupLabel({ ...base })).toBe("read no history before its start (saved before 2026-11-26)");
+    expect(
+      warmupLabel({ ...base, scored_from: "2020-01-01T00:00:00+00:00", history_from: "2018-11-27T00:00:00+00:00" }),
+    ).toBe("strategy read history from 2018-11-27");
+    expect(
+      warmupLabel({ ...base, scored_from: "2020-12-09T00:00:00+00:00", history_from: "2020-08-11T00:00:00+00:00" }),
+    ).toBe("scored from 2020-12-09, when its lookback had filled; strategy read history from 2020-08-11");
+    expect(warmupLabel({ ...base, scored_from: "2020-01-01T00:00:00+00:00", history_from: null })).toBe(
+      "no history before its start",
+    );
   });
 });

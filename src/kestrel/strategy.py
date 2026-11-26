@@ -33,10 +33,12 @@ from kestrel.strategies.btc_rotation import (
     CONFIRM_8,
     LARGE_4,
     LARGE_8,
+    MIN_HISTORY,
     BtcRegimeRotation,
     BtcRegimeRotation4,
     BtcRegimeRotationConfirm4,
     BtcRegimeRotationConfirm8,
+    OwnCoinsBasket,
 )
 from kestrel.strategies.choch_fvg import ChochFvg
 from kestrel.strategies.crash_rebound import CrashRebound
@@ -236,6 +238,15 @@ class StrategySpec:
     coin_events: bool = False
     """A universe strategy that reads coin events (delisting announced, days since its first
     perp; kestrel.data.coin_events) on its panel."""
+    warmup: Callable[[dict[str, int]], int] | None = None
+    """Days of history its lookbacks need before its first decision, from its settings
+    (kestrel.backtest.warmup). On a coin listed after a backtest's start, scoring begins
+    once they have filled. None: scored from the coin's first bar."""
+
+
+def _lookback(*names: str, floor: int = 0) -> Callable[[dict[str, int]], int]:
+    """A warm-up: the longest of these settings (in days), at least ``floor``."""
+    return lambda params: max([floor, *(params[n] for n in names)])
 
 
 STRATEGIES: dict[str, StrategySpec] = {
@@ -448,6 +459,7 @@ STRATEGIES: dict[str, StrategySpec] = {
                 Param("vol_days", 30, 10, 90, "Days of returns that measure volatility"),
                 Param("target_vol_pct", 50, 10, 150, "Annual volatility to size towards, in %"),
             ),
+            warmup=_lookback("slow_days", "vol_days"),
         ),
         StrategySpec(
             "volatile-macd",
@@ -475,6 +487,7 @@ STRATEGIES: dict[str, StrategySpec] = {
                 Param("regime_filter", 1, 0, 1, "1: out in the volatile regime; 0: plain rule"),
             ),
             features=("regime_volatile",),
+            warmup=_lookback("slow_days", "vol_days"),
         ),
         StrategySpec(
             "trend-vol-target-regime-4h",
@@ -493,6 +506,7 @@ STRATEGIES: dict[str, StrategySpec] = {
                 Param("regime_filter", 1, 0, 1, "1: out in the 4h volatile regime; 0: plain rule"),
             ),
             features=("regime_volatile_4h",),
+            warmup=_lookback("slow_days", "vol_days"),
         ),
         StrategySpec(
             "trend-vol-target-brake",
@@ -509,6 +523,7 @@ STRATEGIES: dict[str, StrategySpec] = {
                 Param("target_vol_pct", 50, 10, 150, "Annual volatility to size towards, in %"),
                 Param("brake_atr", 2, 1, 6, "Brake: ATRs below the high that trip it"),
             ),
+            warmup=_lookback("slow_days", "vol_days"),
         ),
         StrategySpec(
             "monday-pullback",
@@ -651,6 +666,17 @@ STRATEGIES: dict[str, StrategySpec] = {
                 Param("min_volume_musd", 20, 1, 500, "Median daily volume needed, in million USDT"),
             ),
             universe=True,
+            warmup=_lookback("min_history_days"),
+        ),
+        StrategySpec(
+            "own-8-basket",
+            "control",
+            "G1's comparison: its 8 large coins held in equal weights (1/8 each once a coin "
+            "has a year of history), rebalanced each Sunday, with no signal.",
+            OwnCoinsBasket,
+            universe=True,
+            assets=LARGE_8,
+            warmup=_lookback(floor=MIN_HISTORY),
         ),
         StrategySpec(
             "pattern-macd",
@@ -681,6 +707,7 @@ STRATEGIES: dict[str, StrategySpec] = {
                 Param("target_vol_pct", 50, 10, 100, "Annualised volatility target, %"),
             ),
             features=("btc_close",),
+            warmup=_lookback("btc_days", "coin_days", "vol_days"),
         ),
         StrategySpec(
             "btc-regime-ablation",
@@ -699,6 +726,7 @@ STRATEGIES: dict[str, StrategySpec] = {
                 Param("vol_sizing", 1, 0, 1, "Sized to volatility (1) or fully in (0)"),
             ),
             features=("btc_close",),
+            warmup=_lookback("btc_days", "coin_days", "vol_days"),
         ),
         StrategySpec(
             "crash-rebound",
@@ -940,6 +968,7 @@ STRATEGIES: dict[str, StrategySpec] = {
             ),
             universe=True,
             assets=("BTCUSDT", "ETHUSDT", "SOLUSDT"),
+            warmup=_lookback("slow_days", "vol_days"),
         ),
         StrategySpec(
             "trio-hold",
@@ -962,6 +991,7 @@ STRATEGIES: dict[str, StrategySpec] = {
                 Param("target_vol_pct", 50, 10, 150, "Target annual volatility, %"),
             ),
             features=("stablecoins_up",),
+            warmup=_lookback("vol_days"),
         ),
         StrategySpec(
             "trend-vol-target-stablecoin",
@@ -977,6 +1007,7 @@ STRATEGIES: dict[str, StrategySpec] = {
                 Param("target_vol_pct", 50, 10, 150, "Target annual volatility, %"),
             ),
             features=("stablecoins_up",),
+            warmup=_lookback("slow_days", "vol_days"),
         ),
         StrategySpec(
             "stablecoin-hold",
@@ -1003,6 +1034,7 @@ STRATEGIES: dict[str, StrategySpec] = {
             ),
             universe=True,
             assets=LARGE_8,
+            warmup=_lookback("lookback_days", "btc_days", "vol_days", floor=MIN_HISTORY),
         ),
         StrategySpec(
             "altcoin-rotation",
@@ -1045,6 +1077,7 @@ STRATEGIES: dict[str, StrategySpec] = {
             ),
             universe=True,
             assets=LARGE_4,
+            warmup=_lookback("lookback_days", "btc_days", "vol_days", floor=MIN_HISTORY),
         ),
         StrategySpec(
             "btc-rotation-8c",
@@ -1062,6 +1095,7 @@ STRATEGIES: dict[str, StrategySpec] = {
             ),
             universe=True,
             assets=CONFIRM_8,
+            warmup=_lookback("lookback_days", "btc_days", "vol_days", floor=MIN_HISTORY),
         ),
         StrategySpec(
             "btc-rotation-4c",
@@ -1079,6 +1113,7 @@ STRATEGIES: dict[str, StrategySpec] = {
             ),
             universe=True,
             assets=CONFIRM_4,
+            warmup=_lookback("lookback_days", "btc_days", "vol_days", floor=MIN_HISTORY),
         ),
         StrategySpec(
             "btc-gold-rotation",

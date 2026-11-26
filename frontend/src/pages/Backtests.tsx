@@ -37,6 +37,7 @@ import {
   tradeMarkers,
   usdt,
   verdict,
+  warmupLabel,
   windowLabel,
   drawdownPaths,
   DECISION,
@@ -494,7 +495,7 @@ function RunView({ id }: { id: string }) {
       title={r.strategy_name}
       description={`${marketLabel(r)} · ${r.start} to ${r.end} (${span(r.metrics.start, r.metrics.end)}) · ${usdt(
         Number(r.initial_cash),
-      )} ${r.account_currency} starting cash · decided at each bar close, filled at the next open`}
+      )} ${r.account_currency} starting cash · decided at each bar close, filled at the next open · ${warmupLabel(r)}`}
     >
       <div className="run-stack">
         <RunSummaryPanel run={r} />

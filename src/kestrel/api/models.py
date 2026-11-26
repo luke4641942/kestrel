@@ -484,6 +484,12 @@ class RunSummary(BaseModel):
     interval: Interval
     start: str
     end: str
+    scored_from: str | None = None
+    """First scored bar (kestrel.backtest.warmup); later than ``start`` on a coin whose
+    data began too late for the strategy's lookback. Runs saved before 2026-11-26 leave
+    it out: they read no history."""
+    history_from: str | None = None
+    """First bar of history the strategy read before ``scored_from``; None: none."""
     initial_cash: str
     account_currency: str
     used_holdout: bool

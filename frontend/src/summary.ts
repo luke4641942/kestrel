@@ -543,3 +543,16 @@ export function concentrationRows(
   }
   return rows;
 }
+
+/** How a run was warmed up (kestrel.backtest.warmup): the history its strategy read before
+ * the first scored day, and a later scored start on a coin listed too late for the lookback. */
+export function warmupLabel(r: Pick<RunSummary, "start" | "scored_from" | "history_from">): string {
+  if (r.scored_from === undefined) return "read no history before its start (saved before 2026-11-26)";
+  const day = (iso: string) => iso.slice(0, 10);
+  const parts: string[] = [];
+  if (r.scored_from && day(r.scored_from) > `${r.start}-01`) {
+    parts.push(`scored from ${day(r.scored_from)}, when its lookback had filled`);
+  }
+  parts.push(r.history_from ? `strategy read history from ${day(r.history_from)}` : "no history before its start");
+  return parts.join("; ");
+}

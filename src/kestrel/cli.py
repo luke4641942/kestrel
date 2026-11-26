@@ -41,10 +41,15 @@ from kestrel.backtest.runs import (
     UNIVERSE_BENCHMARK,
     RunRequest,
     RunStore,
+    coin_bars,
     execute,
+    scored_start,
     strategy_panel,
+    universe_bars,
     visible,
+    warm_split,
 )
+from kestrel.backtest.warmup import warmed, warmed_portfolio
 from kestrel.config import Config, ConfigError, load_config
 from kestrel.data import (
     attention,
@@ -156,7 +161,7 @@ from kestrel.validation.control import PATHS, format_control, run_control
 from kestrel.validation.holdout import HoldoutLog, format_holdout, holdout_test
 from kestrel.validation.holdout import score as score_holdout
 from kestrel.validation.log import Look, Study, ValidationLog
-from kestrel.validation.robustness import check_robustness, format_robustness
+from kestrel.validation.robustness import check_robustness, format_robustness, neighbourhood
 from kestrel.validation.timing import PATHS as TIMING_PATHS
 from kestrel.validation.timing import format_timing, run_timing_control
 from kestrel.validation.walkforward import format_walk_forward, walk_forward
@@ -1913,28 +1918,42 @@ def robustness(
         cfg = load_config(config)
         first, last = Month.parse(start), Month.parse(end)
         evaluate: Callable[[dict[str, int]], Metrics]
+        # Every setting reads history before the start and is scored over the same days:
+        # from the start, or on a younger coin from when the slowest setting's lookback has
+        # filled (kestrel.backtest.warmup). Holding is scored over those days too, and test 8
+        # compares the neighbours with it.
+        grid = [center, *(s for _, s in neighbourhood(spec.params, center))]
         if spec.universe:
-            panel = visible(strategy_panel(store, key, interval, first, last), cfg, key)
-
-            def evaluate(p: dict[str, int]) -> Metrics:
-                strategy_ = make_portfolio_strategy(key, p)
-                return compute_metrics(run_portfolio(strategy_, panel, interval, cfg, money))
+            loaded = universe_bars(store, cfg, key, interval, first, last)
         else:
-            after = last.next()
-            bars = store.read(
-                symbol,
-                interval,
-                datetime(first.year, first.month, 1, tzinfo=UTC),
-                datetime(after.year, after.month, 1, tzinfo=UTC),
-            )
-            if bars.height < 2:
-                raise ValueError(f"no stored {symbol.upper()} {interval.value} bars in that range")
-            bars = attach_features(bars, spec.features, symbol, interval, data_dir)
+            loaded = coin_bars(store, key, symbol, interval, first, last)
+        common = max(scored_start(loaded, key, s, first) for s in grid)
+        if spec.universe:
 
             def evaluate(p: dict[str, int]) -> Metrics:
-                strategy_ = make_strategy(key, symbol, p)
+                history, panel = warm_split(loaded, key, p, first, common)
+                strategy_ = warmed_portfolio(make_portfolio_strategy(key, p), history)
+                return compute_metrics(run_portfolio(strategy_, panel, interval, cfg, money))
+
+            _, scored_panel = warm_split(loaded, key, center, first, common)
+            held_bars = store.read(UNIVERSE_BENCHMARK, interval).filter(
+                pl.col("open_time").is_between(
+                    scored_panel["open_time"].min(), scored_panel["open_time"].max()
+                )
+            )
+            held_symbol = UNIVERSE_BENCHMARK
+        else:
+
+            def evaluate(p: dict[str, int]) -> Metrics:
+                history, bars = warm_split(loaded, key, p, first, common)
+                strategy_ = warmed(make_strategy(key, symbol, p), history)
                 return compute_metrics(run_backtest(strategy_, bars, interval, cfg, money))
 
+            _, held_bars = warm_split(loaded, key, center, first, common)
+            held_symbol = symbol.upper()
+        held = compute_metrics(
+            run_backtest(BuyAndHold(held_symbol), held_bars, interval, cfg, money)
+        ).sharpe
         result = check_robustness(key, spec.params, center, evaluate)
     except (HoldoutError, ConfigError, ValueError) as e:
         typer.echo(str(e), err=True)
@@ -1956,6 +1975,8 @@ def robustness(
             "positive_share": result.positive_share,
             "median_sharpe": result.median_sharpe,
             "center_sharpe": result.center.sharpe,
+            "scored_from": common.isoformat(),
+            "held_sharpe": None if math.isnan(held) else held,
         },
     )
     typer.echo(f"Saved as study {ValidationLog(data_dir).save(study)}")

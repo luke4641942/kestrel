@@ -257,7 +257,14 @@ Agreed decisions; changed only for a stated reason.
 - **Benchmark: buy-and-hold of the same market** over the same period, paying one entry's
   costs, plus the same market at the strategy's average exposure. Labels name the actual
   asset (`BacktestResult.asset`, `heldAsset()`); never hard-code "BTC". Universe
-  strategies are judged against the `large-basket` control, never just BTC.
+  strategies are judged against the `large-basket` control, never just BTC; a strategy over a
+  fixed coin list against those coins held equally (G1: `own-8-basket`).
+- **Warm-up (2026-11-26, findings 33):** a backtest's strategy reads up to 400 days of
+  bars before its start (`kestrel.backtest.warmup`), read only: the account opens with its
+  cash at the start and trades from the next open, as holding does. On a coin listed after
+  the start, scoring begins when the strategy's declared lookback (`StrategySpec.warmup`)
+  has filled, and holding is scored over the same days. A robustness grid scores every
+  setting and holding over the same days. Runs saved before then read no history.
 - **Backtest conventions:** decide at bar t's close, fill at bar t+1's open; annualise
   with 365 days; risk-free rate 0; returns measured daily at 00:00 UTC; engine parity is
   tested on a large account (the vectorised engine can't model minimums). Keep the

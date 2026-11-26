@@ -89,3 +89,20 @@ def test_no_lookahead_and_the_registry_builds_both() -> None:
         strategy = make_portfolio_strategy(key, {})
         assert type(strategy) is expected
         validated_decisions(strategy, coins())  # raises on any lookahead
+
+
+def test_g1s_control_holds_each_of_its_coins_equally_once_a_year_old() -> None:
+    from kestrel.strategies.btc_rotation import OwnCoinsBasket
+
+    frame = coins(btc_drift=-0.004)  # BTC's regime is ignored: no signal at all
+    out = OwnCoinsBasket().target_weights(frame)
+    assert (out["open_time"].dt.weekday() == 7).all()
+    early = out.filter(pl.col("open_time") < MONDAY + timedelta(days=364))
+    assert early["symbol"].is_null().all()
+    late = out.filter(pl.col("open_time") > MONDAY + timedelta(days=370))
+    per_sunday = late.group_by("open_time").agg(pl.col("symbol").sort(), pl.col("weight").sum())
+    assert all(
+        s.to_list() == ["BNBUSDT", "BTCUSDT", "ETHUSDT", "SOLUSDT"] for s in per_sunday["symbol"]
+    )
+    assert (per_sunday["weight"] - 4 / 8).abs().max() < 1e-12  # 1/8 each, four slots in cash
+    validated_decisions(make_portfolio_strategy("own-8-basket", {}), frame)

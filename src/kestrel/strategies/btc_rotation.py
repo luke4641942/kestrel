@@ -23,7 +23,7 @@ from datetime import datetime
 
 import polars as pl
 
-from kestrel.strategies.basket import BY, DECISIONS, no_decisions, require_daily
+from kestrel.strategies.basket import BY, DECISIONS, as_decisions, no_decisions, require_daily
 from kestrel.strategies.conditions import Waiting, above_average
 
 BTC = "BTCUSDT"
@@ -172,3 +172,30 @@ class BtcRegimeRotationConfirm8(BtcRegimeRotation):
 class BtcRegimeRotationConfirm4(BtcRegimeRotation4):
     coins = CONFIRM_4
     label = "BTC and 3 confirmation-half large coins"
+
+
+class OwnCoinsBasket:
+    """G1's control (strategy review, 2026-11-26): its 8 coins held in equal weights with
+    no signal. Each Sunday close, every coin with ``MIN_HISTORY`` days of unbroken history
+    (G1's own eligibility rule) gets ``1 / 8`` of equity; the slots of coins not yet
+    eligible stay in cash, as in ``large-basket``. If G1 can't beat this, its regime and
+    ranking add nothing to holding the coins it was chosen from."""
+
+    coins: tuple[str, ...] = LARGE_8
+
+    def __init__(self, symbol: str = "UNIVERSE") -> None:
+        self.symbol = symbol
+        self.name = f"{len(self.coins)} large coins (G1's), equal weight, weekly"
+
+    def target_weights(self, panel: pl.DataFrame) -> pl.DataFrame:
+        coins = panel.filter(pl.col("symbol").is_in(self.coins))
+        if coins.is_empty():
+            return no_decisions()
+        require_daily(panel, self.name)
+        held = (
+            coins.sort("open_time")
+            .with_columns(_age=pl.int_range(1, pl.len() + 1).over(BY))
+            .filter((pl.col("open_time").dt.weekday() == 7) & (pl.col("_age") >= MIN_HISTORY))
+            .with_columns(weight=pl.lit(1 / len(self.coins)))
+        )
+        return as_decisions(coins, held)
