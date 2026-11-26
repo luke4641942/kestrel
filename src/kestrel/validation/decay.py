@@ -35,10 +35,10 @@ import polars as pl
 from kestrel.backtest.engine import run_backtest
 from kestrel.backtest.metrics import daily_equity
 from kestrel.backtest.portfolio import run_portfolio
-from kestrel.backtest.runs import strategy_panel, visible
+from kestrel.backtest.runs import coin_bars, universe_bars, warm_split
+from kestrel.backtest.warmup import warmed, warmed_portfolio
 from kestrel.config import Config
 from kestrel.data.binance_vision import Month
-from kestrel.data.features import attach_features
 from kestrel.data.store import ParquetStore
 from kestrel.execution.paper import Terms
 from kestrel.execution.tracking import Tracking
@@ -128,24 +128,25 @@ def reference_returns(terms: Terms, data_dir: Path | str, config: Config) -> lis
     end = config.backtest.holdout_start
     cash = Decimal(terms.initial_cash)
     spec = spec_for(terms.strategy)
+    first = Month(REFERENCE_START.year, REFERENCE_START.month)
+    last = Month(end.year, end.month - 1) if end.month > 1 else Month(end.year - 1, 12)
+    # Warmed on the history before REFERENCE_START, like every backtest (findings 33).
     if spec.universe:
-        first = Month(REFERENCE_START.year, REFERENCE_START.month)
-        last = Month(end.year, end.month - 1) if end.month > 1 else Month(end.year - 1, 12)
-        found = strategy_panel(store, terms.strategy, terms.interval, first, last)
-        panel = visible(found, config, terms.strategy)
+        loaded = universe_bars(store, config, terms.strategy, terms.interval, first, last)
+        history, panel = warm_split(loaded, terms.strategy, terms.params, first)
         result = run_portfolio(
-            make_portfolio_strategy(terms.strategy, terms.params),
+            warmed_portfolio(make_portfolio_strategy(terms.strategy, terms.params), history),
             panel.filter(pl.col("open_time") < end),
             terms.interval,
             config,
             cash,
         )
     else:
-        bars = store.read(terms.symbol, terms.interval, REFERENCE_START, end)
-        bars = attach_features(bars, spec.features, terms.symbol, terms.interval, data_dir)
+        loaded = coin_bars(store, terms.strategy, terms.symbol, terms.interval, first, last)
+        history, bars = warm_split(loaded, terms.strategy, terms.params, first)
         result = run_backtest(
-            make_strategy(terms.strategy, terms.symbol, terms.params),
-            bars,
+            warmed(make_strategy(terms.strategy, terms.symbol, terms.params), history),
+            bars.filter(pl.col("open_time") < end),
             terms.interval,
             config,
             cash,

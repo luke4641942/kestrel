@@ -174,7 +174,9 @@ Never pipe check output through `tail` or similar inside an `&&` chain: it hides
   863 trials by 2026-11-21 (robustness and walk-forward grids count every setting), luck
   bar Sharpe 2.28; the Research tab shows how it moved. The bar depends on how spread out
   the trials' Sharpes are as well as their number, so very bad strategies raise it too.
-  Confirmation runs have their own pool. It may be that nothing passes; that is an
+  An unchanged setup saved again under a newer note version is a new trial (the version is
+  in the trial key), so `kestrel backtest` refuses it without `--as-new-trial` and the API
+  refuses it (findings 33). Confirmation runs have their own pool. It may be that nothing passes; that is an
   acceptable result. Scripts reading runs use `RunStore("data")` (it adds `runs/`).
 - **Exploration experiment (started 2026-11-16, kept after round 1; Luke's call;
   revert by deleting this section and its line under Trials).**
@@ -264,7 +266,8 @@ Agreed decisions; changed only for a stated reason.
   cash at the start and trades from the next open, as holding does. On a coin listed after
   the start, scoring begins when the strategy's declared lookback (`StrategySpec.warmup`)
   has filled, and holding is scored over the same days. A robustness grid scores every
-  setting and holding over the same days. Runs saved before then read no history.
+  setting and holding over the same days. Runs saved before then read no history. A new
+  research strategy must declare its warm-up (`tests/test_warmup.py`).
 - **Backtest conventions:** decide at bar t's close, fill at bar t+1's open; annualise
   with 365 days; risk-free rate 0; returns measured daily at 00:00 UTC; engine parity is
   tested on a large account (the vectorised engine can't model minimums). Keep the

@@ -595,7 +595,14 @@ from 2026-11-16) is the test that's left.
     the basket made +298% against +3,608%; its drawdown -79% against -37%; daily
     correlation 0.64. Both share the coin list's survivorship (findings 15), so this says
     the regime and ranking add to holding these coins, not that they were knowable in 2018.
-    G1 deflates to 2% at 881 trials (bar 2.29).
+    G1 deflates to 2% at 881 trials (bar 2.29). Its frozen own-coins note
+    (btc-regime-rotation-g1-on-its-own-coins) names BTC held as the benchmark, against
+    docs/rules.md; the note stays as written, and its test 1 is now read against both.
+
+    Follow-ups the same day: the decay check's reference backtest is warmed too; a new
+    research strategy must declare its warm-up (37 older ones are listed as exempt, a list
+    that only shrinks); and a backtest refuses an unchanged setup already saved under an
+    older version of its note unless told it is a new trial (`--as-new-trial`).
 
 
 ## The holdout year (2025-11 to 2026-10)

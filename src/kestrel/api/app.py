@@ -97,7 +97,14 @@ from kestrel.backtest.analysis import concentration, start_dates
 from kestrel.backtest.costs import CostModel, Fill, Side
 from kestrel.backtest.engine import HoldoutError
 from kestrel.backtest.metrics import DAYS_PER_YEAR, daily_marks
-from kestrel.backtest.runs import RunRequest, RunStore, count_trials, execute
+from kestrel.backtest.runs import (
+    RunRequest,
+    RunStore,
+    count_trials,
+    execute,
+    repeat_message,
+    same_setup_earlier,
+)
 from kestrel.config import Config, ConfigError, InstrumentRules, load_config
 from kestrel.data.binance_vision import BinanceVisionClient, Month, last_complete_month
 from kestrel.data.features import attach_features
@@ -581,6 +588,14 @@ def create_app(
             params=params,
             research=link,
         )
+        if link and (earlier := same_setup_earlier(runs.summaries(), request)) is not None:
+            # A new trial for an unchanged setup is a CLI decision (--as-new-trial).
+            raise HTTPException(
+                422,
+                repeat_message(earlier, link[1]).replace(
+                    "Rerun with --as-new-trial", "From the command line, rerun with --as-new-trial"
+                ),
+            )
 
         def run(ctx: JobContext) -> dict[str, Any]:
             ctx.log(f"Backtesting {key} {params or ''} on {req.symbol} {req.interval.value}")

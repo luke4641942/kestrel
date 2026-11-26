@@ -43,6 +43,8 @@ from kestrel.backtest.runs import (
     RunStore,
     coin_bars,
     execute,
+    repeat_message,
+    same_setup_earlier,
     scored_start,
     strategy_panel,
     universe_bars,
@@ -369,6 +371,13 @@ def backtest(
             "'confirmation-') on a confirmation-half coin; counted in its own trial pool."
         ),
     ] = False,
+    as_new_trial: Annotated[
+        bool,
+        typer.Option(
+            help="Save even though an older version of the note already ran this exact "
+            "setup: only when the new version changed what it does. Counts as a new trial."
+        ),
+    ] = False,
 ) -> None:
     """Backtest a strategy on stored bars and print its metrics."""
     if engine not in ("event", "vectorised"):
@@ -419,6 +428,11 @@ def backtest(
         engine="vectorised" if engine == "vectorised" else "event",
         confirmation=confirmation,
     )
+    if save and not explore and link and not as_new_trial:
+        earlier = same_setup_earlier(RunStore(data_dir).summaries(), request)
+        if earlier is not None:
+            typer.echo(repeat_message(earlier, link[1]), err=True)
+            raise typer.Exit(code=1)
     try:
         outcome = execute(request, ParquetStore(data_dir), cfg)
     except (HoldoutError, ConfigError, ValueError, ConfirmationLockedError) as e:

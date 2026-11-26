@@ -110,3 +110,18 @@ def test_a_flag_is_alerted_once_and_a_good_run_never(tmp_path: Path) -> None:
     assert "-3.10 over 120 days" in alert.message
     assert "nothing changes without Luke" in alert.message
     assert alerts.review(acct, now, sent.append, decay=flagged) == []  # once per account
+
+
+def test_the_reference_backtest_is_warmed_on_the_years_before_it(tmp_path: Path) -> None:
+    cfg = load_config(REPO_CONFIG)
+    start = datetime(2019, 1, 1, tzinfo=UTC)
+    closes = [100 * 1.003**i * (1 + 0.01 * (-1) ** i) for i in range(560)]  # to 2020-07
+    ParquetStore(tmp_path).write(
+        "BTCUSDT", Interval.D1, bars(closes, step=timedelta(days=1), start=start)
+    )
+    terms = Terms("t", "trend-vol-target", "BTCUSDT", Interval.D1, {}, Decimal(330), start)
+    found = decay.reference_returns(terms, tmp_path, cfg)
+    # Scored from 2020-01-01, and already invested in its first week (its lookback filled
+    # on 2019's bars), where a cold start would sit in cash for 120 days.
+    assert len(found) < 200
+    assert any(r != 0 for r in found[:7])

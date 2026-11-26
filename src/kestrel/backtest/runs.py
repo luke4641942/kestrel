@@ -498,6 +498,40 @@ def trial_key(run: dict[str, Any]) -> tuple[Any, ...]:
     )
 
 
+def same_setup_earlier(runs: list[dict[str, Any]], request: RunRequest) -> dict[str, Any] | None:
+    """A saved run of exactly this setup (implementation, settings, market, period, cash)
+    under an older version of the same note, if there is one. Saved again under the new
+    version it would count as a new trial (the version is in ``trial_key``), so a caller
+    refuses it unless asked for a new trial (findings 33: two reruns were nearly counted)."""
+    if request.research is None:
+        return None
+    slug, version = request.research
+    for run in runs:
+        theirs = run.get("research") or {}
+        if (
+            theirs.get("slug") == slug
+            and (theirs.get("version") or 0) < version
+            and run["strategy"] == request.strategy
+            and (run.get("params") or {}) == resolve_params(request.strategy, request.params)
+            and run["symbol"] == request.symbol.upper()
+            and run["interval"] == request.interval.value
+            and run["start"] == str(request.start)
+            and run["end"] == str(request.end)
+            and Decimal(run["initial_cash"]) == request.initial_cash
+        ):
+            return run
+    return None
+
+
+def repeat_message(run: dict[str, Any], version: int) -> str:
+    old = run["research"]
+    return (
+        f"run {run['id']} already tested this exact setup under v{old['version']} of "
+        f"{old['slug']}; saved under v{version} it would count as a new trial. Rerun with "
+        f"--as-new-trial only if v{version} changed what this setup does."
+    )
+
+
 def count_trials(runs: list[dict[str, Any]]) -> int:
     return len({trial_key(r) for r in runs})
 

@@ -189,3 +189,33 @@ def test_the_scorecard_compares_neighbours_with_holding_over_the_grids_days() ->
     assert statuses(grade(run(), 0.97, [study]))["Robustness"] == "pass"
     study["detail"]["held_sharpe"] = 1.3  # holding over the grid's own (later) days
     assert statuses(grade(run(), 0.97, [study]))["Robustness"] == "fail"
+
+
+UNDECLARED = frozenset(
+    {
+        "altcoin-rotation", "basket-breakout", "bollinger-pullback", "btc-eth-rotation",
+        "btc-gold-rotation", "btc-led-weekly", "choch-fvg", "crash-rebound", "drop-reversal",
+        "eth-btc-value", "fear-greed", "funding-hold", "funding-trend", "high-anchor",
+        "level-retest", "monday-pullback", "monthly-rotation", "order-flow", "pattern-macd",
+        "pivot-reversal", "rotation-stablecoins", "rsi-dip", "set-and-forget",
+        "squeeze-breakout", "stablecoin-hold", "structure-pullback", "tori-trendline",
+        "trend-basket", "trendline-bounce", "trendline-breakout", "turn-of-month", "vol-hold",
+        "volatile-macd", "wedge-breakout", "weekly-momentum", "weekly-momentum-brake",
+        "xs-momentum",
+    }
+)  # fmt: skip
+"""Research strategies registered before warm-up existed (2026-11-26) that declare none:
+on a coin listed after a run's start they are scored from its first bar, as before. The
+list only shrinks."""
+
+
+def test_every_new_research_strategy_declares_its_warm_up() -> None:
+    from kestrel.strategy import STRATEGIES
+
+    research = {k for k, s in STRATEGIES.items() if s.kind == "research"}
+    undeclared = {k for k in research if STRATEGIES[k].warmup is None}
+    assert undeclared <= UNDECLARED, (
+        f"declare StrategySpec.warmup for {sorted(undeclared - UNDECLARED)}: the days of "
+        "history its lookbacks need (kestrel.backtest.warmup)"
+    )
+    assert not UNDECLARED & (research - undeclared), "declared now: remove it from UNDECLARED"
