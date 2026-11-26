@@ -37,8 +37,9 @@ FILE_URL = (
 )
 PREFIX = "data/futures/um/daily/metrics/"
 USER_AGENT = "kestrel-research/0.1"
-LISTED_BY = date(2021, 6, 30)
-"""The study's coins: perps whose metrics start on or before this day (its note)."""
+LISTED_BY = date(2021, 12, 1)
+"""The study's coins: perps whose metrics start on or before this day (its note, v2: the
+archive's start for every perp but BTC; v1's 2021-06-30 left none)."""
 LAST_HOUR = timedelta(hours=1)
 SCHEMA: dict[str, pl.DataType | type[pl.DataType]] = {
     "file_date": pl.Date,
