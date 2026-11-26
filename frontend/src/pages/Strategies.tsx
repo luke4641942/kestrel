@@ -4,6 +4,8 @@ import { classOf, inMarket } from "../markets";
 import {
   api,
   type Dataset,
+  type Example,
+  type Interval,
   type Job,
   type Note,
   type ResearchDetail,
@@ -26,6 +28,7 @@ import {
   splitClosed,
 } from "../summary";
 import { useResource } from "../hooks";
+import { agreement, exampleTitle, ruleLine, testLines, weightLine } from "../examplesView";
 
 
 
@@ -641,9 +644,94 @@ function MarketSignals({ impl }: { impl: StrategyInfo }) {
               {signalsCaption(range[0], range[1], signals.data?.time.length ?? 0, signals.data?.total_bars ?? 0, signals.data?.time[0])}
             </p>
           )}
+          {ds && signals.data?.kind === "weights" && (
+            <WorkedExamples implKey={impl.key} symbol={ds.symbol} interval={ds.interval} params={debounced} />
+          )}
         </>
       )}
     </Panel>
+  );
+}
+
+// A few of the rule's entries and exits, drawn at random on an exploration-half coin, each
+// with the weight chosen and the tests behind it: for checking the code against the note's
+// wording before its first run (kestrel.strategies.examples). Drawn on request, never picked.
+export function WorkedExamples({
+  implKey,
+  symbol,
+  interval,
+  params,
+}: {
+  implKey: string;
+  symbol: string;
+  interval: Interval;
+  params: Record<string, number>;
+}) {
+  const [found, setFound] = useState<Example[]>();
+  const [error, setError] = useState<string>();
+  const [seed, setSeed] = useState(0);
+  const [busy, setBusy] = useState(false);
+  useEffect(() => {
+    setFound(undefined);
+    setError(undefined);
+    setSeed(0);
+  }, [implKey, symbol, interval, JSON.stringify(params)]);
+
+  async function draw(next: number) {
+    setBusy(true);
+    setError(undefined);
+    try {
+      setFound(await api.examples(implKey, { symbol, interval, params, seed: next }));
+      setSeed(next);
+    } catch (e) {
+      setFound(undefined);
+      setError(e instanceof Error ? e.message : String(e));
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  return (
+    <div className="worked-examples">
+      <div className="code-head">
+        <h4 className="panel-title">Worked examples</h4>
+        <span className="small tertiary">Exploration-half coins only, before the holdout; nothing is scored</span>
+      </div>
+      <p className="small secondary">
+        Three of the rule's entries and exits, drawn at random, with what decided each. Check them against the note's
+        wording before its first run.
+      </p>
+      <button type="button" className="btn" disabled={busy} onClick={() => draw(found ? seed + 1 : seed)}>
+        {busy ? "Drawing…" : found ? "Draw three others" : "Draw three"}
+      </button>
+      {error && <p className="small secondary">{error}</p>}
+      {found && found.length === 0 && <p className="small secondary">No entries or exits on {symbol} before the holdout.</p>}
+      {found && found.length > 0 && (
+        <ol className="example-list">
+          {found.map((e) => {
+            const a = agreement(e);
+            const rule = ruleLine(e);
+            return (
+              <li key={e.open_time} className="example">
+                <div className="example-title">{exampleTitle(e)}</div>
+                <div className="small">{weightLine(e)}</div>
+                {rule && <div className="small secondary">{rule}:</div>}
+                {e.conditions.length > 0 && (
+                  <ul className="example-tests">
+                    {testLines(e).map((t) => (
+                      <li key={t.text} className="small">
+                        <Status tone={t.met ? "ok" : "neutral"}>{t.met ? "met" : "not met"}</Status> {t.text}
+                      </li>
+                    ))}
+                  </ul>
+                )}
+                <Status tone={a.tone}>{a.text}</Status>
+              </li>
+            );
+          })}
+        </ol>
+      )}
+    </div>
   );
 }
 

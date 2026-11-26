@@ -333,6 +333,15 @@ class SourceOut(BaseModel):
     dirty: bool
 
 
+class ExamplesRequest(BaseModel):
+    """Worked examples of a strategy's rule (kestrel.strategies.examples)."""
+
+    symbol: str = Field(min_length=2, max_length=20)
+    interval: Interval = Interval.D1
+    params: dict[str, int] = Field(default_factory=dict)
+    seed: int = 0
+
+
 class SignalsRequest(BaseModel):
     symbol: str = Field(min_length=2, max_length=20)
     interval: Interval = Interval.H4
@@ -909,6 +918,20 @@ class ConditionOut(BaseModel):
     met: bool
     move: float
     """Change in the subject's close by the next close that flips the test (fraction)."""
+
+
+class ExampleOut(BaseModel):
+    """One entry or exit, with the weight chosen and the tests behind it."""
+
+    open_time: datetime
+    kind: str
+    before: float
+    after: float
+    close: float
+    rule: str | None
+    conditions: list[ConditionOut]
+    agrees: bool | None
+    """Tests and weight say the same thing; False is a bug."""
 
 
 class WaitingOut(BaseModel):

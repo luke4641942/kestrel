@@ -3180,3 +3180,11 @@ pre.report {
   .funnel-stage { grid-template-columns: 1fr 3.5rem; row-gap: 4px; }
   .funnel-track { grid-column: 1 / -1; grid-row: 2; }
 }
+
+/* Worked examples (Strategies, under the signals chart). */
+.worked-examples { margin-top: 16px; padding-top: 12px; border-top: 1px solid var(--line); }
+.worked-examples .btn { margin: 4px 0 8px; }
+.example-list { list-style: none; margin: 8px 0 0; padding: 0; display: grid; gap: 12px; }
+.example { padding: 10px 12px; border: 1px solid var(--line); border-radius: var(--radius); background: var(--panel); }
+.example-title { font-weight: 600; margin-bottom: 2px; }
+.example-tests { list-style: none; margin: 4px 0 6px; padding: 0; display: grid; gap: 3px; }

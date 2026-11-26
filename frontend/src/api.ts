@@ -171,6 +171,21 @@ export interface StrategySource {
   dirty: boolean;
 }
 
+/** One worked example of a rule (POST /strategies/{key}/examples). */
+export interface Example {
+  /** The bar whose close made the decision; it trades at the next open. */
+  open_time: string;
+  kind: "entry" | "exit";
+  before: number;
+  after: number;
+  close: number;
+  /** "all" or "any" when the strategy explains itself. */
+  rule: "all" | "any" | null;
+  conditions: Condition[];
+  /** Tests and weight say the same thing; false is a bug. */
+  agrees: boolean | null;
+}
+
 export interface SignalsRequest {
   symbol: string;
   interval: Interval;
@@ -952,6 +967,8 @@ export const api = {
   backtest: (id: string) => request<RunDetail>(`/backtests/${enc(id)}`),
   costs: () => request<CostConfig>("/costs"),
   source: (key: string) => request<StrategySource>(`/strategies/${enc(key)}/source`),
+  examples: (key: string, body: { symbol: string; interval: Interval; params: Record<string, number>; seed: number }) =>
+    request<Example[]>(`/strategies/${enc(key)}/examples`, { method: "POST", body: JSON.stringify(body) }),
   signals: (key: string, body: SignalsRequest) =>
     request<Signals>(`/strategies/${enc(key)}/signals`, { method: "POST", body: JSON.stringify(body) }),
   researchList: () => request<ResearchSummary[]>("/research"),

@@ -1288,6 +1288,45 @@ def signal_examples(
     typer.echo("\n\n".join(blocks))
 
 
+@app.command("strategy-examples")
+def strategy_examples(
+    strategy: Annotated[str, typer.Argument(help="Strategy key (a one-coin weight strategy).")],
+    symbol: Annotated[str, typer.Argument(help="An exploration-half coin.")],
+    interval: Annotated[Interval, typer.Option(help="Bar size.")] = Interval.D1,
+    param: Annotated[
+        list[str] | None, typer.Option(help="A setting as name=value (repeatable).")
+    ] = None,
+    seed: Annotated[int, typer.Option(help="Which entries and exits are drawn.")] = 0,
+    data_dir: DataDir = Path("data"),
+    config: Annotated[
+        Path, typer.Option("--config", envvar="KESTREL_CONFIG", help="Config file.")
+    ] = Path("kestrel.toml"),
+) -> None:
+    """Worked examples of a strategy's rule, to check against its note before the first run:
+    random entries and exits on an exploration-half coin, with the weight chosen and the
+    tests behind it (kestrel.strategies.examples). Not a backtest: nothing is scored."""
+    from kestrel.strategies.examples import examples, format_example, require_exploration
+
+    try:
+        cfg = load_config(config)
+        require_exploration(symbol, cfg.split)
+        made = make_strategy(strategy, symbol, _parse_params(param or []))
+        if isinstance(made, BracketStrategy) or spec_for(strategy).universe:
+            raise ValueError("worked examples are for one-coin weight strategies")
+        bars = ParquetStore(data_dir).read(symbol, interval, None, cfg.backtest.holdout_start)
+        if bars.is_empty():
+            raise ValueError(f"no stored {symbol.upper()} {interval.value} bars")
+        bars = attach_features(bars, spec_for(strategy).features, symbol, interval, data_dir)
+        found = examples(made, bars, seed=seed)
+    except (ConfigError, ValueError) as e:
+        typer.echo(str(e), err=True)
+        raise typer.Exit(code=1) from None
+    if not found:
+        typer.echo(f"{strategy} never enters or exits on {symbol.upper()} before the holdout")
+        return
+    typer.echo("\n\n".join(format_example(symbol.upper(), e) for e in found))
+
+
 def _coin(symbol: str) -> str:
     return symbol.upper().removesuffix("USDT")
 

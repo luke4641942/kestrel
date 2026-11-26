@@ -1,7 +1,7 @@
 import { fireEvent, render, screen } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { api } from "../api";
-import { Strategies } from "./Strategies";
+import { Strategies, WorkedExamples } from "./Strategies";
 
 vi.mock("../api", async (importOriginal) => {
   const real = await importOriginal<typeof import("../api")>();
@@ -49,5 +49,39 @@ describe("Strategies list", () => {
     const item = await screen.findByText("Idea c");
     expect(item.closest("button")).toHaveClass("active");
     expect(screen.getByRole("button", { name: "Hide" })).toHaveAttribute("aria-expanded", "true");
+  });
+});
+
+describe("WorkedExamples", () => {
+  const example = {
+    open_time: "2020-07-04T00:00:00Z",
+    kind: "entry" as const,
+    before: 0,
+    after: 0.49,
+    close: 2.779,
+    rule: "any" as const,
+    conditions: [{ label: "ATOM up over 20 days", subject: "ATOMUSDT", value: 2.779, level: 2.756, met: true, move: 0 }],
+    agrees: true,
+  };
+
+  it("draws examples on request, then others with the next seed", async () => {
+    api.examples = vi.fn().mockResolvedValue([example]);
+    render(<WorkedExamples implKey="trend-vol-target" symbol="ATOMUSDT" interval="1d" params={{}} />);
+    expect(api.examples).not.toHaveBeenCalled();
+    fireEvent.click(screen.getByRole("button", { name: "Draw three" }));
+    expect(await screen.findByText("Entry at the close of 2020-07-04 00:00 UTC")).toBeInTheDocument();
+    expect(screen.getByText(/ATOM up over 20 days: ATOMUSDT 2.779 against 2.756/)).toBeInTheDocument();
+    expect(screen.getByText("Tests and weight agree")).toBeInTheDocument();
+    expect(api.examples).toHaveBeenLastCalledWith("trend-vol-target", { symbol: "ATOMUSDT", interval: "1d", params: {}, seed: 0 });
+    fireEvent.click(screen.getByRole("button", { name: "Draw three others" }));
+    await screen.findByRole("button", { name: "Draw three others" });
+    expect(api.examples).toHaveBeenLastCalledWith("trend-vol-target", { symbol: "ATOMUSDT", interval: "1d", params: {}, seed: 1 });
+  });
+
+  it("shows the refusal for a coin outside the exploration half", async () => {
+    api.examples = vi.fn().mockRejectedValue(new Error("worked examples use exploration-half coins only"));
+    render(<WorkedExamples implKey="trend-vol-target" symbol="BTCUSDT" interval="1d" params={{}} />);
+    fireEvent.click(screen.getByRole("button", { name: "Draw three" }));
+    expect(await screen.findByText(/exploration-half coins only/)).toBeInTheDocument();
   });
 });

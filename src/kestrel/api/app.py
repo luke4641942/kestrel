@@ -39,6 +39,8 @@ from kestrel.api.models import (
     DecisionOut,
     EditNote,
     EventStudyOut,
+    ExampleOut,
+    ExamplesRequest,
     FillOut,
     FunnelOut,
     FxRunOut,
@@ -525,6 +527,33 @@ def create_app(
             weight=weights.to_list(),
             indicators=_indicator_lines(full, req.indicators, bars.height),
         )
+
+    @api.post("/strategies/{key}/examples")
+    def get_examples(key: str, req: ExamplesRequest) -> list[ExampleOut]:
+        """A few of the rule's entries and exits on an exploration-half coin, drawn at random,
+        each with the weight chosen and the tests behind it (kestrel.strategies.examples).
+        Before the holdout; nothing is scored."""
+        from kestrel.strategies.examples import examples, require_exploration
+
+        try:
+            cfg = load_config(config_path)
+            require_exploration(req.symbol, cfg.split)
+            strategy = make_strategy(key, req.symbol, req.params)
+            if isinstance(strategy, BracketStrategy) or spec_for(key).universe:
+                raise ValueError("worked examples are for one-coin weight strategies")
+            bars = store.read(req.symbol, req.interval, None, cfg.backtest.holdout_start)
+            if bars.is_empty():
+                raise HTTPException(status.HTTP_404_NOT_FOUND, "no stored bars before the holdout")
+            bars = attach_features(bars, spec_for(key).features, req.symbol, req.interval, data_dir)
+            found = examples(strategy, bars, seed=req.seed)
+        except (ConfigError, ValueError) as e:
+            raise HTTPException(422, str(e)) from None
+        return [
+            ExampleOut.model_validate(
+                {**asdict(e), "conditions": [asdict(c) for c in e.conditions], "agrees": e.agrees}
+            )
+            for e in found
+        ]
 
     @api.post("/jobs/backtest", status_code=status.HTTP_202_ACCEPTED)
     def start_backtest(req: BacktestRequest) -> JobOut:
