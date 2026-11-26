@@ -40,6 +40,7 @@ from kestrel.api.models import (
     EditNote,
     EventStudyOut,
     FillOut,
+    FunnelOut,
     FxRunOut,
     GradeOut,
     Health,
@@ -913,6 +914,25 @@ def create_app(
                 )
             )
         return out
+
+    @api.get("/funnel")
+    def get_funnel() -> FunnelOut:
+        """Every trial in each pool through the first tests and the luck test, then what was
+        kept (kestrel.validation.funnel). Read from the records; nothing is run."""
+        from kestrel.backtest.fx_runs import FxRunStore
+        from kestrel.validation.funnel import funnel
+
+        try:
+            decided = [d.decision for d in load_decisions(Path(research_dir) / "decisions.toml")]
+        except DecisionError as e:
+            raise HTTPException(status.HTTP_500_INTERNAL_SERVER_ERROR, str(e)) from None
+        f = funnel(
+            [*runs.summaries(), *FxRunStore(data_dir).summaries()],
+            studies.studies(),
+            decided,
+            data_dir,
+        )
+        return FunnelOut.model_validate({**asdict(f), "all_trials": f.all_trials})
 
     @api.get("/validation/history")
     def get_validation_history() -> list[LuckPointOut]:

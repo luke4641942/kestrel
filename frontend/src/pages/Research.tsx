@@ -5,6 +5,7 @@ import { Empty, PageHeader, Panel, Section, Stat, Status } from "../components/u
 import { date } from "../format";
 import { useResource } from "../hooks";
 import { byFamily, confirmationRuns, luckSeries, tally } from "../researchView";
+import { POOL_LABEL, keptLine, poolsFor, stages } from "../funnelView";
 import { DECISION, luckBar, poolsNote, studyTone } from "../summary";
 import { MarketBadge, useMarket } from "../market";
 import { ASSET_CLASSES, LABEL, MARKETS, cellText, classOf, inMarket, marketGrid, poolBar, poolLine } from "../markets";
@@ -21,6 +22,7 @@ export function Research() {
   const validation = useResource(api.validation, []);
   const history = useResource(api.validationHistory, []);
   const rules = useResource(api.rules, []);
+  const funnel = useResource(api.funnel, []);
   const [open, setOpen] = useState<string | null>(null);
   const [openRun, setOpenRun] = useState<string | null>(null);
 
@@ -75,6 +77,45 @@ export function Research() {
           )}
         </div>
       </Panel>
+
+      <Section
+        title="The funnel"
+        tour="funnel"
+        description="Every trial in each pool through the scorecard's first test and the luck test, read from the trial log (nothing is run). The luck test counts every trial, so the bar is high; nothing has cleared it yet, and that is the result, not a gap."
+      >
+        <Panel pad>
+          {!funnel.data ? (
+            <Empty title={funnel.loading ? "Loading the trial log" : "No trials logged yet"} />
+          ) : poolsFor(funnel.data, market).length === 0 ? (
+            <Empty title="No trial pool in this market" />
+          ) : (
+            <>
+              {poolsFor(funnel.data, market).map((p) => (
+                <div className="funnel" key={p.pool}>
+                  <div className="funnel-pool">{POOL_LABEL[p.pool]}</div>
+                  <ol className="funnel-stages" aria-label={`${POOL_LABEL[p.pool]} funnel`}>
+                    {stages(p).map((st) => (
+                      <li
+                        key={st.label}
+                        className="funnel-stage"
+                        title={`${st.label}: ${st.count.toLocaleString("en-AU")} of ${p.trials.toLocaleString("en-AU")} trials (${Math.round(st.share * 100)}%)`}
+                      >
+                        <span className="funnel-label">{st.label}</span>
+                        <span className="funnel-track" aria-hidden="true">
+                          <span className="funnel-fill" style={{ width: `${st.share * 100}%` }} />
+                        </span>
+                        <span className="funnel-count">{st.count.toLocaleString("en-AU")}</span>
+                        {st.note && <span className="funnel-note small secondary">{st.note}</span>}
+                      </li>
+                    ))}
+                  </ol>
+                </div>
+              ))}
+              <p className="small secondary">{keptLine(funnel.data)}</p>
+            </>
+          )}
+        </Panel>
+      </Section>
 
       <Section
         title="Which family, in which market"

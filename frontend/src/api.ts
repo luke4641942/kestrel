@@ -274,6 +274,31 @@ export interface FxRun {
   asset_class: string;
 }
 
+/** One trial pool through the funnel (GET /funnel; kestrel.validation.funnel). */
+export interface PoolFunnel {
+  pool: "main" | "confirmation" | "forex";
+  trials: number;
+  /** Sharpe above zero after costs. */
+  positive: number;
+  /** Sharpe above holding the same market over the same period (test 1). */
+  beat_holding: number;
+  /** No holding comparison stored: counted, not guessed. */
+  no_holding: number;
+  above_bar: number;
+  luck_bar: number;
+  /** Deflated Sharpe at least 95% (test 2). */
+  cleared_luck: number;
+  /** Above the bar, but a study's look with no daily returns to deflate. */
+  unscored: number;
+  passed_own_test: number | null;
+}
+
+export interface Funnel {
+  pools: PoolFunnel[];
+  kept: { decisions: Record<string, number>; holdouts: number; holdouts_passed: number; paper_accounts: number };
+  all_trials: number;
+}
+
 /** The trial log after one saved run or study (GET /validation/history). */
 export interface LuckPoint {
   at: string;
@@ -908,6 +933,7 @@ export const api = {
   backtests: () => request<RunSummary[]>("/backtests"),
   validation: () => request<Validation>("/validation"),
   validationHistory: () => request<LuckPoint[]>("/validation/history"),
+  funnel: () => request<Funnel>("/funnel"),
   decisions: () => request<Decision[]>("/decisions"),
   fxRuns: () => request<FxRun[]>("/fx-runs"),
   paper: () => request<PaperSummary[]>("/paper"),

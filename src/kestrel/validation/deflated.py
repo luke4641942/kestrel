@@ -106,20 +106,29 @@ def counts_as_trial(run: dict[str, Any], pool: Pool | None = None) -> bool:
     return run["strategy"] != "buy-and-hold" and not run.get("used_holdout", False)
 
 
-def trial_set(
+@dataclass(frozen=True)
+class Trial:
+    """One distinct configuration in a pool: the saved run or study behind it, the study's
+    look if it came from one, and its annualised Sharpe after costs."""
+
+    item: dict[str, Any]
+    look: dict[str, Any] | None
+    sharpe: float
+
+
+def trials(
     runs: Iterable[dict[str, Any]],
     studies: Iterable[dict[str, Any]] = (),
     pool: Pool = "main",
-) -> TrialSet:
+) -> list[Trial]:
     """The trials among saved runs (``RunStore.summaries()``) and validation studies
-    (``ValidationLog.studies()``): one Sharpe per distinct configuration, the latest of
-    each, within one pool (the main research, or the exploration experiment's
-    confirmation runs)."""
-    latest: dict[tuple[Any, ...], float] = {}
+    (``ValidationLog.studies()``): one per distinct configuration, the latest of each,
+    within one pool. The one definition the luck bar and the funnel both count."""
+    latest: dict[tuple[Any, ...], Trial] = {}
     for run in sorted(runs, key=lambda r: r["created_at"]):
         sharpe = run["metrics"].get("sharpe")
         if counts_as_trial(run, pool) and sharpe is not None:
-            latest[trial_key(run)] = sharpe / math.sqrt(DAYS_PER_YEAR)
+            latest[trial_key(run)] = Trial(run, None, sharpe)
     for study in sorted(studies, key=lambda s: s["created_at"]):
         if pool_of(study) != pool:
             continue
@@ -134,8 +143,17 @@ def trial_set(
                     study["start"],
                     study["end"],
                 )
-                latest[key] = look["sharpe"] / math.sqrt(DAYS_PER_YEAR)
-    values = list(latest.values())
+                latest[key] = Trial(study, look, look["sharpe"])
+    return list(latest.values())
+
+
+def trial_set(
+    runs: Iterable[dict[str, Any]],
+    studies: Iterable[dict[str, Any]] = (),
+    pool: Pool = "main",
+) -> TrialSet:
+    """The pool's trials (``trials``) as a count and the spread of their daily Sharpes."""
+    values = [t.sharpe / math.sqrt(DAYS_PER_YEAR) for t in trials(runs, studies, pool)]
     return TrialSet(len(values), stdev(values) if len(values) > 1 else 0.0)
 
 

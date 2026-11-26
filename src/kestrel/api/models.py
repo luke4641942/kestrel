@@ -1106,6 +1106,41 @@ class ValidationOut(BaseModel):
     """Each pool's luck bar (annual Sharpe the best of its trials would reach by luck)."""
 
 
+class PoolFunnelOut(BaseModel):
+    """One trial pool through the funnel (kestrel.validation.funnel)."""
+
+    pool: str
+    trials: int
+    positive: int
+    """Sharpe above zero after costs."""
+    beat_holding: int
+    """Sharpe above holding the same market over the same period (test 1)."""
+    no_holding: int
+    """No holding comparison stored: counted, not guessed."""
+    above_bar: int
+    luck_bar: float
+    cleared_luck: int
+    """Deflated Sharpe at least 95% (test 2)."""
+    unscored: int
+    """Above the bar, but a study's look with no daily returns to deflate."""
+    passed_own_test: int | None = None
+
+
+class KeptOut(BaseModel):
+    decisions: dict[str, int]
+    holdouts: int
+    holdouts_passed: int
+    paper_accounts: int
+
+
+class FunnelOut(BaseModel):
+    """Every trial through the first tests and the luck test, then what was kept."""
+
+    pools: list[PoolFunnelOut]
+    kept: KeptOut
+    all_trials: int
+
+
 class FxRunOut(BaseModel):
     """A saved forex run (kestrel.backtest.fx_runs), deflated against the forex pool."""
 

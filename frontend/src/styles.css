@@ -3159,3 +3159,24 @@ pre.report {
 .demo-banner code {
   font-size: 0.85em;
 }
+
+/* The funnel (Research): one row per stage, the bar's length its share of the pool. */
+.funnel + .funnel { margin-top: 20px; }
+.funnel-pool { font-weight: 600; margin-bottom: 8px; }
+.funnel-stages { list-style: none; margin: 0 0 12px; padding: 0; }
+.funnel-stage {
+  display: grid;
+  grid-template-columns: minmax(160px, 15rem) 1fr 4.5rem;
+  align-items: center;
+  column-gap: 12px;
+  padding: 4px 0;
+}
+.funnel-label { color: var(--text); }
+.funnel-track { height: 10px; background: var(--surface); border-radius: var(--radius); overflow: hidden; }
+.funnel-fill { display: block; height: 100%; background: var(--info); border-radius: var(--radius); }
+.funnel-count { text-align: right; font-variant-numeric: tabular-nums; color: var(--text); }
+.funnel-note { grid-column: 1 / -1; padding-top: 2px; }
+@media (max-width: 640px) {
+  .funnel-stage { grid-template-columns: 1fr 3.5rem; row-gap: 4px; }
+  .funnel-track { grid-column: 1 / -1; grid-row: 2; }
+}

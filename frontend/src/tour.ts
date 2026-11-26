@@ -55,6 +55,13 @@ export const TOUR: TourStep[] = [
   {
     chapter: "The evidence",
     route: "research",
+    target: "funnel",
+    title: "The whole denominator",
+    body: "Every trial ever run, through the first test (beat holding the same coin, after costs) and the luck test. Hundreds beat holding; none clears the bar that the best of that many tries would reach by chance. The strategies on paper are there despite that, and say so.",
+  },
+  {
+    chapter: "The evidence",
+    route: "research",
     target: "families",
     title: "Everything tried, by family",
     body: "Each strategy's decision: pursue (paper trading), watch, or drop. Most are dropped: chart patterns, dip-buying, minute-chart setups, altcoin pickers. A dropped idea stays dropped; reviving it means a new note whose runs count.",

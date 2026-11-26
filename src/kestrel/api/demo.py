@@ -35,7 +35,8 @@ MAX_POINTS = 4_000
 """Longest series kept whole; longer ones are thinned to this many points."""
 LISTS = (
     "health", "datasets", "backtests", "research", "decisions", "validation",
-    "validation/history", "paper", "paper-total", "strategies", "regimes", "signal-studies",
+    "validation/history", "funnel", "paper", "paper-total", "strategies", "regimes",
+    "signal-studies",
     "event-studies", "short-studies", "cost-gate", "holdout", "fx-runs", "rules", "summary",
     "indicators", "costs",
 )  # fmt: skip

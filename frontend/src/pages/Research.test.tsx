@@ -79,6 +79,16 @@ beforeEach(() => {
     ],
   });
   api.validationHistory = vi.fn().mockResolvedValue([{ at: "2026-11-15T15:46:57Z", trials: 751, luck_bar: 2.23 }]);
+  api.funnel = vi.fn().mockResolvedValue({
+    pools: [
+      { pool: "main", trials: 880, positive: 778, beat_holding: 318, no_holding: 9, above_bar: 0,
+        luck_bar: 2.28, cleared_luck: 0, unscored: 0, passed_own_test: null },
+      { pool: "forex", trials: 2, positive: 0, beat_holding: 0, no_holding: 2, above_bar: 0,
+        luck_bar: 0.11, cleared_luck: 0, unscored: 0, passed_own_test: null },
+    ],
+    kept: { decisions: { pursue: 6, drop: 48 }, holdouts: 10, holdouts_passed: 5, paper_accounts: 8 },
+    all_trials: 882,
+  });
   api.rules = vi.fn().mockResolvedValue({
     reviewed: "2026-11-14",
     passing: "",
@@ -100,6 +110,16 @@ describe("Research", () => {
     expect(await screen.findByTestId("luck-chart")).toBeInTheDocument();
     expect(screen.getByText(/751 trials so far/)).toBeInTheDocument();
     expect(await screen.findByText("Trend is the one survivor.")).toBeInTheDocument();
+  });
+
+  it("shows every trial through the funnel, and that none cleared the luck test", async () => {
+    render(<MarketProvider><Research /></MarketProvider>);
+    const crypto = await screen.findByRole("list", { name: "Crypto funnel" });
+    expect(crypto).toHaveTextContent("Tried880");
+    expect(crypto).toHaveTextContent("Beat holding (test 1)318");
+    expect(crypto).toHaveTextContent("Cleared the luck test (test 2)0");
+    expect(screen.getByRole("list", { name: "Forex funnel" })).toBeInTheDocument();
+    expect(screen.getByText(/no trial has cleared the luck test/)).toBeInTheDocument();
   });
 
   it("opens a family to show each decision and its reason", async () => {
