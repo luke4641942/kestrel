@@ -538,6 +538,32 @@ from 2026-11-16) is the test that's left.
     and name the histories; `kestrel confirm` runs a coin with a gap on its latest
     unbroken history (the coin as it trades now) and lists it; an outage of hours (BTC and
     ETH lost two 4h bars on 2020-02-19) isn't a gap. Saved runs aren't rerun.
+32. **Falls with forced perp selling bounce more than other falls, but not by enough to tell
+    at 95%: KILL (2026-11-26, note do-falls-with-forced-perp-selling-bounce-more v2,
+    `kestrel event-study oi-flush`; a study, not a trial).** From the deep research's top
+    lead. 63 coins with Binance perps (open interest in contracts, from 2021-12-01, outside
+    the locked half), to 2025-10. A flush is a spot fall on a day open interest dropped
+    sharply (z below -2 against the coin's previous 90 days); each is compared with falls of
+    the same size without one, both bought at the next open and held 5 days, after costs:
+
+    | Test (all needed) | Result | |
+    |---|---|---|
+    | 1. Excess over matched falls, 95% interval by date | +1.60% a flush, [-0.12%, +3.31%] | **Fail** |
+    | 2. Beats the same coins on random days | +1.28% net against a 95th percentile of +0.26% | Pass |
+    | 3. At least 30 distinct dates | 1,023 flushes on 452 dates | Pass |
+
+    By the note's rule this is KILL, and the note says what that means: flush falls can't
+    be told from ordinary falls at 95%, so on this evidence it is dip-buying under another
+    name and dies with that family. The point estimate is positive and the interval only
+    just reaches below zero; that is recorded, not used. Deciding nothing: BTC, ETH and SOL
+    apart +1.69% (87 flushes); by year +0.86% (2022), +0.10% (2023), +3.27% (2024), +1.59%
+    (2025); flushes on days BTC fell too +2.00% (811) against +0.09% for a coin alone (212),
+    a pattern nobody predicted, so a lead for a new note at most, never a finding;
+    trend-vol-target on the same coin was in cash on 33% of flush days. 4,237 coin-days
+    (about 5%) had no open-interest close and were skipped. The run was repeated once after
+    fixing an information-only counter (it had counted days before the archive began as
+    missing: 48,494); the seeded tests and verdict were identical. The archive starts in
+    2021-12, so more history can only come from time going forward.
 
 
 

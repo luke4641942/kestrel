@@ -73,7 +73,11 @@ def coin_days(
     half = spreads if spreads is not None else [0.0] * len(times)
     by_day = dict(zip(oi["date"].to_list(), oi["open_interest"].to_list(), strict=True))
     index = {t.date(): i for i, t in enumerate(times)}
-    first, last = (times[0].date(), times[-1].date()) if times else (None, None)
+    known_days = sorted(by_day)
+    # Missing days count from the coin's first open interest, not its first spot bar: the
+    # archive starts in 2021-12, and the days before it aren't missing, they never existed.
+    first = max(times[0].date(), known_days[0]) if times and known_days else None
+    last = times[-1].date() if times else None
     missing = 0
     change: dict[date, float] = {}
     if first is not None and last is not None:

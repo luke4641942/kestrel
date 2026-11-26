@@ -107,6 +107,11 @@ def test_coin_days_score_z_and_the_net_return_and_skip_what_they_cant_know() -> 
     assert date(2023, 1, 1) + timedelta(days=100) in skipped  # its change can't be known
     assert date(2023, 1, 1) + timedelta(days=101) in skipped
 
+    early, early_frame = frames(200, [None] * 50 + values[50:])  # type: ignore[operator]
+    assert (
+        coin_days("XUSDT", early, early_frame, 0.0, HOLDOUT)[1] == 0
+    )  # before any OI: not missing
+
     cut = datetime(2023, 6, 1, tzinfo=UTC)
     assert all(
         d.day + timedelta(days=6) < cut.date() for d in coin_days("XUSDT", bars, frame, 0.0, cut)[0]
