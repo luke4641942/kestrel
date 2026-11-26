@@ -622,6 +622,7 @@ def event_study(
             "study:coinbase-listing",
         ),
     }
+    notes["oi-flush"] = ("do-falls-with-forced-perp-selling-bounce-more", "study:oi-flush")
     if event not in notes:
         typer.echo(f"no event study {event!r}; one of {', '.join(notes)}", err=True)
         raise typer.Exit(code=1)
@@ -636,6 +637,15 @@ def event_study(
             raise ValueError("no exploration split; the study's universe is its exploration half")
         holdout = cfg.backtest.holdout_start
         last = holdout - timedelta(days=1)
+        if event == "oi-flush":
+            from kestrel.studies import oi_flush
+
+            found, report = _oi_flush(cfg, data_dir, holdout)
+            store.mark_backtested(s.slug, note.version)
+            typer.echo(report)
+            saved = oi_flush.save(found, slug, report, data_dir, _commit())
+            typer.echo(f"Saved: {saved}")
+            return
         coins = sorted(cfg.split.exploration | {"BTCUSDT", "ETHUSDT", "SOLUSDT"})
         panel: pl.DataFrame = load_panel(
             ParquetStore(data_dir), coins, Interval.D1, Month(2017, 8), Month(last.year, last.month)
@@ -1145,6 +1155,52 @@ def ingest_delistings(data_dir: DataDir = Path("data")) -> None:
         typer.echo(f"  problem: {problem}")
 
 
+@app.command("ingest-oi")
+def ingest_oi(
+    perp: Annotated[
+        list[str] | None, typer.Option(help="One perp (repeatable); default the study's coins.")
+    ] = None,
+    workers: Annotated[int, typer.Option(help="Downloads at once (be polite).")] = 4,
+    list_only: Annotated[bool, typer.Option(help="Show the coins and stop.")] = False,
+    data_dir: DataDir = Path("data"),
+    config: Annotated[
+        Path, typer.Option("--config", envvar="KESTREL_CONFIG", help="Config file.")
+    ] = Path("kestrel.toml"),
+) -> None:
+    """USDT-M perp open interest from Binance's public archive (kestrel.data.open_interest),
+    before the holdout. Resumes: days already stored aren't fetched again. The default
+    coins are the forced-selling study's (perps listed by 2021-06-30 with a stored spot
+    pair, outside the locked half)."""
+    from kestrel.data import open_interest as oi
+
+    try:
+        cfg = load_config(config)
+        last = (cfg.backtest.holdout_start - timedelta(days=1)).date()
+        with oi.client() as http:
+            if perp:
+                chosen = {p.upper(): oi.spot_symbol(p.upper()) for p in perp}
+            else:
+                spot = {s for s, iv in ParquetStore(data_dir).datasets() if iv is Interval.D1}
+                locked = set(cfg.split.confirmation) if cfg.split else set()
+                chosen, left = oi.universe(http, spot, locked)
+                typer.echo(f"{len(chosen)} perps in the study; {len(left)} left out")
+                for why in left:
+                    typer.echo(f"  left out: {why}")
+            if list_only:
+                for p, c in chosen.items():
+                    typer.echo(f"  {p} -> {c}")
+                return
+            for i, p in enumerate(chosen, start=1):
+                got = oi.ingest(p, http, data_dir, last, workers=workers)
+                failed = f", {len(got.failed)} failed" if got.failed else ""
+                typer.echo(
+                    f"[{i}/{len(chosen)}] {p}: {got.added} days added, {got.stored} stored{failed}"
+                )
+    except (ConfigError, ValueError, httpx.HTTPError) as e:
+        typer.echo(f"open interest: {e}", err=True)
+        raise typer.Exit(code=1) from None
+
+
 @app.command("ingest-unlocks")
 def ingest_unlocks(data_dir: DataDir = Path("data")) -> None:
     """Token unlock schedules from DefiLlama's public dataset files, and CoinGecko's coin
@@ -1325,6 +1381,58 @@ def strategy_examples(
         typer.echo(f"{strategy} never enters or exits on {symbol.upper()} before the holdout")
         return
     typer.echo("\n\n".join(format_example(symbol.upper(), e) for e in found))
+
+
+def _oi_flush(cfg: Config, data_dir: Path, holdout: datetime) -> tuple[Any, str]:
+    """The forced-selling study on every perp stored by ``kestrel ingest-oi`` (its note,
+    v2: metrics from 2021-12-01, outside the locked half; BTC, ETH, SOL apart)."""
+    from kestrel.backtest.spread import with_half_spread
+    from kestrel.data import open_interest as oi
+    from kestrel.strategies.trend import TrendVolTarget
+    from kestrel.studies import oi_flush
+
+    root = Path(data_dir) / "open_interest"
+    perps = sorted(p.stem for p in root.glob("*.parquet")) if root.is_dir() else []
+    if not perps:
+        raise ValueError("no open interest stored; run kestrel ingest-oi first")
+    locked = set(cfg.split.confirmation) if cfg.split else set()
+    tiers = [(float(v), float(b) / 1e4) for v, b in cfg.universe.spread_tiers]
+    fee = float(cfg.costs.taker_fee_bps) / 1e4
+    store = ParquetStore(data_dir)
+    days_by_coin: dict[str, list[oi_flush.Day]] = {}
+    trend_cash: dict[tuple[str, date], bool] = {}
+    missing = 0
+    for perp in perps:
+        coin = oi.spot_symbol(perp)
+        if coin in locked:
+            raise ValueError(f"{coin} is in the locked half; the study never reads it")
+        bars = store.read(coin, Interval.D1, None, holdout).sort("open_time")
+        if bars.height < 2:
+            continue
+        if coin.upper() in cfg.instruments:
+            spreads = [float(cfg.costs.half_spread_bps) / 1e4] * bars.height
+        else:
+            banded = with_half_spread(
+                bars.select("quote_volume").with_columns(_c=pl.lit(0)),
+                cfg.universe.volume_window_days, tiers, ["_c"],
+            )  # fmt: skip
+            spreads = [float(h) for h in banded["half_spread"]]
+        found, gone = oi_flush.coin_days(
+            coin, bars, oi.closes(oi.load(data_dir, perp)), fee, holdout, spreads
+        )
+        days_by_coin[coin], missing = found, missing + gone
+        weights = TrendVolTarget(coin).target_weights(bars).to_list()
+        for t, w in zip(bars["open_time"].to_list(), weights, strict=True):
+            trend_cash[(coin, t.date())] = not (w or 0) > 0
+    btc = store.read("BTCUSDT", Interval.D1, None, holdout).sort("open_time")
+    closes = btc["close"].to_list()
+    market_down = {
+        t.date()
+        for i, t in enumerate(btc["open_time"].to_list())
+        if i and closes[i] < closes[i - 1]
+    }
+    result = oi_flush.run_oi_flush(days_by_coin, missing)
+    return result, oi_flush.format_oi_flush(result, len(days_by_coin), market_down, trend_cash)
 
 
 def _coin(symbol: str) -> str:
