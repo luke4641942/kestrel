@@ -61,8 +61,8 @@ Each rule above is enforced by code, and each has a test that fails if it is bro
 
 | Strategy | Passed | Failed |
 |---|---|---|
-| **Trend following with volatility targeting**: three trend votes (20/60/120 days) set the size, scaled down when volatility is high. BTC, ETH, SOL. | Beats the coin at the same exposure on all three (Sharpe 1.21 vs 1.07 on BTC, 2020-25); passed the holdout year on all three (BTC -2.4% vs -8.9%) | Luck (deflated 28-59%); walk-forward (2 of 7 windows) |
-| **BTC regime rule**: hold an altcoin while BTC is above its 50-day average and the coin is up over 30 days. ETH, SOL. | Found on one half of the altcoins, confirmed on the unsearched half (149 of 180 coins); on ETH and SOL every test but luck | Luck (deflated 1-8%); both coins' holdout years were already spent |
+| **Trend following with volatility targeting**: three trend votes (20/60/120 days) set the size, scaled down when volatility is high. BTC, ETH, SOL. | Beats the coin at the same exposure on all three (Sharpe 1.21 vs 1.07 on BTC, 2020-25); passed the holdout year on all three (BTC -2.4% vs -8.9%) | Luck (deflated 0-4% at 880 trials on 2026-11-26; 28-59% when first measured against fewer); walk-forward (2 of 7 windows) |
+| **BTC regime rule**: hold an altcoin while BTC is above its 50-day average and the coin is up over 30 days. ETH, SOL. | Found on one half of the altcoins, confirmed on the unsearched half (149 of 180 coins); on ETH and SOL every test but luck | Luck (deflated 1-9% at 880 trials, 2026-11-26); both coins' holdout years were already spent |
 | **G1 rotation**: weekly, while BTC is 3% above its 50-day average, hold the top 3 of 8 large coins by 90-day return. | Holdout year on 7 coins it had never seen: flat while BTC fell 29% (-4.7% at its exposure) | Luck, walk-forward; its 8 coins were chosen in 2026, so the 2018-25 backtest is survivorship-biased (disclosed) |
 
 A fourth, holding BTC or ETH while stablecoin supply grows (sized by volatility), is also

@@ -45,7 +45,10 @@ hypothesis, rules and pass test, written down before the strategy saw market dat
   every setting of the robustness and walk-forward grids. With that many, the best backtest
   Sharpe you would expect from luck alone is about 2.29 (it was 1.45 at 172 trials). The
   deflated Sharpe (Bailey and López de Prado) measures each result against that bar,
-  allowing for skew and fat tails.
+  allowing for skew and fat tails. The bar rises with every trial, so a deflated Sharpe is
+  only true as of its date: at 880 trials (2026-11-26, bar 2.28) every strategy on paper
+  deflates to 0-9% (trend-vol-target 0%, 1%, 4% on BTC, ETH, SOL; the BTC regime rule 1%
+  and 9% on ETH and SOL; G1 1%). Figures quoted below are as of when each was measured.
 - **Search, then confirm.** Since 2026-11-16, ideas can also be searched freely on one half
   of the altcoins, uncounted and never evidence, and a few graduates run once on the other,
   locked half under a test fixed in advance, with their own trial count.
@@ -77,7 +80,7 @@ Against the scorecard every strategy is now judged on (docs/rules.md, "Research 
 | Test | Result | |
 |---|---|---|
 | 1. Beats holding at the same exposure | Sharpe 1.21 vs 1.07; +639% vs +423% | Pass |
-| 2. Deflated Sharpe at least 95% | 28% | **Fail** |
+| 2. Deflated Sharpe at least 95% | 28% then; 0% at 880 trials (2026-11-26) | **Fail** |
 | 3. Walk-forward | Beat holding's Sharpe in only 2 of 7 six-month windows (4 needed); joined, 0.97 vs 0.72 | **Fail** |
 | 4. At least half of 2-year start windows | Better Sharpe than holding in 58% | Pass |
 | 5. Break-even cost at least 2x actual | 288 bp vs 22 bp a round trip | Pass |
@@ -118,7 +121,7 @@ Then, unchanged, on the two large coins Kestrel already trades:
 | Worst drawdown | -35% | -32% |
 | Walk-forward windows beating holding | 4 of 7 | 4 of 6 |
 | Neighbouring settings beating holding | 94% | 94% |
-| Deflated Sharpe | 1% | 8% |
+| Deflated Sharpe (at 880 trials, 2026-11-26) | 1% | 8% (9%) |
 
 It passes every scorecard test but luck on both coins, a higher bar than trend-vol-target
 cleared. The luck test counts all 805 trials, though this rule wasn't found on these
@@ -574,6 +577,9 @@ edge, and the holdout can't be used again for either strategy.
 
 ## Every hypothesis
 
+Deflated Sharpes in this table are as of each test's date. The luck bar has risen since
+(880 trials, Sharpe 2.28, on 2026-11-26), so each is lower today; see the luck bar above.
+
 | Strategy | Market | Result | Decision |
 |---|---|---|---|
 | Trend following + volatility targeting | BTC 1d | Beat exposure-matched holding (Sharpe 1.21 vs 1.07); beat holding in only 2 of 7 walk-forward windows; deflated 28%; passed the holdout | Pursue (paper trading) |
@@ -727,5 +733,23 @@ Each strategy was judged by its own note's pass test, written before it ran. Fro
   weekly momentum and the rotations (failed), and for XRP, SUI, TRX, ADA, AVAX, UNI and ARB,
   used by the two rotation graduates' confirmation (2026-11-16). It is unused for every
   other coin.
+- **The holdout year has become a selection stage.** It was used once per strategy, but
+  about ten strategies were tried on the same coins' one year, and the ones that passed
+  were kept. Each test was honest; the set of survivors is still chosen by that year. It was
+  also a falling year, and its test compares against holding at a constant exposure, so a
+  rule that steps aside in falls starts ahead (an outside review, 2026-11-26).
+- **Every backtest starts in cash while it warms up.** A rule needs its lookback before it
+  can hold anything, but holding is invested from day one: trend-vol-target on BTC first
+  held on 2020-05-02, missing the March 2020 crash by construction, not by choice. Removing
+  those days changes no test 1 verdict (the same review); runs will load history before
+  their start to remove it (TODO).
+- **The paper test can say little, and nothing yet about costs.** Each account's length
+  was set so its own backtest Sharpe would just pass, so even a true edge passes only about
+  half the time; testnet fills aren't the market's (the first round trip cost 107 bps
+  against 8.5 modelled); and the eight accounts are closer to two or three bets than eight
+  (findings 16 and the review: stablecoin-vol-hold correlates about 0.8 with trend-vol-target
+  on the same coin).
+- **G1 is compared with BTC held, not yet with the large-basket control** that docs/rules.md
+  asks of universe strategies; that control is to be run (TODO).
 - **Exploration results are not evidence.** Numbers in research/exploration/log.md were
   found by searching; only the confirmation run and later pre-registered tests count.
