@@ -679,6 +679,28 @@ from 2026-11-16) is the test that's left.
     25 and 26) and now a published event premium, each run once at retail CFD costs: none
     passes. Note rejected (Luke, 2026-11-26).
 
+37. **Improving news tone doesn't lead crypto prices; if anything the weeks after it are
+    worse: KILL (2026-11-27, note does-improving-news-tone-lead-prices-gdelt, `kestrel
+    signal-study news-tone`; a study, not a trial).** GDELT's daily tone of news mentioning
+    BTC and ETH, 2017-01 to 2025-10 (3,205 of 3,226 days each; 21 missing days reported, not
+    filled), worked examples checked by Luke before the run. At each Sunday close the
+    signal is on when the week's tone improved; the next 7 days, BTC and ETH pooled:
+
+    | | Weeks | Mean next week |
+    |---|---|---|
+    | Tone improved | 437 | +0.14% |
+    | Tone didn't | 373 | +0.68% |
+
+    Spread -0.53%, P(spread > 0) 24%, against a 0.17% cost hurdle: KILL by the note's rule.
+    The pre-registered control fails as well: the spread is negative after a rising past
+    week (-0.75%) and after a falling one (-0.57%), so there is no news effect to separate
+    from momentum or dip-buying. Improving tone came slightly more often after a rising
+    week on BTC (58% of on-weeks against 47%), the price having moved first. Like the
+    other outside-data signals here (attention, Coinbase premium, variance premium, net
+    liquidity, funding), public sentiment arrives with the price, not ahead of it. The
+    GDELT download ran on a 20-minute schedule from 2026-11-23 to 2026-11-26 (GDELT throttles
+    this address) and was stopped before the run.
+
 ## The holdout year (2025-11 to 2026-10)
 
 Reserved on 2026-10-31, before any research, and read once on 2026-11-14 for the two watched
