@@ -505,6 +505,24 @@ from 2026-11-16) is the test that's left.
     across a gap in a coin's history the rebuild holds cash, while ours counts bars, not
     days; none of the three coins has a gap. The code is the frozen implementation and
     stays as it is; the wording and the code now differ in a recorded way.
+31. **One-coin backtests compute straight across a gap in a coin's history, and say
+    nothing (2026-11-26; an independent rebuild of trend-vol-target; a check of the code,
+    not a trial).** A second fresh agent rebuilt trend-vol-target from its first note's
+    wording on three exploration-half coins, one clean (ATOM) and two with gaps it wasn't
+    told about: STRAX (8 days missing in 2024-03, after which the price is exactly a tenth
+    of the last close, at 160 times the volume: a token swap) and CVC (154 days, delisted
+    2022-12 and relisted 2023-05). It found both, split each coin at its gaps and computed
+    nothing across one. Against ours: ATOM matches on all 2,378 bars (largest difference
+    3e-16); STRAX differs on 22 bars and CVC on 51, all in the 120 days after the gap,
+    all ours holding (on average 20% and 40%) where the rebuild was in cash. Ours counts
+    bars, so after a gap its votes compare prices from the two sides of it. The panel
+    used by universe and basket strategies already numbers unbroken histories and computes
+    nothing across a gap (docs/rules.md); one-coin backtests, and `kestrel confirm`, read
+    the raw bars and neither refuse nor report one. BTC, ETH and SOL daily bars have no
+    gap, so no pursued result or paper account is touched. Open: how many coins in the
+    BTC regime rule's confirmation run (149 of 180 coins beat holding, above) had a gap, which would
+    move both the strategy and its buy-and-hold benchmark (a token swap reads as a -90%
+    day for holding). Not yet looked at: that half is locked, and Luke decides.
 
 
 
