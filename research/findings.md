@@ -483,6 +483,28 @@ from 2026-11-16) is the test that's left.
     and all of it is pre-holdout data that was searched (SOL and ETH) and already
     deflated-Sharpe-failing; the paper accounts keep the full rule. A simpler one-filter
     version would be a new note on fresh data, never a swap made from this table.
+30. **An independent rebuild of the BTC regime rule matches ours except in each coin's
+    first 19 days (2026-11-26; a check of the code, not a trial).** A fresh agent got only
+    the confirmation note's rule wording and daily bars for three exploration-half coins
+    (1INCH, AAVE, AION, the last delisted in 2023) and BTC. It never saw our code or any
+    result, and wrote its own version in plain Python. Its target weights against ours, bar
+    by bar: AION matches on all 1,105 bars (largest difference 2e-15). 1INCH and AAVE
+    match on every bar but 19 each, all at the start: the rebuild holds from a coin's 31st
+    bar, ours from its 50th. The cause is ours: BTC's 50-day average is computed over the
+    BTC closes attached to the coin's own bars, so it waits for 50 days of the *coin's*
+    history, while the wording ("btc_close is above its 50-day average"; BTC has years of
+    history) allows the 31st. Ours is the stricter of the two (more days in cash, never a
+    lookahead), and AION matched only because its coin trend was off on those days anyway.
+    What it touches: each coin's first 19 days in the confirmation run and in the
+    backtests that start at a coin's listing (SOL from 2020-08), and the first 19 days of
+    backtests whose data starts at their start date (ETH 2020-01). Not the paper accounts,
+    which read years of history. The rebuild listed 23 places the wording left a choice;
+    on every other one exercised here (a simple average including today, strict
+    comparisons, the close exactly 30 days earlier, sample volatility of 30 log returns
+    times sqrt(365), cash on zero volatility) the two agree. One choice not exercised:
+    across a gap in a coin's history the rebuild holds cash, while ours counts bars, not
+    days; none of the three coins has a gap. The code is the frozen implementation and
+    stays as it is; the wording and the code now differ in a recorded way.
 
 
 
