@@ -452,6 +452,37 @@ from 2026-11-16) is the test that's left.
     A rotation also moves the volatility sizing off the days it was measured on, so "timing"
     here includes sizing. stablecoin-vol-hold's timing can't be told from random, which fits
     its `watch` decision. btc-rotation-8 (a basket) isn't covered.
+29. **The BTC regime rule's two trend filters stand in for each other: either one is
+    enough, neither alone earns its place (2026-11-26, note
+    `which-part-of-the-btc-regime-rule-carries-it`; 8 trials, information only, no decision
+    changes).** btc-regime-trend with each part switched off in turn (`btc-regime-ablation`;
+    all on is the rule exactly), on its own periods (ETH 2020-01, SOL 2020-08, to 2025-10),
+    after costs:
+
+    | Variant | ETH Sharpe | Max DD | Exposure | Trades | Beats random timing | SOL Sharpe | Max DD | Exposure | Trades | Beats random timing |
+    |---|---|---|---|---|---|---|---|---|---|---|
+    | Full rule (existing runs) | 1.33 | -35% | 34% | 360 | 100% | 1.72 | -32% | 23% | 307 | 100% |
+    | (a) no BTC filter | 1.34 | -33% | 39% | 423 | 100% | 1.68 | -33% | 27% | 362 | 99% |
+    | (b) no coin trend | 1.44 | -38% | 41% | 388 | 99% | 1.64 | -46% | 30% | 399 | 100% |
+    | (c) fully in, no vol sizing | 1.39 | -47% | 45% | 140 | 100% | 1.80 | -48% | 42% | 104 | 100% |
+    | (d) neither filter (vol-hold) | 1.06 | -65% | 69% | 526 | 85% | 1.19 | -76% | 52% | 576 | 43% |
+    | Holding (test 1) | 1.12 | | | | | 1.24 | | | | |
+
+    By the note's rule (a part earns its place when removing it lowers the Sharpe by more
+    than 0.1), no single part does, on either coin: every one-part change moves the Sharpe
+    by 0.11 or less, and taking out the coin's trend *raises* it on ETH. Taking out both
+    filters costs 0.27 (ETH) and 0.53 (SOL) and leaves the timing no better than random.
+    So the rule's edge is being out of the market while trends are down, and either trend
+    measure does that; what the pair adds over one is shallower drawdowns (SOL's -46% with
+    the BTC filter alone, -32% with both). The hypothesis (the BTC filter carries most of
+    it) is not supported; by its own falsification test (on both coins, removing the coin
+    trend costs more than removing the BTC filter) it is not falsified either: true on SOL,
+    not on ETH. The volatility sizing came out as expected: Sharpe within 0.1 either way,
+    drawdown about 13 to 16 points deeper fully in. vol-hold stays near holding, as on BTC
+    (findings 2). Differences this size are well inside a five-year Sharpe's sampling error,
+    and all of it is pre-holdout data that was searched (SOL and ETH) and already
+    deflated-Sharpe-failing; the paper accounts keep the full rule. A simpler one-filter
+    version would be a new note on fresh data, never a swap made from this table.
 
 
 
