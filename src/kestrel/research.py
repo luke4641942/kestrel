@@ -322,6 +322,8 @@ STUDIES = {
     "study:coinbase-premium": "kestrel signal-study coinbase-premium",
     "study:variance-premium": "kestrel signal-study variance-premium",
     "study:net-liquidity": "kestrel signal-study net-liquidity",
+    # Forced selling (2026-11-26, from the deep research): drafted before its code exists.
+    "study:oi-flush": "kestrel event-study oi-flush",
     # Hypothetical shorting (Luke, 2026-11-16): a pass is recorded as needs-shorting.
     "study:short-btc-regime-trend": "kestrel short-study btc-regime-trend",
     "study:short-btc-rotation": "kestrel short-study btc-rotation",
