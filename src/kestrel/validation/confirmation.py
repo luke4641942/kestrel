@@ -22,11 +22,14 @@ from dataclasses import dataclass, field
 from decimal import Decimal
 from typing import Any
 
+import polars as pl
+
 from kestrel.backtest.engine import run_backtest
 from kestrel.backtest.metrics import compute_metrics
 from kestrel.config import Config
 from kestrel.data.binance_vision import Month
 from kestrel.data.features import attach_features
+from kestrel.data.panel import unbroken
 from kestrel.data.schema import Interval
 from kestrel.data.store import ParquetStore
 from kestrel.exploration import MIN_MONTHS
@@ -59,6 +62,8 @@ class ConfirmationResult:
     params: dict[str, int]
     coins: list[CoinResult]
     skipped: list[str] = field(default_factory=list)
+    cut: list[str] = field(default_factory=list)
+    """Coins with a gap, run on their latest unbroken history only (findings 31)."""
 
     @property
     def beats_share(self) -> float:
@@ -90,6 +95,7 @@ class ConfirmationResult:
             "windows_share": self.windows_share,
             "median_sharpe": self.median_sharpe,
             "skipped": self.skipped,
+            "cut": self.cut,
             "per_coin": [
                 {
                     "symbol": c.symbol,
@@ -116,12 +122,17 @@ def confirm(
     features = spec_for(key).features
     results: list[CoinResult] = []
     skipped: list[str] = []
+    cut: list[str] = []
     for symbol in sorted(coins):
-        months = [m for m in store.months(symbol, Interval.D1) if m < f"{holdout:%Y-%m}"]
+        bars = store.read(symbol, Interval.D1, None, holdout)
+        histories = unbroken(bars, Interval.D1)
+        if len(histories) > 1:  # nothing across a gap: the coin as it trades now
+            cut.append(symbol)
+            bars = bars.filter(pl.col("open_time") >= histories[-1][0])
+        months = sorted({f"{t:%Y-%m}" for t in bars["open_time"].to_list()})
         if len(months) < MIN_MONTHS:
             skipped.append(symbol)
             continue
-        bars = store.read(symbol, Interval.D1, None, holdout)
         bars = attach_features(bars, features, symbol, Interval.D1, store.root)
         mine = compute_metrics(
             run_backtest(make_strategy(key, symbol, params), bars, Interval.D1, config, cash)
@@ -154,7 +165,7 @@ def confirm(
                 beating,
             )
         )
-    return ConfirmationResult(key, params, results, skipped)
+    return ConfirmationResult(key, params, results, skipped, cut)
 
 
 def _builder(key: str, symbol: str, params: dict[str, int]) -> Callable[[dict[str, int]], Any]:
@@ -174,7 +185,12 @@ def format_confirmation(r: ConfirmationResult, note: str) -> str:
     lines = [
         f"Confirmation run  ·  {r.strategy} {r.params}  ·  note {note}",
         f"{len(r.coins)} confirmation coins with {MIN_MONTHS}+ months before the holdout"
-        + (f"; {len(r.skipped)} too young, left out" if r.skipped else ""),
+        + (f"; {len(r.skipped)} too young, left out" if r.skipped else "")
+        + (
+            f"; {len(r.cut)} with a gap, run on their latest unbroken history ({', '.join(r.cut)})"
+            if r.cut
+            else ""
+        ),
         "",
         f"  Beats holding's Sharpe on   {sum(c.beats_holding for c in r.coins)} of "
         f"{len(r.coins)} coins ({r.beats_share:.0%}; more than 50% needed)",

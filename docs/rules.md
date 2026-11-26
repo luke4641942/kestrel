@@ -284,7 +284,10 @@ Agreed decisions; changed only for a stated reason.
   exit is a hypothesis to test, not an edge.
 - **Universe:** `kestrel.data.universe` reads every USDT pair, delisted ones included.
   Binance reuses symbols (LUNAUSDT is two coins), so `kestrel.data.panel` numbers each
-  coin's unbroken histories and nothing is computed across a gap. Each coin without its own
+  coin's unbroken histories and nothing is computed across a gap (one-coin runs too, from 2026-11-26: the
+  engines refuse bars with a day or more missing, naming the histories, and `kestrel
+  confirm` runs a coin with a gap on its latest history; a shorter outage, such as
+  Binance's 8 hours on 2020-02-19, is not a gap; findings 31). Each coin without its own
   `[instruments]` entry pays a half-spread band set by its 30-day median daily volume
   (`kestrel.backtest.spread`, `[universe] spread_tiers`; on sub-daily bars, the complete
   days before; Abdi-Ranaldo was tried and dropped as too noisy). Tokenized stocks (AAPLBUSDT...,

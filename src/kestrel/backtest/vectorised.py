@@ -29,6 +29,7 @@ import polars as pl
 
 from kestrel.backtest.engine import BacktestResult, CostSummary, check_inputs
 from kestrel.config import Config
+from kestrel.data.panel import refuse_gaps
 from kestrel.data.schema import Interval
 from kestrel.provenance import code_version
 from kestrel.strategy import BracketStrategy, Strategy, validated_weights
@@ -54,6 +55,7 @@ def run_vectorised(
             "volume; use the event engine"
         )
     used_holdout = check_inputs(bars, config, strategy.name, strategy.symbol, allow_holdout)
+    refuse_gaps(bars, interval, strategy.symbol)
     if (bars["quote_volume"] <= 0).any():
         raise ValueError("bars with no volume can't be traded; use the event engine")
 

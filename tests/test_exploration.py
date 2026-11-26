@@ -258,3 +258,38 @@ def test_a_coin_too_short_for_a_window_still_counts_for_the_first_test(tmp_path:
     assert by["SHORTUSDT"].windows == 0
     assert by["LONGUSDT"].windows > 0
     assert result.windows == by["LONGUSDT"].windows
+
+
+def test_a_coin_with_a_gap_is_confirmed_on_its_latest_unbroken_history(tmp_path: Path) -> None:
+    """Findings 31: nothing is computed across a gap (a delisting, a token swap)."""
+    import polars as pl
+
+    from kestrel.validation.confirmation import confirm, format_confirmation
+
+    store = ParquetStore(tmp_path)
+    months_of_daily("GAPUSDT", store, 70, 2e7)
+    whole = store.read("GAPUSDT", Interval.D1)
+    cut_at = whole["open_time"][300]
+    store.write(  # 300 days, 10 missing, then the rest at a tenth of the price (a swap)
+        "GAPUSDT",
+        Interval.D1,
+        pl.concat(
+            [
+                whole.head(300),
+                whole.slice(310).with_columns(pl.col("open", "high", "low", "close") / 10),
+            ]
+        ),
+    )
+    months_of_daily("OLDUSDT", store, 30, 2e7)
+    old = store.read("OLDUSDT", Interval.D1)
+    store.write("OLDUSDT", Interval.D1, pl.concat([old.head(200), old.slice(220)]))
+    cfg = replace(config(costs=False), split=SPLIT)
+    result = confirm("crash-rebound", {}, ["GAPUSDT", "OLDUSDT"], store, cfg, Decimal(330))
+    assert result.cut == ["GAPUSDT", "OLDUSDT"]
+    assert [c.symbol for c in result.coins] == ["GAPUSDT"]  # its last history has 24+ months
+    assert result.skipped == ["OLDUSDT"]  # its last history is too young once cut
+    assert result.detail()["cut"] == ["GAPUSDT", "OLDUSDT"]
+    assert "2 with a gap, run on their latest unbroken history" in format_confirmation(
+        result, "note"
+    )
+    assert store.read("GAPUSDT", Interval.D1)["open_time"][300] > cut_at  # 10 days gone

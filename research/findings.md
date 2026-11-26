@@ -519,10 +519,22 @@ from 2026-11-16) is the test that's left.
     used by universe and basket strategies already numbers unbroken histories and computes
     nothing across a gap (docs/rules.md); one-coin backtests, and `kestrel confirm`, read
     the raw bars and neither refuse nor report one. BTC, ETH and SOL daily bars have no
-    gap, so no pursued result or paper account is touched. Open: how many coins in the
-    BTC regime rule's confirmation run (149 of 180 coins beat holding, above) had a gap, which would
-    move both the strategy and its buy-and-hold benchmark (a token swap reads as a -90%
-    day for holding). Not yet looked at: that half is locked, and Luke decides.
+    gap, so no pursued result or paper account is touched (at any bar size).
+
+    The confirmation run (Luke's OK to read gap dates and the price across each gap,
+    never returns): 6 of its 180 coins had one. Four are token swaps or a reused symbol,
+    not missing days: BNX (the price a hundredth after 5 days), COCOS (a thousand times,
+    3 days), VIDT (about a tenth, 8 days) and LUNA (20,000 times: the original coin, then
+    LUNA 2.0). FTT (310 days) and KEY (27) were relistings. Their numbers were computed
+    across the gap, so they are void, but neither verdict can move: btc-regime-trend's
+    PASS needed more than half on both tests, and with all 6 coins' wins counted as losses
+    it is still 144 of 180 coins (80%) and 416 of 771 windows (54%); crash-rebound's FAIL
+    (274 of 771 windows) can't reach half even if all 27 of their windows won.
+
+    Fixed the same day (Luke): the one-coin engines refuse bars with a day or more missing
+    and name the histories; `kestrel confirm` runs a coin with a gap on its latest
+    unbroken history (the coin as it trades now) and lists it; an outage of hours (BTC and
+    ETH lost two 4h bars on 2020-02-19) isn't a gap. Saved runs aren't rerun.
 
 
 

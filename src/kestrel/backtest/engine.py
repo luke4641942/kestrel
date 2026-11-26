@@ -40,6 +40,7 @@ import polars as pl
 from kestrel.backtest.costs import Fill, Rejection, Side
 from kestrel.backtest.spread import with_half_spread
 from kestrel.config import Config
+from kestrel.data.panel import refuse_gaps
 from kestrel.data.schema import Interval
 from kestrel.execution.rebalance import rebalance
 from kestrel.execution.venue import SimVenue
@@ -168,6 +169,7 @@ def run_backtest(
 ) -> BacktestResult:
     """Run ``strategy`` over ``bars`` (canonical kline schema, one symbol, sorted)."""
     used_holdout = check_inputs(bars, config, strategy.name, strategy.symbol, allow_holdout)
+    refuse_gaps(bars, interval, strategy.symbol)
     symbol = strategy.symbol
     venue = SimVenue(config, initial_cash, rules=config.rules_for)
     spreads = half_spreads(bars, config, symbol)
