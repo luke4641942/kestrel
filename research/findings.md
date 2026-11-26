@@ -563,7 +563,8 @@ from 2026-11-16) is the test that's left.
     (about 5%) had no open-interest close and were skipped. The run was repeated once after
     fixing an information-only counter (it had counted days before the archive began as
     missing: 48,494); the seeded tests and verdict were identical. The archive starts in
-    2021-12, so more history can only come from time going forward.
+    2021-12, so more history can only come from time going forward. Note rejected (Luke,
+    2026-11-26).
 
 
 
