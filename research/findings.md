@@ -627,6 +627,27 @@ from 2026-11-16) is the test that's left.
     confirmation half (XRP, ADA, AVAX and others) was out of the candidates, as for every
     universe run.
 
+35. **Every saved run re-scored with warm-up: six test 1 results flip to pass, no
+    note's verdict moves (2026-11-26; a re-measurement, not trials).** All 166 saved
+    strategy runs were re-run with the history before their start (findings 33), unsaved;
+    the record keeps the originals, and the figures are kept outside the repository. None
+    failed to reproduce. Median Sharpe change +0.03 (holding's 0.00); the biggest moves are
+    short or late-starting runs, where the cold start was a large share of the period:
+    trend-vol-target's one-year 2024-10 runs (BTC -0.35 → 1.12), the 52-week-high basket
+    (0.11 → 0.78), BTC and gold (0.54 → 1.00), and the 5-minute methods (still deeply
+    negative). Test 1 flips from fail to pass on six runs, never the other way:
+    trend-vol-target on SOL 1h (1.47 vs 1.41) and SOL 4h over the year from 2024-10 (0.70
+    vs 0.63), the 4h-volatile-regime note's runs on BTC, ETH and SOL (plain trend-vol-target
+    over its later period), and the ablation's no-BTC-filter variant on ETH (1.21 vs
+    1.12). None changes a note's own test: the regime filter still loses to plain
+    trend-vol-target on every coin (BTC 0.69 vs 1.04, ETH 0.72 vs 0.99, SOL 0.66 vs 1.23),
+    and every ablation variant moved by about the same amount (ETH about +0.15, SOL about
+    +0.02), so the order behind findings 29 is unchanged. The near misses stay misses
+    (52-week high 0.78 vs holding 1.07; BTC and gold 1.00 vs 1.01). With the warmed
+    Sharpes in place of the saved ones the luck bar is unchanged (2.29 at 883 trials: runs
+    are a small share of the trials, most of which are grid settings). The robustness grids
+    saved before 2026-11-26 were not re-scored.
+
 ## The holdout year (2025-11 to 2026-10)
 
 Reserved on 2026-10-31, before any research, and read once on 2026-11-14 for the two watched
@@ -827,8 +848,9 @@ Each strategy was judged by its own note's pass test, written before it ran. Fro
   lookback before it could hold anything, but holding was invested from day one:
   trend-vol-target on BTC first held on 2020-05-02, missing the March 2020 crash by
   construction, not by choice. Fixed on 2026-11-26 (findings 33: runs read history before
-  their start); the live decisions' runs were re-scored and no verdict moved. The other
-  saved runs, most of them rejected ideas, were not rerun, so their figures still carry it.
+  their start); the live decisions' runs were re-scored and no verdict moved. Every other
+  saved run was re-scored too (findings 35: no note's verdict moves), but the saved figures
+  shown for them still carry it, as do robustness grids saved before that day.
 - **The paper test can say little, and nothing yet about costs.** Each account's length
   was set so its own backtest Sharpe would just pass, so even a true edge passes only about
   half the time; testnet fills aren't the market's (the first round trip cost 107 bps
