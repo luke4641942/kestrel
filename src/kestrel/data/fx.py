@@ -36,6 +36,7 @@ from dataclasses import dataclass, field
 from datetime import UTC, datetime, timedelta
 from itertools import pairwise
 from pathlib import Path
+from typing import Literal
 
 import httpx
 import polars as pl
@@ -47,6 +48,11 @@ PRACTICE = "https://api-fxpractice.oanda.com"
 TOKEN_ENV = "KESTREL_OANDA_TOKEN"
 NEW_YORK = "America/New_York"
 PAGE = 5000
+DayEnd = Literal["ny", "utc"]
+"""Where a daily candle closes: 17:00 New York (the market's own day, the default) or
+00:00 UTC. A forex result must hold for both (TODO, 2026-11-26: a debunked forex rule lost
+money with midnight days); UTC candles are stored apart and never replace the New York
+ones. A UTC trading week is Monday to Friday (Saturday and Sunday opens are thin)."""
 """OANDA's largest candle count per request."""
 SIDES = ("bid", "ask")
 PRICES = ("open", "high", "low", "close")
@@ -117,6 +123,7 @@ def fetch_daily(
     auth: str,
     start: datetime,
     base: str = PRACTICE,
+    day_end: DayEnd = "ny",
 ) -> pl.DataFrame:
     """Every complete daily candle from ``start``, paged ``PAGE`` at a time."""
     frames: list[pl.DataFrame] = []
@@ -130,8 +137,8 @@ def fetch_daily(
                 "from": _stamp(since),
                 "count": PAGE,
                 "includeFirst": "true" if first else "false",
-                "dailyAlignment": 17,
-                "alignmentTimezone": NEW_YORK,
+                "dailyAlignment": 17 if day_end == "ny" else 0,
+                "alignmentTimezone": NEW_YORK if day_end == "ny" else "UTC",
             },
             headers={"Authorization": f"Bearer {auth}"},
         )
@@ -221,22 +228,35 @@ class FxQuality:
         return "\n".join(lines)
 
 
-def _weekdays_between(after: datetime, before: datetime) -> int:
-    """Trading days (candles open Sunday to Thursday, New York) strictly between two opens."""
+def _weekdays_between(after: datetime, before: datetime, day_end: DayEnd = "ny") -> int:
+    """Trading days strictly between two opens: candles opening Sunday to Thursday in New
+    York, or Monday to Friday in UTC."""
     from zoneinfo import ZoneInfo
 
-    ny = ZoneInfo(NEW_YORK)
-    d = after.astimezone(ny).date() + timedelta(days=1)
-    end = before.astimezone(ny).date()
+    zone = ZoneInfo(NEW_YORK if day_end == "ny" else "UTC")
+    opens = (6, 0, 1, 2, 3) if day_end == "ny" else (0, 1, 2, 3, 4)
+    d = after.astimezone(zone).date() + timedelta(days=1)
+    end = before.astimezone(zone).date()
     n = 0
     while d < end:
-        if d.weekday() in (6, 0, 1, 2, 3):  # Sun..Thu opens
+        if d.weekday() in opens:
             n += 1
         d += timedelta(days=1)
     return n
 
 
-def check(frame: pl.DataFrame, pair: str, holdout_start: datetime) -> FxQuality:
+def _weekend(day_end: DayEnd) -> list[int]:
+    """polars weekdays (Monday 1) of candles outside the trading week."""
+    return [5, 6] if day_end == "ny" else [6, 7]
+
+
+def _local(day_end: DayEnd) -> pl.Expr:
+    return pl.col("open_time").dt.convert_time_zone(NEW_YORK if day_end == "ny" else "UTC")
+
+
+def check(
+    frame: pl.DataFrame, pair: str, holdout_start: datetime, day_end: DayEnd = "ny"
+) -> FxQuality:
     if frame.is_empty():
         return FxQuality(pair, 0, None, None)
     t = pl.col("open_time")
@@ -249,11 +269,12 @@ def check(frame: pl.DataFrame, pair: str, holdout_start: datetime) -> FxQuality:
         unsorted=not frame["open_time"].is_sorted(),
         nulls=int(frame.null_count().sum_horizontal().item()),
     )
-    local = t.dt.convert_time_zone(NEW_YORK)
+    local = _local(day_end)
+    hour = 17 if day_end == "ny" else 0
     report.misaligned = frame.filter(
-        (local.dt.hour() != 17) | (local.dt.minute() != 0) | (local.dt.second() != 0)
+        (local.dt.hour() != hour) | (local.dt.minute() != 0) | (local.dt.second() != 0)
     ).height
-    report.weekend_candles = frame.filter(local.dt.weekday().is_in([5, 6])).height  # Fri, Sat
+    report.weekend_candles = frame.filter(local.dt.weekday().is_in(_weekend(day_end))).height
     violations = 0
     for prefix in ("", "bid_", "ask_"):
         cols = [f"{prefix}{p}" for p in PRICES]
@@ -273,7 +294,7 @@ def check(frame: pl.DataFrame, pair: str, holdout_start: datetime) -> FxQuality:
 
     ordered = frame.select("open_time").unique().sort("open_time")["open_time"].to_list()
     for a, b in pairwise(ordered):
-        missing = _weekdays_between(a, b)
+        missing = _weekdays_between(a, b, day_end)
         if missing:
             report.gaps.append(FxGap(a, b, missing))
 
@@ -284,23 +305,24 @@ def check(frame: pl.DataFrame, pair: str, holdout_start: datetime) -> FxQuality:
     return report
 
 
-def trading_days(frame: pl.DataFrame) -> tuple[pl.DataFrame, int]:
-    """The candles of the trading week (opening Sunday to Thursday, New York), and how
-    many weekend candles were dropped. Every strategy and backtest reads forex this way."""
-    weekday = pl.col("open_time").dt.convert_time_zone(NEW_YORK).dt.weekday()
-    kept = frame.filter(~weekday.is_in([5, 6]))  # Friday and Saturday opens
+def trading_days(frame: pl.DataFrame, day_end: DayEnd = "ny") -> tuple[pl.DataFrame, int]:
+    """The candles of the trading week (opening Sunday to Thursday, New York; Monday to
+    Friday on UTC days), and how many weekend candles were dropped. Every strategy and
+    backtest reads forex this way."""
+    kept = frame.filter(~_local(day_end).dt.weekday().is_in(_weekend(day_end)))
     return kept, frame.height - kept.height
 
 
 # ---------- storage ----------
 
 
-def path(data_dir: Path | str, pair: str) -> Path:
-    return Path(data_dir) / "fx" / "oanda" / f"{pair.upper()}-1d.parquet"
+def path(data_dir: Path | str, pair: str, day_end: DayEnd = "ny") -> Path:
+    suffix = "" if day_end == "ny" else "-utc"
+    return Path(data_dir) / "fx" / "oanda" / f"{pair.upper()}-1d{suffix}.parquet"
 
 
-def save(frame: pl.DataFrame, data_dir: Path | str, pair: str) -> Path:
-    target = path(data_dir, pair)
+def save(frame: pl.DataFrame, data_dir: Path | str, pair: str, day_end: DayEnd = "ny") -> Path:
+    target = path(data_dir, pair, day_end)
     target.parent.mkdir(parents=True, exist_ok=True)
     write_atomically(
         target, lambda tmp: frame.select(list(FX_SCHEMA)).sort("open_time").write_parquet(tmp)
@@ -308,8 +330,9 @@ def save(frame: pl.DataFrame, data_dir: Path | str, pair: str) -> Path:
     return target
 
 
-def load(data_dir: Path | str, pair: str) -> pl.DataFrame:
-    target = path(data_dir, pair)
+def load(data_dir: Path | str, pair: str, day_end: DayEnd = "ny") -> pl.DataFrame:
+    target = path(data_dir, pair, day_end)
     if not target.exists():
-        raise FxError(f"no {pair.upper()} data; run kestrel ingest-fx first")
+        flag = "" if day_end == "ny" else " --day-end utc"
+        raise FxError(f"no {pair.upper()} data ({day_end} days); run kestrel ingest-fx{flag}")
     return pl.read_parquet(target)

@@ -617,6 +617,55 @@ def _commit() -> str | None:
     return v.commit and v.commit + ("-dirty" if v.dirty else "")
 
 
+@app.command("fx-study")
+def fx_study(
+    study: Annotated[str, typer.Argument(help="fomc-dollar.")],
+    research_dir: ResearchDir = Path("research"),
+    data_dir: DataDir = Path("data"),
+    config: Annotated[
+        Path, typer.Option("--config", envvar="KESTREL_CONFIG", help="Config file.")
+    ] = Path("kestrel.toml"),
+) -> None:
+    """A forex raw-effect study, run once from its frozen note, before the forex holdout.
+    Not a trial: the forex pool is untouched. fomc-dollar needs both day ends stored
+    (kestrel ingest-fx, then kestrel ingest-fx --day-end utc)."""
+    from kestrel.data.fomc import statement_days
+    from kestrel.data.rates import Rates
+    from kestrel.studies import fomc_dollar
+
+    notes = {
+        "fomc-dollar": ("does-the-dollar-fall-against-other-currencies-on", "study:fomc-dollar")
+    }
+    if study not in notes:
+        typer.echo(f"no forex study {study!r}; one of {', '.join(notes)}", err=True)
+        raise typer.Exit(code=1)
+    slug, implementation = notes[study]
+    store = ResearchStore(research_dir)
+    try:
+        s, note = store.require_testable(slug)
+        if note.implementation != implementation:
+            raise ValueError(f"{slug} names {note.implementation}, not {implementation}")
+        cfg = load_config(config)
+        if cfg.fx is None:
+            raise ConfigError("no [fx] table in the config")
+        holdout = cfg.fx.holdout_start
+        markup = float(cfg.fx.financing_markup_pct) / 100
+        rates = Rates.load(data_dir)
+        days = statement_days()
+        found = {
+            end: fomc_dollar.run_fomc(
+                fomc_dollar.load_bars(data_dir, end, holdout), days, rates, markup, end, holdout
+            )
+            for end in ("ny", "utc")
+        }
+    except (ConfigError, ValueError) as e:
+        typer.echo(str(e), err=True)
+        raise typer.Exit(code=1) from None
+    store.mark_backtested(s.slug, note.version)
+    typer.echo(fomc_dollar.format_fomc(found["ny"], found["utc"]))
+    typer.echo(f"Saved: {fomc_dollar.save(found['ny'], found['utc'], data_dir)}")
+
+
 @app.command("event-study")
 def event_study(
     event: Annotated[str, typer.Argument(help="perp-listing, token-unlocks or coinbase-listing.")],
@@ -1490,6 +1539,9 @@ def ingest_fx(
         list[str] | None, typer.Option(help="One pair (repeatable); default every [fx] pair.")
     ] = None,
     start: Annotated[str, typer.Option(help="First day, YYYY-MM-DD.")] = "2002-01-01",
+    day_end: Annotated[
+        str, typer.Option(help="ny (days close 17:00 New York, the default) or utc (00:00 UTC).")
+    ] = "ny",
     data_dir: DataDir = Path("data"),
     config: Annotated[
         Path, typer.Option("--config", envvar="KESTREL_CONFIG", help="Config file.")
@@ -1507,6 +1559,9 @@ def ingest_fx(
         unknown = sorted(set(wanted) - set(cfg.fx.pairs))
         if unknown:
             raise ConfigError(f"not in [fx] pairs (fixed; adding one is a note): {unknown}")
+        if day_end not in ("ny", "utc"):
+            raise ConfigError("--day-end is ny or utc")
+        ends: fx.DayEnd = "ny" if day_end == "ny" else "utc"
         auth = fx.token()
         since = datetime.fromisoformat(start).replace(tzinfo=UTC)
     except (ConfigError, fx.FxError, ValueError) as e:
@@ -1516,15 +1571,15 @@ def ingest_fx(
     with httpx.Client(timeout=60) as http:
         for name in wanted:
             try:
-                frame = fx.fetch_daily(name, http, auth, since)
+                frame = fx.fetch_daily(name, http, auth, since, day_end=ends)
             except (httpx.HTTPError, fx.FxError) as e:
                 typer.echo(f"{name}: {e}", err=True)
                 failed = True
                 continue
-            report = fx.check(frame, name, cfg.fx.holdout_start)
+            report = fx.check(frame, name, cfg.fx.holdout_start, ends)
             typer.echo(report.summary())
             if report.is_clean:
-                fx.save(frame, data_dir, name)
+                fx.save(frame, data_dir, name, ends)
             else:
                 failed = True
         typer.echo("Interest rates for financing (OECD 3-month interbank, monthly, FRED):")
