@@ -151,6 +151,15 @@ def test_bracket_backtest_returns_trades_and_r_metrics(tmp_path: Path) -> None:
     assert set(signals["weight"]) == {0.0, 1.0}
 
 
+def test_signals_never_reach_the_holdout(client: TestClient) -> None:
+    for end in ("2025-11", "2026-03"):
+        res = client.post("/api/strategies/ma-trend/signals", json={**BODY, "end": end})
+        assert res.status_code == 422
+        assert "reaches the holdout" in res.json()["detail"]
+    ok = client.post("/api/strategies/ma-trend/signals", json={**BODY, "end": "2025-10"})
+    assert ok.status_code == 200
+
+
 def test_run_detail_includes_the_analysis(client: TestClient) -> None:
     job = _finish(client, BODY)
     detail = client.get(f"/api/backtests/{job['result']['run_id']}").json()

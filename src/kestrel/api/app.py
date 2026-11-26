@@ -496,6 +496,13 @@ def create_app(
         except ValueError as e:
             raise HTTPException(422, str(e)) from None
         first, after = Month.parse(req.start), Month.parse(req.end).next()
+        holdout = load_config(config_path).backtest.holdout_start
+        if datetime(after.year, after.month, 1, tzinfo=UTC) > holdout:
+            raise HTTPException(
+                422,
+                f"the range reaches the holdout (from {holdout:%Y-%m-%d}); the dashboard and "
+                "API never use it: end it before then",
+            )
         bars = store.read(
             req.symbol,
             req.interval,
