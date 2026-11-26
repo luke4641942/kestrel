@@ -333,6 +333,10 @@ def metrics_dict(m: Metrics) -> dict[str, Any]:
 class RunStore:
     def __init__(self, data_dir: Path | str) -> None:
         self.root = Path(data_dir) / "runs"
+        self._metas: dict[str, tuple[int, dict[str, Any]]] = {}
+        """Run id -> (run.json's mtime, the file without its config snapshot). A run is read
+        again only if its file changed; a deleted run drops out because only ids still on
+        disk are listed."""
 
     def save(self, outcome: RunOutcome, config: Config) -> str:
         created = datetime.now(UTC)
@@ -388,13 +392,20 @@ class RunStore:
         return run_id
 
     def summaries(self) -> list[dict[str, Any]]:
-        """Saved runs, newest first (without the config snapshot)."""
+        """Saved runs, newest first (without the config snapshot). Treat them as read-only:
+        they are shared between calls."""
         runs = []
         for path in self.root.glob("*/run.json"):
-            if RUN_ID.match(path.parent.name):
+            run_id = path.parent.name
+            if not RUN_ID.match(run_id):
+                continue
+            mtime = path.stat().st_mtime_ns
+            hit = self._metas.get(run_id)
+            if hit is None or hit[0] != mtime:
                 meta = json.loads(path.read_text())
                 meta.pop("config", None)
-                runs.append(meta)
+                hit = self._metas[run_id] = (mtime, meta)
+            runs.append(hit[1])
         return sorted(runs, key=lambda r: r["created_at"], reverse=True)
 
     def trials(self, slug: str) -> list[dict[str, Any]]:

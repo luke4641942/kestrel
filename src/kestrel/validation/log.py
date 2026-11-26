@@ -56,6 +56,7 @@ class Study:
 class ValidationLog:
     def __init__(self, data_dir: Path | str) -> None:
         self.root = Path(data_dir) / "validation"
+        self._cache: dict[Path, tuple[int, int, dict[str, Any]]] = {}
 
     def save(self, study: Study) -> str:
         created = datetime.now(UTC)
@@ -69,6 +70,14 @@ class ValidationLog:
         return study_id
 
     def studies(self) -> list[dict[str, Any]]:
-        """Saved studies, newest first."""
-        found = [json.loads(p.read_text()) for p in self.root.glob("*.json")]
+        """Saved studies, newest first. Each file is read again only when it changes
+        (``_cache``: path -> (mtime, size, study)); treat them as read-only."""
+        found = []
+        for p in self.root.glob("*.json"):
+            st = p.stat()
+            hit = self._cache.get(p)
+            if hit is None or hit[:2] != (st.st_mtime_ns, st.st_size):
+                hit = (st.st_mtime_ns, st.st_size, json.loads(p.read_text()))
+                self._cache[p] = hit
+            found.append(hit[2])
         return sorted(found, key=lambda s: s["created_at"], reverse=True)

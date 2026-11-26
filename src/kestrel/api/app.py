@@ -7,7 +7,9 @@ scripts and tests without a web server.
 
 from __future__ import annotations
 
+import logging
 import math
+import threading
 from collections.abc import AsyncIterator, Callable
 from contextlib import asynccontextmanager
 from dataclasses import asdict
@@ -163,6 +165,9 @@ LOCAL_HOSTS = ("127.0.0.1", "localhost", "testserver")
 """Host headers the API answers: this machine's names, plus Starlette's test client."""
 
 
+log = logging.getLogger(__name__)
+
+
 def create_app(
     data_dir: Path | str = "data",
     client_factory: ClientFactory = BinanceVisionClient,
@@ -179,8 +184,18 @@ def create_app(
     regime_store = RegimeStore(data_dir)
     jobs = JobManager()
 
+    def warm_caches() -> None:
+        """Read every dataset's coverage once in the background at start-up, so the first
+        page to list datasets (Strategies, Backtests) doesn't wait for 700-odd scans."""
+        try:
+            for symbol, interval in store.datasets():
+                store.coverage(symbol, interval)
+        except Exception:  # a cache warm-up never stops the server; the request reads again
+            log.exception("warming the dataset cache failed")
+
     @asynccontextmanager
     async def lifespan(_: FastAPI) -> AsyncIterator[None]:
+        threading.Thread(target=warm_caches, name="warm-caches", daemon=True).start()
         yield
         jobs.shutdown()
 
@@ -214,23 +229,16 @@ def create_app(
     def list_datasets() -> list[Dataset]:
         out = []
         for symbol, interval in store.datasets():
-            stats = (
-                store.scan(symbol, interval)
-                .select(
-                    pl.len().alias("rows"),
-                    pl.col("open_time").min().alias("first"),
-                    pl.col("open_time").max().alias("last"),
-                )
-                .collect()
-                .row(0, named=True)
-            )
+            c = store.coverage(symbol, interval)
             out.append(
                 Dataset(
                     venue=store.venue,
                     symbol=symbol,
                     interval=interval,
-                    months=len(store.months(symbol, interval)),
-                    **stats,
+                    months=c.months,
+                    rows=c.rows,
+                    first=c.first,
+                    last=c.last,
                 )
             )
         return out
@@ -993,11 +1001,15 @@ def create_app(
             for d, t in trial_history(runs.summaries(), studies.studies())
         ]
 
-    def _deflated(metas: list[dict[str, Any]], trials: TrialSet | None = None) -> list[RunSummary]:
+    def _deflated(
+        metas: list[dict[str, Any]],
+        trials: TrialSet | None = None,
+        confirming: TrialSet | None = None,
+    ) -> list[RunSummary]:
         """Run summaries with each one's Sharpe deflated for every strategy tried in its
-        pool (confirmation runs of the exploration experiment are counted apart)."""
+        pool (confirmation runs of the exploration experiment are counted apart). A caller
+        deflating many lists passes the pools, computed once."""
         main = trials or trial_set(runs.summaries(), studies.studies())
-        confirming: TrialSet | None = None
         out = []
         for meta in metas:
             m = meta["metrics"]
@@ -1070,9 +1082,18 @@ def create_app(
 
     # ---------- research ----------
 
-    def _summary(s: ResearchStrategy) -> ResearchSummary:
-        logged = runs.trials(s.slug)
-        scored = [r.deflated_sharpe for r in _deflated(logged) if r.deflated_sharpe is not None]
+    def _summary(
+        s: ResearchStrategy,
+        logged: list[dict[str, Any]] | None = None,
+        pools: tuple[TrialSet, TrialSet] | None = None,
+    ) -> ResearchSummary:
+        logged = runs.trials(s.slug) if logged is None else logged
+        main, confirming = pools or (None, None)
+        scored = [
+            r.deflated_sharpe
+            for r in _deflated(logged, main, confirming)
+            if r.deflated_sharpe is not None
+        ]
         return ResearchSummary(
             slug=s.slug,
             name=s.name,
@@ -1113,7 +1134,15 @@ def create_app(
 
     @api.get("/research")
     def list_research() -> list[ResearchSummary]:
-        return [_summary(s) for s in research.strategies()]
+        # Every run and study read once, and both trial pools computed once, for all notes.
+        all_runs, found = runs.summaries(), studies.studies()
+        pools = (trial_set(all_runs, found), trial_set(all_runs, found, "confirmation"))
+        by_slug: dict[str, list[dict[str, Any]]] = {}
+        for run in sorted(all_runs, key=lambda r: r["created_at"]):
+            slug = (run.get("research") or {}).get("slug")
+            if slug:
+                by_slug.setdefault(slug, []).append(run)
+        return [_summary(s, by_slug.get(s.slug, []), pools) for s in research.strategies()]
 
     @api.post("/research", status_code=status.HTTP_201_CREATED)
     def create_research(req: CreateResearch) -> ResearchDetail:

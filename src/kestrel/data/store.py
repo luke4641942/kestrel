@@ -11,6 +11,7 @@ because each file is written to a temp path and atomically renamed.
 
 from __future__ import annotations
 
+from dataclasses import dataclass
 from datetime import datetime
 from pathlib import Path
 
@@ -18,6 +19,24 @@ import polars as pl
 
 from kestrel.atomic import write_atomically
 from kestrel.data.schema import KLINE_SCHEMA, Interval, conform
+
+
+@dataclass(frozen=True)
+class Coverage:
+    """What one stored dataset holds: its bar count, first and last open time, months."""
+
+    rows: int
+    first: datetime | None
+    last: datetime | None
+    months: int
+
+
+_FileStats = tuple[int, int, int, datetime | None, datetime | None]
+"""(mtime_ns, size, rows, first open_time, last open_time) of one month file."""
+_FILE_STATS: dict[Path, _FileStats] = {}
+"""Month file -> its stats, shared by every store: a file is read again only when its
+mtime or size changes (re-ingesting a month replaces it), so listing every dataset reads
+only what changed since the last listing."""
 
 
 class ParquetStore:
@@ -92,6 +111,39 @@ class ParquetStore:
                 if raw in Interval._value2member_map_ and any(int_dir.glob("month=*.parquet")):
                     found.append((sym_dir.name.removeprefix("symbol="), Interval(raw)))
         return found
+
+    def coverage(self, symbol: str, interval: Interval) -> Coverage:
+        """Bars, first and last open time and months stored for one dataset; each month
+        file's figures are cached until the file changes (``_FILE_STATS``)."""
+        files = sorted(self._dir(symbol, interval).glob("month=*.parquet"))
+        sizes = {f: f.stat() for f in files}
+        stale = [
+            f
+            for f in files
+            if (hit := _FILE_STATS.get(f)) is None
+            or hit[:2] != (sizes[f].st_mtime_ns, sizes[f].st_size)
+        ]
+        if stale:  # one scan for all of them: opening each file alone is far slower
+            per_file = (
+                pl.scan_parquet(stale, include_file_paths="_file")
+                .group_by("_file")
+                .agg(pl.len(), first=pl.col("open_time").min(), last=pl.col("open_time").max())
+                .collect()
+            )
+            found = {Path(r["_file"]): r for r in per_file.iter_rows(named=True)}
+            for f in stale:
+                r = found.get(f) or {"len": 0, "first": None, "last": None}
+                st = sizes[f]
+                _FILE_STATS[f] = (st.st_mtime_ns, st.st_size, int(r["len"]), r["first"], r["last"])
+        stats = [_FILE_STATS[f] for f in files]
+        firsts = [s[3] for s in stats if s[3] is not None]
+        lasts = [s[4] for s in stats if s[4] is not None]
+        return Coverage(
+            sum(s[2] for s in stats),
+            min(firsts) if firsts else None,
+            max(lasts) if lasts else None,
+            len(files),
+        )
 
     def months(self, symbol: str, interval: Interval) -> list[str]:
         return sorted(
