@@ -87,3 +87,14 @@ def test_the_research_summary_is_served_from_docs(tmp_path: Path) -> None:
 
 def test_the_repos_summary_exists() -> None:
     assert (REPO / "docs" / "research-summary.md").read_text().startswith("# ")
+
+
+def test_the_entry_bar_states_the_revival_rule_and_findings_hold_the_family_record() -> None:
+    revival = [line for line in rules.ENTRY_BAR if "rejected family" in line]
+    assert len(revival) == 1
+    assert "failure mode" in revival[0]
+    assert "one revival per failure mode" in revival[0]
+    assert not any("Not a variant of a rejected family" in line for line in rules.ENTRY_BAR)
+    findings = (REPO / "research" / "findings.md").read_text()
+    assert "## Rejected families" in findings
+    assert "Rejected families" in (REPO / "docs" / "rules.md").read_text()

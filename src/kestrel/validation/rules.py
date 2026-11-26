@@ -99,7 +99,8 @@ SCORECARD: tuple[Test, ...] = (
 ENTRY_BAR: tuple[str, ...] = (
     "Who pays you and why: an economic reason, not a chart pattern.",
     "Outside evidence: a published or out-of-sample result from somewhere else.",
-    "Not a variant of a rejected family (pullbacks, chart patterns, reversals).",
+    "If it revives a rejected family: the earlier note, the failure mode it addresses and "
+    "its one change, named before any run (one revival per failure mode).",
     "How many runs it will use, declared before any run.",
 )
 

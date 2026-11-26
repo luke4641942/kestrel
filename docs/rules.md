@@ -166,9 +166,29 @@ Never pipe check output through `tail` or similar inside an `&&` chain: it hides
   for BTC, ETH and SOL. A rejected *note* stays rejected; the decision file is the separate
   "what do we do with it" layer. A finished note closes as `validated` or `paper`.
 - **Entry bar for a new idea.** Its note states who pays you and why (an economic reason,
-  not a chart pattern), outside evidence (published or out-of-sample elsewhere), that it
-  is not a variant of a rejected family (pullbacks, chart patterns, reversals), and how
-  many runs it will use. More history (2017+) is preferred to more ideas.
+  not a chart pattern), outside evidence (published or out-of-sample elsewhere), and how
+  many runs it will use; if it is in a rejected family, the revival rule below. More
+  history (2017+) is preferred to more ideas.
+- **Rejected families (Luke, 2026-11-26).** A family is rejected by the record of how its
+  members failed, not by its name: research/findings.md ("Rejected families") lists each,
+  its notes and trials, and each member's failure mode:
+  - *no edge before costs* (the effect isn't there);
+  - *edge eaten by costs* (there before costs, gone after);
+  - *below holding at the same exposure* (it earned, but only what holding less earns);
+  - *failed out of sample* (in-sample edge, gone in walk-forward, confirmation or holdout);
+  - *too weak to tell* (a positive edge after costs, not significant).
+  A note may revive a rejected family only if, before any run on the data it will be judged
+  on, it names the earlier note it revives, the failure mode it addresses (as the record
+  states it: "eaten by costs" needs a recorded gross edge), and its one change, and says why
+  that change follows from that mode (for example: "the 4h version's gross edge was eaten
+  by costs; this runs daily at a sixth of the turnover"). Retuning a setting is not a
+  change. "No edge before costs" can't be fixed by lower costs, and "failed out of sample"
+  isn't fixed by new settings: both need a different who-pays story, which makes it a new
+  idea under the full entry bar. "Too weak to tell" is addressed by more data (more coins
+  or earlier history), never by a new setting. More than one change is a new idea, not a
+  revival. Each failure mode of a family may be revived once; a second attempt needs a
+  different mode or a different who-pays story. The family's history is disclosed in the
+  note, its runs are trials in the same pool, and the family stays rejected when it fails.
 - **Trials.** Every setting tried counts (`kestrel.validation.log`, `data/validation/`).
   Runs in the exploration half are not trials (see Exploration experiment).
   863 trials by 2026-11-21 (robustness and walk-forward grids count every setting), luck

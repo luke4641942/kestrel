@@ -773,6 +773,34 @@ Deflated Sharpes in this table are as of each test's date. The luck bar has rise
 Each strategy was judged by its own note's pass test, written before it ran. From
 2026-11-14 every strategy is judged on one scorecard instead.
 
+## Rejected families
+
+Under the revival rule (docs/rules.md, Luke 2026-11-26) a family is rejected by how its
+members failed. A family counts as rejected when every decision in it is a drop (families
+as the Research tab groups them, `frontend/src/researchView.ts`); trials are the distinct
+settings counted in the crypto pool on 2026-11-26. A revival names one member, one mode
+from this table and one change; each mode of a family may be revived once.
+
+| Family | Notes, trials | How each member failed |
+|---|---|---|
+| Reversals and dips | 7 notes, 131 trials | *Below holding at the same exposure:* drop-reversal, fear-greed, rsi-dip, bollinger-pullback. *No edge before costs:* pivot-reversal; monday-pullback (the effect it needed wasn't in the data; never run). *Too weak to tell:* structure-pullback (+0.06R a trade, 63%). Related, outside the family's notes: forced-selling falls (study, too weak to tell, findings 32) and crash-rebound (exploration graduate, failed out of sample on the confirmation half). |
+| Chart patterns and levels | 7 notes, 39 trials | *Too weak to tell:* wedge-breakout (+0.17R, 86% against 90% needed), trendline-bounce (83%). *No edge before costs* (entries no better than random with the same stops and targets): pattern-macd, set-and-forget. *Lost after costs, gross not recorded* (so not revivable as "eaten by costs"): level-retest, trendline-breakout. *Below holding at the same exposure:* tori-trendline, set-and-forget. |
+| Breakouts | 3 notes, 142 trials | *Below holding at the same exposure:* channel-breakout (Sharpe under half of holding, failed walk-forward), squeeze-breakout (also 16-22 trades), basket-breakout (also drawdowns of -62% and -77%, over the limit). |
+| Minute-chart methods | 2 notes, 6 trials | *No edge before costs:* order-flow (ETH and SOL 5m, negative before costs). *Edge eaten by costs:* choch-fvg (about +0.04R a trade before costs against 0.59R of costs). |
+
+Not rejected, though every decision in it is a drop: **Momentum and rotation** (10 notes,
+110 trials), because its BTC-regime rotation (G1) is pursued, listed under exploration
+graduates. Its failures, for the record: crashed with the market (xs-momentum, high-anchor);
+below holding at the same exposure (weekly-momentum on BTC and SOL, btc-led-weekly,
+btc-eth-rotation, btc-gold-rotation, eth-btc-value); failed its holdout (weekly-momentum on
+ETH); failed its scorecard (monthly-rotation, rotation-stablecoins). Signals from other data
+is not rejected either: stablecoin-hold is on watch.
+
+What the table allows, as examples: choch-fvg on slower bars (its gross edge was eaten by
+costs); the wedge on more coins or 2017+ history (too weak to tell); not a new RSI-dip
+setting (below holding at the same exposure, which neither lower costs nor new settings
+fix), and not level-retest as "eaten by costs" until a gross edge is on record.
+
 ## Mistakes in the process, and what changed
 
 - **A study read across a token swap** (2026-11-18). The event-study grid joined a coin's
