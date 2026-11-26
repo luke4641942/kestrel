@@ -556,3 +556,13 @@ export function warmupLabel(r: Pick<RunSummary, "start" | "scored_from" | "histo
   parts.push(r.history_from ? `strategy read history from ${day(r.history_from)}` : "no history before its start");
   return parts.join("; ");
 }
+
+/** A long reason cut at the last sentence end before `max` characters, and the rest; the
+ * reason whole when it is short or has no sentence end in range. Decision reasons grow a
+ * dated line with every re-check, so the Overview shows the start and opens the rest. */
+export function reasonPreview(reason: string, max = 360): { head: string; rest: string } {
+  if (reason.length <= max) return { head: reason, rest: "" };
+  const cut = reason.lastIndexOf(". ", max);
+  if (cut < max / 3) return { head: reason, rest: "" };
+  return { head: reason.slice(0, cut + 1), rest: reason.slice(cut + 2) };
+}

@@ -2,7 +2,7 @@ import { useState } from "react";
 import { api, type Job } from "../api";
 import type { Route } from "../App";
 import { Empty, FoldToggle, PageHeader, Panel, Section, Status } from "../components/ui";
-import { DECISION, RESEARCH_STATUS, groupDecisions, shortMarket, datasetsLine, holdoutEdge, marketLabel, isSettled, newestFirst, splitClosed, studyTitle, studyTone } from "../summary";
+import { DECISION, RESEARCH_STATUS, groupDecisions, shortMarket, datasetsLine, holdoutEdge, marketLabel, isSettled, newestFirst, splitClosed, studyTitle, studyTone, reasonPreview } from "../summary";
 import { ago, date, num } from "../format";
 import { useResource } from "../hooks";
 
@@ -337,10 +337,7 @@ function DecisionsBoard() {
                     </div>
                   </div>
                   {shown.map((d) => (
-                    <p key={d.market} className="decision-reason">
-                      {g.live.length + g.dropped.length > 1 && <b>{shortMarket(d.market)}: </b>}
-                      {d.reason}
-                    </p>
+                    <Reason key={d.market} label={g.live.length + g.dropped.length > 1 ? shortMarket(d.market) : null} text={d.reason} />
                   ))}
                   {others.length > 0 && (
                     <p className="small secondary">
@@ -357,10 +354,7 @@ function DecisionsBoard() {
                   )}
                   {isOpen &&
                     others.map((d) => (
-                      <p key={d.market} className="decision-reason secondary">
-                        <b>{shortMarket(d.market)}: </b>
-                        {d.reason}
-                      </p>
+                      <Reason key={d.market} label={shortMarket(d.market)} text={d.reason} secondary />
                     ))}
                 </div>
               </li>
@@ -443,5 +437,23 @@ function HoldoutBoard() {
         </div>
       )}
     </Panel>
+  );
+}
+
+/** A decision's reason: its start, and the rest behind "Read all" when it is long. */
+export function Reason({ label, text, secondary = false }: { label: string | null; text: string; secondary?: boolean }) {
+  const [open, setOpen] = useState(false);
+  const { head, rest } = reasonPreview(text);
+  return (
+    <p className={`decision-reason${secondary ? " secondary" : ""}`}>
+      {label && <b>{label}: </b>}
+      {head}
+      {rest && open && ` ${rest}`}
+      {rest && (
+        <button type="button" className="link-button small" aria-expanded={open} onClick={() => setOpen(!open)}>
+          {open ? "Show less" : "Read all"}
+        </button>
+      )}
+    </p>
   );
 }

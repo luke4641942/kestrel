@@ -3144,6 +3144,22 @@ pre.report {
   .market-switch {
     order: 2;
   }
+  /* Four market buttons, the theme toggle and the gaps must fit a 390px phone. */
+  .topbar-end {
+    gap: 8px;
+  }
+  .market-switch button {
+    padding: 3px 7px;
+  }
+  /* A table's first column holds a name over its note's slug: give it room to read as
+     words, and let the table scroll sideways inside its wrapper instead. */
+  .table-wrap td:first-child,
+  .table-wrap th:first-child {
+    min-width: 10.5rem;
+  }
+  .table-wrap td:first-child .mono {
+    overflow-wrap: break-word;
+  }
 }
 
 /* The public demo's banner (src/components/DemoBanner.tsx). */
@@ -3188,3 +3204,8 @@ pre.report {
 .example { padding: 10px 12px; border: 1px solid var(--line); border-radius: var(--radius); background: var(--panel); }
 .example-title { font-weight: 600; margin-bottom: 2px; }
 .example-tests { list-style: none; margin: 4px 0 6px; padding: 0; display: grid; gap: 3px; }
+
+/* A long decision reason, shortened until opened (Overview). */
+.decision-reason .link-button {
+  margin-left: 4px;
+}

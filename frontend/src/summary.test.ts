@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { breakEvenLabel, concentrationRows, groupDecisions, shortMarket, gateKey, gateSetupName, hasOwnTarget, drawdownPaths, mostPromising, newestFirst, gateTone, holdoutEdge, datasetsLine, scorecardHeadline, luckBar, poolsNote, splitClosed, startDateVerdict, windowLabel, DECISION, studyTitle, studyTone, deflatedNote, spreadBands, DEFAULT_RUN_SORT, KIND_LABEL, UNIVERSE, marketLabel, marketsFor, defaultDataset, nextSort, sortRuns, fewTrades, signalsCaption, MAX_LABELLED_TRADES, MAX_MARKED_TRADES, costHeadroom, paramsText, runRole, tradeCount, heldAsset, money, span, trackRecord, tradeMarkers, verdict, warmupLabel } from "./summary";
+import { breakEvenLabel, concentrationRows, groupDecisions, shortMarket, gateKey, gateSetupName, hasOwnTarget, drawdownPaths, mostPromising, newestFirst, gateTone, holdoutEdge, datasetsLine, scorecardHeadline, luckBar, poolsNote, splitClosed, startDateVerdict, windowLabel, DECISION, studyTitle, studyTone, deflatedNote, spreadBands, DEFAULT_RUN_SORT, KIND_LABEL, UNIVERSE, marketLabel, marketsFor, defaultDataset, nextSort, sortRuns, fewTrades, signalsCaption, MAX_LABELLED_TRADES, MAX_MARKED_TRADES, costHeadroom, paramsText, runRole, tradeCount, heldAsset, money, span, trackRecord, tradeMarkers, verdict, warmupLabel, reasonPreview } from "./summary";
 import { run, trade } from "./test/fixtures";
 
 describe("verdict", () => {
@@ -565,5 +565,17 @@ describe("warmupLabel", () => {
     expect(warmupLabel({ ...base, scored_from: "2020-01-01T00:00:00+00:00", history_from: null })).toBe(
       "no history before its start",
     );
+  });
+});
+
+describe("reasonPreview", () => {
+  it("keeps a short reason whole and cuts a long one at a sentence end", () => {
+    expect(reasonPreview("Short. Reason.")).toEqual({ head: "Short. Reason.", rest: "" });
+    const long = `${"First sentence is here. ".repeat(10)}Last one.`;
+    const { head, rest } = reasonPreview(long, 100);
+    expect(head.endsWith(".")).toBe(true);
+    expect(head.length).toBeLessThanOrEqual(100);
+    expect(`${head} ${rest}`).toBe(long);
+    expect(reasonPreview("x".repeat(500), 100)).toEqual({ head: "x".repeat(500), rest: "" });
   });
 });

@@ -1,7 +1,7 @@
 import { fireEvent, render, screen, within } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { api } from "../api";
-import { Overview } from "./Overview";
+import { Overview, Reason } from "./Overview";
 
 vi.mock("../api", async (importOriginal) => {
   const real = await importOriginal<typeof import("../api")>();
@@ -128,5 +128,16 @@ describe("Holdout tests", () => {
     const table = screen.getByText("Robustness of strategy-0").closest(".table-wrap")!;
     fireEvent.click(within(table as HTMLElement).getByRole("button", { name: "Show" }));
     expect(screen.getByText("Robustness of strategy-9")).toBeInTheDocument();
+  });
+});
+
+describe("Reason", () => {
+  it("shows a long reason's start and opens the rest", () => {
+    const text = `${"Opening sentence of the reason. ".repeat(14)}The final dated line.`;
+    render(<Reason label="ETH" text={text} />);
+    expect(screen.queryByText(/The final dated line/)).toBeNull();
+    fireEvent.click(screen.getByRole("button", { name: "Read all" }));
+    expect(screen.getByText(/The final dated line/)).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Show less" })).toHaveAttribute("aria-expanded", "true");
   });
 });
