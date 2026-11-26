@@ -1,0 +1,23 @@
+{
+  "slug": "which-part-of-the-btc-regime-rule-carries-it",
+  "name": "Which part of the BTC regime rule carries it (ablation)",
+  "created_at": "2026-11-25T23:34:43.326032+00:00",
+  "status": "backtested",
+  "history": [
+    {
+      "status": "idea",
+      "at": "2026-11-25T23:34:43.326032+00:00",
+      "reason": "Created"
+    },
+    {
+      "status": "specified",
+      "at": "2026-11-26T01:21:10.324347+00:00",
+      "reason": "v1 frozen"
+    },
+    {
+      "status": "backtested",
+      "at": "2026-11-26T01:22:15.884468+00:00",
+      "reason": "first run on v1"
+    }
+  ]
+}

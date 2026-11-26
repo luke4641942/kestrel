@@ -1,0 +1,28 @@
+{
+  "slug": "does-a-coinbase-listing-move-a-coin-on-binance",
+  "name": "Does a Coinbase listing move a coin on Binance",
+  "created_at": "2026-11-23T05:19:05.454170+00:00",
+  "status": "rejected",
+  "history": [
+    {
+      "status": "idea",
+      "at": "2026-11-23T05:19:05.454170+00:00",
+      "reason": "Created"
+    },
+    {
+      "status": "specified",
+      "at": "2026-11-23T06:14:59.454294+00:00",
+      "reason": "v1 frozen"
+    },
+    {
+      "status": "backtested",
+      "at": "2026-11-23T06:15:09.595155+00:00",
+      "reason": "first run on v1"
+    },
+    {
+      "status": "rejected",
+      "at": "2026-11-23T06:25:00.783747+00:00",
+      "reason": "KILL (rejected with Luke's say-so, 2026-11-23): 72 events on 58 listing days, day 1 to 31 against the other coins mean -1.7%, P(< 0) 63%, 34% of placebo means as low; needed +-3% at 95% either way. The move comes before the listing (day -30 to 1: +25.6%, reported only), as the published studies found. Findings 27."
+    }
+  ]
+}

@@ -1,0 +1,18 @@
+{
+  "slug": "does-improving-news-tone-lead-prices-gdelt",
+  "name": "Does improving news tone lead prices (GDELT)",
+  "created_at": "2026-11-24T02:24:49.125152+00:00",
+  "status": "specified",
+  "history": [
+    {
+      "status": "idea",
+      "at": "2026-11-24T02:24:49.125152+00:00",
+      "reason": "Created"
+    },
+    {
+      "status": "specified",
+      "at": "2026-11-25T23:23:12.595103+00:00",
+      "reason": "v1 frozen"
+    }
+  ]
+}
