@@ -1,0 +1,28 @@
+{
+  "slug": "does-g1-s-rule-work-on-coins-picked-at-the-time",
+  "name": "Does G1's rule work on coins picked at the time",
+  "created_at": "2026-11-26T11:45:51.858105+00:00",
+  "status": "validated",
+  "history": [
+    {
+      "status": "idea",
+      "at": "2026-11-26T11:45:51.858105+00:00",
+      "reason": "Created"
+    },
+    {
+      "status": "specified",
+      "at": "2026-11-26T11:48:28.737575+00:00",
+      "reason": "v1 frozen"
+    },
+    {
+      "status": "backtested",
+      "at": "2026-11-26T11:48:48.389589+00:00",
+      "reason": "first run on v1"
+    },
+    {
+      "status": "validated",
+      "at": "2026-11-26T11:55:13.525717+00:00",
+      "reason": "Passed both tests (Luke, 2026-11-26): Sharpe 1.08 vs 0.94 for BTC and 0.65 for the weekly top 8 held equally, 2018-08-17 to 2025-10; findings 34."
+    }
+  ]
+}
