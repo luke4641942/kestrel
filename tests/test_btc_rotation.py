@@ -106,3 +106,24 @@ def test_g1s_control_holds_each_of_its_coins_equally_once_a_year_old() -> None:
     )
     assert (per_sunday["weight"] - 4 / 8).abs().max() < 1e-12  # 1/8 each, four slots in cash
     validated_decisions(make_portfolio_strategy("own-8-basket", {}), frame)
+
+
+def test_the_top_8_version_holds_only_that_weeks_largest_coins() -> None:
+    from kestrel.strategies.btc_rotation import BtcRegimeRotationTop8
+
+    walks = {f"C{i}USDT": walk(0.006 - 0.001 * i, 10 + i) for i in range(9)}
+    frame = panel({"BTCUSDT": walk(0.004, 1), **walks}, start=MONDAY).with_columns(
+        # Volume falls with the coin's number, so C8 (the strongest is C0) is never top 8
+        # of the 10, and C0..C6 always are, with BTC given the highest.
+        quote_volume=pl.when(pl.col("symbol") == "BTCUSDT")
+        .then(1e10)
+        .otherwise(1e9 - pl.col("symbol").str.extract(r"C(\d)").cast(pl.Float64) * 1e7)
+    )
+    out = BtcRegimeRotationTop8(top_n=8).target_weights(frame)
+    held = set(out.filter(pl.col("symbol").is_not_null())["symbol"])
+    assert held
+    assert not held & {"C7USDT", "C8USDT"}
+    assert held <= {"BTCUSDT", *(f"C{i}USDT" for i in range(7))}
+    plain = BtcRegimeRotation(top_n=8).target_weights(frame)
+    assert set(plain.filter(pl.col("symbol").is_not_null())["symbol"]) <= {"BTCUSDT"}  # fixed set
+    validated_decisions(make_portfolio_strategy("btc-rotation-top8", {}), frame)

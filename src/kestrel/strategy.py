@@ -38,6 +38,7 @@ from kestrel.strategies.btc_rotation import (
     BtcRegimeRotation4,
     BtcRegimeRotationConfirm4,
     BtcRegimeRotationConfirm8,
+    BtcRegimeRotationTop8,
     OwnCoinsBasket,
 )
 from kestrel.strategies.choch_fvg import ChochFvg
@@ -667,6 +668,25 @@ STRATEGIES: dict[str, StrategySpec] = {
             ),
             universe=True,
             warmup=_lookback("min_history_days"),
+        ),
+        StrategySpec(
+            "btc-rotation-top8",
+            "research",
+            "G1's rule (btc-rotation-8) on coins picked at the time: each Sunday, while BTC "
+            "closes margin_pct% above its btc_days average, hold the top top_n by "
+            "lookback_days return among that week's 8 coins with the highest median volume "
+            "and a year of history, each sized to target_vol_pct volatility; else cash.",
+            BtcRegimeRotationTop8,
+            (
+                Param("top_n", 3, 1, 8, "Coins held"),
+                Param("lookback_days", 90, 30, 365, "Days of return ranked"),
+                Param("btc_days", 50, 20, 200, "BTC's moving average, days"),
+                Param("margin_pct", 3, 0, 10, "How far above its average BTC must close, %"),
+                Param("vol_days", 30, 10, 90, "Days of returns in each coin's volatility"),
+                Param("target_vol_pct", 50, 10, 100, "Annualised volatility target per slot, %"),
+            ),
+            universe=True,
+            warmup=_lookback("lookback_days", "btc_days", "vol_days", floor=MIN_HISTORY),
         ),
         StrategySpec(
             "own-8-basket",
