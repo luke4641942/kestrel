@@ -32,24 +32,24 @@ export function MarketProvider({ children }: { children: ReactNode }) {
 
 export const useMarket = () => useContext(MarketContext);
 
-/** The top bar's switcher: All · Crypto · Forex · Futures (parked, shown but marked). */
+/** The top bar's market picker: All, Crypto, Forex, Futures (parked, listed but marked). */
 export function MarketSwitch() {
   const { market, setMarket } = useMarket();
+  const parked = MARKETS.find((m) => m.id === market)?.parked;
   return (
-    <div className="seg market-switch" role="group" aria-label="Market">
-      {MARKETS.map((m) => (
-        <button
-          key={m.id}
-          type="button"
-          aria-pressed={market === m.id}
-          className={m.parked ? "parked" : undefined}
-          title={m.parked}
-          onClick={() => setMarket(m.id)}
-        >
-          {m.label}
-        </button>
-      ))}
-    </div>
+    <label className="market-pick" title={parked ?? "Which market every page shows"}>
+      <span className="market-pick-label">Market</span>
+      <select className="market-select" aria-label="Market" value={market} onChange={(e) => setMarket(e.target.value as Market)}>
+        {MARKETS.map((m) => (
+          <option key={m.id} value={m.id}>
+            {m.parked ? `${m.label} (parked)` : m.label}
+          </option>
+        ))}
+      </select>
+      <svg width="10" height="10" viewBox="0 0 10 10" fill="none" aria-hidden>
+        <path d="m2 3.5 3 3 3-3" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round" />
+      </svg>
+    </label>
   );
 }
 

@@ -13,12 +13,13 @@ describe("the market switch", () => {
         <MarketBadge cls="forex" />
       </MarketProvider>,
     );
-    expect(screen.getByRole("button", { name: "All" })).toHaveAttribute("aria-pressed", "true");
+    const picker = () => screen.getByRole("combobox", { name: "Market" });
+    expect(picker()).toHaveValue("all");
     expect(document.querySelector(".chip.market-forex")).toHaveTextContent("Forex");
     expect(screen.queryByRole("note")).not.toBeInTheDocument();
 
-    fireEvent.click(screen.getByRole("button", { name: "Forex" }));
-    expect(screen.getByRole("button", { name: "Forex" })).toHaveAttribute("aria-pressed", "true");
+    fireEvent.change(picker(), { target: { value: "forex" } });
+    expect(picker()).toHaveValue("forex");
     expect(screen.getByRole("note")).toHaveTextContent(/crypto accounts only.*Showing crypto/);
     expect(document.querySelector(".chip")).toBeNull(); // one market on screen: no badges
     unmount();
@@ -28,7 +29,9 @@ describe("the market switch", () => {
         <MarketSwitch />
       </MarketProvider>,
     );
-    expect(screen.getByRole("button", { name: "Forex" })).toHaveAttribute("aria-pressed", "true");
-    expect(screen.getByRole("button", { name: "Futures" })).toHaveAttribute("title", expect.stringMatching(/Parked/));
+    expect(picker()).toHaveValue("forex"); // remembered
+    expect(screen.getByRole("option", { name: "Futures (parked)" })).toBeInTheDocument();
+    fireEvent.change(picker(), { target: { value: "futures" } });
+    expect(picker().closest("label")).toHaveAttribute("title", expect.stringMatching(/Parked/));
   });
 });

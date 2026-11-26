@@ -3152,14 +3152,48 @@ pre.report {
   letter-spacing: 0.12em;
 }
 
-/* Market switch (top bar) and notices: which market each page shows. */
-.market-switch button {
-  padding: 3px 10px;
-  font-size: 12.5px;
+/* Market picker (top bar) and notices: which market each page shows. Styled like the
+   bar's "More" menu (no box, the bar's own text and chevron), not a form field. */
+.market-pick {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--bar-text-2);
+  cursor: pointer;
 }
-.market-switch button.parked:not([aria-pressed="true"]) {
-  color: var(--text-3, var(--text-2));
-  font-style: italic;
+.market-pick:hover,
+.market-pick:focus-within {
+  color: var(--bar-text);
+}
+.market-pick-label {
+  font-size: 12px;
+  letter-spacing: 0.04em;
+  opacity: 0.75;
+}
+.market-select {
+  appearance: none;
+  -webkit-appearance: none;
+  background: none;
+  border: 0;
+  border-radius: 0;
+  padding: 2px 16px 2px 0;
+  margin-right: -14px;
+  /* As wide as the chosen market, not the longest option ("Futures (parked)"). */
+  field-sizing: content;
+  color: inherit;
+  font: inherit;
+  font-weight: 500;
+  cursor: pointer;
+}
+.market-select option {
+  color: var(--text);
+  background: var(--bg);
+}
+.market-pick svg {
+  pointer-events: none;
+  position: relative;
+  right: 2px;
 }
 .market-notice {
   margin: 0 0 16px;
@@ -3179,15 +3213,14 @@ pre.report {
   color: var(--text-2);
 }
 @media (max-width: 720px) {
-  .market-switch {
+  .market-pick {
     order: 2;
   }
-  /* Four market buttons, the theme toggle and the gaps must fit a 390px phone. */
+  .market-pick-label {
+    display: none;
+  }
   .topbar-end {
     gap: 8px;
-  }
-  .market-switch button {
-    padding: 3px 7px;
   }
 }
 
