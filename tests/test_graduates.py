@@ -38,6 +38,18 @@ def test_the_regime_trend_needs_btc_above_its_average_and_the_coin_rising() -> N
     assert w.target_weights(daily(rising, missing)).sum() == 0  # no BTC bar: cash
 
 
+def test_the_btc_average_waits_for_btc_days_of_the_coins_own_history() -> None:
+    """Findings 30: the frozen rule's BTC average runs over the coin's rows, so a new coin
+    is in cash until its btc_days-th bar even when its trend and volatility are known."""
+    n = 20
+    rising = [100.0 * 1.01**i * (1.002 if i % 2 else 0.999) for i in range(n)]
+    btc_up = [100.0 + i for i in range(n)]
+    w = BtcRegimeTrend("X", btc_days=10, coin_days=2, vol_days=3, target_vol_pct=100)
+    weights = w.target_weights(daily(rising, btc_up)).to_list()
+    assert weights[:9] == [0.0] * 9  # trend and volatility known from row 3; BTC from row 9
+    assert all(x > 0 for x in weights[9:])
+
+
 def test_the_regime_trend_is_sized_to_the_volatility_target() -> None:
     n = 40
     wobble = [100.0 * (1.05 if i % 2 else 0.97) ** 1 * 1.004**i for i in range(n)]

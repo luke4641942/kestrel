@@ -670,7 +670,9 @@ STRATEGIES: dict[str, StrategySpec] = {
             "research",
             "Hold an altcoin while BTC closes above its btc_days average and the coin is up "
             "over coin_days, sized to target_vol_pct over its vol_days volatility (capped at "
-            "100%). Exploration graduate: runs only through its frozen confirmation note.",
+            "100%). Its BTC average is taken over the BTC closes on the coin's own bars, so it "
+            "waits for btc_days of the coin's history, not BTC's (findings 30). Exploration "
+            "graduate: runs only through its frozen confirmation note.",
             BtcRegimeTrend,
             (
                 Param("btc_days", 50, 20, 200, "BTC's moving average, days"),

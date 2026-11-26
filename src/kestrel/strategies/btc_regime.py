@@ -43,6 +43,8 @@ class BtcRegimeTrend:
         vol = close.log().diff().rolling_std(self.vol_days, min_samples=self.vol_days) * math.sqrt(
             DAYS_PER_YEAR
         )
+        # BTC's average runs over the coin's own rows, so it waits for btc_days of the coin's
+        # history (findings 30: stricter than the note's wording; kept, it is the frozen rule).
         on = (btc > btc.rolling_mean(self.btc_days, min_samples=self.btc_days)) & (
             close > close.shift(self.coin_days)
         )
