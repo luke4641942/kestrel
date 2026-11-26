@@ -1,0 +1,17 @@
+{
+  "exported_at": "2026-11-26T12:51:02+00:00",
+  "commit": "20cc10a",
+  "markets": [
+    "BTCUSDT",
+    "ETHUSDT",
+    "SOLUSDT"
+  ],
+  "intervals": [
+    "1h",
+    "4h",
+    "1d"
+  ],
+  "max_points": 4000,
+  "files": 383,
+  "missing": []
+}

@@ -1,0 +1,1 @@
+{"symbol":"BTCUSDT","interval":"4h","is_clean":true,"rows":14975,"first":"2020-01-01T00:00:00Z","last":"2026-10-31T20:00:00Z","duplicates":0,"unsorted":false,"misaligned":0,"ohlc_violations":0,"non_positive_prices":0,"negative_volumes":0,"nulls":0,"missing_bars":1,"gaps":[{"after":"2020-02-19T08:00:00Z","before":"2020-02-19T16:00:00Z","missing_bars":1}]}

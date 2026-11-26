@@ -1,0 +1,20 @@
+<!doctype html>
+<html lang="en" data-theme="light">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Kestrel</title>
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='6' fill='%2314161a'/><path d='M8 20.5 16 10l8 10.5-8-4z' fill='white'/></svg>" />
+    <script>
+      // Apply the saved theme before first paint so there's no flash of the wrong theme.
+      try {
+        if (localStorage.getItem("kestrel.theme") === "dark") document.documentElement.dataset.theme = "dark";
+      } catch (e) {}
+    </script>
+    <script type="module" crossorigin src="/kestrel/assets/index-BRSPkMIQ.js"></script>
+    <link rel="stylesheet" crossorigin href="/kestrel/assets/index-CMhQ3_e8.css">
+  </head>
+  <body>
+    <div id="root"></div>
+  </body>
+</html>
