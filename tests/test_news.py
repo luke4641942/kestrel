@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import math
 from datetime import UTC, date, datetime, timedelta
 from pathlib import Path
 
@@ -14,7 +15,12 @@ from kestrel.cli import app
 from kestrel.data import news
 from kestrel.data.schema import Interval
 from kestrel.data.store import ParquetStore
-from kestrel.studies.weekly_signal import news_flags
+from kestrel.studies.weekly_signal import (
+    format_news_example,
+    news_examples,
+    news_flags,
+    news_window,
+)
 from tests.test_volhold_weekly import daily
 
 REPO_CONFIG = str(Path(__file__).resolve().parents[1] / "kestrel.toml")
@@ -152,6 +158,62 @@ def test_the_commands(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     study = CliRunner().invoke(app, args)
     assert study.exit_code == 0, study.output
     assert "Signal study  ·  news-tone  ·  BTCUSDT" in study.output
+
+
+def _examples_data() -> tuple[pl.DataFrame, pl.DataFrame]:
+    """200 daily bars from 2025-03-01 and tone that drifts up then down, with one gap."""
+    start = datetime(2025, 3, 1, tzinfo=UTC)
+    bars = daily([0.01 * (1 if i % 14 < 7 else -1) for i in range(200)])
+    bars = bars.with_columns(pl.col("open_time") - (bars["open_time"][0] - start))
+    days = [date(2025, 1, 1) + timedelta(days=i) for i in range(260)]
+    values = [math.sin(i / 9) for i in range(260)]
+    keep = [d != date(2025, 6, 10) for d in days]
+    tone = pl.DataFrame(
+        {"date": [d for d, k in zip(days, keep, strict=True) if k],
+         "tone": [v for v, k in zip(values, keep, strict=True) if k]},
+        schema=news.SCHEMA,
+    )  # fmt: skip
+    return bars, tone
+
+
+def test_a_worked_example_is_the_studys_own_decision() -> None:
+    bars, tone = _examples_data()
+    by_day = dict(zip(tone["date"].to_list(), tone["tone"].to_list(), strict=True))
+    windows = [news_window(t, by_day) for t in bars["open_time"].to_list()]
+    assert [w.flag for w in windows] == news_flags(bars, tone)
+    w = windows[100]
+    assert w.latest == (w.open_time + timedelta(days=1) - news.KNOWN_AFTER).date()
+    assert [d for d, _ in w.recent] == [w.latest - timedelta(days=k) for k in range(7)]
+    assert w.prior[0][0] == w.latest - timedelta(days=7)
+    assert len(w.prior) == 28
+    assert w.recent_mean == pytest.approx(sum(v for _, v in w.recent if v is not None) / 7)
+
+    examples = news_examples(bars, tone)
+    assert {w.flag for w, _ in examples} == {True, False, None}
+    assert all(w.open_time.isoweekday() == 7 for w, _ in examples)
+    assert [w.open_time for w, _ in examples] == sorted(w.open_time for w, _ in examples)
+    assert news_examples(bars, tone) == examples  # seeded
+    unknown = next(w for w, _ in examples if w.flag is None)
+    assert date(2025, 6, 10) in unknown.missing
+
+
+def test_the_examples_command_shows_decisions_never_outcomes(tmp_path: Path) -> None:
+    bars, tone = _examples_data()
+    ParquetStore(tmp_path).write("BTCUSDT", Interval.D1, bars)
+    news._save(tone, tmp_path, "BTCUSDT")
+    args = ["signal-examples", "news-tone", "BTCUSDT", "--data-dir", str(tmp_path),
+            "--config", REPO_CONFIG]  # fmt: skip
+    got = CliRunner().invoke(app, args)
+    assert got.exit_code == 0, got.output
+    assert got.output.count("BTCUSDT  ·  Sunday") == 3
+    for shown in ("Signal              ON", "OFF", "UNKNOWN", "Missing: 2025-06-10", "(not shown)"):
+        assert shown in got.output
+    assert "%" not in got.output
+    w, rose = news_examples(bars, tone)[0]
+    assert format_news_example("BTCUSDT", w, rose) in got.output
+    bad = CliRunner().invoke(app, ["signal-examples", "attention", "BTCUSDT", "--data-dir",
+                                   str(tmp_path), "--config", REPO_CONFIG])  # fmt: skip
+    assert bad.exit_code == 1
 
 
 def test_a_gentle_fetch_tries_once_and_says_it_was_refused() -> None:

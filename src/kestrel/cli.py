@@ -139,9 +139,11 @@ from kestrel.studies.weekly_signal import (
     attention_flags,
     coinbase_premium,
     fear_flags,
+    format_news_example,
     format_signal_study,
     liquidity_flags,
     net_liquidity,
+    news_examples,
     news_flags,
     run_signal_study,
     stablecoin_flags,
@@ -1251,6 +1253,39 @@ def signal_study(
         store.mark_backtested(s.slug, note.version)
         save_signal_study(result, s.slug, report, data_dir, _commit(), beside)
     typer.echo(report)
+
+
+@app.command("signal-examples")
+def signal_examples(
+    signal: Annotated[str, typer.Argument(help="news-tone (the only one so far).")],
+    symbols: list[str],
+    seed: Annotated[int, typer.Option(help="Which Sundays are drawn.")] = 0,
+    data_dir: DataDir = Path("data"),
+    config: Annotated[
+        Path, typer.Option("--config", envvar="KESTREL_CONFIG", help="Config file.")
+    ] = Path("kestrel.toml"),
+) -> None:
+    """Worked examples of a signal study's rule, to check against its note before the run:
+    a random on, off and unknown Sunday per coin, with every input the decision used.
+    Decisions only: no outcome is computed or shown, so this is not a look."""
+    try:
+        if signal != "news-tone":
+            raise ValueError(f"no worked examples for {signal!r} yet; news-tone only")
+        cfg = load_config(config)
+        blocks = []
+        for symbol in symbols:
+            bars = ParquetStore(data_dir).read(
+                symbol, Interval.D1, None, cfg.backtest.holdout_start
+            )
+            if bars.is_empty():
+                raise ValueError(f"no stored {symbol.upper()} 1d bars; ingest them first")
+            tone = news.load(data_dir, symbol)
+            for w, rose in news_examples(bars, tone, seed):
+                blocks.append(format_news_example(symbol.upper(), w, rose))
+    except (ConfigError, ValueError) as e:
+        typer.echo(str(e), err=True)
+        raise typer.Exit(code=1) from None
+    typer.echo("\n\n".join(blocks))
 
 
 def _coin(symbol: str) -> str:

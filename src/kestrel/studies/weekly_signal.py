@@ -46,6 +46,7 @@ from __future__ import annotations
 
 import json
 import math
+import random
 import statistics
 from dataclasses import dataclass
 from datetime import UTC, date, datetime, timedelta
@@ -96,21 +97,108 @@ def attention_flags(bars: pl.DataFrame, views: pl.DataFrame) -> list[bool | None
     return out
 
 
+@dataclass(frozen=True)
+class ToneWindow:
+    """What the news-tone signal sees at one daily bar's close: the 7 latest known days of
+    tone and the 28 before them (newest first), and the flag they give."""
+
+    open_time: datetime
+    latest: date
+    """The newest day whose tone is known at the close (``news.KNOWN_AFTER``)."""
+    recent: list[tuple[date, float | None]]
+    prior: list[tuple[date, float | None]]
+
+    @property
+    def close(self) -> datetime:
+        return self.open_time + timedelta(days=1)
+
+    @property
+    def missing(self) -> list[date]:
+        return [d for d, v in [*self.recent, *self.prior] if v is None]
+
+    def _mean(self, days: list[tuple[date, float | None]]) -> float | None:
+        if self.missing:
+            return None
+        return sum(v for _, v in days if v is not None) / len(days)
+
+    @property
+    def recent_mean(self) -> float | None:
+        return self._mean(self.recent)
+
+    @property
+    def prior_mean(self) -> float | None:
+        return self._mean(self.prior)
+
+    @property
+    def flag(self) -> bool | None:
+        recent, prior = self.recent_mean, self.prior_mean
+        return None if recent is None or prior is None else recent > prior
+
+
+def news_window(open_time: datetime, by_day: dict[date, float]) -> ToneWindow:
+    latest = (open_time + timedelta(days=1) - news.KNOWN_AFTER).date()
+    days = [latest - timedelta(days=k) for k in range(35)]
+    pairs = [(d, by_day.get(d)) for d in days]
+    return ToneWindow(open_time, latest, pairs[:7], pairs[7:])
+
+
 def news_flags(bars: pl.DataFrame, tone: pl.DataFrame) -> list[bool | None]:
     """On when the last 7 known days' average news tone beats the 4 weeks before's."""
     by_day = dict(zip(tone["date"].to_list(), tone["tone"].to_list(), strict=True))
-    out: list[bool | None] = []
+    return [news_window(t, by_day).flag for t in bars["open_time"].to_list()]
+
+
+def news_examples(
+    bars: pl.DataFrame, tone: pl.DataFrame, seed: int = 0
+) -> list[tuple[ToneWindow, bool | None]]:
+    """Worked examples of the rule, for checking against the note's wording before its run:
+    one Sunday close drawn at random (seeded) from each of on, off and unknown, each with
+    whether its past week rose (the control's split). Decisions only, never outcomes."""
+    by_day = dict(zip(tone["date"].to_list(), tone["tone"].to_list(), strict=True))
+    closes = dict(zip(bars["open_time"].to_list(), bars["close"].to_list(), strict=True))
+    groups: dict[bool | None, list[ToneWindow]] = {True: [], False: [], None: []}
     for t in bars["open_time"].to_list():
-        latest = (t + timedelta(days=1) - news.KNOWN_AFTER).date()
-        last7 = [by_day.get(latest - timedelta(days=k)) for k in range(7)]
-        prior = [by_day.get(latest - timedelta(days=k)) for k in range(7, 35)]
-        if any(v is None for v in [*last7, *prior]):
-            out.append(None)
-            continue
-        out.append(
-            sum(v for v in last7 if v is not None) / 7 > sum(v for v in prior if v is not None) / 28
-        )
+        if t.isoweekday() == 7:
+            w = news_window(t, by_day)
+            groups[w.flag].append(w)
+    rng = random.Random(seed)
+    picked = [rng.choice(g) for g in groups.values() if g]
+    out: list[tuple[ToneWindow, bool | None]] = []
+    for w in sorted(picked, key=lambda w: w.open_time):
+        before = closes.get(w.open_time - timedelta(days=7))
+        out.append((w, None if before is None else closes[w.open_time] > before))
     return out
+
+
+def format_news_example(symbol: str, w: ToneWindow, rose: bool | None) -> str:
+    def mean(x: float | None) -> str:
+        return "n/a" if x is None else f"{x:+.3f}"
+
+    def tone(v: float | None) -> str:
+        return "  gap " if v is None else f"{v:+.2f}"
+
+    flag = {True: "ON", False: "OFF", None: "UNKNOWN (a day is missing: skipped, never filled)"}
+    days = [*w.recent, *w.prior]
+    lines = [
+        f"{symbol}  ·  Sunday {w.open_time:%Y-%m-%d}, decided at its close "
+        f"{w.close:%Y-%m-%d %H:%M} UTC",
+        f"  Newest tone known   {w.latest} (day D counts from D+2 00:00 UTC)",
+        f"  Last 7 known days   {w.recent[-1][0]} to {w.recent[0][0]}   mean "
+        f"{mean(w.recent_mean)}",
+        f"  The 28 before       {w.prior[-1][0]} to {w.prior[0][0]}   mean {mean(w.prior_mean)}",
+        f"  Signal              {flag[w.flag]}",
+        "  Past week           "
+        + {True: "rose: the control's 'after a rise' half", False: "fell or flat: the "
+           "control's 'after a fall' half", None: "unknown (no close a week before)"}[rose],
+        f"  Outcome window      {w.close:%Y-%m-%d} to {w.close + timedelta(days=7):%Y-%m-%d} "
+        "00:00 UTC (not shown)",
+        "  Tone, newest first (the first 7 are the recent week):",
+    ]  # fmt: skip
+    for i in range(0, 35, 7):
+        lines.append("    " + "  ".join(f"{d:%m-%d} {tone(v)}" for d, v in days[i : i + 7]))
+    if w.missing:
+        lines.append(f"  Missing: {', '.join(str(d) for d in w.missing)}")
+    return "\n".join(lines)
 
 
 def stablecoin_flags(bars: pl.DataFrame, supply: pl.DataFrame) -> list[bool | None]:
