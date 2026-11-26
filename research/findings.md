@@ -648,6 +648,37 @@ from 2026-11-16) is the test that's left.
     are a small share of the trials, most of which are grid settings). The robustness grids
     saved before 2026-11-26 were not re-scored.
 
+36. **The dollar does tend to fall on Fed meeting days, but not by enough to tell at 95%,
+    and mostly before 2014: KILL (2026-11-26, note
+    does-the-dollar-fall-against-other-currencies-on, `kestrel fx-study fomc-dollar`; a
+    study, not a trial: the forex pool stays at 2).** Mueller, Tahbaz-Salehi and Vedolin
+    (Journal of Finance 2017) found a short-dollar portfolio earns more on scheduled FOMC
+    statement days. Our test: long EUR, GBP, AUD, NZD, JPY, CHF and CAD against USD, 1/7
+    each, held over the daily bar holding each of 134 scheduled statements (2006-02 to
+    2022-12, dates from the Fed's calendars), paying the whole spread and a night's
+    financing with the 1% markup, in AUD:
+
+    | Test (all needed) | Result | |
+    |---|---|---|
+    | 1. Mean net per meeting, 95% interval above zero | +10.6 bps, [-0.7, +22.6] | **Fail** |
+    | 2. Beats random days | above their 95th percentile (-0.5 bps) | Pass |
+    | 3. Above zero after the paper's sample (2014-2022) | +2.6 bps | Pass |
+    | 4. At least 5 of 7 legs positive | 6 of 7 (USDJPY -6.9 bps) | Pass |
+    | Days ending 00:00 UTC: tests 1 and 2 | +9.5 bps, [-1.5, +21.1]; random days pass | **Fail** |
+
+    By the note's rule this is KILL: the Fed-day return can't be told from zero at 95%.
+    Deciding nothing: before spreads and financing +16.0 bps a meeting, close to the
+    published size, so the effect is roughly where the paper put it but 134 meetings
+    can't pin it down; it is carried by 2008-2010 (+64, +40 and +25 bps a year's meeting
+    on average) and nearly gone after publication (+2.6 bps net from 2014; -44 bps in
+    2014 alone); the high-yield legs earn more than the low-yield ones (AUD and NZD +13.9
+    bps, JPY and CHF +2.2), as the paper found; at 8 meetings a year it would be about
+    +0.8% of equity a year at 1x. The financing charge used the rate known a month before
+    last (as the note says), where the forex engine charges the month's own rate: one night
+    a meeting, a fraction of a basis point either way. Two textbook forex premia (findings
+    25 and 26) and now a published event premium, each run once at retail CFD costs: none
+    passes.
+
 ## The holdout year (2025-11 to 2026-10)
 
 Reserved on 2026-10-31, before any research, and read once on 2026-11-14 for the two watched
