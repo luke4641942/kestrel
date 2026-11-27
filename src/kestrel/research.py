@@ -324,6 +324,7 @@ STUDIES = {
     "study:net-liquidity": "kestrel signal-study net-liquidity",
     # Forced selling (2026-11-26, from the deep research): drafted before its code exists.
     "study:oi-flush": "kestrel event-study oi-flush",
+    "study:oi-flush-market": "kestrel event-study oi-flush-market",
     "study:fomc-dollar": "kestrel fx-study fomc-dollar",
     # Hypothetical shorting (Luke, 2026-11-16): a pass is recorded as needs-shorting.
     "study:short-btc-regime-trend": "kestrel short-study btc-regime-trend",
