@@ -27,7 +27,7 @@ from collections.abc import Callable
 from datetime import UTC, date, datetime, timedelta
 from decimal import Decimal
 from pathlib import Path
-from typing import Annotated, Any
+from typing import Annotated, Any, cast
 
 import httpx
 import polars as pl
@@ -691,6 +691,10 @@ def event_study(
         ),
     }
     notes["oi-flush"] = ("do-falls-with-forced-perp-selling-bounce-more", "study:oi-flush")
+    notes["oi-flush-market"] = (
+        "do-market-wide-liquidation-flushes-bounce-on",
+        "study:oi-flush-market",
+    )
     if event not in notes:
         typer.echo(f"no event study {event!r}; one of {', '.join(notes)}", err=True)
         raise typer.Exit(code=1)
@@ -712,6 +716,15 @@ def event_study(
             store.mark_backtested(s.slug, note.version)
             typer.echo(report)
             saved = oi_flush.save(found, slug, report, data_dir, _commit())
+            typer.echo(f"Saved: {saved}")
+            return
+        if event == "oi-flush-market":
+            from kestrel.studies import oi_flush_market
+
+            found, report = _oi_flush_market(cfg, data_dir, holdout)
+            store.mark_backtested(s.slug, note.version)
+            typer.echo(report)
+            saved = oi_flush_market.save(found, slug, report, data_dir, _commit())
             typer.echo(f"Saved: {saved}")
             return
         coins = sorted(cfg.split.exploration | {"BTCUSDT", "ETHUSDT", "SOLUSDT"})
@@ -1230,6 +1243,13 @@ def ingest_oi(
     ] = None,
     workers: Annotated[int, typer.Option(help="Downloads at once (be polite).")] = 4,
     list_only: Annotated[bool, typer.Option(help="Show the coins and stop.")] = False,
+    study: Annotated[
+        str,
+        typer.Option(
+            help="Whose coins: oi-flush (perps listed by 2021-12-01) or oi-flush-market "
+            "(listed after that, by 2024-10-31)."
+        ),
+    ] = "oi-flush",
     data_dir: DataDir = Path("data"),
     config: Annotated[
         Path, typer.Option("--config", envvar="KESTREL_CONFIG", help="Config file.")
@@ -1250,7 +1270,14 @@ def ingest_oi(
             else:
                 spot = {s for s, iv in ParquetStore(data_dir).datasets() if iv is Interval.D1}
                 locked = set(cfg.split.confirmation) if cfg.split else set()
-                chosen, left = oi.universe(http, spot, locked)
+                if study == "oi-flush":
+                    chosen, left = oi.universe(http, spot, locked)
+                elif study == "oi-flush-market":
+                    chosen, left = oi.universe(
+                        http, spot, locked, oi.MARKET_LISTED_BY, listed_after=oi.LISTED_BY
+                    )
+                else:
+                    raise ValueError("--study is oi-flush or oi-flush-market")
                 typer.echo(f"{len(chosen)} perps in the study; {len(left)} left out")
                 for why in left:
                     typer.echo(f"  left out: {why}")
@@ -1451,23 +1478,30 @@ def strategy_examples(
     typer.echo("\n\n".join(format_example(symbol.upper(), e) for e in found))
 
 
-def _oi_flush(cfg: Config, data_dir: Path, holdout: datetime) -> tuple[Any, str]:
-    """The forced-selling study on every perp stored by ``kestrel ingest-oi`` (its note,
-    v2: metrics from 2021-12-01, outside the locked half; BTC, ETH, SOL apart)."""
+def _oi_days(
+    cfg: Config, data_dir: Path, holdout: datetime, after: date | None, by: date
+) -> tuple[dict[str, Any], int, dict[tuple[str, date], bool], set[date]]:
+    """Scored coin-days for the stored perps whose open interest starts after ``after``
+    (if given) and by ``by``; missing open-interest days; whether trend-vol-target was in
+    cash on each coin-day; and the days BTC's spot close fell."""
     from kestrel.backtest.spread import with_half_spread
     from kestrel.data import open_interest as oi
     from kestrel.strategies.trend import TrendVolTarget
     from kestrel.studies import oi_flush
 
     root = Path(data_dir) / "open_interest"
-    perps = sorted(p.stem for p in root.glob("*.parquet")) if root.is_dir() else []
+    perps = []
+    for path in sorted(root.glob("*.parquet")) if root.is_dir() else []:
+        first = cast(date | None, oi.load(data_dir, path.stem)["file_date"].min())
+        if first is not None and (after is None or first > after) and first <= by:
+            perps.append(path.stem)
     if not perps:
-        raise ValueError("no open interest stored; run kestrel ingest-oi first")
+        raise ValueError("no open interest stored for this study; run kestrel ingest-oi first")
     locked = set(cfg.split.confirmation) if cfg.split else set()
     tiers = [(float(v), float(b) / 1e4) for v, b in cfg.universe.spread_tiers]
     fee = float(cfg.costs.taker_fee_bps) / 1e4
     store = ParquetStore(data_dir)
-    days_by_coin: dict[str, list[oi_flush.Day]] = {}
+    days_by_coin: dict[str, Any] = {}
     trend_cash: dict[tuple[str, date], bool] = {}
     missing = 0
     for perp in perps:
@@ -1499,8 +1533,38 @@ def _oi_flush(cfg: Config, data_dir: Path, holdout: datetime) -> tuple[Any, str]
         for i, t in enumerate(btc["open_time"].to_list())
         if i and closes[i] < closes[i - 1]
     }
+    return days_by_coin, missing, trend_cash, market_down
+
+
+def _oi_flush(cfg: Config, data_dir: Path, holdout: datetime) -> tuple[Any, str]:
+    """The forced-selling study (note v2): stored perps whose open interest starts by
+    2021-12-01, outside the locked half; BTC, ETH, SOL apart. Perps stored for a later
+    study (listed after that) are never read here."""
+    from kestrel.data import open_interest as oi
+    from kestrel.studies import oi_flush
+
+    days_by_coin, missing, trend_cash, market_down = _oi_days(
+        cfg, data_dir, holdout, None, oi.LISTED_BY
+    )
     result = oi_flush.run_oi_flush(days_by_coin, missing)
     return result, oi_flush.format_oi_flush(result, len(days_by_coin), market_down, trend_cash)
+
+
+def _oi_flush_market(cfg: Config, data_dir: Path, holdout: datetime) -> tuple[Any, str]:
+    """The market-wide flush study (note do-market-wide-liquidation-flushes-bounce-on): the
+    perps listed after 2021-12-01 and by 2024-10-31, never the forced-selling study's.
+    Findings 32's own flush dates are recomputed only to report how many dates overlap."""
+    from kestrel.data import open_interest as oi
+    from kestrel.studies import oi_flush_market
+
+    days_by_coin, missing, trend_cash, market_down = _oi_days(
+        cfg, data_dir, holdout, oi.LISTED_BY, oi.MARKET_LISTED_BY
+    )
+    earlier, _ = _oi_flush(cfg, data_dir, holdout)
+    earlier_dates = {f.day.day for f in earlier.flushes}
+    result = oi_flush_market.run_market(days_by_coin, market_down, missing)
+    report = oi_flush_market.format_market(result, len(days_by_coin), earlier_dates, trend_cash)
+    return result, report
 
 
 def _coin(symbol: str) -> str:

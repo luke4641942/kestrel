@@ -220,7 +220,11 @@ def test_ingest_downloads_resumes_and_reports_failures(tmp_path: Path) -> None:
     assert oi.load(tmp_path, "XUSDT")["file_date"].n_unique() == 4
 
 
-def test_the_event_study_command_runs_once_from_the_frozen_note(tmp_path: Path) -> None:
+def test_each_event_study_runs_once_from_its_frozen_note_on_its_own_coins(
+    tmp_path: Path,
+) -> None:
+    """oi-flush reads perps listed by 2021-12-01 (XUSDT); oi-flush-market only those listed
+    after it (YUSDT), and never the first set."""
     from typer.testing import CliRunner
 
     from kestrel.cli import app
@@ -234,32 +238,88 @@ def test_the_event_study_command_runs_once_from_the_frozen_note(tmp_path: Path) 
     (tmp_path / "kestrel.toml").write_text((repo / "kestrel.toml").read_text())
     write_split(
         tmp_path / SPLIT_FILE,
-        Split(date(2026, 11, 16), 1, frozenset({"XUSDT"}), frozenset({"LOCKUSDT"})),
+        Split(date(2026, 11, 16), 1, frozenset({"XUSDT", "YUSDT"}), frozenset({"LOCKUSDT"})),
     )
     research = tmp_path / "research"
     store = ResearchStore(research)
-    s = store.create("Do falls with forced perp selling bounce more")
-    store.edit(s.slug, 1, dict.fromkeys(SECTIONS, "x"), "study:oi-flush")
-    store.freeze(s.slug, 1)
+    slugs = {}
+    for name, impl in (
+        ("Do falls with forced perp selling bounce more", "study:oi-flush"),
+        (
+            "Do market-wide liquidation flushes bounce on coins never tested",
+            "study:oi-flush-market",
+        ),
+    ):
+        s = store.create(name)
+        store.edit(s.slug, 1, dict.fromkeys(SECTIONS, "x"), impl)
+        store.freeze(s.slug, 1)
+        slugs[impl] = s.slug
     data = tmp_path / "data"
-    start = datetime(2023, 1, 1, tzinfo=UTC)
     rng = random.Random(5)
-    closes = [100 * math.exp(rng.gauss(0, 0.03) * 1) for _ in range(300)]
-    for coin in ("XUSDT", "BTCUSDT"):
+    btc_start = datetime(2021, 6, 1, tzinfo=UTC)
+    btc = [100 * math.exp(rng.gauss(0, 0.03)) for _ in range(1000)]
+    ParquetStore(data).write(
+        "BTCUSDT", Interval.D1, bars(btc, start=btc_start, step=timedelta(days=1))
+    )
+    for coin, first in (("XUSDT", date(2021, 6, 1)), ("YUSDT", date(2023, 1, 1))):
+        start = datetime(first.year, first.month, first.day, tzinfo=UTC)
+        closes = [100 * math.exp(rng.gauss(0, 0.03)) for _ in range(300)]
         ParquetStore(data).write(
             coin, Interval.D1, bars(closes, start=start, step=timedelta(days=1))
         )
-    rows = []
-    for i in range(300):
-        d = date(2023, 1, 1) + timedelta(days=i)
-        t = datetime(d.year, d.month, d.day, 23, 55, tzinfo=UTC)
-        rows.append({"file_date": d, "create_time": t, "open_interest": 1000.0 + rng.gauss(0, 20)})
-    oi._save(pl.DataFrame(rows, schema=oi.SCHEMA), data, "XUSDT")
-    args = ["event-study", "oi-flush", "--research-dir", str(research), "--data-dir", str(data),
+        rows = []
+        for i in range(300):
+            d = first + timedelta(days=i)
+            t = datetime(d.year, d.month, d.day, 23, 55, tzinfo=UTC)
+            rows.append(
+                {"file_date": d, "create_time": t, "open_interest": 1000.0 + rng.gauss(0, 20)}
+            )
+        oi._save(pl.DataFrame(rows, schema=oi.SCHEMA), data, coin)
+    base = ["--research-dir", str(research), "--data-dir", str(data),
             "--config", str(tmp_path / "kestrel.toml")]  # fmt: skip
-    got = CliRunner().invoke(app, args)
+    got = CliRunner().invoke(app, ["event-study", "oi-flush", *base])
     assert got.exit_code == 0, got.output
-    assert "Forced selling" in got.output
-    assert "Verdict: " in got.output
+    assert "Forced selling  ·  1 coins" in got.output  # XUSDT only, not YUSDT
     assert (data / "studies" / "oi-flush.json").exists()
-    assert ResearchStore(research).get(s.slug).status == "backtested"
+    assert ResearchStore(research).get(slugs["study:oi-flush"]).status == "backtested"
+    market = CliRunner().invoke(app, ["event-study", "oi-flush-market", *base])
+    assert market.exit_code == 0, market.output
+    assert "Market-wide flushes  ·  1 coins never in findings 32" in market.output
+    assert "Verdict: " in market.output
+    assert (data / "studies" / "oi-flush-market.json").exists()
+    assert ResearchStore(research).get(slugs["study:oi-flush-market"]).status == "backtested"
+
+
+def test_market_wide_flushes_are_judged_apart_from_coin_alone_ones() -> None:
+    from kestrel.studies.oi_flush_market import format_market, run_market
+
+    rng = random.Random(3)
+    days_by_coin: dict[str, list[Day]] = {}
+    wide_dates = [date(2023, 1, 1) + timedelta(days=7 * k) for k in range(40)]
+    alone_dates = [date(2023, 1, 4) + timedelta(days=7 * k) for k in range(40)]
+    for c in range(6):
+        coin = f"C{c}USDT"
+        ds = []
+        for k in range(400):
+            d = date(2023, 1, 1) + timedelta(days=k)
+            if d in wide_dates:
+                ds.append(Day(coin, d, -0.05, -3.0, 0.04 + rng.gauss(0, 0.01)))  # bounces
+            elif d in alone_dates:
+                ds.append(Day(coin, d, -0.05, -3.0, -0.01 + rng.gauss(0, 0.01)))  # doesn't
+            else:
+                ds.append(Day(coin, d, rng.uniform(-0.06, 0.03), rng.uniform(-1, 1),
+                              rng.gauss(0, 0.02)))  # fmt: skip
+        days_by_coin[coin] = ds
+    r = run_market(days_by_coin, set(wide_dates))
+    assert len(r.wide) == 6 * 40
+    assert len(r.alone) == 6 * 40
+    assert r.test1
+    assert r.test2
+    assert r.test3
+    assert r.test4
+    assert r.verdict == "PROCEED"
+    flipped = run_market(days_by_coin, set(alone_dates))  # now the bouncing ones are "alone"
+    assert not flipped.test2
+    assert flipped.verdict == "KILL"
+    report = format_market(r, 6, set(wide_dates[:10]), None)
+    assert "10 of 40" in report

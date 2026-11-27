@@ -220,12 +220,22 @@ def closes(stored: pl.DataFrame) -> pl.DataFrame:
     )
 
 
+MARKET_LISTED_BY = date(2024, 10, 31)
+"""Note do-market-wide-liquidation-flushes-bounce-on: perps whose metrics start after
+``LISTED_BY`` (so none of the forced-selling study's coins) and by this day (a year before
+the holdout)."""
+
+
 def universe(
-    http: httpx.Client, spot: set[str], locked: set[str], listed_by: date = LISTED_BY
+    http: httpx.Client,
+    spot: set[str],
+    locked: set[str],
+    listed_by: date = LISTED_BY,
+    listed_after: date | None = None,
 ) -> tuple[dict[str, str], list[str]]:
-    """The study's coins: perp -> spot pair, for every perp whose metrics start on or before
-    ``listed_by`` and whose spot pair is stored, outside the locked half. Also the perps left
-    out, each with why."""
+    """A study's coins: perp -> spot pair, for every perp whose metrics start on or before
+    ``listed_by`` (and after ``listed_after``, if given) and whose spot pair is stored,
+    outside the locked half. Also the perps left out, each with why."""
     chosen: dict[str, str] = {}
     left: list[str] = []
     for perp in perps(http):
@@ -239,6 +249,9 @@ def universe(
         first = first_day(http, perp)
         if first is None or first > listed_by:
             left.append(f"{perp}: metrics from {first}")
+            continue
+        if listed_after is not None and first <= listed_after:
+            left.append(f"{perp}: metrics from {first}, in the earlier study")
             continue
         if coin in chosen.values():
             left.append(f"{perp}: {coin} already has a perp")
