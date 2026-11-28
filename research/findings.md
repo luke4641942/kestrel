@@ -701,6 +701,33 @@ from 2026-11-16) is the test that's left.
     GDELT download ran on a 20-minute schedule from 2026-11-23 to 2026-11-26 (GDELT throttles
     this address) and was stopped before the run.
 
+38. **Findings 32's lead doesn't hold on new coins: market-wide flushes bounce no more
+    than ordinary falls, and no more than flushes on a coin alone: KILL (2026-11-28, note
+    do-market-wide-liquidation-flushes-bounce-on, `kestrel event-study oi-flush-market`; a
+    study, not a trial).** Findings 32 saw flushes on days BTC fell too bounce +2.00%
+    against +0.09% for a coin alone, a pattern nobody predicted. This note tested it once,
+    with findings 32's measurements unchanged, on 126 coins findings 32 never used (perps
+    first listed 2021-12 to 2024-10), to 2025-10:
+
+    | Test (all needed) | Result | |
+    |---|---|---|
+    | 1. Market-wide excess over matched falls, 95% interval by date | +1.52% a flush, [-0.95%, +3.88%] | **Fail** |
+    | 2. Above coin-alone flushes | +1.52% against +1.96% | **Fail** |
+    | 3. Beats the same coins on random days | +0.65% net against a 95th percentile of +0.21% | Pass |
+    | 4. At least 30 distinct dates | 834 market-wide flushes on 250 dates | Pass |
+
+    By the note's rule this is KILL. The split that looked like a lead reversed on fresh
+    coins: coin-alone flushes did better (+1.96%, 258 flushes, interval [-2.70%, +8.83%]),
+    so findings 32's gap was noise in one sample. Test 3 passing says only that buying
+    these coins after a market-wide fall beat random days, the dip-buying result already
+    recorded, not anything forced selling adds. Deciding nothing: by year +0.32% (2022,
+    30 flushes), -1.13% (2023, 93), +3.13% (2024, 414), +0.23% (2025, 297), so 2024 carries
+    the mean; 139 of the 250 dates were also flush dates in findings 32 (the same market
+    falls, on other coins); trend-vol-target on the same coin was in cash on 42% of these
+    days; 2,617 coin-days had no open interest and were skipped, not filled. Two runs of one
+    idea on two coin sets, both too weak to tell: on this archive (from 2021-12), forced perp
+    selling gives no bounce that ordinary falls don't.
+
 ## The holdout year (2025-11 to 2026-10)
 
 Reserved on 2026-10-31, before any research, and read once on 2026-11-14 for the two watched
