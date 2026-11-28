@@ -171,3 +171,92 @@ def test_paper_run_marks_connection_errors_as_network(
     assert sent == []  # the first network failure is held
     assert CliRunner().invoke(cli.app, args).exit_code == 1
     assert [a.message for a in sent] == [f"Run failed: {DNS} (2 runs in a row)"]
+
+
+class FakePost:
+    def __init__(self, fail: Exception | None = None) -> None:
+        self.calls: list[tuple[str, bytes, dict[str, str]]] = []
+        self.fail = fail
+
+    def __call__(self, url: str, body: bytes, headers: dict[str, str]) -> None:
+        self.calls.append((url, body, headers))
+        if self.fail is not None:
+            raise self.fail
+
+
+def test_a_phone_push_goes_to_the_topic_with_urgent_kinds_high() -> None:
+    post = FakePost()
+    send = alerts.ntfy_notifier("kestrel-Ab_12", post=post)
+    send(Alert("tvt-btc", "halted", "k1", "Halted: drawdown limit — 25%"))
+    send(Alert("tvt-btc", "trade", "k2", "Buy 0.001 BTC"))
+    (url, body, urgent), (_, _, trade) = post.calls
+    assert url == "https://ntfy.sh/kestrel-Ab_12"
+    assert body.decode() == "Halted: drawdown limit — 25%"  # the message is the body, UTF-8
+    assert urgent["Title"] == "Kestrel: tvt-btc"
+    assert urgent["Priority"] == "high"
+    assert trade["Priority"] == "default"
+    assert set(alerts._TAGS) == set(alerts.Kind.__args__)  # type: ignore[attr-defined]
+
+
+def test_a_failed_push_warns_without_the_topic_and_never_raises() -> None:
+    warned: list[str] = []
+    post = FakePost(fail=OSError("cannot reach https://ntfy.sh/secret-topic"))
+    alerts.ntfy_notifier("secret-topic", post=post, warn=warned.append)(
+        Alert("btc", "failed", "k", "Run failed")
+    )
+    (message,) = warned
+    assert "secret-topic" not in message
+    assert "OSError" in message
+
+
+def test_a_bad_topic_or_server_is_refused() -> None:
+    with pytest.raises(ValueError, match="KESTREL_NTFY_TOPIC"):
+        alerts.ntfy_notifier("has/slash")
+    with pytest.raises(ValueError, match="KESTREL_NTFY_TOPIC"):
+        alerts.ntfy_notifier("x" * 65)
+    with pytest.raises(ValueError, match="https"):
+        alerts.ntfy_notifier("ok", server="http://ntfy.sh")
+
+
+def test_the_phone_is_added_only_when_its_topic_is_set() -> None:
+    mac: list[Alert] = []
+    post = FakePost()
+    a = Alert("btc", "trade", "k", "Buy")
+    alerts.from_env({}, mac=mac.append, post=post)(a)
+    assert mac == [a]
+    assert post.calls == []
+    alerts.from_env({"KESTREL_NTFY_TOPIC": "kestrel-x"}, mac=mac.append, post=post)(a)
+    assert len(mac) == 2
+    assert post.calls[0][0] == "https://ntfy.sh/kestrel-x"
+    custom = {"KESTREL_NTFY_TOPIC": "t", "KESTREL_NTFY_SERVER": "https://push.example/"}
+    alerts.from_env(custom, mac=mac.append, post=post)(a)
+    assert post.calls[1][0] == "https://push.example/t"
+
+
+def test_a_bad_topic_leaves_the_mac_notification_working() -> None:
+    mac: list[Alert] = []
+    warned: list[str] = []
+    post = FakePost()
+    send = alerts.from_env({"KESTREL_NTFY_TOPIC": "bad topic!"}, mac=mac.append, post=post,
+                           warn=warned.append)  # fmt: skip
+    send(Alert("btc", "trade", "k", "Buy"))
+    assert len(mac) == 1
+    assert post.calls == []
+    assert warned
+    assert "bad topic!" not in warned[0]
+
+
+def test_alert_test_sends_one_alert_and_records_nothing(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    from kestrel import cli
+
+    sent: list[Alert] = []
+    monkeypatch.setattr(cli, "_notifier", lambda: sent.append)
+    monkeypatch.delenv("KESTREL_NTFY_TOPIC", raising=False)
+    monkeypatch.chdir(tmp_path)
+    got = CliRunner().invoke(cli.app, ["paper", "alert-test"])
+    assert got.exit_code == 0, got.output
+    assert len(sent) == 1
+    assert "phone is off" in got.output
+    assert list(tmp_path.iterdir()) == []

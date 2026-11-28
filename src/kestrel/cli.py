@@ -18,6 +18,7 @@ from __future__ import annotations
 
 import json
 import math
+import os
 import plistlib
 import shlex
 import shutil
@@ -78,11 +79,12 @@ from kestrel.data.universe import (
     ingest_universe,
     manifest_path,
 )
+from kestrel.execution import alerts as alerting
 from kestrel.execution import paper as paper_trading
 from kestrel.execution import safety, tracking
 from kestrel.execution import status as status_export
 from kestrel.execution.alerts import Send as AlertSend
-from kestrel.execution.alerts import mac_notifier
+from kestrel.execution.alerts import from_env as alerts_from_env
 from kestrel.execution.alerts import review as alert_review
 from kestrel.execution.binance import (
     TESTNET_URL,
@@ -2470,7 +2472,7 @@ class _RunFailedError(Exception):
 
 
 def _notifier() -> AlertSend:
-    return mac_notifier()
+    return alerts_from_env(os.environ)
 
 
 def _paper_run(
@@ -2839,6 +2841,16 @@ def paper_status(name: str, data_dir: DataDir = Path("data")) -> None:
     )
     typer.echo(f"  holding {held}, cash {state.cash:.2f}; {fills} fills; "
                f"{len(marks)} days handled")  # fmt: skip
+
+
+@paper_app.command("alert-test")
+def paper_alert_test() -> None:
+    """Send one test alert the way a scheduled run would: the Mac notification, and the phone
+    when KESTREL_NTFY_TOPIC is set (the topic is never printed). Records nothing."""
+    phone = bool(os.environ.get(alerting.NTFY_TOPIC_ENV, "").strip())
+    _notifier()(alerting.Alert("test", "trade", "test", "Test alert: alerts reach you here"))
+    typer.echo("Sent to the Mac" + (" and the phone (ntfy)." if phone else
+               f"; the phone is off ({alerting.NTFY_TOPIC_ENV} is not set)."))  # fmt: skip
 
 
 @paper_app.command("export")

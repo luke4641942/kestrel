@@ -20,15 +20,22 @@ After every scheduled run (`kestrel paper run`), the account's ledger is reviewe
 Each alert has a key; sent keys are appended to ``alerts.jsonl`` in the account's folder, so
 nothing is sent twice. The first review of an account only records what is already there:
 switching alerts on never replays old history. Delivery is a macOS notification
-(``mac_notifier``); the sender is injected, so tests run without one.
+(``mac_notifier``) and, when ``KESTREL_NTFY_TOPIC`` is set, a push to the phone through ntfy
+(``ntfy_notifier``; Luke, 2026-11-28: a halt was missed away from the Mac). The topic is the
+only secret (anyone who knows it can read the alerts), so it comes from the environment,
+never a file, and is never printed. A failed push warns without the topic and never stops
+the run or the Mac notification. Senders are injected, so tests run without either.
 """
 
 from __future__ import annotations
 
 import hashlib
 import json
+import re
 import subprocess
-from collections.abc import Callable, Sequence
+import sys
+import urllib.request
+from collections.abc import Callable, Mapping, Sequence
 from dataclasses import asdict, dataclass
 from datetime import datetime
 from pathlib import Path
@@ -219,3 +226,88 @@ def mac_notifier(run: Callable[..., object] = subprocess.run) -> Send:
         )  # fmt: skip
 
     return send
+
+
+NTFY_TOPIC_ENV = "KESTREL_NTFY_TOPIC"
+NTFY_SERVER_ENV = "KESTREL_NTFY_SERVER"
+NTFY_SERVER = "https://ntfy.sh"
+_TOPIC = re.compile(r"[A-Za-z0-9_-]{1,64}")
+URGENT: tuple[Kind, ...] = ("halted", "failed", "behind")
+_TAGS: dict[Kind, str] = {
+    "halted": "rotating_light",
+    "failed": "warning",
+    "behind": "zzz",
+    "missed": "calendar",
+    "trade": "chart_with_upwards_trend",
+    "decay": "chart_with_downwards_trend",
+}
+
+Post = Callable[[str, bytes, dict[str, str]], None]
+"""Sends one HTTP POST (url, body, headers); raises OSError on failure."""
+
+
+def _urllib_post(url: str, body: bytes, headers: dict[str, str]) -> None:
+    request = urllib.request.Request(url, data=body, headers=headers, method="POST")
+    with urllib.request.urlopen(request, timeout=15) as response:
+        response.read()
+
+
+def _stderr(message: str) -> None:
+    print(message, file=sys.stderr)
+
+
+def ntfy_notifier(
+    topic: str,
+    server: str = NTFY_SERVER,
+    post: Post = _urllib_post,
+    warn: Callable[[str], None] = _stderr,
+) -> Send:
+    """A phone push per alert through ntfy: urgent kinds at high priority."""
+    if not _TOPIC.fullmatch(topic):
+        raise ValueError(f"{NTFY_TOPIC_ENV} must be 1-64 letters, digits, '-' or '_'")
+    if not server.startswith("https://"):
+        raise ValueError(f"{NTFY_SERVER_ENV} must be an https:// address")
+    url = f"{server.rstrip('/')}/{topic}"
+
+    def send(alert: Alert) -> None:
+        headers = {
+            "Title": f"Kestrel: {alert.account}",
+            "Priority": "high" if alert.kind in URGENT else "default",
+            "Tags": _TAGS[alert.kind],
+            "Content-Type": "text/plain; charset=utf-8",
+            "User-Agent": "kestrel-research/0.1",
+        }
+        try:
+            post(url, alert.message.encode(), headers)
+        except (OSError, ValueError) as e:  # the error's text could hold the URL: name only
+            warn(f"phone alert not sent ({type(e).__name__}); the Mac notification still was")
+
+    return send
+
+
+def every(*senders: Send) -> Send:
+    """Each alert through every sender, in order."""
+
+    def send(alert: Alert) -> None:
+        for s in senders:
+            s(alert)
+
+    return send
+
+
+def from_env(
+    env: Mapping[str, str],
+    mac: Send | None = None,
+    post: Post = _urllib_post,
+    warn: Callable[[str], None] = _stderr,
+) -> Send:
+    """The Mac notification, plus the phone when ``KESTREL_NTFY_TOPIC`` is set. A bad
+    topic or server warns (without the value) and leaves the Mac notification alone."""
+    senders = [mac if mac is not None else mac_notifier()]
+    topic = env.get(NTFY_TOPIC_ENV, "").strip()
+    if topic:
+        try:
+            senders.append(ntfy_notifier(topic, env.get(NTFY_SERVER_ENV, NTFY_SERVER), post, warn))
+        except ValueError as e:
+            warn(f"phone alerts off: {e}")
+    return every(*senders)

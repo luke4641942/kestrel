@@ -73,7 +73,9 @@ Never pipe check output through `tail` or similar inside an `&&` chain: it hides
       schedule, the Trading page. Left: a live venue (real money: not before the paper test
       says so). Alerts (`kestrel.execution.alerts`, 2026-11-22): `paper run --alerts` (the
       launchd jobs pass it) sends a macOS notification for a new halt, failed run, falling
-      behind, missed day or trade; sent keys in each account's `alerts.jsonl`. `kestrel paper export --push`
+      behind, missed day or trade, and a phone push through ntfy when `KESTREL_NTFY_TOPIC`
+      is set (2026-11-28; the topic only from the environment, never printed; `kestrel paper
+      alert-test` sends one); sent keys in each account's `alerts.jsonl`. `kestrel paper export --push`
       (launchd hourly at :40, `paper schedule-export`) publishes a status snapshot of every
       account to a separate private repository through git plumbing: never this repository's
       branches, index or working tree; a commit only when the content changed. A network failure
